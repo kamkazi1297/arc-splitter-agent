@@ -19,8 +19,12 @@ An AI-powered USDC payment splitter on Arc Testnet.
 - Agent: Python + Web3.py
 - Wallet: MetaMask
 
-## Demo
-![Demo](Screen Recording 2026-07-16 004319.mp4)
+## Demo Video
+
+[🎥 Watch Demo](https://github.com/kamkazi1297/arc-splitter-agent/blob/main/Screen%20Recording%202026-07-16%20004319.mp4)
+
+**Description:**  
+AI agent that parses natural language (English/Persian), approves USDC and splits payment automatically on Arc testnet.
 
 ## Contract Address
 `0xEa86B2d60029bEE76F6858a1Ac7f85B2944004bF`
