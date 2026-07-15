@@ -20,7 +20,7 @@ An AI-powered USDC payment splitter on Arc Testnet.
 - Wallet: MetaMask
 
 ## Demo
-(اینجا بعداً ویدیو یا گیف بذار)
+![Demo](Screen Recording 2026-07-16 004319.mp4)
 
 ## Contract Address
 `0xEa86B2d60029bEE76F6858a1Ac7f85B2944004bF`
