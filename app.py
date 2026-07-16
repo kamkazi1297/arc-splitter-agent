@@ -19,7 +19,7 @@ USDC_ADDRESS = "0x3600000000000000000000000000000000000000"
 PRIVATE_KEY = os.getenv("PRIVATE_KEY")
 
 if not PRIVATE_KEY:
-    st.error("❌ PRIVATE_KEY not found in .env file")
+    st.error("❌ PRIVATE_KEY not found in Secrets")
     st.stop()
 
 w3 = Web3(Web3.HTTPProvider(RPC_URL))
@@ -86,7 +86,7 @@ if st.button("🚀 Send Real Transaction", type="primary", use_container_width=T
                     'from': addr, 'nonce': nonce, 'gas': 150000, 'gasPrice': w3.eth.gas_price
                 })
                 signed_approve = w3.eth.account.sign_transaction(tx_approve, PRIVATE_KEY)
-                approve_hash = w3.eth.send_raw_transaction(signed_approve.raw_transaction)
+                approve_hash = w3.eth.send_raw_transaction(signed_approve.rawTransaction)  # rawTransaction درست شد
                 st.write(f"Approve Hash: {approve_hash.hex()}")
                 nonce += 1
                 time.sleep(3)
@@ -109,9 +109,8 @@ if st.button("🚀 Send Real Transaction", type="primary", use_container_width=T
                     'from': addr, 'nonce': nonce, 'gas': 800000, 'gasPrice': w3.eth.gas_price
                 })
                 signed_tx = w3.eth.account.sign_transaction(tx, PRIVATE_KEY)
-                tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+                tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)   # rawTransaction درست شد
 
-                # Fix 0x for explorer
                 tx_hash_str = tx_hash.hex()
                 if not tx_hash_str.startswith('0x'):
                     tx_hash_str = "0x" + tx_hash_str
