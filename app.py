@@ -43,13 +43,6 @@ if st.session_state.get('user_private_key'):
         st.session_state['user_private_key'] = ""
         st.rerun()
 
-if st.button("Connect Wallet"):
-    if user_pk.startswith("0x") and len(user_pk) == 66:
-        st.session_state['user_private_key'] = user_pk
-        st.success("✅ Wallet Connected!")
-    else:
-        st.error("Invalid Private Key format")
-
 # ================== CONFIG ==================
 CONTRACT_ADDRESS = "0xEa86B2d60029bEE76F6858a1Ac7f85B2944004bF"
 RPC_URL = "https://rpc.testnet.arc.network"
