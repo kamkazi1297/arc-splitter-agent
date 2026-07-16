@@ -12,7 +12,7 @@
 
 ### 🚀 Live Links
 - **Web App**: [Open Arc USDC Splitter](https://arc-splitter-agent-o5sg9gujfnypwpfzhuejbj.streamlit.app/)
-- **Telegram Bot**: Coming soon (or add your bot username here)
+- **Telegram Bot**: Coming soon
 
 ### How to Use (Web Version)
 1. Open the [Web App](https://arc-splitter-agent-o5sg9gujfnypwpfzhuejbj.streamlit.app/)
