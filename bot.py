@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 import os
 from web3 import Web3
 from gemini_parser import parse_intent_with_gemini
-
+import time
 load_dotenv()
 
 TOKEN = os.getenv("TELEGRAM_TOKEN")
