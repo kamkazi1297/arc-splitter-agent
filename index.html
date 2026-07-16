@@ -11,18 +11,19 @@
       background: linear-gradient(135deg, #0f0f23, #1a1a2e); 
       color: #ffffff; 
       text-align: center; 
-      padding: 30px; 
+      padding: 20px; 
     }
     .container {
-      max-width: 700px;
+      max-width: 720px;
       margin: 0 auto;
-      background: rgba(255,255,255,0.05);
-      padding: 30px;
-      border-radius: 16px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+      background: rgba(255,255,255,0.06);
+      padding: 35px;
+      border-radius: 20px;
+      box-shadow: 0 15px 35px rgba(0,0,0,0.6);
     }
+    h1 { color: #00ff9d; }
     button { 
-      padding: 14px 28px; 
+      padding: 14px 30px; 
       font-size: 17px; 
       margin: 10px; 
       border: none; 
@@ -41,12 +42,7 @@
       color: white; 
       border: 1px solid #00ff9d; 
     }
-    #status { 
-      margin: 20px 0; 
-      font-size: 16px; 
-      min-height: 80px; 
-      word-break: break-all;
-    }
+    #status { margin: 20px 0; font-size: 16px; min-height: 80px; word-break: break-all; }
   </style>
 </head>
 <body>
@@ -57,8 +53,8 @@
     <button class="connect-btn" onclick="connectWallet()">🔗 Connect MetaMask</button>
     <p id="status"></p>
 
-    <h3>Enter your Split Intent</h3>
-    <textarea id="intent" placeholder="Send 50 USDC, 40% to 0x123..., 60% to 0x456..."></textarea><br>
+    <h3>Enter Split Intent</h3>
+    <textarea id="intent" placeholder="Send 100 USDC, 40% to 0x123..., 60% to 0x456..."></textarea><br>
     
     <button class="send-btn" onclick="sendSplit()">🚀 Send Split Transaction</button>
   </div>
@@ -116,7 +112,7 @@
       }
 
       try {
-        document.getElementById("status").innerHTML = "⏳ Sending transaction...";
+        document.getElementById("status").innerHTML = "⏳ Sending transaction on Arc Testnet...";
 
         const abi = [{
           "inputs": [
@@ -137,17 +133,16 @@
         await tx.wait();
 
         const explorerLink = `https://testnet.arcscan.app/tx/${tx.hash}`;
-        
+
         document.getElementById("status").innerHTML = `
           ✅ Transaction Successful!<br><br>
-          <strong>Hash:</strong> ${tx.hash}<br><br>
+          Hash: ${tx.hash}<br><br>
           <a href="${explorerLink}" target="_blank" style="color:#00ff9d; text-decoration:underline;">
             🔗 View on Arc Explorer
           </a>
         `;
 
       } catch (error) {
-        console.error(error);
         document.getElementById("status").innerHTML = `❌ Error: ${error.message.substring(0,100)}...`;
       }
     }
