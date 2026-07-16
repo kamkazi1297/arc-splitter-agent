@@ -15,13 +15,33 @@ st.set_page_config(page_title="Arc USDC Splitter", page_icon="🪓", layout="cen
 
 st.title("🪓 Arc USDC Splitter")
 st.markdown("**Split USDC on Arc Testnet**")
-st.subheader("🔑 Connect Your Wallet (Testnet)")
-user_pk = st.text_input(
-    "Paste your Private Key", 
-    value=st.session_state['user_private_key'],
-    type="password",
-    placeholder="0x1234..."
-)
+st.subheader("🔑 Wallet Connection (Testnet Only)")
+
+col1, col2 = st.columns([3, 1])
+
+with col1:
+    user_pk = st.text_input(
+        "Enter your Private Key",
+        type="password",
+        placeholder="0x1234567890abcdef...",
+        help="This is only for Arc Testnet. Never use your main wallet private key!"
+    )
+
+with col2:
+    if st.button("Connect", use_container_width=True):
+        if user_pk.startswith("0x") and len(user_pk) == 66:
+            st.session_state['user_private_key'] = user_pk
+            st.success("✅ Wallet Connected Successfully!")
+            st.rerun()
+        else:
+            st.error("❌ Invalid Private Key! Must start with 0x and be 66 characters.")
+
+# Show connected status
+if st.session_state.get('user_private_key'):
+    st.success("✅ Wallet Connected")
+    if st.button("Disconnect"):
+        st.session_state['user_private_key'] = ""
+        st.rerun()
 
 if st.button("Connect Wallet"):
     if user_pk.startswith("0x") and len(user_pk) == 66:
