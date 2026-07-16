@@ -14,43 +14,47 @@ USDC_ADDRESS = "0x3600000000000000000000000000000000000000"
 
 w3 = Web3(Web3.HTTPProvider(RPC_URL))
 
-user_wallets = {}  # ذخیره آدرس والت هر کاربر
+# ذخیره آدرس والت هر کاربر
+user_wallets = {}
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "👋 Welcome to Arc USDC Splitter Bot!\n\n"
-        "First, connect your wallet in the web app, then send your wallet address here.\n\n"
-        "Example intent:\nSend 50 USDC, 40% to 0x123..., 60% to 0x456..."
+        "Send your wallet address (0x...) once to connect.\n"
+        "Then you can send split intents easily.\n\n"
+        "Example: Send 100 USDC, 50% to 0x123..., 50% to 0x456..."
     )
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text
+    text = update.message.text.strip()
     user_id = update.message.from_user.id
 
-    # اگر آدرس والت فرستاد
+    # اگر آدرس والت فرستاده
     if text.startswith("0x") and len(text) == 42:
         user_wallets[user_id] = text
-        await update.message.reply_text(f"✅ Wallet connected:\n{text}")
+        await update.message.reply_text(f"✅ Wallet connected!\n{text}")
         return
 
+    # اگر والت متصل نیست
     if user_id not in user_wallets:
         await update.message.reply_text("❌ First send your wallet address (0x...)")
         return
 
-    # Parsing و ارسال تراکنش
-    await update.message.reply_text("⏳ Parsing...")
+    await update.message.reply_text("⏳ Parsing your intent...")
 
-    # فعلاً ساده parse می‌کنیم (بعداً Gemini اضافه می‌کنیم)
-    # ... (کد parse و ارسال تراکنش)
-
-    await update.message.reply_text("✅ Transaction sent! (در حال تکمیل)")
+    # فعلاً ساده (بعداً کامل می‌کنیم)
+    await update.message.reply_text(
+        "✅ Intent received.\n"
+        "Transaction will be sent from your connected wallet.\n"
+        "Confirmation button will be added soon."
+    )
 
 def main():
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
-    print("🤖 Bot is running...")
+    print("🤖 Bot is running... Send /start")
     app.run_polling()
 
 if __name__ == "__main__":
