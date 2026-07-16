@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arc USDC Splitter</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+  <style>
+    body { font-family: Arial; text-align: center; padding: 20px; background: #0f0f0f; color: white; }
+    button { padding: 12px 24px; margin: 10px; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <h1>🪓 Arc USDC Splitter</h1>
+  <p>Testnet</p>
+
+  <button onclick="connectWallet()">Connect MetaMask</button>
+  <p id="status"></p>
+
+  <script>
+    let signer = null;
+
+    async function connectWallet() {
+      if (!window.ethereum) {
+        alert("MetaMask not found!");
+        return;
+      }
+
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      signer = await provider.getSigner();
+
+      const address = await signer.getAddress();
+      document.getElementById("status").innerHTML = `✅ Connected: ${address.substring(0,6)}...${address.substring(38)}`;
+      
+      alert("Wallet Connected! (بعداً بخش Split رو کامل می‌کنیم)");
+    }
+  </script>
+</body>
+</html>
