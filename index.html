@@ -27,6 +27,8 @@
   <script>
     let signer = null;
 
+    const CONTRACT_ADDRESS = "0xEa86B2d60029bEE76F6858a1Ac7f85B2944004bF";
+
     async function connectWallet() {
       if (!window.ethereum) {
         document.getElementById("status").innerHTML = "❌ MetaMask not found!";
@@ -43,6 +45,16 @@
       }
     }
 
+    function parseIntent(text) {
+      const addresses = text.match(/0x[a-fA-F0-9]{40}/g) || [];
+      const percentages = text.match(/(\d+)[٪%]/g) || [];
+      const percentNumbers = percentages.map(p => parseInt(p));
+      const amountMatch = text.match(/(\d+)\s*USDC/i);
+      const total = amountMatch ? parseInt(amountMatch[1]) : 10;
+
+      return { addresses, percentages: percentNumbers, total };
+    }
+
     async function sendSplit() {
       if (!signer) {
         alert("Please connect MetaMask first!");
@@ -55,8 +67,46 @@
         return;
       }
 
-      alert("✅ Intent received.\n\nTransaction sending feature is being added in the next step.");
-      // اینجا بعداً کد کامل ارسال تراکنش (splitPayment) اضافه می‌شود
+      const { addresses, percentages, total } = parseIntent(intentText);
+
+      if (addresses.length === 0 || percentages.length === 0) {
+        alert("Could not parse addresses or percentages!");
+        return;
+      }
+
+      if (percentages.reduce((a,b)=>a+b,0) !== 100) {
+        alert("Percentages must add up to 100%");
+        return;
+      }
+
+      try {
+        document.getElementById("status").innerHTML = "⏳ Sending transaction...";
+
+        const abi = [{
+          "inputs": [
+            {"name": "recipients", "type": "address[]"},
+            {"name": "percentages", "type": "uint256[]"},
+            {"name": "totalAmount", "type": "uint256"}
+          ],
+          "name": "splitPayment",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        }];
+
+        const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
+        const totalWei = BigInt(total) * BigInt(10**6);
+
+        const tx = await contract.splitPayment(addresses, percentages, totalWei);
+        await tx.wait();
+
+        document.getElementById("status").innerHTML = `✅ Success!<br>Tx Hash: ${tx.hash}`;
+        alert("Transaction sent successfully!");
+
+      } catch (error) {
+        console.error(error);
+        document.getElementById("status").innerHTML = `❌ Error: ${error.message.substring(0,100)}...`;
+      }
     }
   </script>
 </body>
