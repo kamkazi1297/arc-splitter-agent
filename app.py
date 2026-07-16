@@ -7,17 +7,37 @@ import time
 
 load_dotenv()
 
+# === Wallet Session ===
+if 'user_private_key' not in st.session_state:
+    st.session_state['user_private_key'] = ""
+
 st.set_page_config(page_title="Arc USDC Splitter", page_icon="🪓", layout="centered")
 
 st.title("🪓 Arc USDC Splitter")
 st.markdown("**Split USDC on Arc Testnet**")
+st.subheader("🔑 Connect Your Wallet (Testnet)")
+user_pk = st.text_input(
+    "Paste your Private Key", 
+    value=st.session_state['user_private_key'],
+    type="password",
+    placeholder="0x1234..."
+)
+
+if st.button("Connect Wallet"):
+    if user_pk.startswith("0x") and len(user_pk) == 66:
+        st.session_state['user_private_key'] = user_pk
+        st.success("✅ Wallet Connected!")
+    else:
+        st.error("Invalid Private Key format")
 
 # ================== CONFIG ==================
 CONTRACT_ADDRESS = "0xEa86B2d60029bEE76F6858a1Ac7f85B2944004bF"
 RPC_URL = "https://rpc.testnet.arc.network"
 USDC_ADDRESS = "0x3600000000000000000000000000000000000000"
-PRIVATE_KEY = os.getenv("PRIVATE_KEY")
-
+PRIVATE_KEY = st.session_state.get('user_private_key')
+if not PRIVATE_KEY:
+    st.warning("Please connect your wallet first")
+    st.stop()
 if not PRIVATE_KEY:
     st.error("❌ PRIVATE_KEY not found in Secrets")
     st.stop()
