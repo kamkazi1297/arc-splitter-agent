@@ -1,41 +1,25 @@
-# Arc Splitter Agent
+# 🪓 Arc USDC Splitter Agent
 
-An AI-powered USDC payment splitter on Arc Testnet.
+A simple but powerful AI-powered tool to split USDC payments on **Arc Testnet**.
 
-## Features
-- Natural language intent parsing (supports Persian & English)
-- Automatic USDC split between multiple addresses
-- Smart Contract deployed on Arc Testnet
-- Full on-chain execution
+### Features
+- Natural language parsing (e.g. "Send 100 USDC, 50% to 0x..., 50% to 0x...")
+- Automatic USDC Approve + Split
+- **Telegram Bot** (live)
+- **Web UI** with Streamlit (live)
+- Balance check, nonce handling, error management
 
-## How it works
-1. User writes: `2 USDC split 60% to 0x... and 40% to 0x...`
-2. Agent parses the intent
-3. Approves & sends transaction automatically
+### How to Use
 
-## Tech Stack
-- Blockchain: Arc Testnet (EVM)
-- Smart Contract: Solidity
-- Agent: Python + Web3.py
-- Wallet: MetaMask
+**Web Version (Recommended)**
+→ [Open Web App](your-streamlit-link-here)
 
-## Demo Video
+**Telegram Bot**
+Search your bot username and start.
 
-[🎥 Watch Demo](https://github.com/kamkazi1297/arc-splitter-agent/blob/main/Screen%20Recording%202026-07-16%20004319.mp4)
-
-**Description:**  
-AI agent that parses natural language (English/Persian), approves USDC and splits payment automatically on Arc testnet.
-
-## Contract Address
-`0xEa86B2d60029bEE76F6858a1Ac7f85B2944004bF`
-
-## How to run locally
+**Local Run**
 ```bash
-git clone <your-repo>
-cd arc-splitter-agent
-python3 -m venv venv
-source venv/bin/activate
-pip install web3 python-dotenv
-cp .env.example .env
-# Add your PRIVATE_KEY
-python agent.py
+pip install streamlit web3 python-dotenv
+streamlit run app.py
+
+
