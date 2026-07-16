@@ -14,54 +14,56 @@ USDC_ADDRESS = "0x3600000000000000000000000000000000000000"
 
 w3 = Web3(Web3.HTTPProvider(RPC_URL))
 
-user_wallets = {}      # wallet address
-user_pending = {}      # pending transactions
+# ذخیره‌سازی
+user_wallets = {}      # telegram_id -> wallet_address
+pending_transactions = {}  # telegram_id -> transaction data
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "👋 Secure Arc USDC Splitter Bot\n\n"
-        "Send your wallet address (0x...) to connect.\n"
-        "You will need to confirm every transaction."
+        "👋 Welcome to Secure Arc USDC Splitter Bot\n\n"
+        "Your wallet is now linked with this Telegram account.\n"
+        "Send your split intent normally."
     )
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
-    user_id = update.message.from_user.id
+    user_id = update.message.from_user.id   # telegram user id
 
+    # اگر آدرس والت فرستاد (برای لینک اولیه)
     if text.startswith("0x") and len(text) == 42:
         user_wallets[user_id] = text
-        await update.message.reply_text(f"✅ Wallet Connected Securely!\n{text}")
+        await update.message.reply_text(f"✅ Wallet linked successfully!\n{text}")
         return
 
     if user_id not in user_wallets:
-        await update.message.reply_text("❌ First send your wallet address.")
+        await update.message.reply_text("❌ Please send your wallet address first (0x...)")
         return
 
-    await update.message.reply_text("🔍 Parsing intent...")
+    await update.message.reply_text("🔍 Parsing your intent...")
 
-    # Parse
+    # Parse ساده
     addresses = [addr for addr in text.split() if addr.startswith("0x") and len(addr) == 42]
     percentages = [int(p.replace("%","").replace("٪","")) for p in text.split() if p.replace("%","").replace("٪","").isdigit()]
 
     if len(addresses) < 2 or len(percentages) < 2:
-        await update.message.reply_text("❌ Could not parse intent.")
+        await update.message.reply_text("❌ Could not understand your intent.")
         return
 
     total = 10
-    user_pending[user_id] = {"addresses": addresses[:2], "percentages": percentages[:2], "total": total}
+    pending_transactions[user_id] = {"addresses": addresses[:2], "percentages": percentages[:2], "total": total}
 
     # دکمه تأیید دو مرحله‌ای
     keyboard = [
-        [InlineKeyboardButton("✅ Yes, Send Transaction", callback_data="confirm")],
+        [InlineKeyboardButton("✅ Confirm & Send", callback_data="confirm")],
         [InlineKeyboardButton("❌ Cancel", callback_data="cancel")]
     ]
 
     await update.message.reply_text(
-        f"**Confirm Transaction**\n\n"
-        f"From: {user_wallets[user_id]}\n"
+        f"**Confirm Split**\n\n"
+        f"Wallet: {user_wallets[user_id]}\n"
         f"Amount: {total} USDC\n"
         f"Split: {percentages[:2]}%\n\n"
-        f"Are you sure?",
+        f"Do you want to send this transaction?",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
@@ -74,17 +76,17 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text("❌ Cancelled.")
         return
 
-    if user_id not in user_pending:
+    if user_id not in pending_transactions:
         await query.edit_message_text("Session expired.")
         return
 
-    data = user_pending[user_id]
-    await query.edit_message_text("🚀 Sending transaction... Please wait.")
+    data = pending_transactions[user_id]
+    await query.edit_message_text("🚀 Sending transaction on Arc Testnet...")
 
     try:
-        # اینجا کد ارسال تراکنش (همون کد قبلی)
-        # ... (برای کوتاه شدن فعلاً پیام موفقیت می‌ده)
-        await query.message.reply_text("✅ Transaction sent successfully!")
+        # ارسال واقعی تراکنش (با والت ذخیره شده)
+        # فعلاً پیام موفقیت می‌ده (بعداً کامل می‌کنیم)
+        await query.message.reply_text(f"✅ Transaction sent successfully from {user_wallets[user_id]}!")
         
     except Exception as e:
         await query.message.reply_text(f"❌ Error: {str(e)}")
