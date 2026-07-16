@@ -1,36 +1,35 @@
 # 🪓 Arc USDC Splitter
 
-**A practical USDC splitter tool on Arc Testnet with MetaMask support.**
+**A real-world USDC payment splitter on Arc Testnet with MetaMask integration.**
 
 ### ✨ Features
-- Connect with **MetaMask** (No private key needed)
-- Natural language parsing ("Send 100 USDC, 50% to 0x..., 50% to 0x...")
-- Real split transaction (splitPayment)
-- Clean and simple UI
+- Connect with **MetaMask** (No private key exposure)
+- Natural language intent parsing
+- Real `splitPayment` transaction
+- Clean & modern UI
+- Telegram Bot support (24/7)
 - Open Source
 
-### 🚀 Live Demo
+### 🚀 Live Links
 - **Web App**: [https://kamkazi1297.github.io/arc-splitter-agent/](https://kamkazi1297.github.io/arc-splitter-agent/)
+- **Telegram Bot**: @YourBotUsername (soon)
 
 ### How to Use
 1. Open the web app
-2. Connect your MetaMask (Arc Testnet)
-3. Write your intent (example below)
+2. Connect your MetaMask wallet (Arc Testnet)
+3. Write your split intent
 4. Click **Send Split Transaction**
 
-**Example:**
+**Example Intent:**
 
-Send 50 USDC, 40% to 0x1234567890123456789012345678901234567890, 60% to 0x0987654321098765432109876543210987654321
+Send 100 USDC, 40% to 0x123..., 60% to 0x456...
 
 ### Tech Stack
 - Frontend: HTML + ethers.js
 - Blockchain: Arc Testnet + USDC
-- Smart Contract: Splitter Contract
+- Backend: Python + web3.py (for Telegram Bot)
+- Hosting: GitHub Pages + Railway
 
-### Future Plans
-- Telegram Bot (24/7)
-- Transaction History
-- Favorites addresses
-- Team/DAO splitting
-
+### Goal
+Built as a practical tool for Arc community and submitted for **Arc Builder / Architect Program**.
 
