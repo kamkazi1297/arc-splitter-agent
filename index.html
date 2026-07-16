@@ -6,21 +6,10 @@
   <title>Arc USDC Splitter</title>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <style>
-    body { 
-      font-family: Arial, sans-serif; 
-      text-align: center; 
-      padding: 40px; 
-      background: #0a0a0a; 
-      color: white;
-    }
-    button { 
-      padding: 15px 30px; 
-      font-size: 18px; 
-      margin: 15px; 
-      border-radius: 8px;
-    }
-    textarea { width: 80%; height: 100px; margin: 15px; }
-    #status { margin: 20px; font-size: 16px; }
+    body { font-family: Arial, sans-serif; text-align: center; padding: 30px; background: #0a0a0a; color: white; }
+    button { padding: 15px 30px; font-size: 17px; margin: 10px; border-radius: 8px; cursor: pointer; }
+    textarea { width: 85%; height: 120px; margin: 15px; padding: 10px; }
+    #status { margin: 20px; font-size: 16px; min-height: 50px; }
   </style>
 </head>
 <body>
@@ -30,8 +19,8 @@
   <button onclick="connectWallet()">🔗 Connect MetaMask</button>
   <p id="status"></p>
 
-  <h3>Enter your Split Intent</h3>
-  <textarea id="intent" placeholder="Send 100 USDC, 50% to 0x123..., 50% to 0x456..."></textarea><br><br>
+  <h3>Enter Split Intent</h3>
+  <textarea id="intent" placeholder="Send 50 USDC, 40% to 0x123..., 60% to 0x456..."></textarea><br>
   
   <button onclick="sendSplit()">🚀 Send Split Transaction</button>
 
@@ -48,23 +37,26 @@
         await provider.send("eth_requestAccounts", []);
         signer = await provider.getSigner();
         const address = await signer.getAddress();
-        document.getElementById("status").innerHTML = `✅ Connected: ${address}`;
+        document.getElementById("status").innerHTML = `✅ Connected: ${address.substring(0,8)}...${address.substring(38)}`;
       } catch (error) {
-        document.getElementById("status").innerHTML = "❌ Failed to connect";
+        document.getElementById("status").innerHTML = "❌ Connection failed";
       }
     }
 
     async function sendSplit() {
       if (!signer) {
-        alert("Please connect your wallet first!");
+        alert("Please connect MetaMask first!");
         return;
       }
-      const intent = document.getElementById("intent").value;
-      if (!intent) {
+
+      const intentText = document.getElementById("intent").value.trim();
+      if (!intentText) {
         alert("Please enter your intent!");
         return;
       }
-      alert("✅ Intent received!\n\nTransaction sending feature will be added in next step.");
+
+      alert("✅ Intent received.\n\nTransaction sending feature is being added in the next step.");
+      // اینجا بعداً کد کامل ارسال تراکنش (splitPayment) اضافه می‌شود
     }
   </script>
 </body>
