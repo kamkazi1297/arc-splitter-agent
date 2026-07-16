@@ -6,23 +6,78 @@
   <title>Arc USDC Splitter</title>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; text-align: center; padding: 30px; background: #0a0a0a; color: white; }
-    button { padding: 15px 30px; font-size: 17px; margin: 10px; border-radius: 8px; cursor: pointer; }
-    textarea { width: 85%; height: 120px; margin: 15px; padding: 10px; }
-    #status { margin: 20px; font-size: 16px; min-height: 50px; }
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: linear-gradient(135deg, #0f0f23, #1a1a2e);
+      color: #ffffff;
+      text-align: center;
+      padding: 30px;
+      margin: 0;
+    }
+    h1 {
+      color: #00ff9d;
+      margin-bottom: 5px;
+    }
+    .container {
+      max-width: 700px;
+      margin: 0 auto;
+      background: rgba(255,255,255,0.05);
+      padding: 30px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+    button {
+      padding: 14px 28px;
+      font-size: 17px;
+      margin: 10px;
+      border: none;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      transform: scale(1.05);
+    }
+    .connect-btn {
+      background: #00ff9d;
+      color: black;
+      font-weight: bold;
+    }
+    .send-btn {
+      background: #ff2d55;
+      color: white;
+      font-weight: bold;
+    }
+    textarea {
+      width: 90%;
+      height: 130px;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 12px;
+      background: #1e1e2e;
+      color: white;
+      border: 1px solid #00ff9d;
+    }
+    #status {
+      margin: 20px 0;
+      font-size: 16px;
+      min-height: 60px;
+    }
   </style>
 </head>
 <body>
-  <h1>🪓 Arc USDC Splitter</h1>
-  <p><strong>Arc Testnet</strong></p>
+  <div class="container">
+    <h1>🪓 Arc USDC Splitter</h1>
+    <p><strong>Arc Testnet</strong></p>
 
-  <button onclick="connectWallet()">🔗 Connect MetaMask</button>
-  <p id="status"></p>
+    <button class="connect-btn" onclick="connectWallet()">🔗 Connect MetaMask</button>
+    <p id="status"></p>
 
-  <h3>Enter Split Intent</h3>
-  <textarea id="intent" placeholder="Send 50 USDC, 40% to 0x123..., 60% to 0x456..."></textarea><br>
-  
-  <button onclick="sendSplit()">🚀 Send Split Transaction</button>
+    <h3>Enter your Split Intent</h3>
+    <textarea id="intent" placeholder="Send 100 USDC, 40% to 0x123..., 60% to 0x456..."></textarea><br>
+    
+    <button class="send-btn" onclick="sendSplit()">🚀 Send Split Transaction</button>
+  </div>
 
   <script>
     let signer = null;
@@ -31,7 +86,7 @@
 
     async function connectWallet() {
       if (!window.ethereum) {
-        document.getElementById("status").innerHTML = "❌ MetaMask not found!";
+        document.getElementById("status").innerHTML = "❌ MetaMask not found! Please install it.";
         return;
       }
       try {
@@ -73,21 +128,16 @@
         alert("Could not parse addresses or percentages!");
         return;
       }
-
       if (percentages.reduce((a,b)=>a+b,0) !== 100) {
         alert("Percentages must add up to 100%");
         return;
       }
 
       try {
-        document.getElementById("status").innerHTML = "⏳ Sending transaction...";
+        document.getElementById("status").innerHTML = "⏳ Sending transaction on Arc Testnet...";
 
         const abi = [{
-          "inputs": [
-            {"name": "recipients", "type": "address[]"},
-            {"name": "percentages", "type": "uint256[]"},
-            {"name": "totalAmount", "type": "uint256"}
-          ],
+          "inputs": [{"name": "recipients", "type": "address[]"}, {"name": "percentages", "type": "uint256[]"}, {"name": "totalAmount", "type": "uint256"}],
           "name": "splitPayment",
           "outputs": [],
           "stateMutability": "nonpayable",
@@ -95,17 +145,17 @@
         }];
 
         const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
-        const totalWei = BigInt(total) * BigInt(10**6);
+        const totalWei = BigInt(total) * BigInt(1000000);
 
         const tx = await contract.splitPayment(addresses, percentages, totalWei);
         await tx.wait();
 
-        document.getElementById("status").innerHTML = `✅ Success!<br>Tx Hash: ${tx.hash}`;
-        alert("Transaction sent successfully!");
+        document.getElementById("status").innerHTML = `✅ Success!<br>Tx: ${tx.hash.substring(0,10)}...`;
+        alert("Transaction sent successfully! ✅");
 
       } catch (error) {
         console.error(error);
-        document.getElementById("status").innerHTML = `❌ Error: ${error.message.substring(0,100)}...`;
+        document.getElementById("status").innerHTML = `❌ Error: ${error.message.substring(0,80)}...`;
       }
     }
   </script>
