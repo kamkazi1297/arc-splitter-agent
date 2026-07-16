@@ -23,7 +23,7 @@ with col1:
     user_pk = st.text_input(
         "Enter your Private Key",
         type="password",
-        placeholder="0x1234567890abcdef...",
+        placeholder="...",
         help="This is only for Arc Testnet. Never use your main wallet private key!"
     )
 
