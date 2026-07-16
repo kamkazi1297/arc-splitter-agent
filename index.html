@@ -6,34 +6,56 @@
   <title>Arc USDC Splitter</title>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <style>
-    body { font-family: Arial; text-align: center; padding: 20px; background: #0f0f0f; color: white; }
-    button { padding: 12px 24px; margin: 10px; font-size: 16px; }
+    body { 
+      font-family: Arial, sans-serif; 
+      text-align: center; 
+      padding: 40px; 
+      background: #0a0a0a; 
+      color: white;
+    }
+    button { 
+      padding: 15px 30px; 
+      font-size: 18px; 
+      margin: 15px; 
+      border-radius: 8px;
+      cursor: pointer;
+    }
+    #status { margin: 20px; font-size: 16px; }
   </style>
 </head>
 <body>
   <h1>🪓 Arc USDC Splitter</h1>
-  <p>Testnet</p>
+  <p><strong>Arc Testnet</strong></p>
 
-  <button onclick="connectWallet()">Connect MetaMask</button>
+  <button onclick="connectWallet()">🔗 Connect MetaMask</button>
+  
   <p id="status"></p>
 
   <script>
     let signer = null;
+    let address = null;
 
     async function connectWallet() {
+      const statusEl = document.getElementById("status");
+      
       if (!window.ethereum) {
-        alert("MetaMask not found!");
+        statusEl.innerHTML = "❌ MetaMask not found! Please install MetaMask.";
         return;
       }
 
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      await provider.send("eth_requestAccounts", []);
-      signer = await provider.getSigner();
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        
+        signer = await provider.getSigner();
+        address = await signer.getAddress();
 
-      const address = await signer.getAddress();
-      document.getElementById("status").innerHTML = `✅ Connected: ${address.substring(0,6)}...${address.substring(38)}`;
-      
-      alert("Wallet Connected! (بعداً بخش Split رو کامل می‌کنیم)");
+        statusEl.innerHTML = `✅ Connected!<br><small>${address}</small>`;
+        console.log("Wallet connected:", address);
+        
+      } catch (error) {
+        statusEl.innerHTML = "❌ Connection failed: " + error.message;
+      }
     }
   </script>
 </body>
