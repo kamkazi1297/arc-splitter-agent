@@ -65,7 +65,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
 
     if query.data == "cancel":
-        await query.edit_message_text("❌ Cancelled.")
+        await query.edit_message_text("Cancelled.")
         return
 
     result = user_data.get(user_id)
@@ -89,11 +89,13 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         usdc_abi = [{"inputs":[{"name":"spender","type":"address"},{"name":"amount","type":"uint256"}],"name":"approve","outputs":[],"stateMutability":"nonpayable","type":"function"}]
         usdc = w3.eth.contract(address=USDC_ADDRESS, abi=usdc_abi)
         tx_approve = usdc.functions.approve(CONTRACT_ADDRESS, total*2).build_transaction({
-            'from': addr, 'nonce': nonce, 'gas': 100000, 'gasPrice': w3.eth.gas_price
+            'from': addr, 'nonce': nonce, 'gas': 150000, 'gasPrice': w3.eth.gas_price
         })
-        signed = w3.eth.account.sign_transaction(tx_approve, PRIVATE_KEY)
+        signed_approve = w3.eth.account.sign_transaction(tx_approve, PRIVATE_KEY)
         w3.eth.send_raw_transaction(signed_approve.rawTransaction)
+
         nonce += 1
+        time.sleep(3)
 
         # Split Payment
         tx = contract.functions.splitPayment(recipients, percentages, total).build_transaction({
@@ -102,11 +104,14 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         signed_tx = w3.eth.account.sign_transaction(tx, PRIVATE_KEY)
         tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
 
-        await query.message.reply_text(f"✅ Transaction Successful!\n\nTx Hash:\n{tx_hash.hex()}\n\nCheck on Arc Explorer.")
+        tx_hash_str = tx_hash.hex()
+        if not tx_hash_str.startswith('0x'):
+            tx_hash_str = "0x" + tx_hash_str
+
+        await query.message.reply_text(f"✅ Success!\n\nHash: {tx_hash_str}\n\nCheck on: https://testnet.arcscan.app/tx/{tx_hash_str}")
 
     except Exception as e:
         await query.message.reply_text(f"❌ Failed: {str(e)}")
-
 def main():
     app = Application.builder().token(TOKEN).build()
     app.add_handler(CommandHandler("start", start))
