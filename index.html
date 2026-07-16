@@ -6,21 +6,10 @@
   <title>Arc USDC Splitter</title>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <style>
-    body { 
-      font-family: Arial, sans-serif; 
-      text-align: center; 
-      padding: 40px; 
-      background: #0a0a0a; 
-      color: white;
-    }
-    button { 
-      padding: 15px 30px; 
-      font-size: 18px; 
-      margin: 15px; 
-      border-radius: 8px;
-      cursor: pointer;
-    }
-    #status { margin: 20px; font-size: 16px; }
+    body { font-family: Arial, sans-serif; text-align: center; padding: 30px; background: #0a0a0a; color: white; }
+    input, textarea { width: 80%; padding: 10px; margin: 10px; }
+    button { padding: 12px 25px; margin: 10px; font-size: 16px; border-radius: 8px; cursor: pointer; }
+    #status { margin: 15px; font-size: 15px; }
   </style>
 </head>
 <body>
@@ -28,34 +17,46 @@
   <p><strong>Arc Testnet</strong></p>
 
   <button onclick="connectWallet()">🔗 Connect MetaMask</button>
-  
   <p id="status"></p>
+
+  <h3>Enter Split Intent</h3>
+  <textarea id="intent" rows="3" placeholder="Send 50 USDC, 40% to 0x123..., 60% to 0x456..."></textarea><br>
+  
+  <button onclick="parseAndSend()">🚀 Send Split Transaction</button>
 
   <script>
     let signer = null;
-    let address = null;
+    let userAddress = null;
 
     async function connectWallet() {
-      const statusEl = document.getElementById("status");
-      
       if (!window.ethereum) {
-        statusEl.innerHTML = "❌ MetaMask not found! Please install MetaMask.";
+        document.getElementById("status").innerHTML = "❌ MetaMask not found!";
         return;
       }
-
       try {
         const provider = new ethers.BrowserProvider(window.ethereum);
         await provider.send("eth_requestAccounts", []);
-        
         signer = await provider.getSigner();
-        address = await signer.getAddress();
-
-        statusEl.innerHTML = `✅ Connected!<br><small>${address}</small>`;
-        console.log("Wallet connected:", address);
-        
-      } catch (error) {
-        statusEl.innerHTML = "❌ Connection failed: " + error.message;
+        userAddress = await signer.getAddress();
+        document.getElementById("status").innerHTML = `✅ Connected: ${userAddress.substring(0,8)}...`;
+      } catch (e) {
+        document.getElementById("status").innerHTML = "❌ Connection failed";
       }
+    }
+
+    async function parseAndSend() {
+      const intentText = document.getElementById("intent").value;
+      if (!signer) {
+        alert("First connect your wallet!");
+        return;
+      }
+      if (!intentText) {
+        alert("Enter your intent!");
+        return;
+      }
+
+      alert("در حال توسعه... (بعداً بخش کامل ارسال تراکنش اضافه می‌شود)");
+      // اینجا بعداً کد کامل ارسال تراکنش با ethers.js اضافه می‌کنیم
     }
   </script>
 </body>
