@@ -92,7 +92,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             'from': addr, 'nonce': nonce, 'gas': 100000, 'gasPrice': w3.eth.gas_price
         })
         signed = w3.eth.account.sign_transaction(tx_approve, PRIVATE_KEY)
-        w3.eth.send_raw_transaction(signed.raw_transaction)
+        w3.eth.send_raw_transaction(signed.raw_Transaction)
 
         nonce += 1
 
@@ -101,7 +101,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             'from': addr, 'nonce': nonce, 'gas': 800000, 'gasPrice': w3.eth.gas_price
         })
         signed_tx = w3.eth.account.sign_transaction(tx, PRIVATE_KEY)
-        tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_transaction)
+        tx_hash = w3.eth.send_raw_transaction(signed_tx.raw_Transaction)
 
         await query.message.reply_text(f"✅ Transaction Successful!\n\nTx Hash:\n{tx_hash.hex()}\n\nCheck on Arc Explorer.")
 
