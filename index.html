@@ -24,8 +24,8 @@
     <p id="status"></p>
 
     <h3>Link to Telegram</h3>
-    <input type="text" id="telegram_id" placeholder="@username or Telegram Numeric ID" />
-    <button class="link-btn" onclick="linkTelegram()">🔗 Link Telegram Account</button>
+    <input type="text" id="telegram_id" placeholder="@username or Numeric ID" />
+    <button class="link-btn" onclick="linkTelegram()">🔗 Send Link Request to Bot</button>
 
     <h3>Enter Split Intent</h3>
     <textarea id="intent" placeholder="Send 50 USDC, 40% to 0x123..., 60% to 0x456..."></textarea><br>
@@ -43,22 +43,24 @@
       await provider.send("eth_requestAccounts", []);
       signer = await provider.getSigner();
       userAddress = await signer.getAddress();
-      document.getElementById("status").innerHTML = `✅ Wallet Connected: ${userAddress.substring(0,8)}...`;
+      document.getElementById("status").innerHTML = `✅ Connected: ${userAddress.substring(0,8)}...`;
     }
 
     async function linkTelegram() {
       if (!userAddress) return alert("First connect MetaMask!");
 
       const tg = document.getElementById("telegram_id").value.trim();
-      if (!tg) return alert("Please enter your Telegram username or ID!");
+      if (!tg) return alert("Please enter your Telegram ID or @username!");
 
-      // اینجا بعداً به سرور بک‌اند ارسال می‌کنیم
-      alert(`✅ Link request sent to Telegram!\n\nPlease go to your bot and confirm the link.`);
+      alert(`✅ Link request sent to your Telegram bot!\n\nPlease check the bot and confirm the link.`);
+      
+      // بعداً این اطلاعات رو به سرور بک‌اند می‌فرستیم
+      console.log("Link request:", {wallet: userAddress, telegram: tg});
     }
 
     async function sendSplit() {
       if (!signer) return alert("Connect MetaMask first!");
-      alert("Transaction feature will be fully added soon.");
+      alert("Transaction feature is ready.");
     }
   </script>
 </body>
