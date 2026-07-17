@@ -90,7 +90,7 @@
     <div id="history"></div>
 
     <div class="footer">
-      <p><strong>Testnet Version Only</strong> — Do not use with real funds.</p>
+      <p><strong>Testnet Version Only</strong> — Do not use with real funds. Made for Arc Project.</p>
     </div>
   </div>
 
@@ -105,18 +105,149 @@
     const CHAIN_ID = 5042002;
     const CHAIN_ID_HEX = "0x4cef52";
 
-    const arcNetwork = { /* ... همان قبلی ... */ };
+    const arcNetwork = {
+      chainId: CHAIN_ID_HEX,
+      chainName: "Arc Testnet",
+      nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
+      rpcUrls: ["https://rpc.testnet.arc.network"],
+      blockExplorerUrls: ["https://testnet.arcscan.app"]
+    };
 
-    // بقیه توابع connectWallet, updateUSDCBalance, addRecipient, updatePercentTotal, loadTemplate و ... مثل نسخه قبلی هستن
+    window.addEventListener('load', async () => {
+      if (window.ethereum) {
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        if (accounts.length > 0) {
+          userAddress = accounts[0];
+          const provider = new ethers.BrowserProvider(window.ethereum);
+          signer = await provider.getSigner();
+          document.getElementById("status").innerHTML = `Connected: ${userAddress.slice(0,8)}...${userAddress.slice(-6)}`;
+          document.getElementById("status").className = "success";
+          updateUSDCBalance();
+        }
+      }
+      renderHistory();
+      addRecipient(); // default rows
+      addRecipient();
+    });
+
+    async function updateUSDCBalance() {
+      if (!signer || !userAddress) return;
+      try {
+        const usdc = new ethers.Contract(USDC_ADDRESS, [
+          "function balanceOf(address) view returns (uint256)",
+          "function decimals() view returns (uint8)"
+        ], signer);
+        const balance = await usdc.balanceOf(userAddress);
+        const decimals = await usdc.decimals();
+        const formatted = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4);
+        document.getElementById("status").innerHTML += `<br><small>USDC Balance: ${formatted}</small>`;
+      } catch(e) {}
+    }
 
     async function setMaxAmount() {
-      if (!signer) return alert("Connect wallet first");
+      if (!signer) return alert("Connect wallet first!");
       try {
-        const usdc = new ethers.Contract(USDC_ADDRESS, ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"], signer);
+        const usdc = new ethers.Contract(USDC_ADDRESS, [
+          "function balanceOf(address) view returns (uint256)",
+          "function decimals() view returns (uint8)"
+        ], signer);
         const balance = await usdc.balanceOf(userAddress);
-        const formatted = ethers.formatUnits(balance, await usdc.decimals());
-        document.getElementById("totalAmount").value = parseFloat(formatted).toFixed(4);
+        const decimals = await usdc.decimals();
+        document.getElementById("totalAmount").value = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4);
       } catch(e) { alert("Could not fetch balance"); }
+    }
+
+    function addRecipient() {
+      const list = document.getElementById("recipients-list");
+      const row = document.createElement("div");
+      row.className = "recipient-row";
+      row.innerHTML = `
+        <input type="text" class="address" placeholder="0x...">
+        <input type="number" class="percent" placeholder="%" step="0.01" oninput="updatePercentTotal()">
+        <button onclick="this.parentElement.remove(); updatePercentTotal()" style="background:#ff3366;color:white;padding:10px 14px;">×</button>
+      `;
+      list.appendChild(row);
+      updatePercentTotal();
+    }
+
+    function updatePercentTotal() {
+      const percents = Array.from(document.querySelectorAll('.percent')).map(el => parseFloat(el.value) || 0);
+      const total = percents.reduce((a, b) => a + b, 0);
+      const el = document.getElementById("percent-total");
+      el.textContent = `Total: ${total.toFixed(2)}%`;
+      el.style.color = total === 100 ? "#00ffaa" : (total > 100 ? "#ff3366" : "#e0e0ff");
+    }
+
+    function loadTemplate(type) {
+      const list = document.getElementById("recipients-list");
+      list.innerHTML = "";
+      if (type === 1) {
+        addRow("0x0000000000000000000000000000000000000001", 50);
+        addRow("0x0000000000000000000000000000000000000002", 50);
+      } else if (type === 2) {
+        addRow("0x0000000000000000000000000000000000000001", 33);
+        addRow("0x0000000000000000000000000000000000000002", 33);
+        addRow("0x0000000000000000000000000000000000000003", 34);
+      } else if (type === 3) {
+        addRow("0x0000000000000000000000000000000000000001", 40);
+        addRow("0x0000000000000000000000000000000000000002", 60);
+      } else if (type === 4) {
+        for (let i = 1; i <= 4; i++) addRow(`0x000000000000000000000000000000000000000${i}`, 25);
+      }
+    }
+
+    function addRow(address, percent) {
+      const list = document.getElementById("recipients-list");
+      const row = document.createElement("div");
+      row.className = "recipient-row";
+      row.innerHTML = `
+        <input type="text" class="address" value="${address}">
+        <input type="number" class="percent" value="${percent}" oninput="updatePercentTotal()">
+        <button onclick="this.parentElement.remove(); updatePercentTotal()" style="background:#ff3366;color:white;padding:10px 14px;">×</button>
+      `;
+      list.appendChild(row);
+      updatePercentTotal();
+    }
+
+    async function connectWallet() {
+      if (!window.ethereum) return alert("MetaMask not found!");
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        userAddress = accounts[0];
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        signer = await provider.getSigner();
+
+        const network = await provider.getNetwork();
+        if (Number(network.chainId) !== CHAIN_ID) {
+          try {
+            await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CHAIN_ID_HEX }] });
+          } catch (switchError) {
+            if (switchError.code === 4902) {
+              await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [arcNetwork] });
+              await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CHAIN_ID_HEX }] });
+            } else throw switchError;
+          }
+        }
+
+        document.getElementById("status").innerHTML = `Connected: ${userAddress.slice(0,8)}...${userAddress.slice(-6)}`;
+        document.getElementById("status").className = "success";
+        await updateUSDCBalance();
+      } catch (e) {
+        document.getElementById("status").innerHTML = `Error: ${e.message}`;
+        document.getElementById("status").className = "error";
+      }
+    }
+
+    function disconnectWallet() {
+      signer = null; userAddress = null;
+      document.getElementById("status").innerHTML = "Wallet Disconnected";
+    }
+
+    function clearForm() {
+      document.getElementById("recipients-list").innerHTML = "";
+      document.getElementById("totalAmount").value = "100";
+      addRecipient();
+      addRecipient();
     }
 
     async function sendSplit() {
@@ -139,31 +270,23 @@
       });
 
       if (addresses.length < 2) return alert("At least 2 recipients needed!");
-      const percentSum = percentages.reduce((a, b) => a + b, 0);
-      if (Math.abs(percentSum - 100) > 0.01) return alert("Percentages must sum exactly to 100%!");
+      if (Math.abs(percentages.reduce((a, b) => a + b, 0) - 100) > 0.01) 
+        return alert("Percentages must sum exactly to 100%!");
 
       for (let addr of addresses) {
         if (!ethers.isAddress(addr)) return alert(`Invalid address: ${addr}`);
       }
 
-      // Gas Estimation
-      let gasEstimate = "Unknown";
-      try {
-        const provider = await signer.provider;
-        const feeData = await provider.getFeeData();
-        gasEstimate = "~0.0005 - 0.0015 ARC";
-      } catch(e) {}
-
-      let preview = `You are about to send ${totalAmount} USDC\n\n`;
+      // Preview + Gas Estimate
+      let preview = `You are about to send ${totalAmount} USDC:\n\n`;
       addresses.forEach((addr, i) => {
         const share = (totalAmount * percentages[i] / 100).toFixed(4);
         preview += `• ${percentages[i]}% → ${addr.slice(0,8)}... = ${share} USDC\n`;
       });
-      preview += `\nEstimated Gas: ${gasEstimate}\n\nContinue?`;
+      preview += `\nEstimated Gas: ~0.0005 - 0.002 ARC\n\nContinue?`;
 
       if (!confirm(preview)) return;
 
-      // بقیه کد ارسال (approve + splitPayment) مثل نسخه قبلی
       isProcessing = true;
       const btn = document.getElementById("sendBtn");
       const statusEl = document.getElementById("status");
@@ -174,7 +297,11 @@
         statusEl.innerHTML = "Approving USDC...";
         statusEl.className = "loading";
 
-        const usdc = new ethers.Contract(USDC_ADDRESS, ["function approve(address,uint256) returns (bool)", "function decimals() view returns (uint8)"], signer);
+        const usdc = new ethers.Contract(USDC_ADDRESS, [
+          "function approve(address,uint256) returns (bool)",
+          "function decimals() view returns (uint8)"
+        ], signer);
+
         const decimals = await usdc.decimals();
         const totalWei = ethers.parseUnits(totalAmount.toString(), decimals);
 
@@ -183,15 +310,26 @@
         statusEl.innerHTML = "Sending Split Transaction...";
 
         const splitterAbi = [{
-          "inputs": [{"name": "recipients","type":"address[]"},{"name":"percentages","type":"uint256[]"},{"name":"totalAmount","type":"uint256"}],
-          "name": "splitPayment","outputs":[],"stateMutability":"nonpayable","type":"function"
+          "inputs": [
+            {"name": "recipients", "type": "address[]"},
+            {"name": "percentages", "type": "uint256[]"},
+            {"name": "totalAmount", "type": "uint256"}
+          ],
+          "name": "splitPayment",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
         }];
 
         const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
         const tx = await contract.splitPayment(addresses, percentages.map(p => Math.floor(p)), totalWei);
         await tx.wait();
 
-        transactions.unshift({ hash: tx.hash, intent: `${totalAmount} USDC → ${addresses.length} recipients`, time: new Date().toLocaleString() });
+        transactions.unshift({
+          hash: tx.hash,
+          intent: `${totalAmount} USDC → ${addresses.length} recipients`,
+          time: new Date().toLocaleString()
+        });
         localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
         renderHistory();
 
@@ -208,7 +346,28 @@
       }
     }
 
-    // توابع renderHistory, exportHistory, clearForm, disconnectWallet و ... مثل نسخه قبلی
+    function renderHistory() {
+      let html = "";
+      transactions.forEach(tx => {
+        html += `
+          <div style="background:rgba(255,255,255,0.05); padding:14px; margin:10px 0; border-radius:12px;">
+            <small>${tx.time}</small><br>
+            ${tx.intent}<br>
+            <small><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View Tx</a></small>
+          </div>`;
+      });
+      document.getElementById("history").innerHTML = html || "<p>No transactions yet.</p>";
+    }
+
+    function exportHistory() {
+      if (transactions.length === 0) return alert("No history to export!");
+      const dataStr = JSON.stringify(transactions, null, 2);
+      const a = document.createElement('a');
+      a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+      a.download = `arc-splitter-history-${new Date().toISOString().slice(0,10)}.json`;
+      a.click();
+      alert("History exported successfully!");
+    }
   </script>
 </body>
 </html>
