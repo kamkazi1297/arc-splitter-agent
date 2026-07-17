@@ -14,89 +14,41 @@ USDC_ADDRESS = "0x3600000000000000000000000000000000000000"
 
 w3 = Web3(Web3.HTTPProvider(RPC_URL))
 
-user_wallets = {}
-user_pending = {}
+user_wallets = {}      # telegram_id -> wallet
+pending_links = {}     # telegram_id -> wallet (در انتظار تأیید)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Send your wallet address (0x...) to connect.")
+    await update.message.reply_text("Send your wallet address to link it with this Telegram account.")
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
     user_id = update.message.from_user.id
 
     if text.startswith("0x") and len(text) == 42:
-        user_wallets[user_id] = text
-        await update.message.reply_text(f"✅ Wallet Connected!\n{text}")
+        pending_links[user_id] = text
+        keyboard = [
+            [InlineKeyboardButton("✅ Confirm Link", callback_data="confirm_link")],
+            [InlineKeyboardButton("❌ Cancel", callback_data="cancel_link")]
+        ]
+        await update.message.reply_text(f"Do you want to link this wallet?\n{text}", reply_markup=InlineKeyboardMarkup(keyboard))
         return
 
-    if user_id not in user_wallets:
-        await update.message.reply_text("❌ First send your wallet address.")
-        return
-
-    await update.message.reply_text("⏳ Parsing...")
-
-    addresses = [addr for addr in text.split() if addr.startswith("0x") and len(addr) == 42]
-    percentages = [int(p.replace("%","").replace("٪","")) for p in text.split() if p.replace("%","").replace("٪","").isdigit()]
-
-    if len(addresses) < 2 or len(percentages) < 2:
-        await update.message.reply_text("❌ Could not parse.")
-        return
-
-    total = 10
-    user_pending[user_id] = {"addresses": addresses, "percentages": percentages, "total": total}
-
-    keyboard = [
-        [InlineKeyboardButton("✅ Confirm & Send", callback_data="confirm")],
-        [InlineKeyboardButton("❌ Cancel", callback_data="cancel")]
-    ]
-
-    await update.message.reply_text(
-        f"Confirm Split\n\nWallet: {user_wallets[user_id]}\nAmount: {total} USDC\nSplit: {percentages}%",
-        reply_markup=InlineKeyboardMarkup(keyboard)
-    )
+    await update.message.reply_text("Send wallet address to link.")
 
 async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     user_id = query.from_user.id
     await query.answer()
 
-    if query.data == "cancel":
-        await query.edit_message_text("Cancelled.")
-        return
-
-    data = user_pending.get(user_id)
-    if not data:
-        await query.edit_message_text("Session expired.")
-        return
-
-    await query.edit_message_text("🚀 Sending...")
-
-    try:
-        recipients = data["addresses"]
-        percentages = data["percentages"]
-        total = int(data["total"]) * 10**6
-
-        account = w3.eth.account.from_key(os.getenv("PRIVATE_KEY"))
-        addr = account.address
-        nonce = w3.eth.get_transaction_count(addr, 'pending')
-
-        # Approve
-        usdc = w3.eth.contract(address=USDC_ADDRESS, abi=[{"inputs":[{"name":"spender","type":"address"},{"name":"amount","type":"uint256"}],"name":"approve","outputs":[],"stateMutability":"nonpayable","type":"function"}])
-        tx = usdc.functions.approve(CONTRACT_ADDRESS, total*2).build_transaction({'from': addr, 'nonce': nonce, 'gas': 150000, 'gasPrice': w3.eth.gas_price})
-        signed = w3.eth.account.sign_transaction(tx, os.getenv("PRIVATE_KEY"))
-        w3.eth.send_raw_transaction(signed.rawTransaction)
-        nonce += 1
-        time.sleep(3)
-
-        # Split
-        contract = w3.eth.contract(address=CONTRACT_ADDRESS, abi=[{"inputs": [{"name": "recipients", "type": "address[]"}, {"name": "percentages", "type": "uint256[]"}, {"name": "totalAmount", "type": "uint256"}], "name": "splitPayment", "outputs": [], "stateMutability": "nonpayable", "type": "function"}])
-        tx = contract.functions.splitPayment(recipients, percentages, total).build_transaction({'from': addr, 'nonce': nonce, 'gas': 800000, 'gasPrice': w3.eth.gas_price})
-        signed_tx = w3.eth.account.sign_transaction(tx, os.getenv("PRIVATE_KEY"))
-        tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-
-        await query.message.reply_text(f"✅ Success!\nHash: {tx_hash.hex()}")
-    except Exception as e:
-        await query.message.reply_text(f"❌ Error: {str(e)}")
+    if query.data == "confirm_link":
+        if user_id in pending_links:
+            user_wallets[user_id] = pending_links[user_id]
+            await query.edit_message_text(f"✅ Wallet linked permanently!\n{user_wallets[user_id]}")
+            del pending_links[user_id]
+    elif query.data == "cancel_link":
+        await query.edit_message_text("❌ Cancelled.")
+        if user_id in pending_links:
+            del pending_links[user_id]
 
 def main():
     app = Application.builder().token(TOKEN).build()
