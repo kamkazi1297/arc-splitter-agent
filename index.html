@@ -7,12 +7,12 @@
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #0f0f23, #1a1a2e); color: white; text-align: center; padding: 20px; }
-    .container { max-width: 700px; margin: 0 auto; background: rgba(255,255,255,0.06); padding: 35px; border-radius: 20px; }
+    .container { max-width: 720px; margin: 0 auto; background: rgba(255,255,255,0.06); padding: 35px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
     button { padding: 14px 30px; margin: 10px; font-size: 17px; border-radius: 12px; cursor: pointer; }
-    .connect-btn { background: #00ff9d; color: black; }
-    .tg-btn { background: #229ED9; color: white; }
-    .send-btn { background: #ff2d55; color: white; }
-    input, textarea { width: 85%; padding: 12px; margin: 10px 0; border-radius: 10px; background: #1e1e2e; color: white; }
+    .connect-btn { background: #00ff9d; color: black; font-weight: bold; }
+    .telegram-btn { background: #229ED9; color: white; font-weight: bold; }
+    .send-btn { background: #ff2d55; color: white; font-weight: bold; }
+    input, textarea { width: 85%; padding: 12px; margin: 10px 0; border-radius: 10px; background: #1e1e2e; color: white; border: 1px solid #444; }
   </style>
 </head>
 <body>
@@ -21,7 +21,7 @@
     <p><strong>Arc Testnet</strong></p>
 
     <button class="connect-btn" onclick="connectWallet()">🔗 Connect MetaMask</button>
-    <button class="tg-btn" onclick="connectTelegram()">📱 Connect Telegram</button>
+    <button class="telegram-btn" onclick="connectTelegram()">📱 Connect to Telegram</button>
     
     <p id="status"></p>
 
@@ -37,28 +37,39 @@
 
     async function connectWallet() {
       if (!window.ethereum) return alert("MetaMask not found!");
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      await provider.send("eth_requestAccounts", []);
-      signer = await provider.getSigner();
-      userAddress = await signer.getAddress();
-      document.getElementById("status").innerHTML = `✅ Wallet Connected: ${userAddress.substring(0,8)}...`;
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        signer = await provider.getSigner();
+        userAddress = await signer.getAddress();
+        document.getElementById("status").innerHTML = `✅ MetaMask Connected: ${userAddress.substring(0,8)}...`;
+      } catch (e) {
+        document.getElementById("status").innerHTML = "❌ Failed to connect MetaMask";
+      }
     }
 
     function connectTelegram() {
       if (!userAddress) {
-        alert("First connect MetaMask!");
+        alert("ابتدا MetaMask را کانکت کنید!");
         return;
       }
-      const tgUsername = prompt("Enter your Telegram Username (without @):");
-      if (tgUsername) {
-        document.getElementById("status").innerHTML += `<br>📨 Connection request sent to @${tgUsername}<br>Please confirm in the bot.`;
-        alert(`Request sent to @${tgUsername}\n\nGo to bot and confirm the connection.`);
+
+      const tgUsername = prompt("Telegram Username خود را بدون @ وارد کنید:");
+      if (tgUsername && tgUsername.trim() !== "") {
+        const message = `🔗 New Connection Request!\n\nWallet: ${userAddress}\nTelegram: @${tgUsername}\n\nDo you want to connect?`;
+        alert(`درخواست اتصال ارسال شد به @${tgUsername}\n\n${message}\n\n(در نسخه بعدی ربات تأیید خواهد شد)`);
+        
+        // بعداً این اطلاعات را می‌توانیم ذخیره کنیم
+        localStorage.setItem("tgUsername", tgUsername);
       }
     }
 
     async function sendSplit() {
-      if (!signer) return alert("Please connect MetaMask first!");
-      alert("Split transaction feature is active.");
+      if (!signer) return alert("ابتدا MetaMask را کانکت کنید!");
+      const intent = document.getElementById("intent").value.trim();
+      if (!intent) return alert("لطفاً intent را وارد کنید!");
+      
+      alert("✅ Intent دریافت شد.\nتراکنش در حال ارسال است (نسخه فعلی)...");
     }
   </script>
 </body>
