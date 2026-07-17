@@ -11,13 +11,12 @@
     h1 { color: #00ffaa; }
     button { padding: 14px 32px; margin: 8px; font-size: 17px; border: none; border-radius: 14px; cursor: pointer; }
     .connect-btn { background: #00ffaa; color: #000; font-weight: bold; }
+    .add-network-btn { background: #3366ff; color: white; }
     .send-btn { background: #ff3366; color: white; font-weight: bold; }
-    .network-btn { background: #ffaa00; color: black; font-weight: bold; }
-    .export-btn { background: #3366ff; color: white; }
+    .export-btn { background: #22c55e; color: white; }
     textarea { width: 100%; height: 150px; padding: 16px; margin: 15px 0; border-radius: 14px; background: #151525; color: white; border: 1px solid #00ffaa; }
     #status { margin: 20px 0; padding: 18px; border-radius: 12px; background: rgba(0,255,170,0.1); min-height: 80px; }
     .balance { font-size: 18px; color: #00ffaa; margin: 15px 0; font-weight: bold; }
-    .faucet { margin: 20px 0; font-size: 16px; }
   </style>
 </head>
 <body>
@@ -26,21 +25,21 @@
     <p><strong>Professional • Arc Testnet</strong></p>
 
     <button class="connect-btn" onclick="connectWallet()">🔗 Connect MetaMask</button>
+    <button class="add-network-btn" onclick="addArcNetwork()">🌐 Add Arc Testnet</button>
     <button onclick="disconnectWallet()">❌ Disconnect</button>
-    <button class="network-btn" onclick="addArcNetwork()">🌐 Add Arc Testnet</button>
     
     <p id="status"></p>
     <div id="balance" class="balance"></div>
-
-    <div class="faucet">
-      <a href="https://faucet.arc.network" target="_blank" style="color:#00ffaa;">💰 Get Testnet USDC from Faucet</a>
-    </div>
 
     <h3>Enter Split Intent</h3>
     <textarea id="intent" placeholder="Send 100 USDC, 40% to 0x123..., 60% to 0x456..."></textarea><br>
     
     <button class="send-btn" onclick="sendSplit()">🚀 Send Real Transaction</button>
     <button class="export-btn" onclick="exportHistory()">📤 Export History</button>
+
+    <p style="margin-top:30px">
+      <a href="https://faucet.circle.com/" target="_blank" style="color:#00ffaa;">💰 Get Test USDC from Circle Faucet</a>
+    </p>
 
     <h3>Recent Transactions</h3>
     <div id="history"></div>
@@ -59,28 +58,28 @@
       blockExplorerUrls: ["https://testnet.arcscan.app"]
     };
 
+    async function addArcNetwork() {
+      try {
+        await window.ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [ARC_TESTNET]
+        });
+        document.getElementById("status").innerHTML = "✅ Arc Testnet added successfully!";
+      } catch (e) {
+        document.getElementById("status").innerHTML = `❌ Error: ${e.message}`;
+      }
+    }
+
     async function connectWallet() {
       if (!window.ethereum) return alert("MetaMask not found!");
       try {
+        await addArcNetwork(); // سعی می‌کنه شبکه رو اضافه کنه
         const provider = new ethers.BrowserProvider(window.ethereum);
         await provider.send("eth_requestAccounts", []);
         signer = await provider.getSigner();
         userAddress = await signer.getAddress();
         document.getElementById("status").innerHTML = `✅ Connected: ${userAddress}`;
         await getBalance();
-      } catch (e) {
-        document.getElementById("status").innerHTML = `❌ ${e.message}`;
-      }
-    }
-
-    async function addArcNetwork() {
-      if (!window.ethereum) return alert("MetaMask not found!");
-      try {
-        await window.ethereum.request({
-          method: 'wallet_addEthereumChain',
-          params: [ARC_TESTNET]
-        });
-        document.getElementById("status").innerHTML = "✅ Arc Testnet added to MetaMask!";
       } catch (e) {
         document.getElementById("status").innerHTML = `❌ ${e.message}`;
       }
@@ -149,7 +148,7 @@
           </a>
         `;
       } catch (error) {
-        document.getElementById("status").innerHTML = `❌ Transaction rejected or failed.<br>${error.message.substring(0,120)}`;
+        document.getElementById("status").innerHTML = `❌ ${error.message.substring(0,150)}`;
       }
     }
 
