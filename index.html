@@ -1,5 +1,3 @@
-See new posts
-
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -47,34 +45,39 @@ See new posts
     <h1>Arc USDC Splitter</h1>
     <p><strong>Professional • Arc Testnet</strong></p>
 
-<button class="connect-btn" onclick="connectWallet()">Connect MetaMask</button>
-<button onclick="disconnectWallet()">Disconnect</button><p id="status">Ready</p>
+    <button class="connect-btn" onclick="connectWallet()">Connect MetaMask</button>
+    <button onclick="disconnectWallet()">Disconnect</button>
 
-<div style="margin:15px 0;">
-  <strong>Total Amount (USDC)</strong>
-  <input type="number" id="totalAmount" value="100" step="0.01" placeholder="100">
-</div>
+    <p id="status">Ready</p>
 
-<h3>Quick Templates</h3>
-<div>
-  <button class="template-btn" onclick="loadTemplate(1)">50% - 50%</button>
-  <button class="template-btn" onclick="loadTemplate(2)">33-33-34%</button>
-  <button class="template-btn" onclick="loadTemplate(3)">40% - 60%</button>
-  <button class="template-btn" onclick="loadTemplate(4)">Equal Split</button>
-</div>
+    <div style="margin:15px 0;">
+      <strong>Total Amount (USDC)</strong>
+      <input type="number" id="totalAmount" value="100" step="0.01" placeholder="100">
+    </div>
 
-<h3>Recipients & Percentages</h3>
-<textarea id="intent" placeholder="40% to 0x123..., 60% to 0x456..."></textarea>
+    <h3>Quick Templates</h3>
+    <div>
+      <button class="template-btn" onclick="loadTemplate(1)">50% - 50%</button>
+      <button class="template-btn" onclick="loadTemplate(2)">33-33-34%</button>
+      <button class="template-btn" onclick="loadTemplate(3)">40% - 60%</button>
+      <button class="template-btn" onclick="loadTemplate(4)">Equal Split</button>
+    </div>
 
-<button id="sendBtn" class="send-btn" onclick="sendSplit()">Send Real Transaction</button>
-<button onclick="exportHistory()">Export History</button>
-<button class="small-btn" onclick="clearForm()" style="background:#666;color:white;">Clear</button><h3>Recent Transactions</h3>
-<div id="history"></div>
+    <h3>Recipients & Percentages</h3>
+    <textarea id="intent" placeholder="40% to 0x123..., 60% to 0x456..."></textarea>
 
-<div class="footer">
-  <p><strong>Testnet Version Only</strong> — This is a demonstration tool for testing on Arc Testnet.
+    <button id="sendBtn" class="send-btn" onclick="sendSplit()">Send Real Transaction</button>
+    <button onclick="exportHistory()">Export History</button>
+    <button class="small-btn" onclick="clearForm()" style="background:#666;color:white;">Clear</button>
 
-  Do not use with real funds. Made for Arc Project.</p></div>  </div>
+    <h3>Recent Transactions</h3>
+    <div id="history"></div>
+
+    <div class="footer">
+      <p><strong>Testnet Version Only</strong> — This is a demonstration tool for testing on Arc Testnet.<br>
+      Do not use with real funds. Made for Arc Project.</p>
+    </div>
+  </div>
 
   <script>
     let signer = null;
@@ -105,11 +108,28 @@ See new posts
             signer = await provider.getSigner();
             document.getElementById("status").innerHTML = `Connected: ${userAddress.slice(0,8)}...${userAddress.slice(-6)}`;
             document.getElementById("status").className = "success";
+            updateUSDCBalance();
           }
         } catch (e) {}
       }
       renderHistory();
     });
+
+    async function updateUSDCBalance() {
+      if (!signer || !userAddress) return;
+      try {
+        const usdc = new ethers.Contract(USDC_ADDRESS, [
+          "function balanceOf(address) view returns (uint256)",
+          "function decimals() view returns (uint8)"
+        ], signer);
+
+        const balance = await usdc.balanceOf(userAddress);
+        const decimals = await usdc.decimals();
+        const formatted = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4);
+        
+        document.getElementById("status").innerHTML += `<br><small>USDC Balance: ${formatted}</small>`;
+      } catch(e) {}
+    }
 
     async function connectWallet() {
       if (!window.ethereum) return alert("MetaMask not found!");
@@ -133,6 +153,7 @@ See new posts
 
         document.getElementById("status").innerHTML = `Connected: ${userAddress.slice(0,8)}...${userAddress.slice(-6)}`;
         document.getElementById("status").className = "success";
+        await updateUSDCBalance();
       } catch (e) {
         document.getElementById("status").innerHTML = `Error: ${e.message}`;
         document.getElementById("status").className = "error";
@@ -171,13 +192,20 @@ See new posts
       // Improved Parsing
       const addresses = intentText.match(/0x[a-fA-F0-9]{40}/gi) || [];
       let percentages = intentText.match(/(\d+\.?\d*)\s*[٪%]/g);
-      if (percentages) percentages = percentages.map(p => parseFloat(p));
+      if (percentages) percentages = percentages.map(p => parseFloat(p.replace(/[^0-9.]/g, '')));
 
       if (addresses.length < 2 || percentages.length < 2) 
         return alert("Could not detect addresses and percentages correctly!");
 
       if (percentages.reduce((a, b) => a + b, 0) !== 100) 
         return alert("Percentages must sum exactly to 100%!");
+
+      // Address Validation
+      for (let addr of addresses) {
+        if (!ethers.isAddress(addr)) {
+          return alert(`Invalid address: ${addr}`);
+        }
+      }
 
       // Preview
       let preview = `You are about to send ${totalAmount} USDC:\n\n`;
@@ -204,9 +232,9 @@ See new posts
 
         const decimals = await usdc.decimals();
         const totalWei = ethers.parseUnits(totalAmount.toString(), decimals);
-        const MAX_UINT = ethers.MaxUint256;
 
-        await (await usdc.approve(CONTRACT_ADDRESS, MAX_UINT)).wait();
+        // Approve exact amount
+        await (await usdc.approve(CONTRACT_ADDRESS, totalWei)).wait();
 
         statusEl.innerHTML = "Sending Split Transaction...";
 
@@ -272,4 +300,3 @@ See new posts
   </script>
 </body>
 </html>
-
