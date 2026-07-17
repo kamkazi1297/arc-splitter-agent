@@ -29,6 +29,8 @@ A clean, fast and professional USDC splitter tool built for **Arc Testnet**.
 
 5. Click **"Send Real Transaction"** and confirm in MetaMask
 
+![Arc USDC Splitter](demo.gif)
+
 ## 🛠 Technologies
 
 - HTML + CSS + JavaScript
@@ -59,7 +61,6 @@ arc-splitter-agent/
 
 ## Disclaimer
 
-![Arc USDC Splitter](demo.gif)
 
 This project is for **Arc Testnet** only.  
 Use at your own risk. Not audited for mainnet usage.
