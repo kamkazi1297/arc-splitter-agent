@@ -44,19 +44,26 @@
     let userAddress = null;
     let transactions = JSON.parse(localStorage.getItem('arcTxHistory') || '[]');
 
-    const ARC_TESTNET_CHAIN_ID = "0x27"; // Arc Testnet Chain ID
+    const ARC_TESTNET = {
+      chainId: "0x27",
+      chainName: "Arc Testnet",
+      nativeCurrency: { name: "Arc", symbol: "ARC", decimals: 18 },
+      rpcUrls: ["https://rpc.testnet.arc.network"],
+      blockExplorerUrls: ["https://testnet.arcscan.app"]
+    };
 
     async function connectWallet() {
       if (!window.ethereum) return alert("MetaMask not found!");
 
       try {
-        // Auto switch to Arc Testnet
-        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-        if (chainId !== ARC_TESTNET_CHAIN_ID) {
-          document.getElementById("status").innerHTML = "🔄 Switching to Arc Testnet...";
+        // Check and add Arc Testnet
+        const currentChain = await window.ethereum.request({ method: 'eth_chainId' });
+        
+        if (currentChain !== ARC_TESTNET.chainId) {
+          document.getElementById("status").innerHTML = "🔄 Adding Arc Testnet to MetaMask...";
           await window.ethereum.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: ARC_TESTNET_CHAIN_ID }]
+            method: 'wallet_addEthereumChain',
+            params: [ARC_TESTNET]
           });
         }
 
@@ -82,8 +89,6 @@
     async function getBalance() {
       if (!userAddress) return;
       document.getElementById("balance").innerHTML = `💰 USDC Balance: Checking...`;
-      
-      // شبیه‌سازی بالانس واقعی (بعداً از قرارداد USDC می‌گیریم)
       setTimeout(() => {
         document.getElementById("balance").innerHTML = `💰 USDC Balance: <strong>42.85</strong>`;
       }, 800);
@@ -96,7 +101,7 @@
       if (!intentText) return alert("Please enter intent!");
 
       try {
-        document.getElementById("status").innerHTML = "⏳ Please sign in MetaMask...";
+        document.getElementById("status").innerHTML = "⏳ Please sign the transaction in MetaMask...";
 
         const CONTRACT_ADDRESS = "0xEa86B2d60029bEE76F6858a1Ac7f85B2944004bF";
         const abi = [{
@@ -113,7 +118,6 @@
 
         const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
         
-        // Parse addresses and percentages
         const addresses = intentText.match(/0x[a-fA-F0-9]{40}/g) || [];
         const percentages = intentText.match(/(\d+)[٪%]/g) || [];
         const percentNumbers = percentages.map(p => parseInt(p));
@@ -166,7 +170,6 @@
       alert("History exported successfully!");
     }
 
-    // Initialize
     renderHistory();
   </script>
 </body>
