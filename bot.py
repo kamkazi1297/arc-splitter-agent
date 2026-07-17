@@ -14,21 +14,19 @@ USDC_ADDRESS = "0x3600000000000000000000000000000000000000"
 
 w3 = Web3(Web3.HTTPProvider(RPC_URL))
 
-user_wallets = {}      # user_id → wallet address
-user_pending = {}      # user_id → transaction data
+user_wallets = {}
+user_pending = {}
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "👋 Welcome to Arc USDC Splitter Bot!\n\n"
-        "Send your wallet address (0x...) to connect.\n"
-        "Then send your split intent."
+        "Send your wallet address (0x...) to connect."
     )
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text.strip()
     user_id = update.message.from_user.id
 
-    # اتصال والت
     if text.startswith("0x") and len(text) == 42:
         user_wallets[user_id] = text
         await update.message.reply_text(f"✅ Wallet Connected!\n{text}")
@@ -38,9 +36,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ First send your wallet address (0x...)")
         return
 
-    await update.message.reply_text("⏳ Parsing your intent...")
+    await update.message.reply_text("⏳ Parsing...")
 
-    # Parse ساده
     addresses = [word for word in text.split() if word.startswith("0x")]
     percentages = [int(word.replace("%","").replace("٪","")) for word in text.split() 
                    if word.replace("%","").replace("٪","").isdigit()]
@@ -49,12 +46,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ Could not parse intent.")
         return
 
-    total = 50  # پیش‌فرض
-    user_pending[user_id] = {
-        "addresses": addresses[:2],
-        "percentages": percentages[:2],
-        "total": total
-    }
+    total = 50
+    user_pending[user_id] = {"addresses": addresses[:2], "percentages": percentages[:2], "total": total}
 
     keyboard = [
         [InlineKeyboardButton("✅ Confirm & Send", callback_data="confirm")],
@@ -62,10 +55,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     ]
 
     await update.message.reply_text(
-        f"✅ Parsed!\n"
-        f"Amount: {total} USDC\n"
-        f"Split: {percentages[:2]}%\n"
-        f"Wallet: {user_wallets[user_id]}",
+        f"Parsed!\nAmount: {total} USDC\nSplit: {percentages[:2]}%",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
@@ -78,12 +68,12 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.edit_message_text("❌ Cancelled.")
         return
 
-    if user_id not in user_pending or user_id not in user_wallets:
+    data = user_pending.get(user_id)
+    if not data:
         await query.edit_message_text("Session expired.")
         return
 
-    data = user_pending[user_id]
-    await query.edit_message_text("🚀 Sending transaction on Arc Testnet...")
+    await query.edit_message_text("🚀 Sending transaction...")
 
     try:
         recipients = data["addresses"]
@@ -107,7 +97,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         nonce += 1
         time.sleep(3)
 
-        # Split Payment
+        # Split Payment - درست شده
         splitter_abi = [{
             "inputs": [
                 {"name": "recipients", "type": "address[]"},
@@ -132,9 +122,8 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
             tx_hash_str = "0x" + tx_hash_str
 
         await query.message.reply_text(
-            f"✅ Transaction Sent Successfully!\n\n"
-            f"Hash: {tx_hash_str}\n\n"
-            f"[🔗 View on Explorer](https://testnet.arcscan.app/tx/{tx_hash_str})"
+            f"✅ Success!\n\nHash: {tx_hash_str}\n\n"
+            f"[View on Explorer](https://testnet.arcscan.app/tx/{tx_hash_str})"
         )
 
     except Exception as e:
