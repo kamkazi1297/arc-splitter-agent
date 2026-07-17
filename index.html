@@ -15,7 +15,7 @@
       background: linear-gradient(135deg, #0a0a1f, #1a1a35); 
       color: #e0e0ff; 
       margin: 0; padding: 20px; 
-      transition: background 0.4s, color 0.4s;
+      transition: all 0.4s;
     }
     body.light {
       background: linear-gradient(135deg, #f0f0f5, #e0e0f0);
@@ -27,7 +27,6 @@
       padding: 40px; border-radius: 28px; 
       box-shadow: 0 25px 60px rgba(0,0,0,0.7); 
       border: 1px solid rgba(0,255,170,0.15);
-      transition: all 0.4s;
     }
     body.light .container {
       background: rgba(255,255,255,0.95);
@@ -41,7 +40,7 @@
     select, input { 
       padding: 14px; margin: 8px 0; 
       border-radius: 14px; background: #12122b; color: white; 
-      border: 1px solid #00ffaa; font-size: 16px; width: 100%;
+      border: 1px solid #00ffaa; font-size: 16px;
     }
     body.light select, body.light input {
       background: white; color: #222; border-color: #00aa77;
@@ -49,30 +48,45 @@
 
     .recipient-row {
       display: flex;
-      gap: 12px;
+      gap: 10px;
       align-items: center;
       margin-bottom: 12px;
       flex-wrap: wrap;
     }
-    .recipient-row input.address { flex: 2; min-width: 280px; }
+    .recipient-row input.address { flex: 2; min-width: 260px; }
+    
     .recipient-row .percent-container {
       position: relative;
-      flex: 1;
-      max-width: 180px;
+      flex: 0 0 120px;
     }
     .recipient-row .percent-container input {
-      padding-right: 30px;
+      width: 100%;
+      padding-right: 28px;
     }
     .recipient-row .percent-container::after {
       content: "%";
       position: absolute;
-      right: 16px;
+      right: 12px;
       top: 50%;
       transform: translateY(-50%);
       color: #00ffaa;
       font-weight: bold;
     }
-    body.light .recipient-row .percent-container::after { color: #00aa77; }
+
+    .delete-btn {
+      background: #ff3366;
+      color: white;
+      font-size: 18px;
+      font-weight: bold;
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
 
     button { 
       padding: 12px 24px; margin: 6px 4px; font-size: 16px; 
@@ -163,7 +177,12 @@
       <button onclick="loadTemplate(1)" style="background:#0099ff;color:white;">50% - 50%</button>
       <button onclick="loadTemplate(2)" style="background:#0099ff;color:white;">33-33-34%</button>
       <button onclick="loadTemplate(3)" style="background:#0099ff;color:white;">40% - 60%</button>
-      <button onclick="loadTemplate(4)" style="background:#0099ff;color:white;">Equal Split (4)</button>
+      <button onclick="equalSplit()" style="background:#0099ff;color:white;">Equal Split</button>
+    </div>
+
+    <div style="margin:10px 0;">
+      <strong>Number of Equal Recipients:</strong>
+      <input type="number" id="equalCount" value="4" min="2" max="10" style="width:80px; text-align:center;">
     </div>
 
     <h3>Recipients & Percentages</h3>
@@ -210,56 +229,6 @@
       document.body.classList.toggle('light', isLightMode);
     }
 
-    function renderHistory() {
-      const start = (currentPage - 1) * itemsPerPage;
-      const end = start + itemsPerPage;
-      const pageTransactions = transactions.slice(start, end);
-
-      let html = "";
-      pageTransactions.forEach(tx => {
-        html += `
-          <div class="history-item">
-            <small>${tx.time}</small><br>
-            ${tx.intent}<br>
-            <small><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View Tx</a></small>
-          </div>`;
-      });
-
-      document.getElementById("history").innerHTML = html || "<p>No transactions yet.</p>";
-      renderPagination();
-    }
-
-    function renderPagination() {
-      const totalPages = Math.ceil(transactions.length / itemsPerPage);
-      if (totalPages <= 1) {
-        document.getElementById("pagination").innerHTML = "";
-        return;
-      }
-
-      let html = `
-        <button onclick="prevPage()" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>
-        <span style="margin:0 15px;">Page ${currentPage} of ${totalPages}</span>
-        <button onclick="nextPage()" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>
-      `;
-
-      document.getElementById("pagination").innerHTML = html;
-    }
-
-    function nextPage() {
-      const totalPages = Math.ceil(transactions.length / itemsPerPage);
-      if (currentPage < totalPages) {
-        currentPage++;
-        renderHistory();
-      }
-    }
-
-    function prevPage() {
-      if (currentPage > 1) {
-        currentPage--;
-        renderHistory();
-      }
-    }
-
     window.addEventListener('load', async () => {
       renderHistory();
       addRecipient();
@@ -280,7 +249,6 @@
       }
     });
 
-    // === توابع دیگر (کامل) ===
     async function getCurrentToken() { return document.getElementById("tokenSelect").value; }
     async function getTokenSymbol() { return document.getElementById("tokenSelect").selectedOptions[0].text; }
 
@@ -317,7 +285,7 @@
         <div class="percent-container">
           <input type="number" class="percent" placeholder="%" step="0.01" oninput="updatePercentTotal()">
         </div>
-        <button onclick="this.parentElement.remove(); updatePercentTotal()" style="background:#ff3366;color:white;padding:10px 16px;">×</button>
+        <button class="delete-btn" onclick="this.parentElement.remove(); updatePercentTotal()">×</button>
       `;
       list.appendChild(row);
       updatePercentTotal();
@@ -337,8 +305,18 @@
       if (type === 1) { addRow("0x0000000000000000000000000000000000000001", 50); addRow("0x0000000000000000000000000000000000000002", 50); }
       else if (type === 2) { addRow("0x0000000000000000000000000000000000000001", 33); addRow("0x0000000000000000000000000000000000000002", 33); addRow("0x0000000000000000000000000000000000000003", 34); }
       else if (type === 3) { addRow("0x0000000000000000000000000000000000000001", 40); addRow("0x0000000000000000000000000000000000000002", 60); }
-      else if (type === 4) {
-        for (let i = 1; i <= 4; i++) addRow(`0x000000000000000000000000000000000000000${i}`, 25);
+    }
+
+    function equalSplit() {
+      const count = parseInt(document.getElementById("equalCount").value) || 4;
+      if (count < 2 || count > 10) return alert("Number must be between 2 and 10");
+
+      const list = document.getElementById("recipients-list");
+      list.innerHTML = "";
+      const percent = (100 / count).toFixed(2);
+
+      for (let i = 1; i <= count; i++) {
+        addRow(`0x000000000000000000000000000000000000000${i}`, parseFloat(percent));
       }
     }
 
@@ -351,7 +329,7 @@
         <div class="percent-container">
           <input type="number" class="percent" value="${percent}" oninput="updatePercentTotal()">
         </div>
-        <button onclick="this.parentElement.remove(); updatePercentTotal()" style="background:#ff3366;color:white;padding:10px 16px;">×</button>
+        <button class="delete-btn" onclick="this.parentElement.remove(); updatePercentTotal()">×</button>
       `;
       list.appendChild(row);
       updatePercentTotal();
@@ -478,11 +456,12 @@
         });
         localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
         
-        currentPage = 1; // بعد از تراکنش جدید به صفحه اول برگرد
+        currentPage = 1;
         renderHistory();
 
         statusEl.className = "success";
-        statusEl.innerHTML = `✅ Success!<br>Hash: ${tx.hash}<br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View on Explorer</a>`;
+        statusEl.innerHTML = `✅ Transaction Confirmed!<br>Hash: ${tx.hash}<br>
+          <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View on Explorer</a>`;
       } catch (error) {
         statusEl.className = "error";
         statusEl.innerHTML = `❌ Error: ${error.message.substring(0,180)}...`;
@@ -490,6 +469,55 @@
         isProcessing = false;
         btn.disabled = false;
         btn.textContent = "Send Split Transaction";
+      }
+    }
+
+    function renderHistory() {
+      const start = (currentPage - 1) * itemsPerPage;
+      const end = start + itemsPerPage;
+      const pageTransactions = transactions.slice(start, end);
+
+      let html = "";
+      pageTransactions.forEach(tx => {
+        html += `
+          <div class="history-item">
+            <small>${tx.time}</small><br>
+            ${tx.intent}<br>
+            <small><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View Tx</a></small>
+          </div>`;
+      });
+
+      document.getElementById("history").innerHTML = html || "<p>No transactions yet.</p>";
+      renderPagination();
+    }
+
+    function renderPagination() {
+      const totalPages = Math.ceil(transactions.length / itemsPerPage);
+      if (totalPages <= 1) {
+        document.getElementById("pagination").innerHTML = "";
+        return;
+      }
+
+      let html = `
+        <button onclick="prevPage()" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>
+        <span style="margin:0 15px;">Page ${currentPage} of ${totalPages}</span>
+        <button onclick="nextPage()" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>
+      `;
+      document.getElementById("pagination").innerHTML = html;
+    }
+
+    function nextPage() {
+      const totalPages = Math.ceil(transactions.length / itemsPerPage);
+      if (currentPage < totalPages) {
+        currentPage++;
+        renderHistory();
+      }
+    }
+
+    function prevPage() {
+      if (currentPage > 1) {
+        currentPage--;
+        renderHistory();
       }
     }
 
