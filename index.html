@@ -15,6 +15,7 @@
       background: linear-gradient(135deg, #0a0a1f, #1a1a35); 
       color: #e0e0ff; 
       margin: 0; padding: 20px; 
+      transition: all 0.4s;
     }
     body.light {
       background: linear-gradient(135deg, #f0f0f5, #e0e0f0);
@@ -27,64 +28,59 @@
       box-shadow: 0 25px 60px rgba(0,0,0,0.7); 
       border: 1px solid rgba(0,255,170,0.15);
     }
+    body.light .container {
+      background: rgba(255,255,255,0.95);
+      box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+      border-color: #ddd;
+    }
 
-    h1 { color: var(--primary); text-align: center; }
+    h1 { color: var(--primary); text-align: center; text-shadow: 0 0 20px rgba(0,255,170,0.4); }
+    body.light h1 { color: #00aa77; text-shadow: none; }
 
     select, input { 
-      padding: 14px; 
-      border-radius: 14px; 
-      background: #12122b; 
-      color: white; 
-      border: 1px solid #00ffaa; 
-      font-size: 16px;
+      padding: 14px; margin: 8px 0; 
+      border-radius: 14px; background: #12122b; color: white; 
+      border: 1px solid #00ffaa; font-size: 16px;
+    }
+    body.light select, body.light input {
+      background: white; color: #222; border-color: #00aa77;
     }
 
-    /* ==================== فیکس اصلی مشکل ==================== */
     .recipient-row {
       display: flex;
-      align-items: center;
       gap: 10px;
+      align-items: center;
       margin-bottom: 12px;
-      flex-wrap: nowrap;
-      width: 100%;
+      flex-wrap: wrap;
     }
-
-    .recipient-row input.address { 
-      flex: 1;
-      min-width: 180px;
-    }
-
+    .recipient-row input.address { flex: 2; min-width: 260px; }
+    
     .recipient-row .percent-container {
       position: relative;
-      flex: 0 0 135px;
-      min-width: 135px;
+      flex: 0 0 120px;
     }
-
     .recipient-row .percent-container input {
       width: 100%;
-      padding: 14px 35px 14px 14px;
-      text-align: right;
+      padding-right: 28px;
     }
-
     .recipient-row .percent-container::after {
       content: "%";
       position: absolute;
-      right: 14px;
+      right: 12px;
       top: 50%;
       transform: translateY(-50%);
       color: #00ffaa;
       font-weight: bold;
-      pointer-events: none;
     }
 
     .delete-btn {
-      width: 50px;
-      height: 50px;
       background: #ff3366;
       color: white;
-      border: none;
+      font-size: 18px;
+      font-weight: bold;
+      width: 42px;
+      height: 42px;
       border-radius: 50%;
-      font-size: 26px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -92,26 +88,10 @@
       cursor: pointer;
     }
 
-    /* موبایل */
-    @media (max-width: 650px) {
-      .recipient-row {
-        flex-wrap: wrap;
-      }
-      .recipient-row .percent-container {
-        flex: 0 0 120px;
-      }
-      .delete-btn {
-        margin-left: auto;
-      }
-    }
-
     button { 
-      padding: 12px 24px; 
-      margin: 6px 4px; 
-      font-size: 16px; 
-      border: none; 
-      border-radius: 12px; 
-      cursor: pointer; 
+      padding: 12px 24px; margin: 6px 4px; font-size: 16px; 
+      border: none; border-radius: 12px; cursor: pointer; 
+      transition: all 0.3s ease;
     }
     .connect-btn { background: var(--primary); color: #000; font-weight: bold; }
     .send-btn { background: var(--accent); color: white; font-weight: bold; }
@@ -141,6 +121,17 @@
       margin: 10px 0; 
       border-radius: 12px;
     }
+    body.light .history-item { background: #f8f8f8; color: #222; }
+
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 15px 0;
+      flex-wrap: wrap;
+    }
+
+    .footer { text-align: center; margin-top: 50px; color: #777; font-size: 14px; }
     #percent-total { font-weight: bold; margin: 15px 0; font-size: 17px; }
   </style>
 </head>
@@ -189,7 +180,7 @@
       <button onclick="equalSplit()" style="background:#0099ff;color:white;">Equal Split</button>
     </div>
 
-    <div style="margin:15px 0;">
+    <div style="margin:10px 0;">
       <strong>Number of Equal Recipients:</strong>
       <input type="number" id="equalCount" value="4" min="2" max="10" style="width:80px; text-align:center;">
     </div>
@@ -251,6 +242,7 @@
             const provider = new ethers.BrowserProvider(window.ethereum);
             signer = await provider.getSigner();
             document.getElementById("status").innerHTML = `Connected: ${userAddress.slice(0,8)}...${userAddress.slice(-6)}`;
+            document.getElementById("status").className = "success";
             updateBalance();
           }
         } catch (e) {}
@@ -363,9 +355,11 @@
           }
         }
         document.getElementById("status").innerHTML = `Connected: ${userAddress.slice(0,8)}...${userAddress.slice(-6)}`;
+        document.getElementById("status").className = "success";
         await updateBalance();
       } catch (e) {
         document.getElementById("status").innerHTML = `Error: ${e.message}`;
+        document.getElementById("status").className = "error";
       }
     }
 
@@ -395,6 +389,8 @@
       if (isProcessing) return;
 
       const totalAmount = parseFloat(document.getElementById("totalAmount").value);
+      const slippage = parseFloat(document.getElementById("slippage").value) || 0.5;
+
       if (!totalAmount || totalAmount <= 0) return alert("Enter a valid amount!");
 
       const tokenAddr = await getCurrentToken();
@@ -424,7 +420,7 @@
         if (!ethers.isAddress(addr)) return alert(`Invalid address: ${addr}`);
       }
 
-      let preview = `Send ${totalAmount} ${symbol}?\n\n`;
+      let preview = `Send ${totalAmount} ${symbol} with ${slippage}% slippage?\n\n`;
       addresses.forEach((addr, i) => preview += `• ${percentages[i]}% → ${addr.slice(0,8)}...\n`);
 
       if (!confirm(preview)) return;
@@ -441,7 +437,9 @@
         const decimals = await tokenContract.decimals();
         const totalWei = ethers.parseUnits(totalAmount.toString(), decimals);
 
+        statusEl.innerHTML = `<span class="spinner"></span> Estimating gas...`;
         const gasLimit = await estimateGas(addresses, percentages, totalWei);
+
         await (await tokenContract.approve(CONTRACT_ADDRESS, totalWei)).wait();
 
         statusEl.innerHTML = `<span class="spinner"></span> Sending transaction...`;
@@ -461,9 +459,11 @@
         currentPage = 1;
         renderHistory();
 
+        statusEl.className = "success";
         statusEl.innerHTML = `✅ Transaction Confirmed!<br>Hash: ${tx.hash}<br>
           <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View on Explorer</a>`;
       } catch (error) {
+        statusEl.className = "error";
         statusEl.innerHTML = `❌ Error: ${error.message.substring(0,180)}...`;
       } finally {
         isProcessing = false;
@@ -497,6 +497,7 @@
         document.getElementById("pagination").innerHTML = "";
         return;
       }
+
       let html = `
         <button onclick="prevPage()" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>
         <span style="margin:0 15px;">Page ${currentPage} of ${totalPages}</span>
@@ -507,11 +508,17 @@
 
     function nextPage() {
       const totalPages = Math.ceil(transactions.length / itemsPerPage);
-      if (currentPage < totalPages) { currentPage++; renderHistory(); }
+      if (currentPage < totalPages) {
+        currentPage++;
+        renderHistory();
+      }
     }
 
     function prevPage() {
-      if (currentPage > 1) { currentPage--; renderHistory(); }
+      if (currentPage > 1) {
+        currentPage--;
+        renderHistory();
+      }
     }
 
     function exportHistory() {
