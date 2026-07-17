@@ -54,7 +54,7 @@
 
     <div style="margin:15px 0;">
       <strong>Total Amount (USDC)</strong>
-      <input type="number" id="totalAmount" value="100" step="0.01">
+      <input type="number" id="totalAmount" value="4" step="0.01">
     </div>
 
     <h3>Quick Actions</h3>
@@ -66,7 +66,7 @@
     </div>
 
     <h3>Recipients & Percentages</h3>
-    <textarea id="intent" placeholder="40% to 0x123..., 60% to 0x456..."></textarea>
+    <textarea id="intent" placeholder="25% to 0x..., 25% to 0x..."></textarea>
     
     <button id="sendBtn" class="send-btn" onclick="sendSplit()">Send Real Transaction</button>
     <button onclick="exportHistory()">Export History</button>
@@ -76,8 +76,7 @@
     <div id="history"></div>
 
     <div class="footer">
-      <p><strong>Testnet Version Only</strong> — Demonstration tool for Arc Testnet.<br>
-      Do not use with real funds.</p>
+      <p><strong>Testnet Version Only</strong> — For Arc Testnet only.</p>
     </div>
   </div>
 
@@ -157,10 +156,10 @@
     }
 
     function loadEqualSplit() {
-      const total = parseFloat(document.getElementById("totalAmount").value) || 100;
-      const count = prompt("How many equal recipients? (2-10)", "4");
+      const total = parseFloat(document.getElementById("totalAmount").value) || 4;
+      const count = prompt("تعداد آدرس‌ها چندتا باشه؟ (2-10)", "8");
       const num = parseInt(count);
-      if (num < 2 || num > 10) return alert("Please enter between 2 and 10");
+      if (num < 2 || num > 10) return alert("عدد بین 2 تا 10 وارد کن");
 
       let text = "";
       const percent = (100 / num).toFixed(2);
@@ -168,12 +167,12 @@
         text += `${percent}% to 0x000000000000000000000000000000000000000${i}\n`;
       }
       document.getElementById("intent").value = text.trim();
-      alert(`Equal Split for ${num} recipients (${percent}%) is ready!`);
+      alert(`تقسیم مساوی برای ${num} آدرس (${percent}%) آماده شد!`);
     }
 
     function clearForm() {
       document.getElementById("intent").value = "";
-      document.getElementById("totalAmount").value = "100";
+      document.getElementById("totalAmount").value = "4";
     }
 
     async function sendSplit() {
@@ -181,56 +180,50 @@
       if (isProcessing) return;
 
       const totalAmount = parseFloat(document.getElementById("totalAmount").value);
-      if (!totalAmount || totalAmount <= 0) return alert("Enter a valid amount!");
+      if (!totalAmount || totalAmount <= 0) return alert("مبلغ معتبر وارد کن!");
 
       const intentText = document.getElementById("intent").value.trim();
-      if (!intentText) return alert("Enter recipients and percentages!");
+      if (!intentText) return alert("آدرس و درصد را وارد کن!");
 
       const addresses = intentText.match(/0x[a-fA-F0-9]{40}/gi) || [];
       let percMatches = intentText.match(/(\d+\.?\d*)\s*[٪%]/g) || [];
       const percentages = percMatches.map(p => parseFloat(p));
 
       if (addresses.length < 2 || percentages.length !== addresses.length) 
-        return alert("Number of addresses and percentages must match!");
+        return alert("تعداد آدرس‌ها و درصد‌ها باید برابر باشد!");
 
       const sum = percentages.reduce((a, b) => a + b, 0);
       if (Math.abs(sum - 100) > 0.1) 
-        return alert("Percentages must sum to 100%!");
+        return alert("درصد‌ها باید جمعاً ۱۰۰ بشن!");
 
-      // Preview
-      let preview = `Send ${totalAmount} USDC:\n\n`;
+      let preview = `ارسال ${totalAmount} USDC:\n\n`;
       for (let i = 0; i < addresses.length; i++) {
         const share = (totalAmount * percentages[i] / 100).toFixed(4);
         preview += `• ${percentages[i]}% → ${addresses[i].slice(0,8)}... = ${share} USDC\n`;
       }
-      if (!confirm(preview + "\nContinue?")) return;
+      if (!confirm(preview + "\nادامه می‌دی؟")) return;
 
       isProcessing = true;
       const btn = document.getElementById("sendBtn");
       const statusEl = document.getElementById("status");
       btn.disabled = true;
-      btn.textContent = "Processing...";
+      btn.textContent = "در حال ارسال...";
 
       try {
-        statusEl.innerHTML = "Checking balance...";
+        statusEl.innerHTML = "در حال Approve...";
         statusEl.className = "loading";
 
         const usdc = new ethers.Contract(USDC_ADDRESS, [
           "function approve(address,uint256) returns (bool)",
-          "function decimals() view returns (uint8)",
-          "function balanceOf(address) view returns (uint256)"
+          "function decimals() view returns (uint8)"
         ], signer);
 
         const decimals = await usdc.decimals();
         const totalWei = ethers.parseUnits(totalAmount.toString(), decimals);
 
-        const balance = await usdc.balanceOf(userAddress);
-        if (balance < totalWei) throw new Error("Insufficient USDC balance!");
-
-        statusEl.innerHTML = "Approving USDC...";
         await (await usdc.approve(CONTRACT_ADDRESS, ethers.MaxUint256)).wait();
 
-        statusEl.innerHTML = "Sending Split Transaction...";
+        statusEl.innerHTML = "در حال ارسال تراکنش...";
 
         const splitterAbi = [{
           "inputs": [
@@ -245,8 +238,6 @@
         }];
 
         const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
-        
-        // Convert percentages to integers (0-100)
         const intPercentages = percentages.map(p => Math.round(p));
 
         const tx = await contract.splitPayment(addresses, intPercentages, totalWei);
@@ -254,21 +245,22 @@
 
         transactions.unshift({
           hash: tx.hash,
-          intent: `${totalAmount} USDC to ${addresses.length} addresses`,
+          intent: `${totalAmount} USDC → ${addresses.length} آدرس`,
           time: new Date().toLocaleString()
         });
         localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
         renderHistory();
 
         statusEl.className = "success";
-        statusEl.innerHTML = `✅ Transaction Confirmed!<br>Hash: ${tx.hash}<br>
-          <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" style="color:#00ffaa;">View on Explorer</a>`;
+        statusEl.innerHTML = `✅ تراکنش با موفقیت انجام شد!<br>Hash: ${tx.hash}<br>
+          <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" style="color:#00ffaa;">مشاهده در اکسپلورر</a>`;
 
       } catch (error) {
         console.error(error);
         statusEl.className = "error";
-        let msg = error.reason || error.message || "Transaction failed";
-        statusEl.innerHTML = `Error: ${msg.substring(0,200)}`;
+        let msg = error.message || "خطای ناشناخته";
+        if (msg.includes("missing revert data")) msg = "خطا در تعامل با قرارداد. موجودی USDC یا شبکه را چک کن.";
+        statusEl.innerHTML = `خطا: ${msg.substring(0,180)}`;
       } finally {
         isProcessing = false;
         btn.disabled = false;
