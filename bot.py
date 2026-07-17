@@ -14,15 +14,14 @@ USDC_ADDRESS = "0x3600000000000000000000000000000000000000"
 
 w3 = Web3(Web3.HTTPProvider(RPC_URL))
 
-user_wallets = {}      # user_id → wallet address (متصل شده)
-user_pending = {}      # user_id → transaction data (در انتظار تأیید)
+user_wallets = {}      # user_id → wallet address
+user_pending = {}      # user_id → transaction data
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "👋 Welcome to Arc USDC Splitter Bot!\n\n"
         "Send your wallet address (0x...) to connect.\n"
-        "Then send split intents like:\n"
-        "Send 50 USDC, 40% to 0x123..., 60% to 0x456..."
+        "Then send your split intent."
     )
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -39,16 +38,15 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("❌ First send your wallet address (0x...)")
         return
 
-    # Parse intent
-    await update.message.reply_text("⏳ Parsing intent...")
+    await update.message.reply_text("⏳ Parsing your intent...")
 
-    # ساده parse
+    # Parse ساده
     addresses = [word for word in text.split() if word.startswith("0x")]
     percentages = [int(word.replace("%","").replace("٪","")) for word in text.split() 
                    if word.replace("%","").replace("٪","").isdigit()]
 
     if len(addresses) < 2 or len(percentages) < 2:
-        await update.message.reply_text("❌ Could not parse your intent.")
+        await update.message.reply_text("❌ Could not parse intent.")
         return
 
     total = 50  # پیش‌فرض
@@ -67,7 +65,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"✅ Parsed!\n"
         f"Amount: {total} USDC\n"
         f"Split: {percentages[:2]}%\n"
-        f"From: {user_wallets[user_id]}",
+        f"Wallet: {user_wallets[user_id]}",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
@@ -90,9 +88,9 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     try:
         recipients = data["addresses"]
         percentages = data["percentages"]
-        total = data["total"] * 10**6
+        total = int(data["total"]) * 10**6
 
-        account = w3.eth.account.from_key(os.getenv("PRIVATE_KEY"))  # فعلاً از PRIVATE_KEY سرور استفاده می‌کنیم
+        account = w3.eth.account.from_key(os.getenv("PRIVATE_KEY"))
         addr = account.address
 
         nonce = w3.eth.get_transaction_count(addr, 'pending')
@@ -105,15 +103,24 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         })
         signed = w3.eth.account.sign_transaction(tx_approve, os.getenv("PRIVATE_KEY"))
         w3.eth.send_raw_transaction(signed.rawTransaction)
+
         nonce += 1
         time.sleep(3)
 
-        # Split
+        # Split Payment
         splitter_abi = [{
-            "inputs": [{"name": "recipients", "type": "address[]"}, {"name": "percentages", "type": "uint256[]"}, {"name": "totalAmount", "type": "uint256"}],
-            "name": "splitPayment", "outputs": [], "stateMutability": "nonpayable", "type": "function"
+            "inputs": [
+                {"name": "recipients", "type": "address[]"},
+                {"name": "percentages", "type": "uint256[]"},
+                {"name": "totalAmount", "type": "uint256"}
+            ],
+            "name": "splitPayment",
+            "outputs": [],
+            "stateMutability": "nonpayable",
+            "type": "function"
         }]
         contract = w3.eth.contract(address=CONTRACT_ADDRESS, abi=splitter_abi)
+        
         tx = contract.functions.splitPayment(recipients, percentages, total).build_transaction({
             'from': addr, 'nonce': nonce, 'gas': 800000, 'gasPrice': w3.eth.gas_price
         })
@@ -127,7 +134,7 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.reply_text(
             f"✅ Transaction Sent Successfully!\n\n"
             f"Hash: {tx_hash_str}\n\n"
-            f"[View on Explorer](https://testnet.arcscan.app/tx/{tx_hash_str})"
+            f"[🔗 View on Explorer](https://testnet.arcscan.app/tx/{tx_hash_str})"
         )
 
     except Exception as e:
