@@ -1,43 +1,54 @@
-# 🪓 Arc USDC Splitter - Pro
+# Arc USDC Splitter - Pro
 
-**A clean, real-world USDC splitter tool on Arc Testnet with MetaMask integration.**
+A clean and professional USDC splitter tool for **Arc Testnet**.
 
-### ✨ Features
-- Real MetaMask connection (no private key needed)
-- Natural language intent parsing
-- Real `splitPayment` transaction with Approve
-- Automatic switch to Arc Testnet
-- Transaction history with direct explorer links
+Live Demo: **[https://kamkazi1297.github.io/arc-splitter-agent/](https://kamkazi1297.github.io/arc-splitter-agent/)**
+
+## Demo
+
+<video src="demo.mp4" controls width="100%" poster="https://via.placeholder.com/800x450?text=Arc+USDC+Splitter+Demo">
+  Your browser does not support the video tag.
+</video>
+
+## ✨ Features
+
+- One-click connection to MetaMask
+- Automatic Arc Testnet detection, add & switch
+- Real-time USDC balance
+- Smart natural language intent parser
+- Approve + Split transaction
+- Transaction history (saved locally)
 - Export history as JSON
-- Disconnect wallet
-- Clean & modern UI
 
-### 🚀 Live Demo
-[Open Arc USDC Splitter](https://kamkazi1297.github.io/arc-splitter-agent/)
+## 🚀 How to Use
 
-### How to Use
-1. Open the [Web App](https://kamkazi1297.github.io/arc-splitter-agent/)
-2. Click **Connect MetaMask**
-3. Get test USDC from [Circle Faucet](https://faucet.circle.com/)
-4. Enter your split intent
-5. Click **Send Real Transaction** and sign in MetaMask
+1. Go to the live site: **[https://kamkazi1297.github.io/arc-splitter-agent/](https://kamkazi1297.github.io/arc-splitter-agent/)**
+2. Click **"Connect MetaMask"**
+3. The app will automatically add/switch to Arc Testnet
+4. Enter your split intent in the box
+5. Click **"Send Real Transaction"**
 
-**Example Intent:**
+### Example Intent:
 
-Send 100 USDC, 40% to 0x1234567890123456789012345678901234567890, 60% to 0x0987654321098765432109876543210987654321
+Send 100 USDC, 40% to 0xYourAddress1..., 60% to 0xYourAddress2...
 
-### Tech Stack
-- Frontend: HTML + ethers.js
-- Blockchain: Arc Testnet + USDC
-- Smart Contract: Splitter Contract
-- Hosting: GitHub Pages
+## 🛠 Tech Stack
 
-### Goal
-Built as a practical tool for the Arc community and submitted for the **Arc Builder / Architect Program**.
+- HTML + CSS + JavaScript
+- ethers.js v6
+- MetaMask (EIP-1193)
+
+## 📌 Contract Addresses (Arc Testnet)
+
+- **USDC**: `0x3600000000000000000000000000000000000000`
+- **Splitter Contract**: `0xEa86B2d60029bEE76F6858a1Ac7f85B2944004bF`
 
 ---
 
-**Made with ❤️ for Arc Community**
+**Made for Arc Testnet**  
+Demo Video: `demo.mp4`
 
-Star this repo if you find it useful ⭐
+---
+
+**Disclaimer**: This project is for testing on Arc Testnet only.
 
