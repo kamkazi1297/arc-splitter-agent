@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,11 +7,10 @@
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <style>
     body { 
-      font-family: 'Segoe UI', Tahoma, sans-serif; 
+      font-family: 'Segoe UI', sans-serif; 
       background: linear-gradient(135deg, #0a0a1f, #1a1a35); 
       color: #e0e0ff; 
       margin: 0; padding: 20px; 
-      direction: rtl;
     }
     .container { 
       max-width: 780px; margin: 0 auto; 
@@ -43,19 +42,19 @@
     <h1>Arc USDC Splitter</h1>
     <p><strong>Professional • Arc Testnet</strong></p>
 
-    <button class="connect-btn" onclick="connectWallet()">اتصال به MetaMask</button>
-    <button onclick="disconnectWallet()">قطع اتصال</button>
+    <button class="connect-btn" onclick="connectWallet()">Connect MetaMask</button>
+    <button onclick="disconnectWallet()">Disconnect</button>
 
-    <p id="status">آماده</p>
+    <p id="status">Ready</p>
     <div id="balance" class="balance"></div>
 
-    <h3>ورود Intent تقسیم</h3>
-    <textarea id="intent" placeholder="مثال: Send 100 USDC, 40% to 0x123..., 60% to 0x456..."></textarea>
+    <h3>Enter Split Intent</h3>
+    <textarea id="intent" placeholder="Example: Send 100 USDC, 40% to 0x123..., 60% to 0x456..."></textarea>
     
-    <button class="send-btn" onclick="sendSplit()">ارسال تراکنش واقعی</button>
-    <button class="export-btn" onclick="exportHistory()">خروجی تاریخچه</button>
+    <button class="send-btn" onclick="sendSplit()">Send Real Transaction</button>
+    <button class="export-btn" onclick="exportHistory()">Export History</button>
 
-    <h3>تراکنش‌های اخیر</h3>
+    <h3>Recent Transactions</h3>
     <div id="history"></div>
   </div>
 
@@ -69,14 +68,14 @@
     const CHAIN_ID = 5042002; // Arc Testnet
 
     async function connectWallet() {
-      if (!window.ethereum) return alert("MetaMask پیدا نشد!");
+      if (!window.ethereum) return alert("MetaMask not found!");
 
       try {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const network = await provider.getNetwork();
         
         if (Number(network.chainId) !== CHAIN_ID) {
-          alert("لطفاً به Arc Testnet سوئیچ کنید (Chain ID: 5042002)");
+          alert("Please switch to Arc Testnet (Chain ID: 5042002)");
           return;
         }
 
@@ -84,13 +83,13 @@
         signer = await provider.getSigner();
         userAddress = await signer.getAddress();
 
-        document.getElementById("status").innerHTML = `متصل شد: ${userAddress.slice(0,8)}...${userAddress.slice(-6)}`;
+        document.getElementById("status").innerHTML = `Connected: ${userAddress.slice(0,8)}...${userAddress.slice(-6)}`;
         document.getElementById("status").className = "success";
         
         await getRealBalance();
       } catch (e) {
         console.error(e);
-        document.getElementById("status").innerHTML = `خطا: ${e.message}`;
+        document.getElementById("status").innerHTML = `Error: ${e.message}`;
         document.getElementById("status").className = "error";
       }
     }
@@ -98,17 +97,20 @@
     function disconnectWallet() {
       signer = null;
       userAddress = null;
-      document.getElementById("status").innerHTML = "اتصال قطع شد";
+      document.getElementById("status").innerHTML = "Wallet Disconnected";
       document.getElementById("balance").innerHTML = "";
     }
 
     async function getRealBalance() {
       if (!signer) return;
       const balanceEl = document.getElementById("balance");
-      balanceEl.innerHTML = `USDC Balance: در حال چک...`;
+      balanceEl.innerHTML = `USDC Balance: Checking...`;
 
       try {
-        const usdcAbi = ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"];
+        const usdcAbi = [
+          "function balanceOf(address) view returns (uint256)",
+          "function decimals() view returns (uint8)"
+        ];
         const usdc = new ethers.Contract(USDC_ADDRESS, usdcAbi, signer);
         
         const [bal, decimals] = await Promise.all([
@@ -119,17 +121,17 @@
         const formatted = ethers.formatUnits(bal, decimals);
         balanceEl.innerHTML = `USDC Balance: <strong>${parseFloat(formatted).toFixed(4)}</strong>`;
       } catch (e) {
-        balanceEl.innerHTML = `USDC Balance: خطا در دریافت`;
+        balanceEl.innerHTML = `USDC Balance: Error fetching`;
       }
     }
 
     async function sendSplit() {
-      if (!signer) return alert("ابتدا به والت متصل شوید!");
+      if (!signer) return alert("Please connect your wallet first!");
 
       const intentText = document.getElementById("intent").value.trim();
-      if (!intentText) return alert("لطفاً intent وارد کنید!");
+      if (!intentText) return alert("Please enter an intent!");
 
-      // Parsing بهتر
+      // Improved parsing
       const addresses = intentText.match(/0x[a-fA-F0-9]{40}/g) || [];
       const percentMatches = intentText.match(/(\d+)[٪%]/g) || [];
       const percentages = percentMatches.map(p => parseInt(p));
@@ -137,14 +139,14 @@
       const totalAmount = amountMatch ? parseInt(amountMatch[1]) : 10;
 
       if (addresses.length < 2 || percentages.length < 2) 
-        return alert("آدرس‌ها و درصد‌ها به درستی تشخیص داده نشد!");
+        return alert("Could not detect addresses and percentages correctly!");
 
       if (percentages.reduce((a, b) => a + b, 0) !== 100) 
-        return alert("مجموع درصد‌ها باید دقیقاً ۱۰۰٪ باشد!");
+        return alert("Percentages must sum exactly to 100%!");
 
       try {
         const statusEl = document.getElementById("status");
-        statusEl.innerHTML = "در حال Approve USDC...";
+        statusEl.innerHTML = "Approving USDC...";
         statusEl.className = "";
 
         const usdcAbi = [
@@ -159,9 +161,9 @@
         const approveTx = await usdc.approve(CONTRACT_ADDRESS, totalWei * 2n);
         await approveTx.wait();
 
-        statusEl.innerHTML = "در حال ارسال تراکنش تقسیم...";
+        statusEl.innerHTML = "Sending Split Transaction... Please sign";
 
-        // Split
+        // Split Payment
         const splitterAbi = [{
           "inputs": [
             {"name": "recipients", "type": "address[]"},
@@ -178,28 +180,28 @@
         const tx = await contract.splitPayment(addresses, percentages, totalWei);
         await tx.wait();
 
-        // ذخیره تاریخچه
+        // Save to history
         transactions.unshift({
           hash: tx.hash,
           intent: intentText.substring(0, 100),
-          time: new Date().toLocaleString('fa-IR')
+          time: new Date().toLocaleString()
         });
         localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
         renderHistory();
 
         statusEl.className = "success";
         statusEl.innerHTML = `
-          ✅ تراکنش با موفقیت ثبت شد!<br><br>
+          ✅ Transaction Confirmed!<br><br>
           Hash: ${tx.hash}<br><br>
           <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" style="color:#00ffaa;">
-            مشاهده در Arc Explorer
+            View on Arc Explorer
           </a>
         `;
 
       } catch (error) {
         console.error(error);
         document.getElementById("status").className = "error";
-        document.getElementById("status").innerHTML = `خطا: ${error.message.substring(0, 120)}...`;
+        document.getElementById("status").innerHTML = `Error: ${error.message.substring(0, 120)}...`;
       }
     }
 
@@ -210,23 +212,24 @@
           <div style="background:rgba(255,255,255,0.05); padding:14px; margin:10px 0; border-radius:12px;">
             <small>${tx.time}</small><br>
             ${tx.intent}<br>
-            <small><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">مشاهده تراکنش</a></small>
+            <small><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View Tx</a></small>
           </div>`;
       });
-      document.getElementById("history").innerHTML = html || "<p>هنوز تراکنشی ثبت نشده.</p>";
+      document.getElementById("history").innerHTML = html || "<p>No transactions yet.</p>";
     }
 
     function exportHistory() {
-      if (transactions.length === 0) return alert("تاریخچه خالی است!");
+      if (transactions.length === 0) return alert("No history to export!");
       const dataStr = JSON.stringify(transactions, null, 2);
       const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
       const link = document.createElement('a');
       link.href = dataUri;
       link.download = `arc-splitter-history-${new Date().toISOString().slice(0,10)}.json`;
       link.click();
+      alert("History exported successfully!");
     }
 
-    // بارگذاری اولیه
+    // Initial render
     renderHistory();
   </script>
 </body>
