@@ -58,18 +58,14 @@
 
       const { addresses, percentages, total } = parseIntent(intentText);
 
-      if (addresses.length < 2 || percentages.length < 2) return alert("Could not parse intent!");
+      if (addresses.length < 2 || percentages.length < 2) return alert("Could not parse addresses or percentages!");
       if (percentages.reduce((a,b) => a+b, 0) !== 100) return alert("Percentages must sum to 100%!");
 
       try {
-        document.getElementById("status").innerHTML = "⏳ Sending transaction...";
+        document.getElementById("status").innerHTML = "⏳ Sending...";
 
         const abi = [{
-          "inputs": [
-            {"name": "recipients", "type": "address[]"},
-            {"name": "percentages", "type": "uint256[]"},
-            {"name": "totalAmount", "type": "uint256"}
-          ],
+          "inputs": [{"name": "recipients", "type": "address[]"}, {"name": "percentages", "type": "uint256[]"}, {"name": "totalAmount", "type": "uint256"}],
           "name": "splitPayment",
           "outputs": [],
           "stateMutability": "nonpayable",
@@ -82,7 +78,8 @@
         const tx = await contract.splitPayment(addresses, percentages, totalWei);
         await tx.wait();
 
-        document.getElementById("status").innerHTML = `✅ Success!<br>Hash: ${tx.hash}<br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View on Explorer</a>`;
+        const link = `https://testnet.arcscan.app/tx/${tx.hash}`;
+        document.getElementById("status").innerHTML = `✅ Success!<br><a href="${link}" target="_blank">View on Explorer</a>`;
 
       } catch (error) {
         document.getElementById("status").innerHTML = `❌ Error: ${error.message.substring(0,100)}...`;
