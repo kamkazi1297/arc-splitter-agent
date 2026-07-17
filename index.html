@@ -48,21 +48,29 @@
 
     .recipient-row {
       display: flex;
-      gap: 10px;
+      gap: 12px;
       align-items: center;
       margin-bottom: 12px;
       flex-wrap: wrap;
     }
-    .recipient-row input.address { flex: 2; min-width: 260px; }
+
+    .recipient-row input.address { 
+      flex: 1; 
+      min-width: 260px; 
+    }
 
     .recipient-row .percent-container {
       position: relative;
-      flex: 0 0 80px;   /* تغییر اعمال شده */
+      flex: 0 0 95px;
+      min-width: 95px;
     }
+
     .recipient-row .percent-container input {
       width: 100%;
-      padding-right: 28px;
+      padding: 14px 28px 14px 14px;
+      text-align: right;
     }
+
     .recipient-row .percent-container::after {
       content: "%";
       position: absolute;
@@ -71,6 +79,7 @@
       transform: translateY(-50%);
       color: #00ffaa;
       font-weight: bold;
+      pointer-events: none;
     }
 
     .delete-btn {
@@ -86,6 +95,7 @@
       justify-content: center;
       flex-shrink: 0;
       cursor: pointer;
+      margin-left: 4px;
     }
 
     button { 
@@ -132,7 +142,7 @@
     }
 
     .footer { text-align: center; margin-top: 50px; color: #777; font-size: 14px; } 
-    #percent-total { font-weight: bold; margin: 15px 0; font-size: 17px; }  
+    #percent-total { font-weight: bold; margin: 15px 0; font-size: 17px; }
   </style>
 </head>
 <body>
@@ -242,6 +252,7 @@
             const provider = new ethers.BrowserProvider(window.ethereum);
             signer = await provider.getSigner();
             document.getElementById("status").innerHTML = `Connected: ${userAddress.slice(0,8)}...${userAddress.slice(-6)}`;
+            document.getElementById("status").className = "success";
             updateBalance();
           }
         } catch (e) {}
@@ -354,9 +365,11 @@
           }
         }
         document.getElementById("status").innerHTML = `Connected: ${userAddress.slice(0,8)}...${userAddress.slice(-6)}`;
+        document.getElementById("status").className = "success";
         await updateBalance();
       } catch (e) {
         document.getElementById("status").innerHTML = `Error: ${e.message}`;
+        document.getElementById("status").className = "error";
       }
     }
 
