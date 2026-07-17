@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Arc Splitter Pro - Safe & Open Source Token Splitter for Arc Testnet">
-  <meta name="keywords" content="arc testnet, token splitter, usdc, multisend">
   <title>Arc Splitter Pro - Arc Testnet</title>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   
@@ -43,7 +42,7 @@
       border: 1px solid #ff3366;
       padding: 16px 20px;
       border-radius: 12px;
-      margin: 30px 0 20px 0;
+      margin: 25px 0;
       font-size: 15.5px;
       text-align: center;
     }
@@ -119,7 +118,7 @@
     .send-btn:disabled { background: #555; cursor: not-allowed; opacity: 0.7; }
 
     #status { margin: 20px 0; padding: 20px; border-radius: 16px; min-height: 160px; line-height: 1.6; }
-    .footer { text-align: center; margin-top: 20px; color: #777; font-size: 14px; }
+    .footer { text-align: center; margin-top: 20px; color: #aaa; font-size: 14px; }
     .source-link { color: var(--primary); text-decoration: underline; font-weight: bold; }
   </style>
 </head>
@@ -133,11 +132,6 @@
     </div>
 
     <p><strong>Arc Testnet • Open Source • Multi Token Splitter</strong></p>
-    
-    <!-- لینک گیتهاب بالای صفحه -->
-    <a href="https://github.com/kamkazi1297/arc-splitter-agent" target="_blank" class="source-link">
-      View Source Code on GitHub →
-    </a>
 
     <button class="connect-btn" onclick="connectWallet()">Connect MetaMask</button>
     <button onclick="disconnectWallet()">Disconnect</button>
@@ -189,19 +183,25 @@
     <div id="history"></div>
     <div id="pagination"></div>
 
-    <!-- هشدار در آخر صفحه -->
-    <div class="warning-box">
-      ⚠️ <strong>Testnet Only</strong> — This tool works only on Arc Testnet.<br>
-      Do not use real funds. Use at your own risk.
+    <!-- هر دو در آخر صفحه -->
+    <div style="margin-top: 40px;">
+      <a href="https://github.com/kamkazi1297/arc-splitter-agent" target="_blank" class="source-link">
+        View Source Code on GitHub →
+      </a>
+
+      <div class="warning-box">
+        ⚠️ <strong>Testnet Only</strong> — This tool works only on Arc Testnet.<br>
+        Do not use real funds. Use at your own risk.
+      </div>
     </div>
 
     <div class="footer">
-      Open Source Tool • Made for Arc Testnet
+      Open Source Tool for Arc Testnet
     </div>
   </div>
 
   <script>
-    // === تمام اسکریپت (کامل) ===
+    // (اسکریپت کامل - همان کد قبلی)
     let signer = null;
     let userAddress = null;
     let transactions = JSON.parse(localStorage.getItem('arcTxHistory') || '[]');
@@ -462,8 +462,13 @@
         const tx = await contract.splitPayment(addresses, percentages.map(p => Math.floor(p * 100)), totalWei, { gasLimit });
         await tx.wait();
 
-        transactions.unshift({ hash: tx.hash, intent: `${totalAmount} ${symbol} → ${addresses.length} recipients`, time: new Date().toLocaleString() });
+        transactions.unshift({
+          hash: tx.hash,
+          intent: `${totalAmount} ${symbol} → ${addresses.length} recipients`,
+          time: new Date().toLocaleString()
+        });
         localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
+        
         currentPage = 1;
         renderHistory();
 
