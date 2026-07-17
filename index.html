@@ -45,9 +45,9 @@
     let transactions = JSON.parse(localStorage.getItem('arcTxHistory') || '[]');
 
     const ARC_TESTNET = {
-      chainId: "0x27",
+      chainId: "0x13b2",
       chainName: "Arc Testnet",
-      nativeCurrency: { name: "Arc", symbol: "ARC", decimals: 18 },
+      nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 6 },
       rpcUrls: ["https://rpc.testnet.arc.network"],
       blockExplorerUrls: ["https://testnet.arcscan.app"]
     };
@@ -56,11 +56,12 @@
       if (!window.ethereum) return alert("MetaMask not found!");
 
       try {
-        // Check and add Arc Testnet
+        document.getElementById("status").innerHTML = "🔄 Checking network...";
+
         const currentChain = await window.ethereum.request({ method: 'eth_chainId' });
-        
-        if (currentChain !== ARC_TESTNET.chainId) {
-          document.getElementById("status").innerHTML = "🔄 Adding Arc Testnet to MetaMask...";
+
+        if (currentChain.toLowerCase() !== ARC_TESTNET.chainId.toLowerCase()) {
+          document.getElementById("status").innerHTML = "🔄 Adding/Switching to Arc Testnet...";
           await window.ethereum.request({
             method: 'wallet_addEthereumChain',
             params: [ARC_TESTNET]
@@ -101,7 +102,7 @@
       if (!intentText) return alert("Please enter intent!");
 
       try {
-        document.getElementById("status").innerHTML = "⏳ Please sign the transaction in MetaMask...";
+        document.getElementById("status").innerHTML = "⏳ Please sign in MetaMask...";
 
         const CONTRACT_ADDRESS = "0xEa86B2d60029bEE76F6858a1Ac7f85B2944004bF";
         const abi = [{
