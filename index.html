@@ -47,11 +47,7 @@
     const ARC_TESTNET = {
       chainId: "0x13b2",
       chainName: "Arc Testnet",
-      nativeCurrency: { 
-        name: "ARC", 
-        symbol: "ARC", 
-        decimals: 18 
-      },
+      nativeCurrency: { name: "ARC", symbol: "ARC", decimals: 18 },
       rpcUrls: ["https://rpc.testnet.arc.network"],
       blockExplorerUrls: ["https://testnet.arcscan.app"]
     };
@@ -60,15 +56,28 @@
       if (!window.ethereum) return alert("MetaMask not found!");
 
       try {
-        document.getElementById("status").innerHTML = "🔄 Adding Arc Testnet...";
+        document.getElementById("status").innerHTML = "🔄 Checking network...";
 
         const currentChain = await window.ethereum.request({ method: 'eth_chainId' });
 
         if (currentChain.toLowerCase() !== ARC_TESTNET.chainId.toLowerCase()) {
-          await window.ethereum.request({
-            method: 'wallet_addEthereumChain',
-            params: [ARC_TESTNET]
-          });
+          document.getElementById("status").innerHTML = "🔄 Switching to Arc Testnet...";
+          try {
+            await window.ethereum.request({
+              method: 'wallet_switchEthereumChain',
+              params: [{ chainId: ARC_TESTNET.chainId }]
+            });
+          } catch (switchError) {
+            // If network not added, add it
+            if (switchError.code === 4902) {
+              await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [ARC_TESTNET]
+              });
+            } else {
+              throw switchError;
+            }
+          }
         }
 
         const provider = new ethers.BrowserProvider(window.ethereum);
