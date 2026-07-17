@@ -6,13 +6,12 @@
   <title>Arc USDC Splitter</title>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #0f0f23, #1a1a2e); color: white; text-align: center; padding: 30px; }
-    .container { max-width: 720px; margin: 0 auto; background: rgba(255,255,255,0.06); padding: 35px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-    button { padding: 14px 30px; font-size: 17px; margin: 10px; border-radius: 12px; cursor: pointer; }
-    .connect-btn { background: #00ff9d; color: black; font-weight: bold; }
-    .link-btn { background: #3498db; color: white; font-weight: bold; }
-    .send-btn { background: #ff2d55; color: white; font-weight: bold; }
-    input, textarea { width: 85%; padding: 12px; margin: 10px 0; border-radius: 10px; background: #1e1e2e; color: white; }
+    body { font-family: Arial, sans-serif; background: #0a0a0a; color: white; text-align: center; padding: 20px; }
+    .container { max-width: 700px; margin: 0 auto; background: #1a1a2e; padding: 30px; border-radius: 16px; }
+    button { padding: 14px 28px; margin: 10px; font-size: 17px; border-radius: 12px; cursor: pointer; }
+    .connect { background: #00ff9d; color: black; font-weight: bold; }
+    .send { background: #ff2d55; color: white; font-weight: bold; }
+    textarea { width: 90%; height: 140px; padding: 15px; background: #16213e; color: white; border-radius: 12px; margin: 15px 0; }
   </style>
 </head>
 <body>
@@ -20,47 +19,59 @@
     <h1>🪓 Arc USDC Splitter</h1>
     <p><strong>Arc Testnet</strong></p>
 
-    <button class="connect-btn" onclick="connectWallet()">🔗 Connect MetaMask</button>
+    <button class="connect" onclick="connectWallet()">🔗 Connect MetaMask</button>
     <p id="status"></p>
 
-    <h3>Link Telegram Account</h3>
-    <input type="text" id="telegram_id" placeholder="@username or Telegram ID" />
-    <button class="link-btn" onclick="linkTelegram()">🔗 Link to Telegram</button>
-
     <h3>Enter Split Intent</h3>
-    <textarea id="intent" placeholder="Send 100 USDC, 50% to 0x123..., 50% to 0x456..."></textarea><br>
+    <textarea id="intent" placeholder="Send 50 USDC, 40% to 0x..., 60% to 0x..."></textarea><br>
     
-    <button class="send-btn" onclick="sendSplit()">🚀 Send Split Transaction</button>
+    <button class="send" onclick="sendSplit()">🚀 Send Split Transaction</button>
   </div>
 
   <script>
     let signer = null;
-    let userAddress = null;
+    const CONTRACT_ADDRESS = "0xEa86B2d60029bEE76F6858a1Ac7f85B2944004bF";
 
     async function connectWallet() {
       if (!window.ethereum) return alert("MetaMask not found!");
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      await provider.send("eth_requestAccounts", []);
-      signer = await provider.getSigner();
-      userAddress = await signer.getAddress();
-      document.getElementById("status").innerHTML = `✅ Wallet Connected: ${userAddress.substring(0,8)}...`;
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        signer = await provider.getSigner();
+        const addr = await signer.getAddress();
+        document.getElementById("status").innerHTML = `✅ Connected: ${addr}`;
+      } catch (e) { document.getElementById("status").innerHTML = "❌ Failed"; }
     }
 
-    async function linkTelegram() {
-      if (!userAddress) return alert("First connect MetaMask!");
-      const tg = document.getElementById("telegram_id").value.trim();
-      if (!tg) return alert("Enter your Telegram ID!");
-
-      alert(`✅ Link request sent to your Telegram bot!\n\nPlease go to the bot and confirm the link.`);
-      console.log("Link Request:", {wallet: userAddress, telegram: tg});
+    function parseIntent(text) {
+      const addresses = text.match(/0x[a-fA-F0-9]{40}/g) || [];
+      const percents = text.match(/(\d+)[٪%]/g) || [];
+      const percentages = percents.map(p => parseInt(p));
+      const amount = text.match(/(\d+)\s*USDC/i);
+      const total = amount ? parseInt(amount[1]) : 10;
+      return {addresses, percentages, total};
     }
 
     async function sendSplit() {
       if (!signer) return alert("Connect MetaMask first!");
-      const intentText = document.getElementById("intent").value.trim();
-      if (!intentText) return alert("Enter your intent!");
+      const text = document.getElementById("intent").value.trim();
+      if (!text) return alert("Enter intent!");
 
-      alert("✅ Intent received. Transaction will be processed.");
+      const {addresses, percentages, total} = parseIntent(text);
+      if (addresses.length === 0 || percentages.length === 0 || percentages.reduce((a,b)=>a+b,0) !== 100) {
+        return alert("Invalid intent!");
+      }
+
+      try {
+        document.getElementById("status").innerHTML = "⏳ Sending...";
+        const abi = [{"inputs":[{"name":"recipients","type":"address[]"},{"name":"percentages","type":"uint256[]"},{"name":"totalAmount","type":"uint256"}],"name":"splitPayment","outputs":[],"stateMutability":"nonpayable","type":"function"}];
+        const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
+        const tx = await contract.splitPayment(addresses, percentages, BigInt(total)*BigInt(1e6));
+        await tx.wait();
+        document.getElementById("status").innerHTML = `✅ Success! <br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View Transaction</a>`;
+      } catch (e) {
+        document.getElementById("status").innerHTML = "❌ Error: " + e.message.substring(0,100);
+      }
     }
   </script>
 </body>
