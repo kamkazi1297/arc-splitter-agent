@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fa" dir="ltr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -53,28 +53,23 @@
       margin-bottom: 12px;
       flex-wrap: wrap;
     }
-
     .recipient-row input.address { 
       flex: 1; 
-      min-width: 260px; 
+      min-width: 280px; 
     }
 
     .recipient-row .percent-container {
       position: relative;
-      flex: 0 0 95px;
-      min-width: 95px;
+      flex: 0 0 135px;
     }
-
     .recipient-row .percent-container input {
       width: 100%;
-      padding: 14px 28px 14px 14px;
-      text-align: right;
+      padding-right: 32px;
     }
-
     .recipient-row .percent-container::after {
       content: "%";
       position: absolute;
-      right: 12px;
+      right: 14px;
       top: 50%;
       transform: translateY(-50%);
       color: #00ffaa;
@@ -85,17 +80,17 @@
     .delete-btn {
       background: #ff3366;
       color: white;
-      font-size: 18px;
+      font-size: 20px;
       font-weight: bold;
-      width: 42px;
-      height: 42px;
+      width: 46px;
+      height: 46px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
       cursor: pointer;
-      margin-left: 4px;
+      border: none;
     }
 
     button { 
@@ -177,11 +172,6 @@
       </div>
     </div>
 
-    <div style="margin:15px 0;">
-      <strong>Slippage Tolerance (%)</strong>
-      <input type="number" id="slippage" value="0.5" step="0.1" style="width:140px;">
-    </div>
-
     <h3>Quick Templates</h3>
     <div>
       <button onclick="loadTemplate(1)" style="background:#0099ff;color:white;">50% - 50%</button>
@@ -252,7 +242,6 @@
             const provider = new ethers.BrowserProvider(window.ethereum);
             signer = await provider.getSigner();
             document.getElementById("status").innerHTML = `Connected: ${userAddress.slice(0,8)}...${userAddress.slice(-6)}`;
-            document.getElementById("status").className = "success";
             updateBalance();
           }
         } catch (e) {}
@@ -365,11 +354,9 @@
           }
         }
         document.getElementById("status").innerHTML = `Connected: ${userAddress.slice(0,8)}...${userAddress.slice(-6)}`;
-        document.getElementById("status").className = "success";
         await updateBalance();
       } catch (e) {
         document.getElementById("status").innerHTML = `Error: ${e.message}`;
-        document.getElementById("status").className = "error";
       }
     }
 
@@ -399,15 +386,13 @@
       if (isProcessing) return;
 
       const totalAmount = parseFloat(document.getElementById("totalAmount").value);
-      const slippage = parseFloat(document.getElementById("slippage").value) || 0.5;
-
       if (!totalAmount || totalAmount <= 0) return alert("Enter a valid amount!");
 
       const tokenAddr = await getCurrentToken();
       const symbol = await getTokenSymbol();
 
       if (tokenAddr !== "0x3600000000000000000000000000000000000000") {
-        if (!confirm(` Warning!\n\nThe Splitter contract is optimized for USDC.\nSending with ${symbol} may fail.\n\nContinue?`)) return;
+        if (!confirm(`Warning!\n\nThe Splitter contract is optimized for USDC.\nSending with ${symbol} may fail.\n\nContinue?`)) return;
       }
 
       const addresses = [];
@@ -430,7 +415,7 @@
         if (!ethers.isAddress(addr)) return alert(`Invalid address: ${addr}`);
       }
 
-      let preview = `Send ${totalAmount} ${symbol} with ${slippage}% slippage?\n\n`;
+      let preview = `Send ${totalAmount} ${symbol} ?\n\n`;
       addresses.forEach((addr, i) => preview += `• ${percentages[i]}% → ${addr.slice(0,8)}...\n`);
 
       if (!confirm(preview)) return;
