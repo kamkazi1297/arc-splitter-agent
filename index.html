@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -5,65 +6,103 @@
   <title>Arc Splitter - Pro</title>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <style>
+    :root {
+      --primary: #00ffaa;
+      --accent: #ff3366;
+      --bg: #0a0a1f;
+      --card: rgba(255,255,255,0.08);
+    }
     body { 
-      font-family: 'Segoe UI', sans-serif; 
+      font-family: 'Segoe UI', system-ui, sans-serif; 
       background: linear-gradient(135deg, #0a0a1f, #1a1a35); 
       color: #e0e0ff; 
       margin: 0; padding: 20px; 
     }
     .container { 
-      max-width: 780px; margin: 0 auto; 
-      background: rgba(255,255,255,0.07); 
-      padding: 40px; border-radius: 24px; 
-      box-shadow: 0 20px 50px rgba(0,0,0,0.6); 
+      max-width: 800px; margin: 0 auto; 
+      background: var(--card); 
+      padding: 40px; border-radius: 28px; 
+      box-shadow: 0 25px 60px rgba(0,0,0,0.7); 
+      border: 1px solid rgba(0,255,170,0.15);
     }
-    h1 { color: #00ffaa; text-align: center; }
+    h1 { 
+      color: var(--primary); 
+      text-align: center; 
+      text-shadow: 0 0 20px rgba(0,255,170,0.4);
+      margin-bottom: 8px;
+    }
     select, input { 
-      padding: 12px; margin: 8px 0; 
-      border-radius: 12px; background: #151525; color: white; 
+      padding: 14px; margin: 8px 0; 
+      border-radius: 14px; background: #12122b; color: white; 
       border: 1px solid #00ffaa; font-size: 16px; width: 100%;
+      transition: all 0.3s;
+    }
+    input:focus, select:focus {
+      border-color: #00ffdd;
+      box-shadow: 0 0 0 3px rgba(0,255,170,0.25);
+      outline: none;
     }
     .recipient-row {
       display: flex;
-      gap: 10px;
+      gap: 12px;
       align-items: center;
-      margin-bottom: 10px;
+      margin-bottom: 12px;
       flex-wrap: wrap;
     }
     .recipient-row input.address { flex: 2; min-width: 280px; }
-    .recipient-row input.percent { flex: 1; max-width: 140px; }
+    .recipient-row input.percent { flex: 1; max-width: 160px; }
+    
     button { 
-      padding: 12px 24px; margin: 6px 4px; font-size: 16px; 
-      border: none; border-radius: 12px; cursor: pointer; 
+      padding: 14px 28px; margin: 6px 4px; font-size: 16px; 
+      border: none; border-radius: 14px; cursor: pointer; 
+      transition: all 0.3s ease;
     }
-    .connect-btn { background: #00ffaa; color: #000; font-weight: bold; }
-    .send-btn { background: #ff3366; color: white; font-weight: bold; }
-    .small-btn { padding: 8px 16px; font-size: 14px; }
-    .template-btn { background: #00aaff; color: white; padding: 10px 18px; }
+    .connect-btn { background: var(--primary); color: #000; font-weight: bold; }
+    .connect-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,255,170,0.4); }
+    .send-btn { background: var(--accent); color: white; font-weight: bold; }
+    .send-btn:hover { background: #ff5588; transform: translateY(-2px); }
+    .template-btn { background: #0099ff; color: white; }
     .add-btn { background: #00cc88; color: white; }
-    .max-btn { background: #444; color: white; }
-    button:disabled { opacity: 0.6; cursor: not-allowed; }
-    #status { margin: 20px 0; padding: 18px; border-radius: 12px; min-height: 170px; line-height: 1.5; }
-    .success { background: rgba(0,255,100,0.15); }
-    .error { background: rgba(255,50,50,0.15); }
-    .loading::after { content: " "; animation: spin 1.5s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .footer { text-align: center; margin-top: 40px; color: #888; font-size: 13.5px; }
-    #percent-total { font-weight: bold; margin: 12px 0; font-size: 16px; }
-    @media (max-width: 600px) {
-      .recipient-row { flex-direction: column; align-items: stretch; }
+    .max-btn { background: #555; color: white; font-weight: 600; }
+
+    button:disabled { opacity: 0.65; cursor: not-allowed; transform: none !important; }
+
+    #status { 
+      margin: 20px 0; 
+      padding: 20px; 
+      border-radius: 16px; 
+      min-height: 160px; 
+      line-height: 1.6;
+      position: relative;
+      overflow: hidden;
     }
+    .spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid rgba(255,255,255,0.2);
+      border-top-color: #00ffaa;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin-right: 12px;
+      vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .footer { text-align: center; margin-top: 50px; color: #777; font-size: 14px; }
+    #percent-total { font-weight: bold; margin: 15px 0; font-size: 17px; }
+    .glow { box-shadow: 0 0 25px rgba(0,255,170,0.3); }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Arc Splitter Pro</h1>
-    <p><strong>Arc Testnet • Multi Token</strong></p>
+    <p><strong>Arc Testnet • Multi Token • Advanced</strong></p>
 
     <button class="connect-btn" onclick="connectWallet()">Connect MetaMask</button>
     <button onclick="disconnectWallet()">Disconnect</button>
 
-    <p id="status">Ready</p>
+    <p id="status">Ready to split tokens on Arc Testnet.</p>
 
     <div style="margin:15px 0;">
       <strong>Select Token</strong>
@@ -82,6 +121,11 @@
       </div>
     </div>
 
+    <div style="margin:15px 0;">
+      <strong>Slippage Tolerance (%)</strong>
+      <input type="number" id="slippage" value="0.5" step="0.1" style="width:140px;">
+    </div>
+
     <h3>Quick Templates</h3>
     <div>
       <button class="template-btn" onclick="loadTemplate(1)">50% - 50%</button>
@@ -95,15 +139,15 @@
     <button class="add-btn" onclick="addRecipient()">+ Add Recipient</button>
     <p id="percent-total">Total: 0%</p>
 
-    <button id="sendBtn" class="send-btn" onclick="sendSplit()">Send Real Transaction</button>
+    <button id="sendBtn" class="send-btn" onclick="sendSplit()">Send Split Transaction</button>
     <button onclick="exportHistory()">Export History</button>
-    <button class="small-btn" onclick="clearForm()" style="background:#666;color:white;">Clear</button>
+    <button onclick="clearForm()" style="background:#555;color:white;">Clear Form</button>
 
     <h3>Recent Transactions</h3>
     <div id="history"></div>
 
     <div class="footer">
-      <p><strong>Testnet Version Only</strong> — Do not use with real funds.</p>
+      <p><strong>Testnet Only</strong> — Do not use with real funds.</p>
     </div>
   </div>
 
@@ -126,6 +170,10 @@
     };
 
     window.addEventListener('load', async () => {
+      renderHistory();
+      addRecipient();
+      addRecipient();
+
       if (window.ethereum) {
         try {
           const accounts = await window.ethereum.request({ method: 'eth_accounts' });
@@ -139,9 +187,6 @@
           }
         } catch (e) {}
       }
-      renderHistory();
-      addRecipient();
-      addRecipient();
     });
 
     async function getCurrentToken() {
@@ -186,7 +231,7 @@
       row.innerHTML = `
         <input type="text" class="address" placeholder="0x...">
         <input type="number" class="percent" placeholder="%" step="0.01" oninput="updatePercentTotal()">
-        <button onclick="this.parentElement.remove(); updatePercentTotal()" style="background:#ff3366;color:white;padding:10px 14px;">×</button>
+        <button onclick="this.parentElement.remove(); updatePercentTotal()" style="background:#ff3366;color:white;padding:10px 16px;">×</button>
       `;
       list.appendChild(row);
       updatePercentTotal();
@@ -218,7 +263,7 @@
       row.innerHTML = `
         <input type="text" class="address" value="${address}">
         <input type="number" class="percent" value="${percent}" oninput="updatePercentTotal()">
-        <button onclick="this.parentElement.remove(); updatePercentTotal()" style="background:#ff3366;color:white;padding:10px 14px;">×</button>
+        <button onclick="this.parentElement.remove(); updatePercentTotal()" style="background:#ff3366;color:white;padding:10px 16px;">×</button>
       `;
       list.appendChild(row);
       updatePercentTotal();
@@ -253,8 +298,10 @@
     }
 
     function disconnectWallet() {
-      signer = null; userAddress = null;
+      signer = null; 
+      userAddress = null;
       document.getElementById("status").innerHTML = "Wallet Disconnected";
+      document.getElementById("status").className = "";
     }
 
     function clearForm() {
@@ -264,21 +311,41 @@
       addRecipient();
     }
 
+    async function estimateGas(addresses, percentages, totalWei) {
+      try {
+        const splitterAbi = [{
+          "inputs": [
+            {"name": "recipients", "type": "address[]"},
+            {"name": "percentages", "type": "uint256[]"},
+            {"name": "totalAmount", "type": "uint256"}
+          ],
+          "name": "splitPayment",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        }];
+        const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
+        const gasEstimate = await contract.splitPayment.estimateGas(addresses, percentages.map(p => Math.floor(p)), totalWei);
+        return Math.floor(Number(gasEstimate) * 1.25); // 25% buffer
+      } catch (e) {
+        return 500000; // fallback
+      }
+    }
+
     async function sendSplit() {
       if (!signer) return alert("Please connect your wallet first!");
       if (isProcessing) return;
 
       const totalAmount = parseFloat(document.getElementById("totalAmount").value);
+      const slippage = parseFloat(document.getElementById("slippage").value) || 0.5;
+
       if (!totalAmount || totalAmount <= 0) return alert("Enter a valid amount!");
 
       const tokenAddr = await getCurrentToken();
       const symbol = await getTokenSymbol();
 
-      // هشدار برای توکن‌های غیر USDC
       if (tokenAddr !== "0x3600000000000000000000000000000000000000") {
-        if (!confirm(`⚠️ هشدار!\n\nقرارداد Splitter فعلاً فقط برای USDC بهینه شده است.\nارسال با ${symbol} ممکن است با خطا مواجه شود (TransferFrom failed).\n\nادامه می‌دهی؟`)) {
-          return;
-        }
+        if (!confirm(`⚠️ Warning!\n\nThe Splitter contract is currently optimized for USDC.\nSending with ${symbol} may fail.\n\nContinue anyway?`)) return;
       }
 
       const addresses = [];
@@ -301,7 +368,7 @@
         if (!ethers.isAddress(addr)) return alert(`Invalid address: ${addr}`);
       }
 
-      let preview = `You are about to send ${totalAmount} ${symbol}:\n\n`;
+      let preview = `You are about to send ${totalAmount} ${symbol} (${slippage}% slippage tolerance):\n\n`;
       addresses.forEach((addr, i) => {
         const share = (totalAmount * percentages[i] / 100).toFixed(4);
         preview += `• ${percentages[i]}% → ${addr.slice(0,8)}... = ${share} ${symbol}\n`;
@@ -317,8 +384,8 @@
       btn.textContent = "Processing...";
 
       try {
-        statusEl.innerHTML = `Approving ${symbol}...`;
-        statusEl.className = "loading";
+        statusEl.innerHTML = `<span class="spinner"></span> Approving ${symbol}...`;
+        statusEl.className = "";
 
         const tokenContract = new ethers.Contract(tokenAddr, [
           "function approve(address,uint256) returns (bool)",
@@ -328,9 +395,13 @@
         const decimals = await tokenContract.decimals();
         const totalWei = ethers.parseUnits(totalAmount.toString(), decimals);
 
+        // Gas Estimation
+        statusEl.innerHTML = `<span class="spinner"></span> Estimating gas...`;
+        const gasLimit = await estimateGas(addresses, percentages, totalWei);
+
         await (await tokenContract.approve(CONTRACT_ADDRESS, totalWei)).wait();
 
-        statusEl.innerHTML = "Sending Split Transaction...";
+        statusEl.innerHTML = `<span class="spinner"></span> Sending Split Transaction...<br><small>Gas Limit: ~${gasLimit.toLocaleString()}</small>`;
 
         const splitterAbi = [{
           "inputs": [
@@ -345,7 +416,7 @@
         }];
 
         const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
-        const tx = await contract.splitPayment(addresses, percentages.map(p => Math.floor(p)), totalWei);
+        const tx = await contract.splitPayment(addresses, percentages.map(p => Math.floor(p)), totalWei, { gasLimit });
         await tx.wait();
 
         transactions.unshift({
@@ -359,13 +430,14 @@
         statusEl.className = "success";
         statusEl.innerHTML = `✅ Transaction Confirmed!<br>Hash: ${tx.hash}<br>
           <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" style="color:#00ffaa;">View on Explorer</a>`;
+
       } catch (error) {
         statusEl.className = "error";
-        statusEl.innerHTML = `Error: ${error.message.substring(0,200)}...`;
+        statusEl.innerHTML = `❌ Error: ${error.message.substring(0,200)}...`;
       } finally {
         isProcessing = false;
         btn.disabled = false;
-        btn.textContent = "Send Real Transaction";
+        btn.textContent = "Send Split Transaction";
       }
     }
 
