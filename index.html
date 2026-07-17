@@ -18,11 +18,19 @@
       box-shadow: 0 20px 50px rgba(0,0,0,0.6); 
     }
     h1 { color: #00ffaa; text-align: center; }
-    input, textarea { 
-      width: 100%; padding: 14px; margin: 10px 0; 
+    input { 
+      padding: 12px; margin: 6px 0; 
       border-radius: 12px; background: #151525; color: white; 
       border: 1px solid #00ffaa; font-size: 16px;
     }
+    .recipient-row {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .recipient-row input.address { flex: 2; }
+    .recipient-row input.percent { flex: 1; max-width: 120px; }
     button { 
       padding: 12px 24px; margin: 6px 4px; font-size: 16px; 
       border: none; border-radius: 12px; cursor: pointer; 
@@ -31,13 +39,15 @@
     .send-btn { background: #ff3366; color: white; font-weight: bold; }
     .small-btn { padding: 8px 16px; font-size: 14px; }
     .template-btn { background: #00aaff; color: white; padding: 10px 18px; }
+    .add-btn { background: #00cc88; color: white; }
     button:disabled { opacity: 0.6; cursor: not-allowed; }
-    #status { margin: 20px 0; padding: 18px; border-radius: 12px; min-height: 130px; }
+    #status { margin: 20px 0; padding: 18px; border-radius: 12px; min-height: 140px; }
     .success { background: rgba(0,255,100,0.15); }
     .error { background: rgba(255,50,50,0.15); }
     .loading::after { content: " "; animation: spin 1.5s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .footer { text-align: center; margin-top: 40px; color: #888; font-size: 13.5px; }
+    #percent-total { font-weight: bold; margin: 10px 0; }
   </style>
 </head>
 <body>
@@ -60,11 +70,13 @@
       <button class="template-btn" onclick="loadTemplate(1)">50% - 50%</button>
       <button class="template-btn" onclick="loadTemplate(2)">33-33-34%</button>
       <button class="template-btn" onclick="loadTemplate(3)">40% - 60%</button>
-      <button class="template-btn" onclick="loadTemplate(4)">Equal Split</button>
+      <button class="template-btn" onclick="loadTemplate(4)">Equal Split (4)</button>
     </div>
 
     <h3>Recipients & Percentages</h3>
-    <textarea id="intent" placeholder="40% to 0x123..., 60% to 0x456..."></textarea>
+    <div id="recipients-list"></div>
+    <button class="add-btn" onclick="addRecipient()">+ Add Recipient</button>
+    <p id="percent-total">Total: 0%</p>
 
     <button id="sendBtn" class="send-btn" onclick="sendSplit()">Send Real Transaction</button>
     <button onclick="exportHistory()">Export History</button>
@@ -75,7 +87,7 @@
 
     <div class="footer">
       <p><strong>Testnet Version Only</strong> — This is a demonstration tool for testing on Arc Testnet.<br>
-      Do not use with real funds. Made for Arc Project.</p>
+      Do not use with real funds.</p>
     </div>
   </div>
 
@@ -100,35 +112,49 @@
 
     window.addEventListener('load', async () => {
       if (window.ethereum) {
-        try {
-          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-          if (accounts.length > 0) {
-            userAddress = accounts[0];
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            signer = await provider.getSigner();
-            document.getElementById("status").innerHTML = `Connected: ${userAddress.slice(0,8)}...${userAddress.slice(-6)}`;
-            document.getElementById("status").className = "success";
-            updateUSDCBalance();
-          }
-        } catch (e) {}
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        if (accounts.length > 0) {
+          userAddress = accounts[0];
+          const provider = new ethers.BrowserProvider(window.ethereum);
+          signer = await provider.getSigner();
+          document.getElementById("status").innerHTML = `Connected: ${userAddress.slice(0,8)}...${userAddress.slice(-6)}`;
+          document.getElementById("status").className = "success";
+          updateUSDCBalance();
+        }
       }
       renderHistory();
+      addRecipient(); // Add first row by default
+      addRecipient();
     });
 
     async function updateUSDCBalance() {
-      if (!signer || !userAddress) return;
+      if (!signer) return;
       try {
-        const usdc = new ethers.Contract(USDC_ADDRESS, [
-          "function balanceOf(address) view returns (uint256)",
-          "function decimals() view returns (uint8)"
-        ], signer);
-
+        const usdc = new ethers.Contract(USDC_ADDRESS, ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"], signer);
         const balance = await usdc.balanceOf(userAddress);
-        const decimals = await usdc.decimals();
-        const formatted = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4);
-        
+        const formatted = parseFloat(ethers.formatUnits(balance, await usdc.decimals())).toFixed(4);
         document.getElementById("status").innerHTML += `<br><small>USDC Balance: ${formatted}</small>`;
       } catch(e) {}
+    }
+
+    function addRecipient() {
+      const list = document.getElementById("recipients-list");
+      const row = document.createElement("div");
+      row.className = "recipient-row";
+      row.innerHTML = `
+        <input type="text" class="address" placeholder="0x123...">
+        <input type="number" class="percent" placeholder="%" step="0.01" oninput="updatePercentTotal()">
+        <button onclick="this.parentElement.remove(); updatePercentTotal()" style="background:#ff3366; color:white; padding:10px 14px;">×</button>
+      `;
+      list.appendChild(row);
+      updatePercentTotal();
+    }
+
+    function updatePercentTotal() {
+      const percents = Array.from(document.querySelectorAll('.percent')).map(el => parseFloat(el.value) || 0);
+      const total = percents.reduce((a, b) => a + b, 0);
+      document.getElementById("percent-total").textContent = `Total: ${total.toFixed(2)}%`;
+      document.getElementById("percent-total").style.color = total === 100 ? "#00ffaa" : total > 100 ? "#ff3366" : "#e0e0ff";
     }
 
     async function connectWallet() {
@@ -166,55 +192,81 @@
     }
 
     function loadTemplate(type) {
-      const t = document.getElementById("intent");
-      if (type === 1) t.value = "50% to 0x0000000000000000000000000000000000000001, 50% to 0x0000000000000000000000000000000000000002";
-      else if (type === 2) t.value = "33% to 0x0000000000000000000000000000000000000001, 33% to 0x0000000000000000000000000000000000000002, 34% to 0x0000000000000000000000000000000000000003";
-      else if (type === 3) t.value = "40% to 0x0000000000000000000000000000000000000001, 60% to 0x0000000000000000000000000000000000000002";
-      else if (type === 4) t.value = "25% to 0x0000000000000000000000000000000000000001, 25% to 0x0000000000000000000000000000000000000002, 25% to 0x0000000000000000000000000000000000000003, 25% to 0x0000000000000000000000000000000000000004";
+      const list = document.getElementById("recipients-list");
+      list.innerHTML = "";
+
+      if (type === 1) {
+        addRow("0x0000000000000000000000000000000000000001", 50);
+        addRow("0x0000000000000000000000000000000000000002", 50);
+      } else if (type === 2) {
+        addRow("0x0000000000000000000000000000000000000001", 33);
+        addRow("0x0000000000000000000000000000000000000002", 33);
+        addRow("0x0000000000000000000000000000000000000003", 34);
+      } else if (type === 3) {
+        addRow("0x0000000000000000000000000000000000000001", 40);
+        addRow("0x0000000000000000000000000000000000000002", 60);
+      } else if (type === 4) {
+        for (let i = 0; i < 4; i++) addRow(`0x000000000000000000000000000000000000000${i+1}`, 25);
+      }
+    }
+
+    function addRow(address, percent) {
+      const list = document.getElementById("recipients-list");
+      const row = document.createElement("div");
+      row.className = "recipient-row";
+      row.innerHTML = `
+        <input type="text" class="address" value="${address}">
+        <input type="number" class="percent" value="${percent}" oninput="updatePercentTotal()">
+        <button onclick="this.parentElement.remove(); updatePercentTotal()" style="background:#ff3366; color:white; padding:10px 14px;">×</button>
+      `;
+      list.appendChild(row);
+      updatePercentTotal();
     }
 
     function clearForm() {
-      document.getElementById("intent").value = "";
+      document.getElementById("recipients-list").innerHTML = "";
       document.getElementById("totalAmount").value = "100";
+      addRecipient();
+      addRecipient();
     }
 
     async function sendSplit() {
       if (!signer) return alert("Please connect your wallet first!");
       if (isProcessing) return;
 
-      const totalAmountStr = document.getElementById("totalAmount").value;
-      const totalAmount = parseFloat(totalAmountStr);
+      const totalAmount = parseFloat(document.getElementById("totalAmount").value);
       if (!totalAmount || totalAmount <= 0) return alert("Enter a valid amount!");
 
-      const intentText = document.getElementById("intent").value.trim();
-      if (!intentText) return alert("Enter recipients and percentages!");
+      const addresses = [];
+      const percentages = [];
 
-      // Improved Parsing
-      const addresses = intentText.match(/0x[a-fA-F0-9]{40}/gi) || [];
-      let percentages = intentText.match(/(\d+\.?\d*)\s*[٪%]/g);
-      if (percentages) percentages = percentages.map(p => parseFloat(p.replace(/[^0-9.]/g, '')));
+      document.querySelectorAll('.recipient-row').forEach(row => {
+        const addr = row.querySelector('.address').value.trim();
+        const perc = parseFloat(row.querySelector('.percent').value);
+        if (addr && perc) {
+          addresses.push(addr);
+          percentages.push(perc);
+        }
+      });
 
-      if (addresses.length < 2 || percentages.length < 2) 
-        return alert("Could not detect addresses and percentages correctly!");
-
+      if (addresses.length < 2) return alert("At least 2 recipients needed!");
       if (percentages.reduce((a, b) => a + b, 0) !== 100) 
         return alert("Percentages must sum exactly to 100%!");
 
-      // Address Validation
+      // Address validation
       for (let addr of addresses) {
-        if (!ethers.isAddress(addr)) {
-          return alert(`Invalid address: ${addr}`);
-        }
+        if (!ethers.isAddress(addr)) return alert(`Invalid address: ${addr}`);
       }
 
       // Preview
       let preview = `You are about to send ${totalAmount} USDC:\n\n`;
-      for (let i = 0; i < addresses.length; i++) {
+      addresses.forEach((addr, i) => {
         const share = (totalAmount * percentages[i] / 100).toFixed(4);
-        preview += `• ${percentages[i]}% → ${addresses[i].slice(0,8)}... = ${share} USDC\n`;
-      }
+        preview += `• ${percentages[i]}% → ${addr.slice(0,8)}... = ${share} USDC\n`;
+      });
       if (!confirm(preview + "\nContinue?")) return;
 
+      // ... (بقیه کد sendSplit مثل قبل باقی می‌ماند)
       isProcessing = true;
       const btn = document.getElementById("sendBtn");
       const statusEl = document.getElementById("status");
@@ -233,21 +285,14 @@
         const decimals = await usdc.decimals();
         const totalWei = ethers.parseUnits(totalAmount.toString(), decimals);
 
-        // Approve exact amount
         await (await usdc.approve(CONTRACT_ADDRESS, totalWei)).wait();
 
         statusEl.innerHTML = "Sending Split Transaction...";
 
         const splitterAbi = [{
-          "inputs": [
-            {"name": "recipients", "type": "address[]"},
-            {"name": "percentages", "type": "uint256[]"},
-            {"name": "totalAmount", "type": "uint256"}
-          ],
+          "inputs": [{"name": "recipients", "type": "address[]"}, {"name": "percentages", "type": "uint256[]"}, {"name": "totalAmount", "type": "uint256"}],
           "name": "splitPayment",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
+          "outputs": [], "stateMutability": "nonpayable", "type": "function"
         }];
 
         const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
@@ -263,7 +308,7 @@
         renderHistory();
 
         statusEl.className = "success";
-        statusEl.innerHTML = ` Transaction Confirmed!<br>Hash: ${tx.hash}<br>
+        statusEl.innerHTML = `✅ Transaction Confirmed!<br>Hash: ${tx.hash}<br>
           <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" style="color:#00ffaa;">View on Explorer</a>`;
       } catch (error) {
         statusEl.className = "error";
@@ -278,12 +323,10 @@
     function renderHistory() {
       let html = "";
       transactions.forEach(tx => {
-        html += `
-          <div style="background:rgba(255,255,255,0.05); padding:14px; margin:10px 0; border-radius:12px;">
-            <small>${tx.time}</small><br>
-            ${tx.intent}<br>
-            <small><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View Tx</a></small>
-          </div>`;
+        html += `<div style="background:rgba(255,255,255,0.05); padding:14px; margin:10px 0; border-radius:12px;">
+          <small>${tx.time}</small><br>${tx.intent}<br>
+          <small><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View Tx</a></small>
+        </div>`;
       });
       document.getElementById("history").innerHTML = html || "<p>No transactions yet.</p>";
     }
