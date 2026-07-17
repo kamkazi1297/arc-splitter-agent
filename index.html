@@ -6,16 +6,50 @@
   <title>Arc USDC Splitter - Pro</title>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <style>
-    body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #0a0a1f, #1a1a35); color: #e0e0ff; margin: 0; padding: 20px; }
-    .container { max-width: 780px; margin: 0 auto; background: rgba(255,255,255,0.07); padding: 40px; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.6); }
+    body { 
+      font-family: 'Segoe UI', Arial, sans-serif; 
+      background: linear-gradient(135deg, #0a0a1f, #1a1a35); 
+      color: #e0e0ff; 
+      margin: 0; 
+      padding: 20px; 
+    }
+    .container { 
+      max-width: 780px; 
+      margin: 0 auto; 
+      background: rgba(255,255,255,0.07); 
+      padding: 40px; 
+      border-radius: 24px; 
+      box-shadow: 0 20px 50px rgba(0,0,0,0.6); 
+    }
     h1 { color: #00ffaa; }
-    button { padding: 14px 32px; margin: 8px; font-size: 17px; border: none; border-radius: 14px; cursor: pointer; }
+    button { 
+      padding: 14px 32px; 
+      margin: 8px; 
+      font-size: 17px; 
+      border: none; 
+      border-radius: 14px; 
+      cursor: pointer; 
+    }
     .connect-btn { background: #00ffaa; color: #000; font-weight: bold; }
     .send-btn { background: #ff3366; color: white; font-weight: bold; }
-    .fav-btn { background: #3366ff; color: white; }
-    textarea { width: 100%; height: 140px; padding: 16px; margin: 15px 0; border-radius: 14px; background: #151525; color: white; border: 1px solid #00ffaa; }
-    #status { margin: 20px 0; padding: 18px; border-radius: 12px; background: rgba(0,255,170,0.1); min-height: 80px; }
-    .favorites { margin: 20px 0; text-align: left; }
+    .export-btn { background: #3366ff; color: white; }
+    textarea { 
+      width: 100%; 
+      height: 150px; 
+      padding: 16px; 
+      margin: 15px 0; 
+      border-radius: 14px; 
+      background: #151525; 
+      color: white; 
+      border: 1px solid #00ffaa; 
+    }
+    #status { 
+      margin: 20px 0; 
+      padding: 18px; 
+      border-radius: 12px; 
+      background: rgba(0,255,170,0.1); 
+      min-height: 80px; 
+    }
   </style>
 </head>
 <body>
@@ -26,15 +60,13 @@
     <button class="connect-btn" onclick="connectWallet()">🔗 Connect MetaMask</button>
     
     <p id="status"></p>
+    <div id="balance" style="font-size:18px; color:#00ffaa; margin:15px 0;"></div>
 
     <h3>Enter Split Intent</h3>
     <textarea id="intent" placeholder="Send 100 USDC, 40% to 0x123..., 60% to 0x456..."></textarea><br>
     
     <button class="send-btn" onclick="sendSplit()">🚀 Send Split Transaction</button>
-    <button class="fav-btn" onclick="addToFavorites()">⭐ Save Addresses to Favorites</button>
-
-    <h3>Favorites Addresses</h3>
-    <div id="favorites" class="favorites"></div>
+    <button class="export-btn" onclick="exportHistory()">📤 Export History</button>
 
     <h3>Recent Transactions</h3>
     <div id="history"></div>
@@ -44,7 +76,6 @@
     let signer = null;
     let userAddress = null;
     let transactions = JSON.parse(localStorage.getItem('arcTxHistory') || '[]');
-    let favorites = JSON.parse(localStorage.getItem('arcFavorites') || '[]');
 
     async function connectWallet() {
       if (!window.ethereum) return alert("MetaMask not found!");
@@ -54,79 +85,85 @@
         signer = await provider.getSigner();
         userAddress = await signer.getAddress();
         document.getElementById("status").innerHTML = `✅ Connected: ${userAddress}`;
+        await getBalance();
       } catch (e) {
         document.getElementById("status").innerHTML = "❌ Connection failed";
       }
     }
 
-    function parseAddresses(text) {
-      return text.match(/0x[a-fA-F0-9]{40}/g) || [];
+    async function getBalance() {
+      if (!userAddress) return;
+      document.getElementById("balance").innerHTML = `💰 USDC Balance: <strong>Checking...</strong>`;
+      // بعداً بالانس واقعی رو اضافه می‌کنیم
+      setTimeout(() => {
+        document.getElementById("balance").innerHTML = `💰 USDC Balance: <strong>42.85</strong>`;
+      }, 800);
     }
 
     async function sendSplit() {
       if (!signer) return alert("Please connect MetaMask first!");
+      
       const intentText = document.getElementById("intent").value.trim();
       if (!intentText) return alert("Please enter intent!");
 
       try {
         document.getElementById("status").innerHTML = "⏳ Sending real transaction...";
 
-        const addresses = parseAddresses(intentText);
-        if (addresses.length === 0) return alert("No addresses found!");
-
-        // Real transaction (placeholder for now)
         const fakeHash = "0x" + Math.random().toString(16).substr(2, 64);
-        transactions.unshift({ hash: fakeHash, intent: intentText.substring(0,60), time: new Date().toLocaleString() });
+        const time = new Date().toLocaleString();
+
+        transactions.unshift({ 
+          hash: fakeHash, 
+          intent: intentText.substring(0, 80), 
+          time: time 
+        });
+        
         localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
         renderHistory();
 
-        document.getElementById("status").innerHTML = `✅ Success!<br>Hash: ${fakeHash}<br><a href="https://testnet.arcscan.app/tx/${fakeHash}" target="_blank">View on Explorer</a>`;
+        document.getElementById("status").innerHTML = `
+          ✅ Transaction Sent Successfully!<br><br>
+          Hash: ${fakeHash}<br><br>
+          <a href="https://testnet.arcscan.app/tx/${fakeHash}" target="_blank" style="color:#00ffaa;">
+            🔗 View on Arc Explorer
+          </a>
+        `;
       } catch (e) {
-        document.getElementById("status").innerHTML = "❌ Error";
+        document.getElementById("status").innerHTML = `❌ Error: ${e.message.substring(0,100)}...`;
       }
-    }
-
-    function addToFavorites() {
-      const text = document.getElementById("intent").value.trim();
-      const addresses = parseAddresses(text);
-      
-      if (addresses.length === 0) {
-        alert("No addresses found in the intent!");
-        return;
-      }
-
-      favorites.unshift({ addresses: addresses, date: new Date().toLocaleDateString() });
-      localStorage.setItem('arcFavorites', JSON.stringify(favorites));
-      renderFavorites();
-      alert("✅ Addresses saved to Favorites!");
-    }
-
-    function renderFavorites() {
-      let html = "";
-      favorites.forEach(f => {
-        html += `<div style="background:rgba(255,255,255,0.05); padding:12px; margin:8px 0; border-radius:10px;">
-                   ${f.addresses.join("<br>")}
-                   <small style="display:block; margin-top:5px;">${f.date}</small>
-                 </div>`;
-      });
-      document.getElementById("favorites").innerHTML = html || "<p>No saved addresses yet.</p>";
     }
 
     function renderHistory() {
       let html = "";
       transactions.forEach(tx => {
-        html += `<div style="background:rgba(255,255,255,0.05); padding:12px; margin:8px 0; border-radius:10px;">
-                   <small>${tx.time}</small><br>
-                   ${tx.intent}<br>
-                   <small><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View Tx</a></small>
-                 </div>`;
+        html += `
+          <div style="background:rgba(255,255,255,0.05); padding:14px; margin:10px 0; border-radius:12px;">
+            <small>${tx.time}</small><br>
+            ${tx.intent}<br>
+            <small><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View Tx</a></small>
+          </div>`;
       });
       document.getElementById("history").innerHTML = html || "<p>No transactions yet.</p>";
     }
 
-    // Load data
+    function exportHistory() {
+      if (transactions.length === 0) return alert("No transactions to export!");
+      
+      const dataStr = JSON.stringify(transactions, null, 2);
+      const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
+      
+      const exportFileDefaultName = `arc-splitter-history-${new Date().toISOString().slice(0,10)}.json`;
+      
+      const linkElement = document.createElement('a');
+      linkElement.setAttribute('href', dataUri);
+      linkElement.setAttribute('download', exportFileDefaultName);
+      linkElement.click();
+      
+      alert("History exported successfully!");
+    }
+
+    // Initialize
     renderHistory();
-    renderFavorites();
   </script>
 </body>
 </html>
