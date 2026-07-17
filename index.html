@@ -67,7 +67,7 @@
 
     <div style="margin:15px 0;">
       <strong>Select Token</strong>
-      <select id="tokenSelect">
+      <select id="tokenSelect" onchange="updateBalance()">
         <option value="0x3600000000000000000000000000000000000000">USDC</option>
         <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
         <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
@@ -103,7 +103,7 @@
     <div id="history"></div>
 
     <div class="footer">
-      <p><strong>Testnet Version Only</strong> — Do not use with real funds. Made for Arc Project.</p>
+      <p><strong>Testnet Version Only</strong> — Do not use with real funds.</p>
     </div>
   </div>
 
@@ -164,7 +164,7 @@
         const decimals = await contract.decimals();
         const formatted = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4);
         const symbol = await getTokenSymbol();
-        document.getElementById("status").innerHTML += `<br><small>Balance: ${formatted} ${symbol}</small>`;
+        document.getElementById("status").innerHTML = `Connected: ${userAddress.slice(0,8)}...${userAddress.slice(-6)}<br><small>Balance: ${formatted} ${symbol}</small>`;
       } catch(e) {}
     }
 
@@ -172,10 +172,7 @@
       if (!signer) return alert("Connect wallet first!");
       try {
         const tokenAddr = await getCurrentToken();
-        const contract = new ethers.Contract(tokenAddr, [
-          "function balanceOf(address) view returns (uint256)",
-          "function decimals() view returns (uint8)"
-        ], signer);
+        const contract = new ethers.Contract(tokenAddr, ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"], signer);
         const balance = await contract.balanceOf(userAddress);
         const decimals = await contract.decimals();
         document.getElementById("totalAmount").value = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(6);
@@ -277,6 +274,13 @@
       const tokenAddr = await getCurrentToken();
       const symbol = await getTokenSymbol();
 
+      // هشدار برای توکن‌های غیر USDC
+      if (tokenAddr !== "0x3600000000000000000000000000000000000000") {
+        if (!confirm(`⚠️ هشدار!\n\nقرارداد Splitter فعلاً فقط برای USDC بهینه شده است.\nارسال با ${symbol} ممکن است با خطا مواجه شود (TransferFrom failed).\n\nادامه می‌دهی؟`)) {
+          return;
+        }
+      }
+
       const addresses = [];
       const percentages = [];
 
@@ -357,7 +361,7 @@
           <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" style="color:#00ffaa;">View on Explorer</a>`;
       } catch (error) {
         statusEl.className = "error";
-        statusEl.innerHTML = `Error: ${error.message.substring(0,180)}...`;
+        statusEl.innerHTML = `Error: ${error.message.substring(0,200)}...`;
       } finally {
         isProcessing = false;
         btn.disabled = false;
