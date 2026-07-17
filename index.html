@@ -9,37 +9,43 @@
     body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #0a0a1f, #1a1a35); color: #e0e0ff; margin: 0; padding: 20px; }
     .container { max-width: 780px; margin: 0 auto; background: rgba(255,255,255,0.07); padding: 40px; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.6); }
     h1 { color: #00ffaa; }
-    button { padding: 14px 32px; margin: 8px; font-size: 17px; border: none; border-radius: 14px; cursor: pointer; transition: 0.3s; }
+    button { padding: 14px 32px; margin: 8px; font-size: 17px; border: none; border-radius: 14px; cursor: pointer; }
     .connect-btn { background: #00ffaa; color: #000; font-weight: bold; }
     .send-btn { background: #ff3366; color: white; font-weight: bold; }
+    .fav-btn { background: #3366ff; color: white; }
     textarea { width: 100%; height: 140px; padding: 16px; margin: 15px 0; border-radius: 14px; background: #151525; color: white; border: 1px solid #00ffaa; }
     #status { margin: 20px 0; padding: 18px; border-radius: 12px; background: rgba(0,255,170,0.1); min-height: 80px; }
-    .balance { font-size: 18px; color: #00ffaa; margin: 15px 0; }
+    .favorites { margin: 25px 0; text-align: left; }
+    .fav-item { background: rgba(255,255,255,0.05); padding: 10px; margin: 8px 0; border-radius: 10px; display: flex; justify-content: space-between; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>🪓 Arc USDC Splitter</h1>
-    <p><strong>Professional Version • Arc Testnet</strong></p>
+    <p><strong>Professional • Arc Testnet</strong></p>
 
     <button class="connect-btn" onclick="connectWallet()">🔗 Connect MetaMask</button>
     
     <p id="status"></p>
-    <div id="balance" class="balance"></div>
 
     <h3>Enter Split Intent</h3>
     <textarea id="intent" placeholder="Send 100 USDC, 40% to 0x123..., 60% to 0x456..."></textarea><br>
     
     <button class="send-btn" onclick="sendSplit()">🚀 Send Split Transaction</button>
+    <button class="fav-btn" onclick="addToFavorites()">⭐ Add Current Addresses to Favorites</button>
 
-    <h3 style="margin-top:40px">Recent Activity</h3>
-    <div id="history" style="text-align:left; max-height:300px; overflow-y:auto;"></div>
+    <h3 style="margin-top:30px">Favorites</h3>
+    <div id="favorites" class="favorites"></div>
+
+    <h3>Recent Activity</h3>
+    <div id="history"></div>
   </div>
 
   <script>
     let signer = null;
     let userAddress = null;
     let transactions = JSON.parse(localStorage.getItem('arcTxHistory') || '[]');
+    let favorites = JSON.parse(localStorage.getItem('arcFavorites') || '[]');
 
     async function connectWallet() {
       if (!window.ethereum) return alert("MetaMask not found!");
@@ -48,29 +54,19 @@
         await provider.send("eth_requestAccounts", []);
         signer = await provider.getSigner();
         userAddress = await signer.getAddress();
-        
         document.getElementById("status").innerHTML = `✅ Connected: ${userAddress}`;
-        await getBalance();
       } catch (e) {
         document.getElementById("status").innerHTML = "❌ Connection failed";
       }
     }
 
-    async function getBalance() {
-      if (!userAddress) return;
-      // فعلاً بالانس فیک (بعداً واقعی می‌کنیم)
-      document.getElementById("balance").innerHTML = `💰 USDC Balance: <strong>42.50</strong>`;
-    }
-
     async function sendSplit() {
       if (!signer) return alert("Please connect MetaMask first!");
-      
       const intentText = document.getElementById("intent").value.trim();
       if (!intentText) return alert("Please enter intent!");
 
       try {
-        document.getElementById("status").innerHTML = "⏳ Sending on Arc Testnet...";
-
+        document.getElementById("status").innerHTML = "⏳ Sending...";
         const fakeHash = "0x" + Math.random().toString(16).substr(2, 64);
         const time = new Date().toLocaleString();
 
@@ -78,33 +74,44 @@
         localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
         renderHistory();
 
-        document.getElementById("status").innerHTML = `
-          ✅ Transaction Successful!<br><br>
-          Hash: ${fakeHash}<br><br>
-          <a href="https://testnet.arcscan.app/tx/${fakeHash}" target="_blank" style="color:#00ffaa;">
-            🔗 View on Arc Explorer
-          </a>
-        `;
+        document.getElementById("status").innerHTML = `✅ Success!<br>Hash: ${fakeHash}<br><a href="https://testnet.arcscan.app/tx/${fakeHash}" target="_blank">View on Explorer</a>`;
       } catch (e) {
         document.getElementById("status").innerHTML = "❌ Error";
       }
     }
 
+    function addToFavorites() {
+      const intent = document.getElementById("intent").value.trim();
+      if (!intent) return alert("First enter an intent!");
+      
+      favorites.unshift({ intent: intent.substring(0,100), date: new Date().toLocaleDateString() });
+      localStorage.setItem('arcFavorites', JSON.stringify(favorites));
+      renderFavorites();
+      alert("Added to Favorites!");
+    }
+
+    function renderFavorites() {
+      let html = "";
+      favorites.forEach((f, i) => {
+        html += `<div class="fav-item">${f.intent}<br><small>${f.date}</small></div>`;
+      });
+      document.getElementById("favorites").innerHTML = html || "<p>No favorites yet.</p>";
+    }
+
     function renderHistory() {
       let html = "";
       transactions.forEach(tx => {
-        html += `
-          <div style="background:rgba(255,255,255,0.05); padding:14px; margin:10px 0; border-radius:12px;">
-            <small>${tx.time}</small><br>
-            ${tx.intent}<br>
-            <small><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View Tx</a></small>
-          </div>`;
+        html += `<div style="background:rgba(255,255,255,0.05); padding:12px; margin:8px 0; border-radius:10px;">
+                   <small>${tx.time}</small><br>${tx.intent}<br>
+                   <small><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View</a></small>
+                 </div>`;
       });
       document.getElementById("history").innerHTML = html || "<p>No transactions yet.</p>";
     }
 
-    // Load history
+    // Initialize
     renderHistory();
+    renderFavorites();
   </script>
 </body>
 </html>
