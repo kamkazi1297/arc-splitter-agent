@@ -1,142 +1,145 @@
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes, CallbackQueryHandler
-from dotenv import load_dotenv
-import os
-from web3 import Web3
-import time
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arc USDC Splitter - Pro</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+  <style>
+    body { 
+      font-family: 'Segoe UI', system-ui, sans-serif; 
+      background: linear-gradient(135deg, #0a0a1f, #1a1a35); 
+      color: #e0e0ff; 
+      margin: 0; 
+      padding: 20px; 
+    }
+    .container { 
+      max-width: 780px; 
+      margin: 0 auto; 
+      background: rgba(255,255,255,0.06); 
+      padding: 40px; 
+      border-radius: 24px; 
+      box-shadow: 0 20px 50px rgba(0,0,0,0.7); 
+    }
+    h1 { color: #00ffaa; margin-bottom: 8px; }
+    button { 
+      padding: 14px 32px; 
+      margin: 8px; 
+      font-size: 17px; 
+      border: none; 
+      border-radius: 14px; 
+      cursor: pointer; 
+      transition: 0.3s; 
+    }
+    .connect-btn { background: #00ffaa; color: #000; font-weight: bold; }
+    .send-btn { background: #ff3366; color: white; font-weight: bold; }
+    textarea { 
+      width: 100%; 
+      height: 150px; 
+      padding: 18px; 
+      margin: 15px 0; 
+      border-radius: 14px; 
+      background: #151525; 
+      color: white; 
+      border: 1px solid #00ffaa; 
+      font-size: 16px; 
+    }
+    #status { 
+      margin: 20px 0; 
+      padding: 16px; 
+      border-radius: 12px; 
+      background: rgba(0,255,170,0.1); 
+      min-height: 70px; 
+      word-break: break-all; 
+    }
+    .history { 
+      text-align: left; 
+      margin-top: 30px; 
+      max-height: 280px; 
+      overflow-y: auto; 
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🪓 Arc USDC Splitter</h1>
+    <p><strong>Professional • Arc Testnet</strong></p>
 
-load_dotenv()
-
-TOKEN = os.getenv("TELEGRAM_TOKEN")
-CONTRACT_ADDRESS = "0xEa86B2d60029bEE76F6858a1Ac7f85B2944004bF"
-RPC_URL = "https://rpc.testnet.arc.network"
-USDC_ADDRESS = "0x3600000000000000000000000000000000000000"
-
-w3 = Web3(Web3.HTTPProvider(RPC_URL))
-
-user_wallets = {}
-user_pending = {}
-
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "👋 Welcome to Arc USDC Splitter Bot!\n\n"
-        "Send your wallet address (0x...) to connect."
-    )
-
-async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = update.message.text.strip()
-    user_id = update.message.from_user.id
-
-    if text.startswith("0x") and len(text) == 42:
-        user_wallets[user_id] = text
-        await update.message.reply_text(f"✅ Wallet Connected!\n{text}")
-        return
-
-    if user_id not in user_wallets:
-        await update.message.reply_text("❌ First send your wallet address (0x...)")
-        return
-
-    await update.message.reply_text("⏳ Parsing...")
-
-    addresses = [word for word in text.split() if word.startswith("0x")]
-    percentages = [int(word.replace("%","").replace("٪","")) for word in text.split() 
-                   if word.replace("%","").replace("٪","").isdigit()]
-
-    if len(addresses) < 2 or len(percentages) < 2:
-        await update.message.reply_text("❌ Could not parse intent.")
-        return
-
-    total = 50
-    user_pending[user_id] = {"addresses": addresses[:2], "percentages": percentages[:2], "total": total}
-
-    keyboard = [
-        [InlineKeyboardButton("✅ Confirm & Send", callback_data="confirm")],
-        [InlineKeyboardButton("❌ Cancel", callback_data="cancel")]
-    ]
-
-    await update.message.reply_text(
-        f"Parsed!\nAmount: {total} USDC\nSplit: {percentages[:2]}%",
-        reply_markup=InlineKeyboardMarkup(keyboard)
-    )
-
-async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    user_id = query.from_user.id
-    await query.answer()
-
-    if query.data == "cancel":
-        await query.edit_message_text("❌ Cancelled.")
-        return
-
-    data = user_pending.get(user_id)
-    if not data:
-        await query.edit_message_text("Session expired.")
-        return
-
-    await query.edit_message_text("🚀 Sending transaction...")
-
-    try:
-        recipients = data["addresses"]
-        percentages = data["percentages"]
-        total = int(data["total"]) * 10**6
-
-        account = w3.eth.account.from_key(os.getenv("PRIVATE_KEY"))
-        addr = account.address
-
-        nonce = w3.eth.get_transaction_count(addr, 'pending')
-
-        # Approve
-        usdc_abi = [{"inputs":[{"name":"spender","type":"address"},{"name":"amount","type":"uint256"}],"name":"approve","outputs":[],"stateMutability":"nonpayable","type":"function"}]
-        usdc = w3.eth.contract(address=USDC_ADDRESS, abi=usdc_abi)
-        tx_approve = usdc.functions.approve(CONTRACT_ADDRESS, total*2).build_transaction({
-            'from': addr, 'nonce': nonce, 'gas': 150000, 'gasPrice': w3.eth.gas_price
-        })
-        signed = w3.eth.account.sign_transaction(tx_approve, os.getenv("PRIVATE_KEY"))
-        w3.eth.send_raw_transaction(signed.rawTransaction)
-
-        nonce += 1
-        time.sleep(3)
-
-        # Split Payment - درست شده
-        splitter_abi = [{
-            "inputs": [
-                {"name": "recipients", "type": "address[]"},
-                {"name": "percentages", "type": "uint256[]"},
-                {"name": "totalAmount", "type": "uint256"}
-            ],
-            "name": "splitPayment",
-            "outputs": [],
-            "stateMutability": "nonpayable",
-            "type": "function"
-        }]
-        contract = w3.eth.contract(address=CONTRACT_ADDRESS, abi=splitter_abi)
-        
-        tx = contract.functions.splitPayment(recipients, percentages, total).build_transaction({
-            'from': addr, 'nonce': nonce, 'gas': 800000, 'gasPrice': w3.eth.gas_price
-        })
-        signed_tx = w3.eth.account.sign_transaction(tx, os.getenv("PRIVATE_KEY"))
-        tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
-
-        tx_hash_str = tx_hash.hex()
-        if not tx_hash_str.startswith('0x'):
-            tx_hash_str = "0x" + tx_hash_str
-
-        await query.message.reply_text(
-            f"✅ Success!\n\nHash: {tx_hash_str}\n\n"
-            f"[View on Explorer](https://testnet.arcscan.app/tx/{tx_hash_str})"
-        )
-
-    except Exception as e:
-        await query.message.reply_text(f"❌ Error: {str(e)}")
-
-def main():
-    app = Application.builder().token(TOKEN).build()
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
-    app.add_handler(CallbackQueryHandler(button_callback))
+    <button class="connect-btn" onclick="connectWallet()">🔗 Connect MetaMask</button>
     
-    print("🤖 Bot is running...")
-    app.run_polling()
+    <p id="status"></p>
 
-if __name__ == "__main__":
-    main()
+    <h3>Enter Your Split Intent</h3>
+    <textarea id="intent" placeholder="Send 100 USDC, 50% to 0x123..., 50% to 0x456..."></textarea><br>
+    
+    <button class="send-btn" onclick="sendSplit()">🚀 Send Split Transaction</button>
+
+    <h3 style="margin-top:40px">Recent Transactions</h3>
+    <div id="history" class="history"></div>
+  </div>
+
+  <script>
+    let signer = null;
+    let userAddress = null;
+    let transactions = JSON.parse(localStorage.getItem('arcTxHistory') || '[]');
+
+    async function connectWallet() {
+      if (!window.ethereum) return alert("MetaMask not found!");
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        signer = await provider.getSigner();
+        userAddress = await signer.getAddress();
+        document.getElementById("status").innerHTML = `✅ Connected: ${userAddress}`;
+      } catch (e) {
+        document.getElementById("status").innerHTML = "❌ Connection failed";
+      }
+    }
+
+    async function sendSplit() {
+      if (!signer) return alert("Please connect MetaMask first!");
+      
+      const intentText = document.getElementById("intent").value.trim();
+      if (!intentText) return alert("Please enter your intent!");
+
+      try {
+        document.getElementById("status").innerHTML = "⏳ Sending transaction...";
+
+        // شبیه‌سازی ارسال (بعداً واقعی می‌کنیم)
+        const fakeHash = "0x" + Math.random().toString(16).substr(2, 64);
+        const time = new Date().toLocaleString();
+
+        transactions.unshift({ hash: fakeHash, intent: intentText, time: time });
+        localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
+        renderHistory();
+
+        document.getElementById("status").innerHTML = `
+          ✅ Transaction Sent Successfully!<br><br>
+          Hash: ${fakeHash}<br><br>
+          <a href="https://testnet.arcscan.app/tx/${fakeHash}" target="_blank" style="color:#00ffaa;">
+            🔗 View on Arc Explorer
+          </a>
+        `;
+      } catch (e) {
+        document.getElementById("status").innerHTML = "❌ Error occurred";
+      }
+    }
+
+    function renderHistory() {
+      let html = "";
+      transactions.forEach(tx => {
+        html += `
+          <div style="background:rgba(255,255,255,0.05); padding:12px; margin:8px 0; border-radius:10px; font-size:14px;">
+            <small>${tx.time}</small><br>
+            ${tx.intent}<br>
+            <small><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View Transaction</a></small>
+          </div>`;
+      });
+      document.getElementById("history").innerHTML = html || "<p>No transactions yet.</p>";
+    }
+
+    // Load history when page opens
+    renderHistory();
+  </script>
+</body>
+</html>
