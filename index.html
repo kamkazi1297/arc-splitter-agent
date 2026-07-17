@@ -6,15 +6,50 @@
   <title>Arc USDC Splitter - Pro</title>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <style>
-    body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #0a0a1f, #1a1a35); color: #e0e0ff; margin: 0; padding: 20px; }
-    .container { max-width: 780px; margin: 0 auto; background: rgba(255,255,255,0.07); padding: 40px; border-radius: 24px; box-shadow: 0 20px 50px rgba(0,0,0,0.6); }
+    body { 
+      font-family: 'Segoe UI', Arial, sans-serif; 
+      background: linear-gradient(135deg, #0a0a1f, #1a1a35); 
+      color: #e0e0ff; 
+      margin: 0; 
+      padding: 20px; 
+    }
+    .container { 
+      max-width: 780px; 
+      margin: 0 auto; 
+      background: rgba(255,255,255,0.07); 
+      padding: 40px; 
+      border-radius: 24px; 
+      box-shadow: 0 20px 50px rgba(0,0,0,0.6); 
+    }
     h1 { color: #00ffaa; }
-    button { padding: 14px 32px; margin: 8px; font-size: 17px; border: none; border-radius: 14px; cursor: pointer; }
+    button { 
+      padding: 14px 32px; 
+      margin: 8px; 
+      font-size: 17px; 
+      border: none; 
+      border-radius: 14px; 
+      cursor: pointer; 
+    }
     .connect-btn { background: #00ffaa; color: #000; font-weight: bold; }
     .send-btn { background: #ff3366; color: white; font-weight: bold; }
     .export-btn { background: #3366ff; color: white; }
-    textarea { width: 100%; height: 150px; padding: 16px; margin: 15px 0; border-radius: 14px; background: #151525; color: white; border: 1px solid #00ffaa; }
-    #status { margin: 20px 0; padding: 18px; border-radius: 12px; background: rgba(0,255,170,0.1); min-height: 80px; }
+    textarea { 
+      width: 100%; 
+      height: 150px; 
+      padding: 16px; 
+      margin: 15px 0; 
+      border-radius: 14px; 
+      background: #151525; 
+      color: white; 
+      border: 1px solid #00ffaa; 
+    }
+    #status { 
+      margin: 20px 0; 
+      padding: 18px; 
+      border-radius: 12px; 
+      background: rgba(0,255,170,0.1); 
+      min-height: 80px; 
+    }
     .balance { font-size: 18px; color: #00ffaa; margin: 15px 0; font-weight: bold; }
   </style>
 </head>
@@ -44,19 +79,15 @@
     let userAddress = null;
     let transactions = JSON.parse(localStorage.getItem('arcTxHistory') || '[]');
 
-    const ARC_TESTNET_CHAIN_ID = "0x27"; // Arc Testnet Chain ID
-
     async function connectWallet() {
       if (!window.ethereum) return alert("MetaMask not found!");
-
       try {
         // Auto switch to Arc Testnet
         const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-        if (chainId !== ARC_TESTNET_CHAIN_ID) {
-          document.getElementById("status").innerHTML = "🔄 Switching to Arc Testnet...";
+        if (chainId !== "0x27") {
           await window.ethereum.request({
             method: 'wallet_switchEthereumChain',
-            params: [{ chainId: ARC_TESTNET_CHAIN_ID }]
+            params: [{ chainId: "0x27" }]
           });
         }
 
@@ -64,11 +95,10 @@
         await provider.send("eth_requestAccounts", []);
         signer = await provider.getSigner();
         userAddress = await signer.getAddress();
-
         document.getElementById("status").innerHTML = `✅ Connected: ${userAddress}`;
-        await getBalance();
+        getBalance();
       } catch (e) {
-        document.getElementById("status").innerHTML = `❌ Error: ${e.message}`;
+        document.getElementById("status").innerHTML = `❌ ${e.message}`;
       }
     }
 
@@ -82,8 +112,6 @@
     async function getBalance() {
       if (!userAddress) return;
       document.getElementById("balance").innerHTML = `💰 USDC Balance: Checking...`;
-      
-      // شبیه‌سازی بالانس واقعی (بعداً از قرارداد USDC می‌گیریم)
       setTimeout(() => {
         document.getElementById("balance").innerHTML = `💰 USDC Balance: <strong>42.85</strong>`;
       }, 800);
@@ -113,7 +141,6 @@
 
         const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
         
-        // Parse addresses and percentages
         const addresses = intentText.match(/0x[a-fA-F0-9]{40}/g) || [];
         const percentages = intentText.match(/(\d+)[٪%]/g) || [];
         const percentNumbers = percentages.map(p => parseInt(p));
