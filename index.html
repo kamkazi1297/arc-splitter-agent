@@ -66,7 +66,7 @@
     </div>
 
     <h3>Recipients & Percentages</h3>
-    <textarea id="intent" placeholder="Paste addresses and percentages here..."></textarea>
+    <textarea id="intent" placeholder="40% to 0x123..., 60% to 0x456..."></textarea>
     
     <button id="sendBtn" class="send-btn" onclick="sendSplit()">Send Real Transaction</button>
     <button onclick="exportHistory()">Export History</button>
@@ -168,7 +168,7 @@
         text += `${percent}% to 0x000000000000000000000000000000000000000${i}\n`;
       }
       document.getElementById("intent").value = text.trim();
-      alert(`Equal Split for ${num} recipients (${percent}%) ready!`);
+      alert(`Equal Split for ${num} recipients ready!`);
     }
 
     function clearForm() {
@@ -190,14 +190,14 @@
       let percentages = intentText.match(/(\d+\.?\d*)\s*[٪%]/g);
       if (percentages) percentages = percentages.map(p => parseFloat(p));
 
-      if (addresses.length < 2 || percentages.length < 2) 
-        return alert("Could not detect addresses and percentages correctly!");
+      if (addresses.length < 2 || percentages.length !== addresses.length) 
+        return alert("Number of addresses and percentages must match!");
 
       const sum = percentages.reduce((a, b) => a + b, 0);
-      if (Math.abs(sum - 100) > 0.01) 
+      if (Math.abs(sum - 100) > 0.1) 
         return alert("Percentages must sum to 100%!");
 
-      let preview = `Send ${totalAmount} USDC equally or by percentage:\n\n`;
+      let preview = `You are about to send ${totalAmount} USDC:\n\n`;
       for (let i = 0; i < addresses.length; i++) {
         const share = (totalAmount * percentages[i] / 100).toFixed(4);
         preview += `• ${percentages[i]}% → ${addresses[i].slice(0,8)}... = ${share} USDC\n`;
@@ -211,18 +211,26 @@
       btn.textContent = "Processing...";
 
       try {
-        statusEl.innerHTML = "Approving USDC...";
+        statusEl.innerHTML = "Checking balance...";
         statusEl.className = "loading";
 
         const usdc = new ethers.Contract(USDC_ADDRESS, [
           "function approve(address,uint256) returns (bool)",
-          "function decimals() view returns (uint8)"
+          "function decimals() view returns (uint8)",
+          "function balanceOf(address) view returns (uint256)"
         ], signer);
 
         const decimals = await usdc.decimals();
         const totalWei = ethers.parseUnits(totalAmount.toString(), decimals);
-        const MAX_UINT = ethers.MaxUint256;
 
+        // Check balance
+        const balance = await usdc.balanceOf(userAddress);
+        if (balance < totalWei) {
+          throw new Error("Insufficient USDC balance in your wallet!");
+        }
+
+        statusEl.innerHTML = "Approving USDC...";
+        const MAX_UINT = ethers.MaxUint256;
         await (await usdc.approve(CONTRACT_ADDRESS, MAX_UINT)).wait();
 
         statusEl.innerHTML = "Sending Split Transaction...";
@@ -240,7 +248,7 @@
         }];
 
         const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
-        const tx = await contract.splitPayment(addresses, percentages.map(p => Math.floor(p * 100)), totalWei); // scaled if needed
+        const tx = await contract.splitPayment(addresses, percentages, totalWei);
         await tx.wait();
 
         transactions.unshift({
@@ -254,9 +262,13 @@
         statusEl.className = "success";
         statusEl.innerHTML = `✅ Transaction Confirmed!<br>Hash: ${tx.hash}<br>
           <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" style="color:#00ffaa;">View on Explorer</a>`;
+
       } catch (error) {
+        console.error(error);
         statusEl.className = "error";
-        statusEl.innerHTML = `Error: ${error.message.substring(0,160)}...`;
+        let msg = error.reason || error.message || "Unknown error";
+        if (msg.includes("Transfer failed")) msg = "Transfer failed - Make sure you have enough USDC and approved correctly.";
+        statusEl.innerHTML = `Error: ${msg.substring(0,180)}`;
       } finally {
         isProcessing = false;
         btn.disabled = false;
