@@ -65,23 +65,73 @@
 
     const CONTRACT_ADDRESS = "0xEa86B2d60029bEE76F6858a1Ac7f85B2944004bF";
     const USDC_ADDRESS = "0x3600000000000000000000000000000000000000";
-    const CHAIN_ID = 5042002; // Arc Testnet
+    const CHAIN_ID = 5042002;
+    const CHAIN_ID_HEX = "0x4cef52";
+
+    const arcNetwork = {
+      chainId: CHAIN_ID_HEX,
+      chainName: "Arc Testnet",
+      nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
+      rpcUrls: ["https://rpc.testnet.arc.network"],
+      blockExplorerUrls: ["https://testnet.arcscan.app"]
+    };
+
+    // Auto-check connection on page load
+    window.addEventListener('load', async () => {
+      if (window.ethereum) {
+        try {
+          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+          if (accounts.length > 0) {
+            userAddress = accounts[0];
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            signer = await provider.getSigner();
+            
+            document.getElementById("status").innerHTML = `Connected: ${userAddress.slice(0,8)}...${userAddress.slice(-6)}`;
+            document.getElementById("status").className = "success";
+            await getRealBalance();
+          }
+        } catch (e) {
+          console.log("No previous connection");
+        }
+      }
+      renderHistory();
+    });
 
     async function connectWallet() {
       if (!window.ethereum) return alert("MetaMask not found!");
 
       try {
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const network = await provider.getNetwork();
-        
-        if (Number(network.chainId) !== CHAIN_ID) {
-          alert("Please switch to Arc Testnet (Chain ID: 5042002)");
-          return;
-        }
+        // Request accounts
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        userAddress = accounts[0];
 
-        await provider.send("eth_requestAccounts", []);
+        const provider = new ethers.BrowserProvider(window.ethereum);
         signer = await provider.getSigner();
-        userAddress = await signer.getAddress();
+
+        // Check and switch/add network
+        const network = await provider.getNetwork();
+        if (Number(network.chainId) !== CHAIN_ID) {
+          try {
+            await window.ethereum.request({
+              method: 'wallet_switchEthereumChain',
+              params: [{ chainId: CHAIN_ID_HEX }]
+            });
+          } catch (switchError) {
+            if (switchError.code === 4902) { // Network not added
+              await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [arcNetwork]
+              });
+              // Switch after adding
+              await window.ethereum.request({
+                method: 'wallet_switchEthereumChain',
+                params: [{ chainId: CHAIN_ID_HEX }]
+              });
+            } else {
+              throw switchError;
+            }
+          }
+        }
 
         document.getElementById("status").innerHTML = `Connected: ${userAddress.slice(0,8)}...${userAddress.slice(-6)}`;
         document.getElementById("status").className = "success";
@@ -125,13 +175,13 @@
       }
     }
 
+    // sendSplit and other functions remain the same as previous version
     async function sendSplit() {
       if (!signer) return alert("Please connect your wallet first!");
 
       const intentText = document.getElementById("intent").value.trim();
       if (!intentText) return alert("Please enter an intent!");
 
-      // Improved parsing
       const addresses = intentText.match(/0x[a-fA-F0-9]{40}/g) || [];
       const percentMatches = intentText.match(/(\d+)[٪%]/g) || [];
       const percentages = percentMatches.map(p => parseInt(p));
@@ -157,13 +207,11 @@
         const decimals = await usdc.decimals();
         const totalWei = ethers.parseUnits(totalAmount.toString(), decimals);
 
-        // Approve
         const approveTx = await usdc.approve(CONTRACT_ADDRESS, totalWei * 2n);
         await approveTx.wait();
 
-        statusEl.innerHTML = "Sending Split Transaction... Please sign";
+        statusEl.innerHTML = "Sending Split Transaction...";
 
-        // Split Payment
         const splitterAbi = [{
           "inputs": [
             {"name": "recipients", "type": "address[]"},
@@ -180,7 +228,6 @@
         const tx = await contract.splitPayment(addresses, percentages, totalWei);
         await tx.wait();
 
-        // Save to history
         transactions.unshift({
           hash: tx.hash,
           intent: intentText.substring(0, 100),
@@ -190,14 +237,8 @@
         renderHistory();
 
         statusEl.className = "success";
-        statusEl.innerHTML = `
-          ✅ Transaction Confirmed!<br><br>
-          Hash: ${tx.hash}<br><br>
-          <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" style="color:#00ffaa;">
-            View on Arc Explorer
-          </a>
-        `;
-
+        statusEl.innerHTML = `✅ Transaction Confirmed!<br><br>Hash: ${tx.hash}<br><br>
+          <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" style="color:#00ffaa;">View on Explorer</a>`;
       } catch (error) {
         console.error(error);
         document.getElementById("status").className = "error";
@@ -228,9 +269,6 @@
       link.click();
       alert("History exported successfully!");
     }
-
-    // Initial render
-    renderHistory();
   </script>
 </body>
 </html>
