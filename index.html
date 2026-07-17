@@ -15,7 +15,7 @@
     .export-btn { background: #3366ff; color: white; }
     textarea { width: 100%; height: 150px; padding: 16px; margin: 15px 0; border-radius: 14px; background: #151525; color: white; border: 1px solid #00ffaa; }
     #status { margin: 20px 0; padding: 18px; border-radius: 12px; background: rgba(0,255,170,0.1); min-height: 80px; }
-    .balance { font-size: 18px; color: #00ffaa; margin: 15px 0; }
+    .balance { font-size: 18px; color: #00ffaa; margin: 15px 0; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -24,7 +24,7 @@
     <p><strong>Professional • Arc Testnet</strong></p>
 
     <button class="connect-btn" onclick="connectWallet()">🔗 Connect MetaMask</button>
-    <button onclick="disconnectWallet()">❌ Disconnect Wallet</button>
+    <button onclick="disconnectWallet()">❌ Disconnect</button>
     
     <p id="status"></p>
     <div id="balance" class="balance"></div>
@@ -44,17 +44,31 @@
     let userAddress = null;
     let transactions = JSON.parse(localStorage.getItem('arcTxHistory') || '[]');
 
+    const ARC_TESTNET_CHAIN_ID = "0x27"; // Arc Testnet Chain ID
+
     async function connectWallet() {
       if (!window.ethereum) return alert("MetaMask not found!");
+
       try {
+        // Auto switch to Arc Testnet
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        if (chainId !== ARC_TESTNET_CHAIN_ID) {
+          document.getElementById("status").innerHTML = "🔄 Switching to Arc Testnet...";
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: ARC_TESTNET_CHAIN_ID }]
+          });
+        }
+
         const provider = new ethers.BrowserProvider(window.ethereum);
         await provider.send("eth_requestAccounts", []);
         signer = await provider.getSigner();
         userAddress = await signer.getAddress();
+
         document.getElementById("status").innerHTML = `✅ Connected: ${userAddress}`;
         await getBalance();
       } catch (e) {
-        document.getElementById("status").innerHTML = "❌ Connection failed";
+        document.getElementById("status").innerHTML = `❌ Error: ${e.message}`;
       }
     }
 
@@ -68,19 +82,11 @@
     async function getBalance() {
       if (!userAddress) return;
       document.getElementById("balance").innerHTML = `💰 USDC Balance: Checking...`;
-      // بعداً بالانس واقعی رو از قرارداد USDC می‌گیریم
+      
+      // شبیه‌سازی بالانس واقعی (بعداً از قرارداد USDC می‌گیریم)
       setTimeout(() => {
         document.getElementById("balance").innerHTML = `💰 USDC Balance: <strong>42.85</strong>`;
       }, 800);
-    }
-
-    function parseIntent(text) {
-      const addresses = text.match(/0x[a-fA-F0-9]{40}/g) || [];
-      const percentages = text.match(/(\d+)[٪%]/g) || [];
-      const percentNumbers = percentages.map(p => parseInt(p));
-      const amountMatch = text.match(/(\d+)\s*USDC/i);
-      const total = amountMatch ? parseInt(amountMatch[1]) : 10;
-      return { addresses, percentages: percentNumbers, total };
     }
 
     async function sendSplit() {
@@ -89,13 +95,8 @@
       const intentText = document.getElementById("intent").value.trim();
       if (!intentText) return alert("Please enter intent!");
 
-      const { addresses, percentages, total } = parseIntent(intentText);
-
-      if (addresses.length === 0 || percentages.length === 0) return alert("Could not parse addresses!");
-      if (percentages.reduce((a,b) => a+b, 0) !== 100) return alert("Percentages must sum to 100%!");
-
       try {
-        document.getElementById("status").innerHTML = "⏳ Please sign the transaction in MetaMask...";
+        document.getElementById("status").innerHTML = "⏳ Please sign in MetaMask...";
 
         const CONTRACT_ADDRESS = "0xEa86B2d60029bEE76F6858a1Ac7f85B2944004bF";
         const abi = [{
@@ -111,9 +112,17 @@
         }];
 
         const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
+        
+        // Parse addresses and percentages
+        const addresses = intentText.match(/0x[a-fA-F0-9]{40}/g) || [];
+        const percentages = intentText.match(/(\d+)[٪%]/g) || [];
+        const percentNumbers = percentages.map(p => parseInt(p));
+        const amountMatch = intentText.match(/(\d+)\s*USDC/i);
+        const total = amountMatch ? parseInt(amountMatch[1]) : 10;
+
         const totalWei = BigInt(total) * BigInt(1000000);
 
-        const tx = await contract.splitPayment(addresses, percentages, totalWei);
+        const tx = await contract.splitPayment(addresses, percentNumbers, totalWei);
         await tx.wait();
 
         const txHash = tx.hash;
