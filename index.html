@@ -24,7 +24,7 @@
     <p><strong>Professional • Arc Testnet</strong></p>
 
     <button class="connect-btn" onclick="connectWallet()">🔗 Connect MetaMask</button>
-    <button onclick="disconnectWallet()">❌ Disconnect</button>
+    <button onclick="disconnectWallet()">❌ Disconnect Wallet</button>
     
     <p id="status"></p>
     <div id="balance" class="balance"></div>
@@ -32,7 +32,7 @@
     <h3>Enter Split Intent</h3>
     <textarea id="intent" placeholder="Send 100 USDC, 40% to 0x123..., 60% to 0x456..."></textarea><br>
     
-    <button class="send-btn" onclick="sendSplit()">🚀 Send Split Transaction</button>
+    <button class="send-btn" onclick="sendSplit()">🚀 Send Real Transaction</button>
     <button class="export-btn" onclick="exportHistory()">📤 Export History</button>
 
     <h3>Recent Transactions</h3>
@@ -67,10 +67,20 @@
 
     async function getBalance() {
       if (!userAddress) return;
-      document.getElementById("balance").innerHTML = `💰 USDC Balance: <strong>Checking...</strong>`;
+      document.getElementById("balance").innerHTML = `💰 USDC Balance: Checking...`;
+      // بعداً بالانس واقعی رو از قرارداد USDC می‌گیریم
       setTimeout(() => {
         document.getElementById("balance").innerHTML = `💰 USDC Balance: <strong>42.85</strong>`;
-      }, 600);
+      }, 800);
+    }
+
+    function parseIntent(text) {
+      const addresses = text.match(/0x[a-fA-F0-9]{40}/g) || [];
+      const percentages = text.match(/(\d+)[٪%]/g) || [];
+      const percentNumbers = percentages.map(p => parseInt(p));
+      const amountMatch = text.match(/(\d+)\s*USDC/i);
+      const total = amountMatch ? parseInt(amountMatch[1]) : 10;
+      return { addresses, percentages: percentNumbers, total };
     }
 
     async function sendSplit() {
@@ -79,23 +89,47 @@
       const intentText = document.getElementById("intent").value.trim();
       if (!intentText) return alert("Please enter intent!");
 
+      const { addresses, percentages, total } = parseIntent(intentText);
+
+      if (addresses.length === 0 || percentages.length === 0) return alert("Could not parse addresses!");
+      if (percentages.reduce((a,b) => a+b, 0) !== 100) return alert("Percentages must sum to 100%!");
+
       try {
-        document.getElementById("status").innerHTML = "⏳ Please sign in MetaMask...";
+        document.getElementById("status").innerHTML = "⏳ Please sign the transaction in MetaMask...";
 
-        const fakeHash = "0x" + Math.random().toString(16).substr(2, 64);
-        const time = new Date().toLocaleString();
+        const CONTRACT_ADDRESS = "0xEa86B2d60029bEE76F6858a1Ac7f85B2944004bF";
+        const abi = [{
+          "inputs": [
+            {"name": "recipients", "type": "address[]"},
+            {"name": "percentages", "type": "uint256[]"},
+            {"name": "totalAmount", "type": "uint256"}
+          ],
+          "name": "splitPayment",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        }];
 
-        transactions.unshift({ hash: fakeHash, intent: intentText.substring(0,80), time: time });
+        const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
+        const totalWei = BigInt(total) * BigInt(1000000);
+
+        const tx = await contract.splitPayment(addresses, percentages, totalWei);
+        await tx.wait();
+
+        const txHash = tx.hash;
+        transactions.unshift({ hash: txHash, intent: intentText.substring(0,80), time: new Date().toLocaleString() });
         localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
         renderHistory();
 
         document.getElementById("status").innerHTML = `
-          ✅ Transaction Sent!<br><br>
-          Hash: ${fakeHash}<br><br>
-          <a href="https://testnet.arcscan.app/tx/${fakeHash}" target="_blank" style="color:#00ffaa;">🔗 View on Explorer</a>
+          ✅ Real Transaction Confirmed!<br><br>
+          Hash: ${txHash}<br><br>
+          <a href="https://testnet.arcscan.app/tx/${txHash}" target="_blank" style="color:#00ffaa;">
+            🔗 View on Arc Explorer
+          </a>
         `;
-      } catch (e) {
-        document.getElementById("status").innerHTML = `❌ Error: ${e.message.substring(0,100)}...`;
+      } catch (error) {
+        document.getElementById("status").innerHTML = `❌ Transaction rejected or failed.<br>${error.message.substring(0,120)}`;
       }
     }
 
