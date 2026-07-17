@@ -9,39 +9,44 @@
     :root {
       --primary: #00ffaa;
       --accent: #ff3366;
-      --bg: #0a0a1f;
-      --card: rgba(255,255,255,0.08);
     }
     body { 
       font-family: 'Segoe UI', system-ui, sans-serif; 
       background: linear-gradient(135deg, #0a0a1f, #1a1a35); 
       color: #e0e0ff; 
       margin: 0; padding: 20px; 
+      transition: background 0.4s, color 0.4s;
+    }
+    body.light {
+      background: linear-gradient(135deg, #f0f0f5, #e0e0f0);
+      color: #222;
     }
     .container { 
-      max-width: 800px; margin: 0 auto; 
-      background: var(--card); 
+      max-width: 820px; margin: 0 auto; 
+      background: rgba(255,255,255,0.08); 
       padding: 40px; border-radius: 28px; 
       box-shadow: 0 25px 60px rgba(0,0,0,0.7); 
       border: 1px solid rgba(0,255,170,0.15);
+      transition: all 0.4s;
     }
-    h1 { 
-      color: var(--primary); 
-      text-align: center; 
-      text-shadow: 0 0 20px rgba(0,255,170,0.4);
-      margin-bottom: 8px;
+    body.light .container {
+      background: rgba(255,255,255,0.95);
+      box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+      border-color: #ddd;
     }
+
+    h1 { color: var(--primary); text-align: center; text-shadow: 0 0 20px rgba(0,255,170,0.4); }
+    body.light h1 { color: #00aa77; text-shadow: none; }
+
     select, input { 
       padding: 14px; margin: 8px 0; 
       border-radius: 14px; background: #12122b; color: white; 
       border: 1px solid #00ffaa; font-size: 16px; width: 100%;
-      transition: all 0.3s;
     }
-    input:focus, select:focus {
-      border-color: #00ffdd;
-      box-shadow: 0 0 0 3px rgba(0,255,170,0.25);
-      outline: none;
+    body.light select, body.light input {
+      background: white; color: #222; border-color: #00aa77;
     }
+
     .recipient-row {
       display: flex;
       gap: 12px;
@@ -50,22 +55,32 @@
       flex-wrap: wrap;
     }
     .recipient-row input.address { flex: 2; min-width: 280px; }
-    .recipient-row input.percent { flex: 1; max-width: 160px; }
-    
+    .recipient-row .percent-container {
+      position: relative;
+      flex: 1;
+      max-width: 180px;
+    }
+    .recipient-row .percent-container input {
+      padding-right: 30px;
+    }
+    .recipient-row .percent-container::after {
+      content: "%";
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #00ffaa;
+      font-weight: bold;
+    }
+    body.light .recipient-row .percent-container::after { color: #00aa77; }
+
     button { 
-      padding: 14px 28px; margin: 6px 4px; font-size: 16px; 
-      border: none; border-radius: 14px; cursor: pointer; 
+      padding: 12px 24px; margin: 6px 4px; font-size: 16px; 
+      border: none; border-radius: 12px; cursor: pointer; 
       transition: all 0.3s ease;
     }
     .connect-btn { background: var(--primary); color: #000; font-weight: bold; }
-    .connect-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(0,255,170,0.4); }
     .send-btn { background: var(--accent); color: white; font-weight: bold; }
-    .send-btn:hover { background: #ff5588; transform: translateY(-2px); }
-    .template-btn { background: #0099ff; color: white; }
-    .add-btn { background: #00cc88; color: white; }
-    .max-btn { background: #555; color: white; font-weight: 600; }
-
-    button:disabled { opacity: 0.65; cursor: not-allowed; transform: none !important; }
 
     #status { 
       margin: 20px 0; 
@@ -73,8 +88,6 @@
       border-radius: 16px; 
       min-height: 160px; 
       line-height: 1.6;
-      position: relative;
-      overflow: hidden;
     }
     .spinner {
       display: inline-block;
@@ -85,18 +98,37 @@
       border-radius: 50%;
       animation: spin 1s linear infinite;
       margin-right: 12px;
-      vertical-align: middle;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    .history-item {
+      background: rgba(255,255,255,0.05); 
+      padding: 14px; 
+      margin: 10px 0; 
+      border-radius: 12px;
+    }
+    body.light .history-item { background: #f8f8f8; color: #222; }
+
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin: 15px 0;
+      flex-wrap: wrap;
+    }
+
     .footer { text-align: center; margin-top: 50px; color: #777; font-size: 14px; }
     #percent-total { font-weight: bold; margin: 15px 0; font-size: 17px; }
-    .glow { box-shadow: 0 0 25px rgba(0,255,170,0.3); }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Arc Splitter Pro</h1>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+      <h1>Arc Splitter Pro</h1>
+      <button onclick="toggleTheme()" style="background:none; border:1px solid #00ffaa; color:#00ffaa; padding:8px 16px; border-radius:999px; font-size:14px;">
+        🌗 Toggle Theme
+      </button>
+    </div>
     <p><strong>Arc Testnet • Multi Token • Advanced</strong></p>
 
     <button class="connect-btn" onclick="connectWallet()">Connect MetaMask</button>
@@ -117,7 +149,7 @@
       <strong>Total Amount</strong>
       <div style="display:flex; gap:8px;">
         <input type="number" id="totalAmount" value="100" step="0.000001" style="flex:1;">
-        <button class="max-btn" onclick="setMaxAmount()">MAX</button>
+        <button onclick="setMaxAmount()" style="background:#555;color:white;">MAX</button>
       </div>
     </div>
 
@@ -128,15 +160,15 @@
 
     <h3>Quick Templates</h3>
     <div>
-      <button class="template-btn" onclick="loadTemplate(1)">50% - 50%</button>
-      <button class="template-btn" onclick="loadTemplate(2)">33-33-34%</button>
-      <button class="template-btn" onclick="loadTemplate(3)">40% - 60%</button>
-      <button class="template-btn" onclick="loadTemplate(4)">Equal Split (4)</button>
+      <button onclick="loadTemplate(1)" style="background:#0099ff;color:white;">50% - 50%</button>
+      <button onclick="loadTemplate(2)" style="background:#0099ff;color:white;">33-33-34%</button>
+      <button onclick="loadTemplate(3)" style="background:#0099ff;color:white;">40% - 60%</button>
+      <button onclick="loadTemplate(4)" style="background:#0099ff;color:white;">Equal Split (4)</button>
     </div>
 
     <h3>Recipients & Percentages</h3>
     <div id="recipients-list"></div>
-    <button class="add-btn" onclick="addRecipient()">+ Add Recipient</button>
+    <button onclick="addRecipient()" style="background:#00cc88;color:white;">+ Add Recipient</button>
     <p id="percent-total">Total: 0%</p>
 
     <button id="sendBtn" class="send-btn" onclick="sendSplit()">Send Split Transaction</button>
@@ -145,6 +177,7 @@
 
     <h3>Recent Transactions</h3>
     <div id="history"></div>
+    <div id="pagination" class="pagination"></div>
 
     <div class="footer">
       <p><strong>Testnet Only</strong> — Do not use with real funds.</p>
@@ -156,6 +189,9 @@
     let userAddress = null;
     let transactions = JSON.parse(localStorage.getItem('arcTxHistory') || '[]');
     let isProcessing = false;
+    let isLightMode = false;
+    let currentPage = 1;
+    const itemsPerPage = 10;
 
     const CONTRACT_ADDRESS = "0xEa86B2d60029bEE76F6858a1Ac7f85B2944004bF";
     const CHAIN_ID = 5042002;
@@ -168,6 +204,61 @@
       rpcUrls: ["https://rpc.testnet.arc.network"],
       blockExplorerUrls: ["https://testnet.arcscan.app"]
     };
+
+    function toggleTheme() {
+      isLightMode = !isLightMode;
+      document.body.classList.toggle('light', isLightMode);
+    }
+
+    function renderHistory() {
+      const start = (currentPage - 1) * itemsPerPage;
+      const end = start + itemsPerPage;
+      const pageTransactions = transactions.slice(start, end);
+
+      let html = "";
+      pageTransactions.forEach(tx => {
+        html += `
+          <div class="history-item">
+            <small>${tx.time}</small><br>
+            ${tx.intent}<br>
+            <small><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View Tx</a></small>
+          </div>`;
+      });
+
+      document.getElementById("history").innerHTML = html || "<p>No transactions yet.</p>";
+      renderPagination();
+    }
+
+    function renderPagination() {
+      const totalPages = Math.ceil(transactions.length / itemsPerPage);
+      if (totalPages <= 1) {
+        document.getElementById("pagination").innerHTML = "";
+        return;
+      }
+
+      let html = `
+        <button onclick="prevPage()" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>
+        <span style="margin:0 15px;">Page ${currentPage} of ${totalPages}</span>
+        <button onclick="nextPage()" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>
+      `;
+
+      document.getElementById("pagination").innerHTML = html;
+    }
+
+    function nextPage() {
+      const totalPages = Math.ceil(transactions.length / itemsPerPage);
+      if (currentPage < totalPages) {
+        currentPage++;
+        renderHistory();
+      }
+    }
+
+    function prevPage() {
+      if (currentPage > 1) {
+        currentPage--;
+        renderHistory();
+      }
+    }
 
     window.addEventListener('load', async () => {
       renderHistory();
@@ -189,22 +280,15 @@
       }
     });
 
-    async function getCurrentToken() {
-      return document.getElementById("tokenSelect").value;
-    }
-
-    async function getTokenSymbol() {
-      return document.getElementById("tokenSelect").selectedOptions[0].text;
-    }
+    // === توابع دیگر (کامل) ===
+    async function getCurrentToken() { return document.getElementById("tokenSelect").value; }
+    async function getTokenSymbol() { return document.getElementById("tokenSelect").selectedOptions[0].text; }
 
     async function updateBalance() {
       if (!signer || !userAddress) return;
       try {
         const tokenAddr = await getCurrentToken();
-        const contract = new ethers.Contract(tokenAddr, [
-          "function balanceOf(address) view returns (uint256)",
-          "function decimals() view returns (uint8)"
-        ], signer);
+        const contract = new ethers.Contract(tokenAddr, ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"], signer);
         const balance = await contract.balanceOf(userAddress);
         const decimals = await contract.decimals();
         const formatted = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4);
@@ -230,7 +314,9 @@
       row.className = "recipient-row";
       row.innerHTML = `
         <input type="text" class="address" placeholder="0x...">
-        <input type="number" class="percent" placeholder="%" step="0.01" oninput="updatePercentTotal()">
+        <div class="percent-container">
+          <input type="number" class="percent" placeholder="%" step="0.01" oninput="updatePercentTotal()">
+        </div>
         <button onclick="this.parentElement.remove(); updatePercentTotal()" style="background:#ff3366;color:white;padding:10px 16px;">×</button>
       `;
       list.appendChild(row);
@@ -262,7 +348,9 @@
       row.className = "recipient-row";
       row.innerHTML = `
         <input type="text" class="address" value="${address}">
-        <input type="number" class="percent" value="${percent}" oninput="updatePercentTotal()">
+        <div class="percent-container">
+          <input type="number" class="percent" value="${percent}" oninput="updatePercentTotal()">
+        </div>
         <button onclick="this.parentElement.remove(); updatePercentTotal()" style="background:#ff3366;color:white;padding:10px 16px;">×</button>
       `;
       list.appendChild(row);
@@ -298,10 +386,8 @@
     }
 
     function disconnectWallet() {
-      signer = null; 
-      userAddress = null;
+      signer = null; userAddress = null;
       document.getElementById("status").innerHTML = "Wallet Disconnected";
-      document.getElementById("status").className = "";
     }
 
     function clearForm() {
@@ -313,23 +399,11 @@
 
     async function estimateGas(addresses, percentages, totalWei) {
       try {
-        const splitterAbi = [{
-          "inputs": [
-            {"name": "recipients", "type": "address[]"},
-            {"name": "percentages", "type": "uint256[]"},
-            {"name": "totalAmount", "type": "uint256"}
-          ],
-          "name": "splitPayment",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        }];
+        const splitterAbi = [{"inputs":[{"name":"recipients","type":"address[]"},{"name":"percentages","type":"uint256[]"},{"name":"totalAmount","type":"uint256"}],"name":"splitPayment","outputs":[],"stateMutability":"nonpayable","type":"function"}];
         const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
         const gasEstimate = await contract.splitPayment.estimateGas(addresses, percentages.map(p => Math.floor(p)), totalWei);
-        return Math.floor(Number(gasEstimate) * 1.25); // 25% buffer
-      } catch (e) {
-        return 500000; // fallback
-      }
+        return Math.floor(Number(gasEstimate) * 1.25);
+      } catch (e) { return 500000; }
     }
 
     async function sendSplit() {
@@ -345,7 +419,7 @@
       const symbol = await getTokenSymbol();
 
       if (tokenAddr !== "0x3600000000000000000000000000000000000000") {
-        if (!confirm(`⚠️ Warning!\n\nThe Splitter contract is currently optimized for USDC.\nSending with ${symbol} may fail.\n\nContinue anyway?`)) return;
+        if (!confirm(`⚠️ Warning!\n\nThe Splitter contract is optimized for USDC.\nSending with ${symbol} may fail.\n\nContinue?`)) return;
       }
 
       const addresses = [];
@@ -368,12 +442,8 @@
         if (!ethers.isAddress(addr)) return alert(`Invalid address: ${addr}`);
       }
 
-      let preview = `You are about to send ${totalAmount} ${symbol} (${slippage}% slippage tolerance):\n\n`;
-      addresses.forEach((addr, i) => {
-        const share = (totalAmount * percentages[i] / 100).toFixed(4);
-        preview += `• ${percentages[i]}% → ${addr.slice(0,8)}... = ${share} ${symbol}\n`;
-      });
-      preview += `\nContinue?`;
+      let preview = `Send ${totalAmount} ${symbol} with ${slippage}% slippage?\n\n`;
+      addresses.forEach((addr, i) => preview += `• ${percentages[i]}% → ${addr.slice(0,8)}...\n`);
 
       if (!confirm(preview)) return;
 
@@ -385,36 +455,18 @@
 
       try {
         statusEl.innerHTML = `<span class="spinner"></span> Approving ${symbol}...`;
-        statusEl.className = "";
-
-        const tokenContract = new ethers.Contract(tokenAddr, [
-          "function approve(address,uint256) returns (bool)",
-          "function decimals() view returns (uint8)"
-        ], signer);
-
+        const tokenContract = new ethers.Contract(tokenAddr, ["function approve(address,uint256) returns (bool)", "function decimals() view returns (uint8)"], signer);
         const decimals = await tokenContract.decimals();
         const totalWei = ethers.parseUnits(totalAmount.toString(), decimals);
 
-        // Gas Estimation
         statusEl.innerHTML = `<span class="spinner"></span> Estimating gas...`;
         const gasLimit = await estimateGas(addresses, percentages, totalWei);
 
         await (await tokenContract.approve(CONTRACT_ADDRESS, totalWei)).wait();
 
-        statusEl.innerHTML = `<span class="spinner"></span> Sending Split Transaction...<br><small>Gas Limit: ~${gasLimit.toLocaleString()}</small>`;
+        statusEl.innerHTML = `<span class="spinner"></span> Sending transaction...`;
 
-        const splitterAbi = [{
-          "inputs": [
-            {"name": "recipients", "type": "address[]"},
-            {"name": "percentages", "type": "uint256[]"},
-            {"name": "totalAmount", "type": "uint256"}
-          ],
-          "name": "splitPayment",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        }];
-
+        const splitterAbi = [{"inputs":[{"name":"recipients","type":"address[]"},{"name":"percentages","type":"uint256[]"},{"name":"totalAmount","type":"uint256"}],"name":"splitPayment","outputs":[],"stateMutability":"nonpayable","type":"function"}];
         const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
         const tx = await contract.splitPayment(addresses, percentages.map(p => Math.floor(p)), totalWei, { gasLimit });
         await tx.wait();
@@ -425,33 +477,20 @@
           time: new Date().toLocaleString()
         });
         localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
+        
+        currentPage = 1; // بعد از تراکنش جدید به صفحه اول برگرد
         renderHistory();
 
         statusEl.className = "success";
-        statusEl.innerHTML = `✅ Transaction Confirmed!<br>Hash: ${tx.hash}<br>
-          <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" style="color:#00ffaa;">View on Explorer</a>`;
-
+        statusEl.innerHTML = `✅ Success!<br>Hash: ${tx.hash}<br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View on Explorer</a>`;
       } catch (error) {
         statusEl.className = "error";
-        statusEl.innerHTML = `❌ Error: ${error.message.substring(0,200)}...`;
+        statusEl.innerHTML = `❌ Error: ${error.message.substring(0,180)}...`;
       } finally {
         isProcessing = false;
         btn.disabled = false;
         btn.textContent = "Send Split Transaction";
       }
-    }
-
-    function renderHistory() {
-      let html = "";
-      transactions.forEach(tx => {
-        html += `
-          <div style="background:rgba(255,255,255,0.05); padding:14px; margin:10px 0; border-radius:12px;">
-            <small>${tx.time}</small><br>
-            ${tx.intent}<br>
-            <small><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View Tx</a></small>
-          </div>`;
-      });
-      document.getElementById("history").innerHTML = html || "<p>No transactions yet.</p>";
     }
 
     function exportHistory() {
