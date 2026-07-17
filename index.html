@@ -18,7 +18,12 @@
       padding: 40px; border-radius: 24px; 
       box-shadow: 0 20px 50px rgba(0,0,0,0.6); 
     }
-    h1 { color: #00ffaa; text-align: center; margin-bottom: 5px; }
+    h1 { color: #00ffaa; text-align: center; }
+    input, textarea { 
+      width: 100%; padding: 14px; margin: 10px 0; 
+      border-radius: 12px; background: #151525; color: white; 
+      border: 1px solid #00ffaa; font-size: 16px;
+    }
     button { 
       padding: 12px 24px; margin: 6px 4px; font-size: 16px; 
       border: none; border-radius: 12px; cursor: pointer; 
@@ -28,13 +33,7 @@
     .small-btn { padding: 8px 16px; font-size: 14px; }
     .template-btn { background: #00aaff; color: white; padding: 10px 18px; }
     button:disabled { opacity: 0.6; cursor: not-allowed; }
-    textarea { 
-      width: 100%; height: 160px; padding: 16px; margin: 12px 0; 
-      border-radius: 14px; background: #151525; color: white; 
-      border: 1px solid #00ffaa; font-family: monospace; 
-    }
-    #status { margin: 20px 0; padding: 18px; border-radius: 12px; min-height: 120px; }
-    .balance { font-size: 18px; color: #00ffaa; margin: 15px 0; font-weight: bold; }
+    #status { margin: 20px 0; padding: 18px; border-radius: 12px; min-height: 130px; }
     .success { background: rgba(0,255,100,0.15); }
     .error { background: rgba(255,50,50,0.15); }
     .loading::after { content: " ⏳"; animation: spin 1.5s linear infinite; }
@@ -46,16 +45,16 @@
 <body>
   <div class="container">
     <h1>Arc USDC Splitter</h1>
-    <p><strong>Professional Splitter • Arc Testnet</strong></p>
+    <p><strong>Professional • Arc Testnet</strong></p>
 
     <button class="connect-btn" onclick="connectWallet()">Connect MetaMask</button>
     <button onclick="disconnectWallet()">Disconnect</button>
 
     <p id="status">Ready</p>
-    
-    <div class="balance">
-      USDC Balance: <strong id="balanceAmount">Not connected</strong>
-      <button class="small-btn" onclick="getRealBalance()" style="background:#00cc88;color:white;">Refresh</button>
+
+    <div style="margin:15px 0;">
+      <strong>Total Amount (USDC)</strong>
+      <input type="number" id="totalAmount" value="100" placeholder="100">
     </div>
 
     <h3>Quick Templates</h3>
@@ -66,19 +65,18 @@
       <button class="template-btn" onclick="loadTemplate(4)">Equal Split</button>
     </div>
 
-    <h3>Enter Split Intent</h3>
-    <textarea id="intent" placeholder="Send 100 USDC, 40% to 0x..., 60% to 0x..."></textarea>
+    <h3>Recipients & Percentages</h3>
+    <textarea id="intent" placeholder="Example: 40% to 0x123..., 60% to 0x456..."></textarea>
     
     <button id="sendBtn" class="send-btn" onclick="sendSplit()">Send Real Transaction</button>
-    <button class="export-btn" onclick="exportHistory()">Export History</button>
-    <button class="small-btn" onclick="clearIntent()" style="background:#666;color:white;">Clear</button>
+    <button onclick="exportHistory()">Export History</button>
+    <button class="small-btn" onclick="clearForm()" style="background:#666;color:white;">Clear All</button>
 
     <h3>Recent Transactions</h3>
     <div id="history"></div>
 
     <div class="footer">
-      <p>Arc Testnet Only — This is a demo tool for testing purposes.</p>
-      <p>Made for <strong>Arc Project</strong></p>
+      <p>Arc Testnet Only — Demo for Arc Project</p>
     </div>
   </div>
 
@@ -111,7 +109,6 @@
             signer = await provider.getSigner();
             document.getElementById("status").innerHTML = `Connected: ${userAddress.slice(0,8)}...${userAddress.slice(-6)}`;
             document.getElementById("status").className = "success";
-            await getRealBalance();
           }
         } catch (e) {}
       }
@@ -140,7 +137,6 @@
 
         document.getElementById("status").innerHTML = `Connected: ${userAddress.slice(0,8)}...${userAddress.slice(-6)}`;
         document.getElementById("status").className = "success";
-        await getRealBalance();
       } catch (e) {
         document.getElementById("status").innerHTML = `Error: ${e.message}`;
         document.getElementById("status").className = "error";
@@ -150,87 +146,97 @@
     function disconnectWallet() {
       signer = null; userAddress = null;
       document.getElementById("status").innerHTML = "Wallet Disconnected";
-      document.getElementById("balanceAmount").innerHTML = "Not connected";
-    }
-
-    async function getRealBalance() {
-      if (!signer) return;
-      const el = document.getElementById("balanceAmount");
-      el.innerHTML = "Checking...";
-      try {
-        const usdc = new ethers.Contract(USDC_ADDRESS, ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"], signer);
-        const [bal, decimals] = await Promise.all([usdc.balanceOf(userAddress), usdc.decimals()]);
-        el.innerHTML = parseFloat(ethers.formatUnits(bal, decimals)).toFixed(4);
-      } catch (e) { el.innerHTML = "Error"; }
     }
 
     function loadTemplate(type) {
-      const t = document.getElementById("intent");
-      if (type === 1) t.value = "Send 100 USDC, 50% to 0x0000000000000000000000000000000000000001, 50% to 0x0000000000000000000000000000000000000002";
-      else if (type === 2) t.value = "Send 300 USDC, 33% to 0x0000000000000000000000000000000000000001, 33% to 0x0000000000000000000000000000000000000002, 34% to 0x0000000000000000000000000000000000000003";
-      else if (type === 3) t.value = "Send 100 USDC, 40% to 0x0000000000000000000000000000000000000001, 60% to 0x0000000000000000000000000000000000000002";
-      else if (type === 4) t.value = "Send 200 USDC, 25% to 0x1, 25% to 0x2, 25% to 0x3, 25% to 0x4".replace(/0x[1-4]/g, (m,i) => "0x000000000000000000000000000000000000000" + (i+1));
+      const textarea = document.getElementById("intent");
+      if (type === 1) textarea.value = "50% to 0x0000000000000000000000000000000000000001, 50% to 0x0000000000000000000000000000000000000002";
+      else if (type === 2) textarea.value = "33% to 0x0000000000000000000000000000000000000001, 33% to 0x0000000000000000000000000000000000000002, 34% to 0x0000000000000000000000000000000000000003";
+      else if (type === 3) textarea.value = "40% to 0x0000000000000000000000000000000000000001, 60% to 0x0000000000000000000000000000000000000002";
+      else if (type === 4) textarea.value = "25% to 0x1, 25% to 0x2, 25% to 0x3, 25% to 0x4".replace(/0x[1-4]/g, (m,i) => "0x000000000000000000000000000000000000000" + (parseInt(i)+1));
     }
 
-    function clearIntent() { document.getElementById("intent").value = ""; }
+    function clearForm() {
+      document.getElementById("intent").value = "";
+      document.getElementById("totalAmount").value = "100";
+    }
 
     async function sendSplit() {
       if (!signer) return alert("Please connect your wallet first!");
       if (isProcessing) return;
 
+      const totalAmount = parseFloat(document.getElementById("totalAmount").value);
+      if (!totalAmount || totalAmount <= 0) return alert("Enter a valid amount!");
+
       const intentText = document.getElementById("intent").value.trim();
-      if (!intentText) return alert("Please enter an intent!");
+      if (!intentText) return alert("Enter recipients and percentages!");
 
       const addresses = intentText.match(/0x[a-fA-F0-9]{40}/g) || [];
       const percentages = (intentText.match(/(\d+)[٪%]/g) || []).map(p => parseInt(p));
-      const amountMatch = intentText.match(/(\d+)\s*USDC/i);
-      const totalAmount = amountMatch ? parseInt(amountMatch[1]) : 10;
 
-      if (addresses.length < 2 || percentages.length < 2) return alert("Could not detect addresses and percentages!");
-      if (percentages.reduce((a,b)=>a+b,0) !== 100) return alert("Percentages must sum to 100%!");
+      if (addresses.length < 2 || percentages.length < 2) 
+        return alert("Could not detect addresses and percentages correctly!");
 
+      if (percentages.reduce((a, b) => a + b, 0) !== 100) 
+        return alert("Percentages must sum to exactly 100%!");
+
+      // Preview
       let preview = `Send ${totalAmount} USDC:\n\n`;
-      addresses.forEach((addr,i) => {
+      for (let i = 0; i < addresses.length; i++) {
         const share = (totalAmount * percentages[i] / 100).toFixed(2);
-        preview += `• ${percentages[i]}% → ${addr.slice(0,8)}... = ${share} USDC\n`;
-      });
+        preview += `• ${percentages[i]}% → ${addresses[i].slice(0,8)}... = ${share} USDC\n`;
+      }
       if (!confirm(preview + "\nContinue?")) return;
 
       isProcessing = true;
       const btn = document.getElementById("sendBtn");
-      const status = document.getElementById("status");
+      const statusEl = document.getElementById("status");
       btn.disabled = true;
       btn.textContent = "Processing...";
 
       try {
-        status.innerHTML = "Approving USDC...";
-        status.className = "loading";
+        statusEl.innerHTML = "Approving USDC...";
+        statusEl.className = "loading";
 
-        const usdc = new ethers.Contract(USDC_ADDRESS, ["function approve(address,uint256) returns (bool)","function decimals() view returns (uint8)"], signer);
+        const usdc = new ethers.Contract(USDC_ADDRESS, [
+          "function approve(address,uint256) returns (bool)",
+          "function decimals() view returns (uint8)"
+        ], signer);
+
         const decimals = await usdc.decimals();
         const totalWei = ethers.parseUnits(totalAmount.toString(), decimals);
 
         await (await usdc.approve(CONTRACT_ADDRESS, totalWei * 2n)).wait();
 
-        status.innerHTML = "Sending Split...";
+        statusEl.innerHTML = "Sending transaction...";
 
         const splitter = new ethers.Contract(CONTRACT_ADDRESS, [{
-          "inputs": [{"name":"recipients","type":"address[]"},{"name":"percentages","type":"uint256[]"},{"name":"totalAmount","type":"uint256"}],
-          "name": "splitPayment", "type": "function"
+          "inputs": [
+            {"name": "recipients", "type": "address[]"},
+            {"name": "percentages", "type": "uint256[]"},
+            {"name": "totalAmount", "type": "uint256"}
+          ],
+          "name": "splitPayment",
+          "type": "function"
         }], signer);
 
         const tx = await splitter.splitPayment(addresses, percentages, totalWei);
         await tx.wait();
 
-        transactions.unshift({hash: tx.hash, intent: intentText.substring(0,100), time: new Date().toLocaleString()});
+        transactions.unshift({
+          hash: tx.hash,
+          intent: `${totalAmount} USDC - ${intentText.substring(0,80)}`,
+          time: new Date().toLocaleString()
+        });
         localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
         renderHistory();
 
-        status.className = "success";
-        status.innerHTML = `✅ Success!<br>Hash: ${tx.hash}<br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View on Explorer</a>`;
-      } catch (e) {
-        status.className = "error";
-        status.innerHTML = `Error: ${e.message.substring(0,140)}...`;
+        statusEl.className = "success";
+        statusEl.innerHTML = `✅ Transaction Successful!<br>Hash: ${tx.hash}<br>
+          <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" style="color:#00ffaa">View on Explorer</a>`;
+      } catch (error) {
+        statusEl.className = "error";
+        statusEl.innerHTML = `Error: ${error.message.substring(0,150)}...`;
       } finally {
         isProcessing = false;
         btn.disabled = false;
@@ -241,22 +247,24 @@
     function renderHistory() {
       let html = "";
       transactions.forEach(tx => {
-        html += `<div style="background:rgba(255,255,255,0.05);padding:14px;margin:10px 0;border-radius:12px;">
-          <small>${tx.time}</small><br>${tx.intent}<br>
-          <small><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View Tx</a></small>
-        </div>`;
+        html += `
+          <div style="background:rgba(255,255,255,0.05); padding:14px; margin:10px 0; border-radius:12px;">
+            <small>${tx.time}</small><br>
+            ${tx.intent}<br>
+            <small><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View Tx</a></small>
+          </div>`;
       });
       document.getElementById("history").innerHTML = html || "<p>No transactions yet.</p>";
     }
 
     function exportHistory() {
-      if (!transactions.length) return alert("No history!");
-      const data = JSON.stringify(transactions, null, 2);
+      if (transactions.length === 0) return alert("No history to export!");
+      const dataStr = JSON.stringify(transactions, null, 2);
       const a = document.createElement('a');
-      a.href = 'data:application/json,' + encodeURIComponent(data);
+      a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
       a.download = `arc-splitter-history-${new Date().toISOString().slice(0,10)}.json`;
       a.click();
-      alert("Exported!");
+      alert("History exported!");
     }
   </script>
 </body>
