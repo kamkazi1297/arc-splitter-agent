@@ -46,29 +46,33 @@
       background: white; color: #222; border-color: #00aa77;
     }
 
-    /* === فیکس اصلی مشکل کادر درصد === */
+    /* ==================== فیکس اصلی ==================== */
     .recipient-row {
       display: flex;
-      gap: 8px;
       align-items: center;
+      gap: 10px;
       margin-bottom: 12px;
-      flex-wrap: wrap;
+      flex-wrap: nowrap;           /* مهم */
+      overflow: hidden;
     }
+
     .recipient-row input.address { 
       flex: 1; 
-      min-width: 220px; 
+      min-width: 180px;
     }
     
     .recipient-row .percent-container {
       position: relative;
-      flex: 0 0 118px;     /* عرض ثابت و مناسب */
-      min-width: 118px;
+      flex: 0 0 130px;
+      min-width: 130px;
     }
+
     .recipient-row .percent-container input {
       width: 100%;
-      padding-right: 30px;
+      padding-right: 32px;
       text-align: right;
     }
+
     .recipient-row .percent-container::after {
       content: "%";
       position: absolute;
@@ -83,17 +87,29 @@
     .delete-btn {
       background: #ff3366;
       color: white;
-      font-size: 20px;
-      font-weight: bold;
-      width: 44px;
-      height: 44px;
+      font-size: 22px;
+      width: 48px;
+      height: 48px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
       cursor: pointer;
-      margin-left: 4px;
+      border: none;
+    }
+
+    /* موبایل */
+    @media (max-width: 640px) {
+      .recipient-row {
+        flex-wrap: wrap;
+      }
+      .recipient-row .percent-container {
+        flex: 0 0 110px;
+      }
+      .delete-btn {
+        margin-top: 8px;
+      }
     }
 
     button { 
@@ -393,8 +409,6 @@
       if (isProcessing) return;
 
       const totalAmount = parseFloat(document.getElementById("totalAmount").value);
-      const slippage = parseFloat(document.getElementById("slippage").value) || 0.5;
-
       if (!totalAmount || totalAmount <= 0) return alert("Enter a valid amount!");
 
       const tokenAddr = await getCurrentToken();
@@ -424,7 +438,7 @@
         if (!ethers.isAddress(addr)) return alert(`Invalid address: ${addr}`);
       }
 
-      let preview = `Send ${totalAmount} ${symbol} with ${slippage}% slippage?\n\n`;
+      let preview = `Send ${totalAmount} ${symbol}?\n\n`;
       addresses.forEach((addr, i) => preview += `• ${percentages[i]}% → ${addr.slice(0,8)}...\n`);
 
       if (!confirm(preview)) return;
@@ -441,9 +455,7 @@
         const decimals = await tokenContract.decimals();
         const totalWei = ethers.parseUnits(totalAmount.toString(), decimals);
 
-        statusEl.innerHTML = `<span class="spinner"></span> Estimating gas...`;
         const gasLimit = await estimateGas(addresses, percentages, totalWei);
-
         await (await tokenContract.approve(CONTRACT_ADDRESS, totalWei)).wait();
 
         statusEl.innerHTML = `<span class="spinner"></span> Sending transaction...`;
@@ -463,11 +475,9 @@
         currentPage = 1;
         renderHistory();
 
-        statusEl.className = "success";
         statusEl.innerHTML = `✅ Transaction Confirmed!<br>Hash: ${tx.hash}<br>
           <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View on Explorer</a>`;
       } catch (error) {
-        statusEl.className = "error";
         statusEl.innerHTML = `❌ Error: ${error.message.substring(0,180)}...`;
       } finally {
         isProcessing = false;
@@ -501,7 +511,6 @@
         document.getElementById("pagination").innerHTML = "";
         return;
       }
-
       let html = `
         <button onclick="prevPage()" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>
         <span style="margin:0 15px;">Page ${currentPage} of ${totalPages}</span>
@@ -512,17 +521,11 @@
 
     function nextPage() {
       const totalPages = Math.ceil(transactions.length / itemsPerPage);
-      if (currentPage < totalPages) {
-        currentPage++;
-        renderHistory();
-      }
+      if (currentPage < totalPages) { currentPage++; renderHistory(); }
     }
 
     function prevPage() {
-      if (currentPage > 1) {
-        currentPage--;
-        renderHistory();
-      }
+      if (currentPage > 1) { currentPage--; renderHistory(); }
     }
 
     function exportHistory() {
