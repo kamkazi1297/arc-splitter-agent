@@ -30,11 +30,10 @@
     }
     .connect-btn { background: #00ffaa; color: #000; font-weight: bold; }
     .send-btn { background: #ff3366; color: white; font-weight: bold; }
-    .equal-btn { background: #00cc88; color: white; font-weight: bold; }
     .small-btn { padding: 8px 16px; font-size: 14px; }
     .template-btn { background: #00aaff; color: white; padding: 10px 18px; }
     button:disabled { opacity: 0.6; cursor: not-allowed; }
-    #status { margin: 20px 0; padding: 18px; border-radius: 12px; min-height: 140px; }
+    #status { margin: 20px 0; padding: 18px; border-radius: 12px; min-height: 130px; }
     .success { background: rgba(0,255,100,0.15); }
     .error { background: rgba(255,50,50,0.15); }
     .loading::after { content: " ⏳"; animation: spin 1.5s linear infinite; }
@@ -54,19 +53,19 @@
 
     <div style="margin:15px 0;">
       <strong>Total Amount (USDC)</strong>
-      <input type="number" id="totalAmount" value="4" step="0.01">
+      <input type="number" id="totalAmount" value="100" step="0.01" placeholder="100">
     </div>
 
-    <h3>Quick Actions</h3>
+    <h3>Quick Templates</h3>
     <div>
       <button class="template-btn" onclick="loadTemplate(1)">50% - 50%</button>
       <button class="template-btn" onclick="loadTemplate(2)">33-33-34%</button>
       <button class="template-btn" onclick="loadTemplate(3)">40% - 60%</button>
-      <button class="equal-btn" onclick="loadEqualSplit()">Equal Split</button>
+      <button class="template-btn" onclick="loadTemplate(4)">Equal Split</button>
     </div>
 
     <h3>Recipients & Percentages</h3>
-    <textarea id="intent" placeholder="25% to 0x..., 25% to 0x..."></textarea>
+    <textarea id="intent" placeholder="40% to 0x123..., 60% to 0x456..."></textarea>
     
     <button id="sendBtn" class="send-btn" onclick="sendSplit()">Send Real Transaction</button>
     <button onclick="exportHistory()">Export History</button>
@@ -76,7 +75,8 @@
     <div id="history"></div>
 
     <div class="footer">
-      <p><strong>Testnet Version Only</strong> — For testing on Arc Testnet.</p>
+      <p><strong>Testnet Version Only</strong> — This is a demonstration tool for testing on Arc Testnet.<br>
+      Do not use with real funds. Made for Arc Project.</p>
     </div>
   </div>
 
@@ -153,49 +153,37 @@
       if (type === 1) t.value = "50% to 0x0000000000000000000000000000000000000001, 50% to 0x0000000000000000000000000000000000000002";
       else if (type === 2) t.value = "33% to 0x0000000000000000000000000000000000000001, 33% to 0x0000000000000000000000000000000000000002, 34% to 0x0000000000000000000000000000000000000003";
       else if (type === 3) t.value = "40% to 0x0000000000000000000000000000000000000001, 60% to 0x0000000000000000000000000000000000000002";
-    }
-
-    function loadEqualSplit() {
-      const total = parseFloat(document.getElementById("totalAmount").value) || 4;
-      const count = prompt("How many equal recipients? (2-10)", "8");
-      const num = parseInt(count);
-      if (num < 2 || num > 10) return alert("Enter number between 2 and 10");
-
-      let text = "";
-      const percent = (100 / num).toFixed(2);
-      for (let i = 1; i <= num; i++) {
-        text += `${percent}% to 0x000000000000000000000000000000000000000${i}\n`;
-      }
-      document.getElementById("intent").value = text.trim();
-      alert(`Equal Split for ${num} addresses is ready!`);
+      else if (type === 4) t.value = "25% to 0x0000000000000000000000000000000000000001, 25% to 0x0000000000000000000000000000000000000002, 25% to 0x0000000000000000000000000000000000000003, 25% to 0x0000000000000000000000000000000000000004";
     }
 
     function clearForm() {
       document.getElementById("intent").value = "";
-      document.getElementById("totalAmount").value = "4";
+      document.getElementById("totalAmount").value = "100";
     }
 
     async function sendSplit() {
       if (!signer) return alert("Please connect your wallet first!");
       if (isProcessing) return;
 
-      const totalAmount = parseFloat(document.getElementById("totalAmount").value);
+      const totalAmountStr = document.getElementById("totalAmount").value;
+      const totalAmount = parseFloat(totalAmountStr);
       if (!totalAmount || totalAmount <= 0) return alert("Enter a valid amount!");
 
       const intentText = document.getElementById("intent").value.trim();
       if (!intentText) return alert("Enter recipients and percentages!");
 
+      // Improved Parsing
       const addresses = intentText.match(/0x[a-fA-F0-9]{40}/gi) || [];
-      let percMatches = intentText.match(/(\d+\.?\d*)\s*[٪%]/g) || [];
-      const percentages = percMatches.map(p => parseFloat(p));
+      let percentages = intentText.match(/(\d+\.?\d*)\s*[٪%]/g);
+      if (percentages) percentages = percentages.map(p => parseFloat(p));
 
-      if (addresses.length < 2 || percentages.length !== addresses.length) 
-        return alert("Number of addresses and percentages must match!");
+      if (addresses.length < 2 || percentages.length < 2) 
+        return alert("Could not detect addresses and percentages correctly!");
 
-      const sum = percentages.reduce((a, b) => a + b, 0);
-      if (Math.abs(sum - 100) > 0.1) 
-        return alert("Percentages must sum to 100%!");
+      if (percentages.reduce((a, b) => a + b, 0) !== 100) 
+        return alert("Percentages must sum exactly to 100%!");
 
+      // Preview
       let preview = `You are about to send ${totalAmount} USDC:\n\n`;
       for (let i = 0; i < addresses.length; i++) {
         const share = (totalAmount * percentages[i] / 100).toFixed(4);
@@ -220,8 +208,9 @@
 
         const decimals = await usdc.decimals();
         const totalWei = ethers.parseUnits(totalAmount.toString(), decimals);
+        const MAX_UINT = ethers.MaxUint256;
 
-        await (await usdc.approve(CONTRACT_ADDRESS, ethers.MaxUint256)).wait();
+        await (await usdc.approve(CONTRACT_ADDRESS, MAX_UINT)).wait();
 
         statusEl.innerHTML = "Sending Split Transaction...";
 
@@ -238,14 +227,12 @@
         }];
 
         const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
-        const intPercentages = percentages.map(p => Math.round(p));
-
-        const tx = await contract.splitPayment(addresses, intPercentages, totalWei);
+        const tx = await contract.splitPayment(addresses, percentages.map(p => Math.floor(p)), totalWei);
         await tx.wait();
 
         transactions.unshift({
           hash: tx.hash,
-          intent: `${totalAmount} USDC to ${addresses.length} addresses`,
+          intent: `${totalAmount} USDC → ${addresses.length} recipients`,
           time: new Date().toLocaleString()
         });
         localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
@@ -254,15 +241,9 @@
         statusEl.className = "success";
         statusEl.innerHTML = `✅ Transaction Confirmed!<br>Hash: ${tx.hash}<br>
           <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" style="color:#00ffaa;">View on Explorer</a>`;
-
       } catch (error) {
-        console.error(error);
         statusEl.className = "error";
-        let msg = error.reason || error.message || "Unknown error";
-        if (msg.includes("Transfer failed")) {
-          msg = "Transfer failed - Make sure you have enough USDC balance and the contract is funded.";
-        }
-        statusEl.innerHTML = `Error: ${msg.substring(0,200)}`;
+        statusEl.innerHTML = `Error: ${error.message.substring(0,160)}...`;
       } finally {
         isProcessing = false;
         btn.disabled = false;
