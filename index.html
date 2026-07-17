@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fa" dir="ltr">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,55 +8,60 @@
   <style>
     body { font-family: Arial, sans-serif; background: #0f0f23; color: #fff; margin: 0; padding: 20px; }
     .container { max-width: 700px; margin: auto; }
-    h1 { text-align: center; }
-    textarea, input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; }
+    h1 { text-align: center; color: #00d4ff; }
+    textarea, input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; background: #1f1f3a; color: white; }
     button { padding: 12px 20px; margin: 5px; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; }
-    .btn-primary { background: #00d4ff; color: black; }
-    .status { padding: 15px; margin: 10px 0; border-radius: 8px; }
+    .btn-primary { background: #00d4ff; color: black; font-weight: bold; }
+    .status { padding: 15px; margin: 10px 0; border-radius: 8px; background: #1f1f3a; }
     .history { margin-top: 30px; }
+    a { color: #00d4ff; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Arc USDC Splitter</h1>
     
-    <button id="connectButton" class="btn-primary" onclick="connectWallet()">اتصال به MetaMask</button>
+    <button id="connectButton" class="btn-primary" onclick="connectWallet()">Connect MetaMask</button>
     
-    <textarea id="intentInput" rows="4" placeholder="مثال: 0x123... 40% to 0x456... 60% total 100 USDC"></textarea>
+    <textarea id="intentInput" rows="4" placeholder="Example: Send 100 USDC, 40% to 0x123..., 60% to 0x456..."></textarea>
     
-    <button id="sendButton" class="btn-primary" onclick="sendSplit()" disabled>ارسال تراکنش</button>
+    <button id="sendButton" class="btn-primary" onclick="sendSplit()" disabled>Send Split Transaction</button>
     
     <div id="status" class="status"></div>
     
     <div class="history">
-      <h2>تاریخچه تراکنش‌ها</h2>
-      <button onclick="exportHistory()">دانلود تاریخچه (JSON)</button>
-      <button onclick="clearHistory()">پاک کردن تاریخچه</button>
+      <h2>Transaction History</h2>
+      <button onclick="exportHistory()">Export History (JSON)</button>
+      <button onclick="clearHistory()">Clear History</button>
       <div id="historyList"></div>
     </div>
   </div>
 
 <script>
-// ==================== تنظیمات Arc Testnet ====================
+// ==================== ARC TESTNET CONFIG ====================
 const CONTRACT_ADDRESS = "0xEa86B2d60029bEE76F6858a1Ac7f85B2944004bF";
-const CHAIN_ID = "0x4ce9f2";           // 5042002
+const CHAIN_ID = "0x13b2";                    // 5042 in hex
 const RPC_URL = "https://rpc.testnet.arc.network";
 const EXPLORER_URL = "https://testnet.arcscan.app";
 
 const NETWORK_PARAMS = {
   chainId: CHAIN_ID,
   chainName: "Arc Testnet",
-  nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
+  nativeCurrency: {
+    name: "USDC",
+    symbol: "USDC",
+    decimals: 18
+  },
   rpcUrls: [RPC_URL],
   blockExplorerUrls: [EXPLORER_URL]
 };
 
 let provider, signer, currentAccount;
 
-// ==================== اتصال والت ====================
+// ==================== CONNECT WALLET ====================
 async function connectWallet() {
   if (!window.ethereum) {
-    alert("MetaMask نصب نیست!");
+    alert("MetaMask is not installed!");
     return;
   }
 
@@ -67,17 +72,17 @@ async function connectWallet() {
     const switched = await switchToArcNetwork();
     if (!switched) return;
 
-    document.getElementById('connectButton').innerHTML = `✅ متصل: ${currentAccount.slice(0,6)}...${currentAccount.slice(-4)}`;
+    document.getElementById('connectButton').innerHTML = `✅ Connected: ${currentAccount.slice(0,6)}...${currentAccount.slice(-4)}`;
     document.getElementById('sendButton').disabled = false;
 
-    showStatus("✅ به Arc Testnet متصل شد", "green");
+    showStatus("✅ Connected to Arc Testnet", "green");
   } catch (error) {
     console.error(error);
-    alert("خطا در اتصال: " + error.message);
+    alert("Connection failed: " + error.message);
   }
 }
 
-// ==================== اضافه کردن و سوئیچ شبکه ====================
+// ==================== SWITCH / ADD NETWORK ====================
 async function switchToArcNetwork() {
   try {
     await window.ethereum.request({
@@ -86,7 +91,7 @@ async function switchToArcNetwork() {
     });
     return true;
   } catch (switchError) {
-    if (switchError.code === 4902) {   // شبکه اضافه نشده
+    if (switchError.code === 4902) {
       try {
         await window.ethereum.request({
           method: 'wallet_addEthereumChain',
@@ -98,30 +103,30 @@ async function switchToArcNetwork() {
         });
         return true;
       } catch (addError) {
-        alert("اضافه کردن شبکه Arc Testnet ناموفق بود.");
         console.error(addError);
+        alert("Failed to add Arc Testnet. Please add it manually.");
         return false;
       }
     } else {
-      alert("خطا در سوئیچ شبکه: " + switchError.message);
+      alert("Switch failed: " + switchError.message);
       return false;
     }
   }
 }
 
-// ==================== ارسال تراکنش ====================
+// ==================== SEND SPLIT ====================
 async function sendSplit() {
   const text = document.getElementById('intentInput').value.trim();
-  if (!text) return alert("لطفا متن را وارد کنید");
+  if (!text) return alert("Please enter intent text");
 
   const { addresses, percentages, totalAmount } = parseIntent(text);
   
   if (addresses.length === 0 || addresses.length !== percentages.length) {
-    return alert("آدرس‌ها یا درصد‌ها اشتباه است");
+    return alert("Invalid addresses or percentages");
   }
 
   try {
-    showStatus("در حال آماده‌سازی تراکنش...", "blue");
+    showStatus("Preparing transaction...", "blue");
 
     provider = new ethers.BrowserProvider(window.ethereum);
     signer = await provider.getSigner();
@@ -131,28 +136,25 @@ async function sendSplit() {
     ];
 
     const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
-
     const totalWei = ethers.parseUnits(totalAmount.toString(), 18);
 
-    showStatus("در حال امضای تراکنش...", "blue");
+    showStatus("Waiting for signature...", "blue");
 
     const tx = await contract.splitPayment(addresses, percentages, totalWei);
-    
-    showStatus(`تراکنش ارسال شد! Hash: ${tx.hash}`, "blue");
+    showStatus(`Transaction sent! Hash: ${tx.hash}`, "blue");
 
     await tx.wait();
-    
-    showStatus(`✅ تراکنش با موفقیت انجام شد! <a href="${EXPLORER_URL}/tx/${tx.hash}" target="_blank">مشاهده در اکسپلورر</a>`, "green");
+    showStatus(`✅ Success! <a href="${EXPLORER_URL}/tx/${tx.hash}" target="_blank">View on Explorer</a>`, "green");
 
     addToHistory(text, tx.hash);
 
   } catch (error) {
     console.error(error);
-    showStatus("خطا: " + error.message, "red");
+    showStatus("Error: " + error.message, "red");
   }
 }
 
-// ==================== پارس کردن متن ====================
+// ==================== PARSE INTENT ====================
 function parseIntent(text) {
   const addressPattern = /0x[a-fA-F0-9]{40}/g;
   const percentPattern = /(\d+)%/g;
@@ -162,16 +164,16 @@ function parseIntent(text) {
   const percentMatches = text.match(percentPattern) || [];
   const percentages = percentMatches.map(p => parseInt(p));
   const amountMatch = text.match(amountPattern);
-  const totalAmount = amountMatch ? parseInt(amountMatch[1]) : 0;
+  const totalAmount = amountMatch ? parseInt(amountMatch[1]) : 100;
 
   return { addresses, percentages, totalAmount };
 }
 
-// ==================== تاریخچه ====================
+// ==================== HISTORY ====================
 function addToHistory(intent, hash) {
   let history = JSON.parse(localStorage.getItem('arcTxHistory') || '[]');
   history.unshift({
-    time: new Date().toLocaleString('fa-IR'),
+    time: new Date().toLocaleString(),
     intent: intent.substring(0, 80),
     hash: hash
   });
@@ -183,40 +185,35 @@ function renderHistory() {
   const history = JSON.parse(localStorage.getItem('arcTxHistory') || '[]');
   let html = '<ul>';
   history.forEach(item => {
-    html += `<li>${item.time} - ${item.intent} ... <a href="${EXPLORER_URL}/tx/${item.hash}" target="_blank">مشاهده</a></li>`;
+    html += `<li>${item.time} - ${item.intent}... <a href="${EXPLORER_URL}/tx/${item.hash}" target="_blank">View</a></li>`;
   });
   html += '</ul>';
   document.getElementById('historyList').innerHTML = html;
 }
 
 function exportHistory() {
-  const history = localStorage.getItem('arcTxHistory');
-  if (!history) return alert("تاریخچه‌ای وجود ندارد");
-  const blob = new Blob([history], { type: 'application/json' });
+  const data = localStorage.getItem('arcTxHistory');
+  if (!data) return alert("No history");
+  const blob = new Blob([data], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url;
-  a.download = 'arc-splitter-history.json';
-  a.click();
+  a.href = url; a.download = 'arc-history.json'; a.click();
 }
 
 function clearHistory() {
-  if (confirm("آیا تاریخچه پاک شود؟")) {
+  if (confirm("Clear history?")) {
     localStorage.removeItem('arcTxHistory');
     renderHistory();
   }
 }
 
 function showStatus(message, color) {
-  const statusEl = document.getElementById('status');
-  statusEl.innerHTML = message;
-  statusEl.style.background = color === "green" ? "#004d00" : color === "red" ? "#4d0000" : "#00334d";
+  const el = document.getElementById('status');
+  el.innerHTML = message;
+  el.style.background = color === "green" ? "#004d00" : color === "red" ? "#4d0000" : "#00334d";
 }
 
-// بارگذاری تاریخچه هنگام باز کردن صفحه
-window.onload = () => {
-  renderHistory();
-};
+window.onload = renderHistory;
 </script>
 </body>
 </html>
