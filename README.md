@@ -46,7 +46,7 @@ Send 100 USDC, 40% to 0xYourAddress1..., 60% to 0xYourAddress2...
 ---
 
 **Made for Arc Testnet**  
-Demo Video: `demo.gif`
+Demo Video: ` demo.gif `
 
 ---
 
