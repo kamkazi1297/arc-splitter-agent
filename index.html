@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fa" dir="ltr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,6 +11,7 @@
       background: linear-gradient(135deg, #0a0a1f, #1a1a35); 
       color: #e0e0ff; 
       margin: 0; padding: 20px; 
+      direction: ltr;
     }
     .container { 
       max-width: 780px; margin: 0 auto; 
@@ -52,6 +53,11 @@
     <p id="status">Ready</p>
 
     <div style="margin:15px 0;">
+      <strong>Your USDC Balance:</strong> 
+      <span id="userBalance" style="color:#00ffaa;">0.00</span> USDC
+    </div>
+
+    <div style="margin:15px 0;">
       <strong>Total Amount (USDC)</strong>
       <input type="number" id="totalAmount" value="100" step="0.01" placeholder="100">
     </div>
@@ -65,7 +71,7 @@
     </div>
 
     <h3>Recipients & Percentages</h3>
-    <textarea id="intent" placeholder="40% to 0x123..., 60% to 0x456..."></textarea>
+    <textarea id="intent" rows="6" placeholder="40% to 0x123..., 60% to 0x456..."></textarea>
     
     <button id="sendBtn" class="send-btn" onclick="sendSplit()">Send Real Transaction</button>
     <button onclick="exportHistory()">Export History</button>
@@ -94,7 +100,7 @@
     const arcNetwork = {
       chainId: CHAIN_ID_HEX,
       chainName: "Arc Testnet",
-      nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
+      nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 6 },
       rpcUrls: ["https://rpc.testnet.arc.network"],
       blockExplorerUrls: ["https://testnet.arcscan.app"]
     };
@@ -109,6 +115,7 @@
             signer = await provider.getSigner();
             document.getElementById("status").innerHTML = `Connected: ${userAddress.slice(0,8)}...${userAddress.slice(-6)}`;
             document.getElementById("status").className = "success";
+            loadBalance();
           }
         } catch (e) {}
       }
@@ -137,15 +144,33 @@
 
         document.getElementById("status").innerHTML = `Connected: ${userAddress.slice(0,8)}...${userAddress.slice(-6)}`;
         document.getElementById("status").className = "success";
+        await loadBalance();
       } catch (e) {
         document.getElementById("status").innerHTML = `Error: ${e.message}`;
         document.getElementById("status").className = "error";
       }
     }
 
+    async function loadBalance() {
+      if (!signer || !userAddress) return;
+      try {
+        const usdc = new ethers.Contract(USDC_ADDRESS, [
+          "function balanceOf(address) view returns (uint256)"
+        ], signer);
+
+        const bal = await usdc.balanceOf(userAddress);
+        const formatted = ethers.formatUnits(bal, 6);
+        document.getElementById("userBalance").textContent = parseFloat(formatted).toFixed(4);
+      } catch(e) {
+        document.getElementById("userBalance").textContent = "Error";
+      }
+    }
+
     function disconnectWallet() {
-      signer = null; userAddress = null;
+      signer = null; 
+      userAddress = null;
       document.getElementById("status").innerHTML = "Wallet Disconnected";
+      document.getElementById("userBalance").textContent = "0.00";
     }
 
     function loadTemplate(type) {
@@ -172,10 +197,10 @@
       const intentText = document.getElementById("intent").value.trim();
       if (!intentText) return alert("Enter recipients and percentages!");
 
-      // Improved Parsing
+      // Parsing
       const addresses = intentText.match(/0x[a-fA-F0-9]{40}/gi) || [];
       let percentages = intentText.match(/(\d+\.?\d*)\s*[٪%]/g);
-      if (percentages) percentages = percentages.map(p => parseFloat(p));
+      if (percentages) percentages = percentages.map(p => parseFloat(p.replace('%','').replace('٪','')));
 
       if (addresses.length < 2 || percentages.length < 2) 
         return alert("Could not detect addresses and percentages correctly!");
@@ -202,15 +227,12 @@
         statusEl.className = "loading";
 
         const usdc = new ethers.Contract(USDC_ADDRESS, [
-          "function approve(address,uint256) returns (bool)",
-          "function decimals() view returns (uint8)"
+          "function approve(address,uint256) returns (bool)"
         ], signer);
 
-        const decimals = await usdc.decimals();
-        const totalWei = ethers.parseUnits(totalAmount.toString(), decimals);
-        const MAX_UINT = ethers.MaxUint256;
+        const totalWei = ethers.parseUnits(totalAmount.toString(), 6);
 
-        await (await usdc.approve(CONTRACT_ADDRESS, MAX_UINT)).wait();
+        await (await usdc.approve(CONTRACT_ADDRESS, totalWei)).wait();
 
         statusEl.innerHTML = "Sending Split Transaction...";
 
@@ -227,7 +249,11 @@
         }];
 
         const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
-        const tx = await contract.splitPayment(addresses, percentages.map(p => Math.floor(p)), totalWei);
+        const tx = await contract.splitPayment(
+          addresses, 
+          percentages.map(p => Math.round(p)), 
+          totalWei
+        );
         await tx.wait();
 
         transactions.unshift({
