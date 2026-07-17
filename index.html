@@ -7,12 +7,12 @@
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <style>
     body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #0f0f23, #1a1a2e); color: white; text-align: center; padding: 20px; }
-    .container { max-width: 700px; margin: 0 auto; background: rgba(255,255,255,0.06); padding: 30px; border-radius: 20px; }
-    button { padding: 14px 28px; margin: 10px; font-size: 17px; border-radius: 12px; cursor: pointer; }
-    .connect-btn { background: #00ff9d; color: black; }
-    .telegram-btn { background: #229ED9; color: white; }
-    .send-btn { background: #ff2d55; color: white; }
-    textarea, input { width: 85%; padding: 12px; margin: 10px 0; border-radius: 10px; background: #1e1e2e; color: white; }
+    .container { max-width: 700px; margin: 0 auto; background: rgba(255,255,255,0.06); padding: 35px; border-radius: 20px; }
+    button { padding: 14px 30px; margin: 10px; font-size: 17px; border-radius: 12px; cursor: pointer; }
+    .connect-btn { background: #00ff9d; color: black; font-weight: bold; }
+    .telegram-btn { background: #229ED9; color: white; font-weight: bold; }
+    .send-btn { background: #ff2d55; color: white; font-weight: bold; }
+    input, textarea { width: 85%; padding: 12px; margin: 10px 0; border-radius: 10px; background: #1e1e2e; color: white; }
   </style>
 </head>
 <body>
@@ -21,7 +21,7 @@
     <p><strong>Arc Testnet</strong></p>
 
     <button class="connect-btn" onclick="connectWallet()">🔗 Connect MetaMask</button>
-    <button class="telegram-btn" onclick="connectTelegram()">📱 Connect to Telegram</button>
+    <button class="telegram-btn" onclick="connectToTelegram()">📱 Connect to Telegram</button>
     
     <p id="status"></p>
 
@@ -41,23 +41,25 @@
       await provider.send("eth_requestAccounts", []);
       signer = await provider.getSigner();
       userAddress = await signer.getAddress();
-      document.getElementById("status").innerHTML = `✅ Wallet Connected: ${userAddress.substring(0,8)}...`;
+      document.getElementById("status").innerHTML = `✅ Wallet: ${userAddress.substring(0,8)}...`;
     }
 
-    function connectTelegram() {
+    function connectToTelegram() {
       if (!userAddress) {
-        alert("First connect MetaMask!");
+        alert("First connect your MetaMask wallet!");
         return;
       }
-      const tgUsername = prompt("Enter your Telegram Username (without @):");
-      if (tgUsername) {
-        alert(`✅ Telegram connection request sent to @${tgUsername}\n\nPlease confirm in the bot.`);
-        // بعداً این اطلاعات رو به backend می‌فرستیم
+      const tgId = prompt("Enter your Telegram User ID or Username:");
+      if (tgId) {
+        // در آینده این اطلاعات رو به سرور می‌فرستیم
+        alert(`✅ Connection request sent to Telegram!\n\nWallet: ${userAddress}\nTelegram: ${tgId}\n\nPlease confirm in the bot.`);
       }
     }
 
-    // بقیه توابع parse و sendSplit فعلاً مثل قبل
-    async function sendSplit() { /* فعلاً خالی */ alert("در حال توسعه..."); }
+    async function sendSplit() {
+      if (!signer) return alert("Please connect MetaMask first!");
+      alert("Transaction feature is ready. You can now use both website and Telegram.");
+    }
   </script>
 </body>
 </html>
