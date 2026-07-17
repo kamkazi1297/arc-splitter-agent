@@ -26,6 +26,10 @@
     .connect-btn { background: #00ffaa; color: #000; font-weight: bold; }
     .send-btn { background: #ff3366; color: white; font-weight: bold; }
     .export-btn { background: #3366ff; color: white; }
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
     textarea { 
       width: 100%; height: 160px; padding: 16px; margin: 15px 0; 
       border-radius: 14px; background: #151525; color: white; 
@@ -35,6 +39,14 @@
     .balance { font-size: 18px; color: #00ffaa; margin: 15px 0; font-weight: bold; }
     .success { background: rgba(0,255,100,0.15); }
     .error { background: rgba(255,50,50,0.15); }
+    .loading::after {
+      content: " ⏳";
+      animation: spin 1.5s linear infinite;
+    }
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
   </style>
 </head>
 <body>
@@ -51,7 +63,7 @@
     <h3>Enter Split Intent</h3>
     <textarea id="intent" placeholder="Example: Send 100 USDC, 40% to 0x123..., 60% to 0x456..."></textarea>
     
-    <button class="send-btn" onclick="sendSplit()">Send Real Transaction</button>
+    <button id="sendBtn" class="send-btn" onclick="sendSplit()">Send Real Transaction</button>
     <button class="export-btn" onclick="exportHistory()">Export History</button>
 
     <h3>Recent Transactions</h3>
@@ -62,6 +74,7 @@
     let signer = null;
     let userAddress = null;
     let transactions = JSON.parse(localStorage.getItem('arcTxHistory') || '[]');
+    let isProcessing = false;
 
     const CONTRACT_ADDRESS = "0xEa86B2d60029bEE76F6858a1Ac7f85B2944004bF";
     const USDC_ADDRESS = "0x3600000000000000000000000000000000000000";
@@ -98,7 +111,7 @@
 
     async function connectWallet() {
       if (!window.ethereum) return alert("MetaMask not found!");
-
+      // ... (همان کد قبلی connectWallet)
       try {
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         userAddress = accounts[0];
@@ -109,20 +122,11 @@
         const network = await provider.getNetwork();
         if (Number(network.chainId) !== CHAIN_ID) {
           try {
-            await window.ethereum.request({
-              method: 'wallet_switchEthereumChain',
-              params: [{ chainId: CHAIN_ID_HEX }]
-            });
+            await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CHAIN_ID_HEX }] });
           } catch (switchError) {
             if (switchError.code === 4902) {
-              await window.ethereum.request({
-                method: 'wallet_addEthereumChain',
-                params: [arcNetwork]
-              });
-              await window.ethereum.request({
-                method: 'wallet_switchEthereumChain',
-                params: [{ chainId: CHAIN_ID_HEX }]
-              });
+              await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [arcNetwork] });
+              await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CHAIN_ID_HEX }] });
             } else {
               throw switchError;
             }
@@ -152,17 +156,9 @@
       balanceEl.innerHTML = `USDC Balance: Checking...`;
 
       try {
-        const usdcAbi = [
-          "function balanceOf(address) view returns (uint256)",
-          "function decimals() view returns (uint8)"
-        ];
+        const usdcAbi = ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"];
         const usdc = new ethers.Contract(USDC_ADDRESS, usdcAbi, signer);
-        
-        const [bal, decimals] = await Promise.all([
-          usdc.balanceOf(userAddress),
-          usdc.decimals()
-        ]);
-
+        const [bal, decimals] = await Promise.all([usdc.balanceOf(userAddress), usdc.decimals()]);
         const formatted = ethers.formatUnits(bal, decimals);
         balanceEl.innerHTML = `USDC Balance: <strong>${parseFloat(formatted).toFixed(4)}</strong>`;
       } catch (e) {
@@ -172,6 +168,7 @@
 
     async function sendSplit() {
       if (!signer) return alert("Please connect your wallet first!");
+      if (isProcessing) return;
 
       const intentText = document.getElementById("intent").value.trim();
       if (!intentText) return alert("Please enter an intent!");
@@ -188,7 +185,7 @@
       if (percentages.reduce((a, b) => a + b, 0) !== 100) 
         return alert("Percentages must sum exactly to 100%!");
 
-      // ========== Preview ==========
+      // Preview
       let previewText = `You are about to send ${totalAmount} USDC:\n\n`;
       for (let i = 0; i < addresses.length; i++) {
         const share = (totalAmount * percentages[i] / 100).toFixed(2);
@@ -197,17 +194,20 @@
       previewText += "\nDo you want to continue?";
 
       if (!confirm(previewText)) return;
-      // =================================
+
+      // Start Processing
+      isProcessing = true;
+      const sendBtn = document.getElementById("sendBtn");
+      const statusEl = document.getElementById("status");
+      
+      sendBtn.disabled = true;
+      sendBtn.textContent = "Processing...";
 
       try {
-        const statusEl = document.getElementById("status");
         statusEl.innerHTML = "Approving USDC...";
-        statusEl.className = "";
+        statusEl.className = "loading";
 
-        const usdcAbi = [
-          "function approve(address spender, uint256 amount) returns (bool)",
-          "function decimals() view returns (uint8)"
-        ];
+        const usdcAbi = ["function approve(address spender, uint256 amount) returns (bool)", "function decimals() view returns (uint8)"];
         const usdc = new ethers.Contract(USDC_ADDRESS, usdcAbi, signer);
         const decimals = await usdc.decimals();
         const totalWei = ethers.parseUnits(totalAmount.toString(), decimals);
@@ -218,36 +218,32 @@
         statusEl.innerHTML = "Sending Split Transaction...";
 
         const splitterAbi = [{
-          "inputs": [
-            {"name": "recipients", "type": "address[]"},
-            {"name": "percentages", "type": "uint256[]"},
-            {"name": "totalAmount", "type": "uint256"}
-          ],
-          "name": "splitPayment",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
+          "inputs": [{"name": "recipients", "type": "address[]"}, {"name": "percentages", "type": "uint256[]"}, {"name": "totalAmount", "type": "uint256"}],
+          "name": "splitPayment", "outputs": [], "stateMutability": "nonpayable", "type": "function"
         }];
 
         const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
         const tx = await contract.splitPayment(addresses, percentages, totalWei);
         await tx.wait();
 
-        transactions.unshift({
-          hash: tx.hash,
-          intent: intentText.substring(0, 100),
-          time: new Date().toLocaleString()
-        });
+        // Save to history
+        transactions.unshift({ hash: tx.hash, intent: intentText.substring(0, 100), time: new Date().toLocaleString() });
         localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
         renderHistory();
 
         statusEl.className = "success";
         statusEl.innerHTML = `✅ Transaction Confirmed!<br><br>Hash: ${tx.hash}<br><br>
           <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" style="color:#00ffaa;">View on Explorer</a>`;
+
       } catch (error) {
         console.error(error);
-        document.getElementById("status").className = "error";
-        document.getElementById("status").innerHTML = `Error: ${error.message.substring(0, 150)}...`;
+        statusEl.className = "error";
+        statusEl.innerHTML = `Error: ${error.message.substring(0, 150)}...`;
+      } finally {
+        // Reset buttons
+        isProcessing = false;
+        sendBtn.disabled = false;
+        sendBtn.textContent = "Send Real Transaction";
       }
     }
 
