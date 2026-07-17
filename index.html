@@ -1,5 +1,6 @@
-<!DOCTYPE html>
-<html lang="fa" dir="ltr">
+See new posts
+
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -11,7 +12,6 @@
       background: linear-gradient(135deg, #0a0a1f, #1a1a35); 
       color: #e0e0ff; 
       margin: 0; padding: 20px; 
-      direction: ltr;
     }
     .container { 
       max-width: 780px; margin: 0 auto; 
@@ -37,7 +37,7 @@
     #status { margin: 20px 0; padding: 18px; border-radius: 12px; min-height: 130px; }
     .success { background: rgba(0,255,100,0.15); }
     .error { background: rgba(255,50,50,0.15); }
-    .loading::after { content: " ⏳"; animation: spin 1.5s linear infinite; }
+    .loading::after { content: " "; animation: spin 1.5s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .footer { text-align: center; margin-top: 40px; color: #888; font-size: 13.5px; }
   </style>
@@ -47,44 +47,34 @@
     <h1>Arc USDC Splitter</h1>
     <p><strong>Professional • Arc Testnet</strong></p>
 
-    <button class="connect-btn" onclick="connectWallet()">Connect MetaMask</button>
-    <button onclick="disconnectWallet()">Disconnect</button>
+<button class="connect-btn" onclick="connectWallet()">Connect MetaMask</button>
+<button onclick="disconnectWallet()">Disconnect</button><p id="status">Ready</p>
 
-    <p id="status">Ready</p>
+<div style="margin:15px 0;">
+  <strong>Total Amount (USDC)</strong>
+  <input type="number" id="totalAmount" value="100" step="0.01" placeholder="100">
+</div>
 
-    <div style="margin:15px 0;">
-      <strong>Your USDC Balance:</strong> 
-      <span id="userBalance" style="color:#00ffaa;">0.00</span> USDC
-    </div>
+<h3>Quick Templates</h3>
+<div>
+  <button class="template-btn" onclick="loadTemplate(1)">50% - 50%</button>
+  <button class="template-btn" onclick="loadTemplate(2)">33-33-34%</button>
+  <button class="template-btn" onclick="loadTemplate(3)">40% - 60%</button>
+  <button class="template-btn" onclick="loadTemplate(4)">Equal Split</button>
+</div>
 
-    <div style="margin:15px 0;">
-      <strong>Total Amount (USDC)</strong>
-      <input type="number" id="totalAmount" value="100" step="0.01" placeholder="100">
-    </div>
+<h3>Recipients & Percentages</h3>
+<textarea id="intent" placeholder="40% to 0x123..., 60% to 0x456..."></textarea>
 
-    <h3>Quick Templates</h3>
-    <div>
-      <button class="template-btn" onclick="loadTemplate(1)">50% - 50%</button>
-      <button class="template-btn" onclick="loadTemplate(2)">33-33-34%</button>
-      <button class="template-btn" onclick="loadTemplate(3)">40% - 60%</button>
-      <button class="template-btn" onclick="loadTemplate(4)">Equal Split</button>
-    </div>
+<button id="sendBtn" class="send-btn" onclick="sendSplit()">Send Real Transaction</button>
+<button onclick="exportHistory()">Export History</button>
+<button class="small-btn" onclick="clearForm()" style="background:#666;color:white;">Clear</button><h3>Recent Transactions</h3>
+<div id="history"></div>
 
-    <h3>Recipients & Percentages</h3>
-    <textarea id="intent" rows="6" placeholder="40% to 0x123..., 60% to 0x456..."></textarea>
-    
-    <button id="sendBtn" class="send-btn" onclick="sendSplit()">Send Real Transaction</button>
-    <button onclick="exportHistory()">Export History</button>
-    <button class="small-btn" onclick="clearForm()" style="background:#666;color:white;">Clear</button>
+<div class="footer">
+  <p><strong>Testnet Version Only</strong> — This is a demonstration tool for testing on Arc Testnet.
 
-    <h3>Recent Transactions</h3>
-    <div id="history"></div>
-
-    <div class="footer">
-      <p><strong>Testnet Version Only</strong> — This is a demonstration tool for testing on Arc Testnet.<br>
-      Do not use with real funds. Made for Arc Project.</p>
-    </div>
-  </div>
+  Do not use with real funds. Made for Arc Project.</p></div>  </div>
 
   <script>
     let signer = null;
@@ -96,7 +86,6 @@
     const USDC_ADDRESS = "0x3600000000000000000000000000000000000000";
     const CHAIN_ID = 5042002;
     const CHAIN_ID_HEX = "0x4cef52";
-    const DECIMALS = 18;   // ← همون عدد قبلی که خواستی
 
     const arcNetwork = {
       chainId: CHAIN_ID_HEX,
@@ -116,7 +105,6 @@
             signer = await provider.getSigner();
             document.getElementById("status").innerHTML = `Connected: ${userAddress.slice(0,8)}...${userAddress.slice(-6)}`;
             document.getElementById("status").className = "success";
-            loadBalance();
           }
         } catch (e) {}
       }
@@ -145,33 +133,15 @@
 
         document.getElementById("status").innerHTML = `Connected: ${userAddress.slice(0,8)}...${userAddress.slice(-6)}`;
         document.getElementById("status").className = "success";
-        await loadBalance();
       } catch (e) {
         document.getElementById("status").innerHTML = `Error: ${e.message}`;
         document.getElementById("status").className = "error";
       }
     }
 
-    async function loadBalance() {
-      if (!signer || !userAddress) return;
-      try {
-        const usdc = new ethers.Contract(USDC_ADDRESS, [
-          "function balanceOf(address) view returns (uint256)"
-        ], signer);
-
-        const bal = await usdc.balanceOf(userAddress);
-        const formatted = ethers.formatUnits(bal, DECIMALS);
-        document.getElementById("userBalance").textContent = parseFloat(formatted).toFixed(4);
-      } catch(e) {
-        document.getElementById("userBalance").textContent = "Error";
-      }
-    }
-
     function disconnectWallet() {
-      signer = null; 
-      userAddress = null;
+      signer = null; userAddress = null;
       document.getElementById("status").innerHTML = "Wallet Disconnected";
-      document.getElementById("userBalance").textContent = "0.00";
     }
 
     function loadTemplate(type) {
@@ -198,17 +168,16 @@
       const intentText = document.getElementById("intent").value.trim();
       if (!intentText) return alert("Enter recipients and percentages!");
 
-      // Parsing
+      // Improved Parsing
       const addresses = intentText.match(/0x[a-fA-F0-9]{40}/gi) || [];
       let percentages = intentText.match(/(\d+\.?\d*)\s*[٪%]/g);
-      if (percentages) percentages = percentages.map(p => parseFloat(p.replace('%','').replace('٪','')));
+      if (percentages) percentages = percentages.map(p => parseFloat(p));
 
-      if (addresses.length < 2 || percentages.length !== addresses.length) 
+      if (addresses.length < 2 || percentages.length < 2) 
         return alert("Could not detect addresses and percentages correctly!");
 
-      const sumPercent = percentages.reduce((a, b) => a + b, 0);
-      if (sumPercent !== 100) 
-        return alert(`Percentages must sum exactly to 100% (Current: ${sumPercent}%)`);
+      if (percentages.reduce((a, b) => a + b, 0) !== 100) 
+        return alert("Percentages must sum exactly to 100%!");
 
       // Preview
       let preview = `You are about to send ${totalAmount} USDC:\n\n`;
@@ -229,13 +198,15 @@
         statusEl.className = "loading";
 
         const usdc = new ethers.Contract(USDC_ADDRESS, [
-          "function approve(address,uint256) returns (bool)"
+          "function approve(address,uint256) returns (bool)",
+          "function decimals() view returns (uint8)"
         ], signer);
 
-        const totalWei = ethers.parseUnits(totalAmount.toString(), DECIMALS);
+        const decimals = await usdc.decimals();
+        const totalWei = ethers.parseUnits(totalAmount.toString(), decimals);
+        const MAX_UINT = ethers.MaxUint256;
 
-        // Approve exact amount
-        await (await usdc.approve(CONTRACT_ADDRESS, totalWei)).wait();
+        await (await usdc.approve(CONTRACT_ADDRESS, MAX_UINT)).wait();
 
         statusEl.innerHTML = "Sending Split Transaction...";
 
@@ -252,13 +223,7 @@
         }];
 
         const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
-        
-        const tx = await contract.splitPayment(
-          addresses, 
-          percentages.map(p => Math.round(p)), 
-          totalWei
-        );
-        
+        const tx = await contract.splitPayment(addresses, percentages.map(p => Math.floor(p)), totalWei);
         await tx.wait();
 
         transactions.unshift({
@@ -270,10 +235,9 @@
         renderHistory();
 
         statusEl.className = "success";
-        statusEl.innerHTML = `✅ Transaction Confirmed!<br>Hash: ${tx.hash}<br>
+        statusEl.innerHTML = ` Transaction Confirmed!<br>Hash: ${tx.hash}<br>
           <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" style="color:#00ffaa;">View on Explorer</a>`;
       } catch (error) {
-        console.error(error);
         statusEl.className = "error";
         statusEl.innerHTML = `Error: ${error.message.substring(0,160)}...`;
       } finally {
@@ -308,3 +272,4 @@
   </script>
 </body>
 </html>
+
