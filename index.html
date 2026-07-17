@@ -20,8 +20,8 @@
     }
     h1 { color: #00ffaa; text-align: center; }
     button { 
-      padding: 14px 32px; margin: 8px; font-size: 17px; 
-      border: none; border-radius: 14px; cursor: pointer; 
+      padding: 12px 24px; margin: 6px; font-size: 16px; 
+      border: none; border-radius: 12px; cursor: pointer; 
     }
     .connect-btn { background: #00ffaa; color: #000; font-weight: bold; }
     .send-btn { background: #ff3366; color: white; font-weight: bold; }
@@ -30,18 +30,22 @@
       background: #00aaff;
       color: white;
       font-size: 15px;
-      padding: 10px 20px;
+      padding: 10px 18px;
+    }
+    .small-btn {
+      padding: 8px 16px;
+      font-size: 14px;
     }
     button:disabled {
       opacity: 0.6;
       cursor: not-allowed;
     }
     textarea { 
-      width: 100%; height: 160px; padding: 16px; margin: 15px 0; 
+      width: 100%; height: 160px; padding: 16px; margin: 12px 0; 
       border-radius: 14px; background: #151525; color: white; 
       border: 1px solid #00ffaa; font-family: monospace; 
     }
-    #status { margin: 20px 0; padding: 18px; border-radius: 12px; min-height: 100px; }
+    #status { margin: 20px 0; padding: 18px; border-radius: 12px; min-height: 110px; }
     .balance { font-size: 18px; color: #00ffaa; margin: 15px 0; font-weight: bold; }
     .success { background: rgba(0,255,100,0.15); }
     .error { background: rgba(255,50,50,0.15); }
@@ -64,13 +68,18 @@
     <button onclick="disconnectWallet()">Disconnect</button>
 
     <p id="status">Ready</p>
-    <div id="balance" class="balance"></div>
+    
+    <div class="balance">
+      USDC Balance: <strong id="balanceAmount">Not connected</strong>
+      <button class="small-btn" onclick="getRealBalance()" style="background:#00cc88; color:white;">Refresh</button>
+    </div>
 
     <h3>Quick Templates</h3>
     <div>
       <button class="template-btn" onclick="loadTemplate(1)">50% - 50% Split</button>
-      <button class="template-btn" onclick="loadTemplate(2)">33% - 33% - 34% Split</button>
+      <button class="template-btn" onclick="loadTemplate(2)">33% - 33% - 34%</button>
       <button class="template-btn" onclick="loadTemplate(3)">40% - 60% Split</button>
+      <button class="template-btn" onclick="loadTemplate(4)">Equal Split (4 addresses)</button>
     </div>
 
     <h3>Enter Split Intent</h3>
@@ -78,6 +87,7 @@
     
     <button id="sendBtn" class="send-btn" onclick="sendSplit()">Send Real Transaction</button>
     <button class="export-btn" onclick="exportHistory()">Export History</button>
+    <button class="small-btn" onclick="clearIntent()" style="background:#666; color:white;">Clear Text</button>
 
     <h3>Recent Transactions</h3>
     <div id="history"></div>
@@ -115,14 +125,12 @@
             document.getElementById("status").className = "success";
             await getRealBalance();
           }
-        } catch (e) {
-          console.log("No previous connection");
-        }
+        } catch (e) {}
       }
       renderHistory();
     });
 
-    async function connectWallet() {
+    async function connectWallet() { /* همان کد قبلی */ 
       if (!window.ethereum) return alert("MetaMask not found!");
       try {
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -138,9 +146,7 @@
             if (switchError.code === 4902) {
               await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [arcNetwork] });
               await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CHAIN_ID_HEX }] });
-            } else {
-              throw switchError;
-            }
+            } else throw switchError;
           }
         }
 
@@ -148,48 +154,46 @@
         document.getElementById("status").className = "success";
         await getRealBalance();
       } catch (e) {
-        console.error(e);
         document.getElementById("status").innerHTML = `Error: ${e.message}`;
         document.getElementById("status").className = "error";
       }
     }
 
     function disconnectWallet() {
-      signer = null;
-      userAddress = null;
+      signer = null; userAddress = null;
       document.getElementById("status").innerHTML = "Wallet Disconnected";
-      document.getElementById("balance").innerHTML = "";
+      document.getElementById("balanceAmount").innerHTML = "Not connected";
     }
 
     async function getRealBalance() {
       if (!signer) return;
-      const balanceEl = document.getElementById("balance");
-      balanceEl.innerHTML = `USDC Balance: Checking...`;
+      const balanceEl = document.getElementById("balanceAmount");
+      balanceEl.innerHTML = "Checking...";
 
       try {
         const usdcAbi = ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"];
         const usdc = new ethers.Contract(USDC_ADDRESS, usdcAbi, signer);
         const [bal, decimals] = await Promise.all([usdc.balanceOf(userAddress), usdc.decimals()]);
         const formatted = ethers.formatUnits(bal, decimals);
-        balanceEl.innerHTML = `USDC Balance: <strong>${parseFloat(formatted).toFixed(4)}</strong>`;
+        balanceEl.innerHTML = parseFloat(formatted).toFixed(4);
       } catch (e) {
-        balanceEl.innerHTML = `USDC Balance: Error fetching`;
+        balanceEl.innerHTML = "Error";
       }
     }
 
-    // Quick Templates
     function loadTemplate(type) {
       const textarea = document.getElementById("intent");
-      if (type === 1) {
-        textarea.value = "Send 100 USDC, 50% to 0x0000000000000000000000000000000000000001, 50% to 0x0000000000000000000000000000000000000002";
-      } else if (type === 2) {
-        textarea.value = "Send 300 USDC, 33% to 0x0000000000000000000000000000000000000001, 33% to 0x0000000000000000000000000000000000000002, 34% to 0x0000000000000000000000000000000000000003";
-      } else if (type === 3) {
-        textarea.value = "Send 100 USDC, 40% to 0x0000000000000000000000000000000000000001, 60% to 0x0000000000000000000000000000000000000002";
-      }
+      if (type === 1) textarea.value = "Send 100 USDC, 50% to 0x0000000000000000000000000000000000000001, 50% to 0x0000000000000000000000000000000000000002";
+      else if (type === 2) textarea.value = "Send 300 USDC, 33% to 0x0000000000000000000000000000000000000001, 33% to 0x0000000000000000000000000000000000000002, 34% to 0x0000000000000000000000000000000000000003";
+      else if (type === 3) textarea.value = "Send 100 USDC, 40% to 0x0000000000000000000000000000000000000001, 60% to 0x0000000000000000000000000000000000000002";
+      else if (type === 4) textarea.value = "Send 200 USDC, 25% to 0x0000000000000000000000000000000000000001, 25% to 0x0000000000000000000000000000000000000002, 25% to 0x0000000000000000000000000000000000000003, 25% to 0x0000000000000000000000000000000000000004";
     }
 
-    async function sendSplit() {
+    function clearIntent() {
+      document.getElementById("intent").value = "";
+    }
+
+    async function sendSplit() { /* همان کد قدم قبل */ 
       if (!signer) return alert("Please connect your wallet first!");
       if (isProcessing) return;
 
@@ -208,7 +212,6 @@
       if (percentages.reduce((a, b) => a + b, 0) !== 100) 
         return alert("Percentages must sum exactly to 100%!");
 
-      // Preview
       let previewText = `You are about to send ${totalAmount} USDC:\n\n`;
       for (let i = 0; i < addresses.length; i++) {
         const share = (totalAmount * percentages[i] / 100).toFixed(2);
