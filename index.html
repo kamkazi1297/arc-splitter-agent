@@ -2,7 +2,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Arc USDC Splitter - Pro</title>
+  <title>Arc Splitter - Pro</title>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <style>
     body { 
@@ -18,19 +18,20 @@
       box-shadow: 0 20px 50px rgba(0,0,0,0.6); 
     }
     h1 { color: #00ffaa; text-align: center; }
-    input { 
-      padding: 12px; margin: 6px 0; 
+    select, input { 
+      padding: 12px; margin: 8px 0; 
       border-radius: 12px; background: #151525; color: white; 
-      border: 1px solid #00ffaa; font-size: 16px;
+      border: 1px solid #00ffaa; font-size: 16px; width: 100%;
     }
     .recipient-row {
       display: flex;
       gap: 10px;
       align-items: center;
       margin-bottom: 10px;
+      flex-wrap: wrap;
     }
-    .recipient-row input.address { flex: 2; }
-    .recipient-row input.percent { flex: 1; max-width: 130px; }
+    .recipient-row input.address { flex: 2; min-width: 280px; }
+    .recipient-row input.percent { flex: 1; max-width: 140px; }
     button { 
       padding: 12px 24px; margin: 6px 4px; font-size: 16px; 
       border: none; border-radius: 12px; cursor: pointer; 
@@ -40,8 +41,7 @@
     .small-btn { padding: 8px 16px; font-size: 14px; }
     .template-btn { background: #00aaff; color: white; padding: 10px 18px; }
     .add-btn { background: #00cc88; color: white; }
-    .max-btn { background: #444; color: white; font-size: 14px; padding: 8px 12px; }
-    .save-btn { background: #ffaa00; color: black; font-weight: bold; }
+    .max-btn { background: #444; color: white; }
     button:disabled { opacity: 0.6; cursor: not-allowed; }
     #status { margin: 20px 0; padding: 18px; border-radius: 12px; min-height: 170px; line-height: 1.5; }
     .success { background: rgba(0,255,100,0.15); }
@@ -49,13 +49,16 @@
     .loading::after { content: " "; animation: spin 1.5s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .footer { text-align: center; margin-top: 40px; color: #888; font-size: 13.5px; }
-    #percent-total { font-weight: bold; margin: 12px 0; font-size: 15px; }
+    #percent-total { font-weight: bold; margin: 12px 0; font-size: 16px; }
+    @media (max-width: 600px) {
+      .recipient-row { flex-direction: column; align-items: stretch; }
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Arc USDC Splitter</h1>
-    <p><strong>Professional • Arc Testnet</strong></p>
+    <h1>Arc Splitter Pro</h1>
+    <p><strong>Arc Testnet • Multi Token</strong></p>
 
     <button class="connect-btn" onclick="connectWallet()">Connect MetaMask</button>
     <button onclick="disconnectWallet()">Disconnect</button>
@@ -63,9 +66,18 @@
     <p id="status">Ready</p>
 
     <div style="margin:15px 0;">
-      <strong>Total Amount (USDC)</strong>
+      <strong>Select Token</strong>
+      <select id="tokenSelect">
+        <option value="0x3600000000000000000000000000000000000000">USDC</option>
+        <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
+        <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
+      </select>
+    </div>
+
+    <div style="margin:15px 0;">
+      <strong>Total Amount</strong>
       <div style="display:flex; gap:8px;">
-        <input type="number" id="totalAmount" value="100" step="0.01" style="flex:1;">
+        <input type="number" id="totalAmount" value="100" step="0.000001" style="flex:1;">
         <button class="max-btn" onclick="setMaxAmount()">MAX</button>
       </div>
     </div>
@@ -77,10 +89,6 @@
       <button class="template-btn" onclick="loadTemplate(3)">40% - 60%</button>
       <button class="template-btn" onclick="loadTemplate(4)">Equal Split (4)</button>
     </div>
-
-    <h3>Saved Templates</h3>
-    <div id="saved-templates" style="margin-bottom:15px;"></div>
-    <button class="save-btn" onclick="saveCurrentTemplate()">💾 Save Current Split</button>
 
     <h3>Recipients & Percentages</h3>
     <div id="recipients-list"></div>
@@ -103,11 +111,9 @@
     let signer = null;
     let userAddress = null;
     let transactions = JSON.parse(localStorage.getItem('arcTxHistory') || '[]');
-    let savedTemplates = JSON.parse(localStorage.getItem('arcSavedTemplates') || '[]');
     let isProcessing = false;
 
     const CONTRACT_ADDRESS = "0xEa86B2d60029bEE76F6858a1Ac7f85B2944004bF";
-    const USDC_ADDRESS = "0x3600000000000000000000000000000000000000";
     const CHAIN_ID = 5042002;
     const CHAIN_ID_HEX = "0x4cef52";
 
@@ -129,35 +135,50 @@
             signer = await provider.getSigner();
             document.getElementById("status").innerHTML = `Connected: ${userAddress.slice(0,8)}...${userAddress.slice(-6)}`;
             document.getElementById("status").className = "success";
-            updateUSDCBalance();
+            updateBalance();
           }
         } catch (e) {}
       }
       renderHistory();
-      renderSavedTemplates();
       addRecipient();
       addRecipient();
     });
 
-    async function updateUSDCBalance() {
+    async function getCurrentToken() {
+      return document.getElementById("tokenSelect").value;
+    }
+
+    async function getTokenSymbol() {
+      return document.getElementById("tokenSelect").selectedOptions[0].text;
+    }
+
+    async function updateBalance() {
       if (!signer || !userAddress) return;
       try {
-        const usdc = new ethers.Contract(USDC_ADDRESS, [
+        const tokenAddr = await getCurrentToken();
+        const contract = new ethers.Contract(tokenAddr, [
           "function balanceOf(address) view returns (uint256)",
           "function decimals() view returns (uint8)"
         ], signer);
-        const balance = await usdc.balanceOf(userAddress);
-        const formatted = parseFloat(ethers.formatUnits(balance, await usdc.decimals())).toFixed(4);
-        document.getElementById("status").innerHTML += `<br><small>USDC Balance: ${formatted}</small>`;
+        const balance = await contract.balanceOf(userAddress);
+        const decimals = await contract.decimals();
+        const formatted = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4);
+        const symbol = await getTokenSymbol();
+        document.getElementById("status").innerHTML += `<br><small>Balance: ${formatted} ${symbol}</small>`;
       } catch(e) {}
     }
 
     async function setMaxAmount() {
       if (!signer) return alert("Connect wallet first!");
       try {
-        const usdc = new ethers.Contract(USDC_ADDRESS, ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"], signer);
-        const balance = await usdc.balanceOf(userAddress);
-        document.getElementById("totalAmount").value = parseFloat(ethers.formatUnits(balance, await usdc.decimals())).toFixed(4);
+        const tokenAddr = await getCurrentToken();
+        const contract = new ethers.Contract(tokenAddr, [
+          "function balanceOf(address) view returns (uint256)",
+          "function decimals() view returns (uint8)"
+        ], signer);
+        const balance = await contract.balanceOf(userAddress);
+        const decimals = await contract.decimals();
+        document.getElementById("totalAmount").value = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(6);
       } catch(e) { alert("Could not fetch balance"); }
     }
 
@@ -179,17 +200,17 @@
       const total = percents.reduce((a, b) => a + b, 0);
       const el = document.getElementById("percent-total");
       el.textContent = `Total: ${total.toFixed(2)}%`;
-      el.style.color = total === 100 ? "#00ffaa" : total > 100 ? "#ff3366" : "#e0e0ff";
+      el.style.color = total === 100 ? "#00ffaa" : (total > 100 ? "#ff3366" : "#e0e0ff");
     }
 
     function loadTemplate(type) {
       const list = document.getElementById("recipients-list");
       list.innerHTML = "";
-      if (type === 1) { addRow("0x000...0001", 50); addRow("0x000...0002", 50); }
-      else if (type === 2) { addRow("0x000...0001", 33); addRow("0x000...0002", 33); addRow("0x000...0003", 34); }
-      else if (type === 3) { addRow("0x000...0001", 40); addRow("0x000...0002", 60); }
+      if (type === 1) { addRow("0x0000000000000000000000000000000000000001", 50); addRow("0x0000000000000000000000000000000000000002", 50); }
+      else if (type === 2) { addRow("0x0000000000000000000000000000000000000001", 33); addRow("0x0000000000000000000000000000000000000002", 33); addRow("0x0000000000000000000000000000000000000003", 34); }
+      else if (type === 3) { addRow("0x0000000000000000000000000000000000000001", 40); addRow("0x0000000000000000000000000000000000000002", 60); }
       else if (type === 4) {
-        for (let i = 1; i <= 4; i++) addRow(`0x000...000${i}`, 25);
+        for (let i = 1; i <= 4; i++) addRow(`0x000000000000000000000000000000000000000${i}`, 25);
       }
     }
 
@@ -204,42 +225,6 @@
       `;
       list.appendChild(row);
       updatePercentTotal();
-    }
-
-    function saveCurrentTemplate() {
-      const name = prompt("Enter template name (e.g. Team Salaries):");
-      if (!name) return;
-
-      const recipients = [];
-      document.querySelectorAll('.recipient-row').forEach(row => {
-        const addr = row.querySelector('.address').value.trim();
-        const perc = parseFloat(row.querySelector('.percent').value);
-        if (addr && perc) recipients.push({address: addr, percent: perc});
-      });
-
-      if (recipients.length < 2) return alert("At least 2 recipients required!");
-
-      savedTemplates.unshift({ name, recipients, date: new Date().toLocaleDateString() });
-      localStorage.setItem('arcSavedTemplates', JSON.stringify(savedTemplates));
-      renderSavedTemplates();
-      alert("Template saved successfully!");
-    }
-
-    function renderSavedTemplates() {
-      const container = document.getElementById("saved-templates");
-      let html = "";
-      savedTemplates.forEach((tpl, i) => {
-        html += `<button class="template-btn" style="margin:4px;" onclick="loadSavedTemplate(${i})">${tpl.name} <small>(${tpl.recipients.length})</small></button>`;
-      });
-      container.innerHTML = html || "<p>No saved templates yet.</p>";
-    }
-
-    function loadSavedTemplate(index) {
-      const tpl = savedTemplates[index];
-      if (!tpl) return;
-      const list = document.getElementById("recipients-list");
-      list.innerHTML = "";
-      tpl.recipients.forEach(r => addRow(r.address, r.percent));
     }
 
     async function connectWallet() {
@@ -258,12 +243,12 @@
             if (switchError.code === 4902) {
               await window.ethereum.request({ method: 'wallet_addEthereumChain', params: [arcNetwork] });
               await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: CHAIN_ID_HEX }] });
-            }
+            } else throw switchError;
           }
         }
         document.getElementById("status").innerHTML = `Connected: ${userAddress.slice(0,8)}...${userAddress.slice(-6)}`;
         document.getElementById("status").className = "success";
-        await updateUSDCBalance();
+        await updateBalance();
       } catch (e) {
         document.getElementById("status").innerHTML = `Error: ${e.message}`;
         document.getElementById("status").className = "error";
@@ -289,6 +274,9 @@
       const totalAmount = parseFloat(document.getElementById("totalAmount").value);
       if (!totalAmount || totalAmount <= 0) return alert("Enter a valid amount!");
 
+      const tokenAddr = await getCurrentToken();
+      const symbol = await getTokenSymbol();
+
       const addresses = [];
       const percentages = [];
 
@@ -309,12 +297,12 @@
         if (!ethers.isAddress(addr)) return alert(`Invalid address: ${addr}`);
       }
 
-      let preview = `Sending ${totalAmount} USDC to ${addresses.length} recipients:\n\n`;
+      let preview = `You are about to send ${totalAmount} ${symbol}:\n\n`;
       addresses.forEach((addr, i) => {
         const share = (totalAmount * percentages[i] / 100).toFixed(4);
-        preview += `${percentages[i]}% → ${addr.slice(0,8)}... = ${share} USDC\n`;
+        preview += `• ${percentages[i]}% → ${addr.slice(0,8)}... = ${share} ${symbol}\n`;
       });
-      preview += `\nEstimated Gas: ~0.0005 - 0.002 ARC\n\nContinue?`;
+      preview += `\nContinue?`;
 
       if (!confirm(preview)) return;
 
@@ -325,23 +313,31 @@
       btn.textContent = "Processing...";
 
       try {
-        statusEl.innerHTML = "Approving USDC...";
+        statusEl.innerHTML = `Approving ${symbol}...`;
         statusEl.className = "loading";
 
-        const usdc = new ethers.Contract(USDC_ADDRESS, [
+        const tokenContract = new ethers.Contract(tokenAddr, [
           "function approve(address,uint256) returns (bool)",
           "function decimals() view returns (uint8)"
         ], signer);
 
-        const decimals = await usdc.decimals();
+        const decimals = await tokenContract.decimals();
         const totalWei = ethers.parseUnits(totalAmount.toString(), decimals);
-        await (await usdc.approve(CONTRACT_ADDRESS, totalWei)).wait();
+
+        await (await tokenContract.approve(CONTRACT_ADDRESS, totalWei)).wait();
 
         statusEl.innerHTML = "Sending Split Transaction...";
 
         const splitterAbi = [{
-          "inputs": [{"name": "recipients", "type": "address[]"}, {"name": "percentages", "type": "uint256[]"}, {"name": "totalAmount", "type": "uint256"}],
-          "name": "splitPayment", "outputs": [], "stateMutability": "nonpayable", "type": "function"
+          "inputs": [
+            {"name": "recipients", "type": "address[]"},
+            {"name": "percentages", "type": "uint256[]"},
+            {"name": "totalAmount", "type": "uint256"}
+          ],
+          "name": "splitPayment",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
         }];
 
         const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
@@ -350,14 +346,14 @@
 
         transactions.unshift({
           hash: tx.hash,
-          intent: `${totalAmount} USDC → ${addresses.length} recipients`,
+          intent: `${totalAmount} ${symbol} → ${addresses.length} recipients`,
           time: new Date().toLocaleString()
         });
         localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
         renderHistory();
 
         statusEl.className = "success";
-        statusEl.innerHTML = `✅ Success!<br>Hash: ${tx.hash}<br>
+        statusEl.innerHTML = `✅ Transaction Confirmed!<br>Hash: ${tx.hash}<br>
           <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" style="color:#00ffaa;">View on Explorer</a>`;
       } catch (error) {
         statusEl.className = "error";
@@ -372,10 +368,12 @@
     function renderHistory() {
       let html = "";
       transactions.forEach(tx => {
-        html += `<div style="background:rgba(255,255,255,0.05); padding:14px; margin:10px 0; border-radius:12px;">
-          <small>${tx.time}</small><br>${tx.intent}<br>
-          <small><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View Tx</a></small>
-        </div>`;
+        html += `
+          <div style="background:rgba(255,255,255,0.05); padding:14px; margin:10px 0; border-radius:12px;">
+            <small>${tx.time}</small><br>
+            ${tx.intent}<br>
+            <small><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View Tx</a></small>
+          </div>`;
       });
       document.getElementById("history").innerHTML = html || "<p>No transactions yet.</p>";
     }
@@ -387,7 +385,7 @@
       a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
       a.download = `arc-splitter-history-${new Date().toISOString().slice(0,10)}.json`;
       a.click();
-      alert("History exported!");
+      alert("History exported successfully!");
     }
   </script>
 </body>
