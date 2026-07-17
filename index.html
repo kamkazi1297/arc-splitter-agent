@@ -6,22 +6,31 @@
   <title>Arc USDC Splitter</title>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <style>
-    body { font-family: Arial; background: linear-gradient(135deg, #0f0f23, #1a1a2e); color: white; text-align: center; padding: 30px; }
+    body { font-family: Arial, sans-serif; background: linear-gradient(135deg, #0f0f23, #1a1a2e); color: white; text-align: center; padding: 20px; }
     .container { max-width: 700px; margin: 0 auto; background: rgba(255,255,255,0.06); padding: 35px; border-radius: 20px; }
     button { padding: 14px 30px; margin: 10px; font-size: 17px; border-radius: 12px; cursor: pointer; }
-    input { width: 80%; padding: 12px; margin: 10px; border-radius: 10px; background: #1e1e2e; color: white; }
+    .connect-btn { background: #00ff9d; color: black; }
+    .telegram-btn { background: #229ED9; color: white; }
+    .send-btn { background: #ff2d55; color: white; }
+    input, textarea { width: 85%; padding: 12px; margin: 10px 0; border-radius: 10px; background: #1e1e2e; color: white; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>🪓 Arc USDC Splitter</h1>
+    <p><strong>Arc Testnet</strong></p>
 
-    <button onclick="connectWallet()">🔗 Connect MetaMask</button>
+    <button class="connect-btn" onclick="connectWallet()">🔗 Connect MetaMask</button><br>
+    
+    <input type="text" id="tg_username" placeholder="Telegram Username (without @)" />
+    <button class="telegram-btn" onclick="connectTelegram()">📱 Connect to Telegram</button>
+
     <p id="status"></p>
 
-    <h3>Connect to Telegram</h3>
-    <input type="text" id="tg_username" placeholder="Telegram Username (without @)" />
-    <button onclick="sendTelegramConnect()">📱 Send Confirmation to Telegram</button>
+    <h3>Enter Split Intent</h3>
+    <textarea id="intent" placeholder="Send 50 USDC, 40% to 0x123..., 60% to 0x456..."></textarea><br>
+    
+    <button class="send-btn" onclick="sendSplit()">🚀 Send Split Transaction</button>
   </div>
 
   <script>
@@ -34,20 +43,26 @@
       await provider.send("eth_requestAccounts", []);
       signer = await provider.getSigner();
       userAddress = await signer.getAddress();
-      document.getElementById("status").innerHTML = `✅ Wallet: ${userAddress}`;
+      document.getElementById("status").innerHTML = `✅ Wallet Connected: ${userAddress.substring(0,8)}...`;
     }
 
-    async function sendTelegramConnect() {
+    function connectTelegram() {
       if (!userAddress) {
         alert("First connect MetaMask!");
         return;
       }
       const tg = document.getElementById("tg_username").value.trim();
-      if (!tg) return alert("Enter Telegram username!");
+      if (!tg) {
+        alert("Enter your Telegram username!");
+        return;
+      }
+      alert(`✅ Connection request sent to @${tg}\n\nPlease check your Telegram bot and confirm.`);
+      // اینجا بعداً درخواست رو به سرور می‌فرستیم
+    }
 
-      alert(`✅ Request sent to @${tg}\n\nPlease check your Telegram bot and confirm the connection.`);
-      
-      // اینجا بعداً به backend (Railway) درخواست ارسال پیام تأیید می‌فرستیم
+    async function sendSplit() {
+      if (!signer) return alert("Connect MetaMask first!");
+      alert("Transaction sent (demo)");
     }
   </script>
 </body>
