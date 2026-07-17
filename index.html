@@ -46,25 +46,28 @@
       background: white; color: #222; border-color: #00aa77;
     }
 
+    /* === فیکس اصلی مشکل کادر درصد === */
     .recipient-row {
       display: flex;
-      gap: 10px;
+      gap: 8px;
       align-items: center;
       margin-bottom: 12px;
       flex-wrap: wrap;
     }
     .recipient-row input.address { 
       flex: 1; 
-      min-width: 240px; 
+      min-width: 220px; 
     }
     
     .recipient-row .percent-container {
       position: relative;
-      flex: 0 0 130px;   /* عرض مناسب و ثابت */
+      flex: 0 0 118px;     /* عرض ثابت و مناسب */
+      min-width: 118px;
     }
     .recipient-row .percent-container input {
       width: 100%;
       padding-right: 30px;
+      text-align: right;
     }
     .recipient-row .percent-container::after {
       content: "%";
@@ -74,12 +77,13 @@
       transform: translateY(-50%);
       color: #00ffaa;
       font-weight: bold;
+      pointer-events: none;
     }
 
     .delete-btn {
       background: #ff3366;
       color: white;
-      font-size: 18px;
+      font-size: 20px;
       font-weight: bold;
       width: 44px;
       height: 44px;
@@ -183,7 +187,7 @@
       <button onclick="equalSplit()" style="background:#0099ff;color:white;">Equal Split</button>
     </div>
 
-    <div style="margin:10px 0;">
+    <div style="margin:15px 0;">
       <strong>Number of Equal Recipients:</strong>
       <input type="number" id="equalCount" value="4" min="2" max="10" style="width:80px; text-align:center;">
     </div>
@@ -245,7 +249,6 @@
             const provider = new ethers.BrowserProvider(window.ethereum);
             signer = await provider.getSigner();
             document.getElementById("status").innerHTML = `Connected: ${userAddress.slice(0,8)}...${userAddress.slice(-6)}`;
-            document.getElementById("status").className = "success";
             updateBalance();
           }
         } catch (e) {}
@@ -358,11 +361,9 @@
           }
         }
         document.getElementById("status").innerHTML = `Connected: ${userAddress.slice(0,8)}...${userAddress.slice(-6)}`;
-        document.getElementById("status").className = "success";
         await updateBalance();
       } catch (e) {
         document.getElementById("status").innerHTML = `Error: ${e.message}`;
-        document.getElementById("status").className = "error";
       }
     }
 
