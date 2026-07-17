@@ -15,7 +15,6 @@
       background: linear-gradient(135deg, #0a0a1f, #1a1a35); 
       color: #e0e0ff; 
       margin: 0; padding: 20px; 
-      transition: all 0.4s;
     }
     body.light {
       background: linear-gradient(135deg, #f0f0f5, #e0e0f0);
@@ -35,41 +34,46 @@
     }
 
     h1 { color: var(--primary); text-align: center; text-shadow: 0 0 20px rgba(0,255,170,0.4); }
-    body.light h1 { color: #00aa77; text-shadow: none; }
 
     select, input { 
-      padding: 14px; margin: 8px 0; 
-      border-radius: 14px; background: #12122b; color: white; 
-      border: 1px solid #00ffaa; font-size: 16px;
+      padding: 14px; 
+      border-radius: 14px; 
+      background: #12122b; 
+      color: white; 
+      border: 1px solid #00ffaa; 
+      font-size: 16px;
     }
     body.light select, body.light input {
       background: white; color: #222; border-color: #00aa77;
     }
 
+    /* === Recipient Row - بهبود یافته === */
     .recipient-row {
       display: flex;
-      gap: 12px;
       align-items: center;
-      margin-bottom: 12px;
-      flex-wrap: wrap;
+      gap: 15px;
+      margin-bottom: 14px;
+      flex-wrap: nowrap;           /* جلوگیری از شکستن خط */
+      min-width: 100%;
     }
     .recipient-row input.address { 
       flex: 1; 
-      min-width: 280px; 
+      min-width: 260px;
     }
 
     .recipient-row .percent-container {
       position: relative;
-      flex: 0 0 135px;
+      flex: 0 0 150px;             /* عرض ثابت و کافی */
+      flex-shrink: 0;
     }
     .recipient-row .percent-container input {
       width: 100%;
-      padding-right: 32px;
+      padding: 14px 40px 14px 14px;
     }
     .recipient-row .percent-container::after {
       content: "%";
       position: absolute;
-      right: 14px;
+      right: 16px;
       top: 50%;
       transform: translateY(-50%);
       color: #00ffaa;
@@ -80,10 +84,9 @@
     .delete-btn {
       background: #ff3366;
       color: white;
-      font-size: 20px;
-      font-weight: bold;
-      width: 46px;
-      height: 46px;
+      font-size: 22px;
+      width: 50px;
+      height: 50px;
       border-radius: 50%;
       display: flex;
       align-items: center;
@@ -91,27 +94,24 @@
       flex-shrink: 0;
       cursor: pointer;
       border: none;
+      margin-left: auto;           /* هل دادن به راست */
     }
 
     button { 
-      padding: 12px 24px; margin: 6px 4px; font-size: 16px; 
-      border: none; border-radius: 12px; cursor: pointer; 
-      transition: all 0.3s ease;
+      padding: 12px 24px; 
+      margin: 6px 4px; 
+      font-size: 16px; 
+      border: none; 
+      border-radius: 12px; 
+      cursor: pointer; 
     }
     .connect-btn { background: var(--primary); color: #000; font-weight: bold; }
     .send-btn { background: var(--accent); color: white; font-weight: bold; }
 
-    #status { 
-      margin: 20px 0; 
-      padding: 20px; 
-      border-radius: 16px; 
-      min-height: 160px; 
-      line-height: 1.6;
-    }
+    #status { margin: 20px 0; padding: 20px; border-radius: 16px; min-height: 160px; line-height: 1.6; }
     .spinner {
       display: inline-block;
-      width: 20px;
-      height: 20px;
+      width: 20px; height: 20px;
       border: 3px solid rgba(255,255,255,0.2);
       border-top-color: #00ffaa;
       border-radius: 50%;
@@ -120,23 +120,8 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    .history-item {
-      background: rgba(255,255,255,0.05); 
-      padding: 14px; 
-      margin: 10px 0; 
-      border-radius: 12px;
-    }
-    body.light .history-item { background: #f8f8f8; color: #222; }
-
-    .pagination {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      margin: 15px 0;
-      flex-wrap: wrap;
-    }
-
-    .footer { text-align: center; margin-top: 50px; color: #777; font-size: 14px; } 
+    .history-item { background: rgba(255,255,255,0.05); padding: 14px; margin: 10px 0; border-radius: 12px; }
+    .footer { text-align: center; margin-top: 50px; color: #777; font-size: 14px; }
     #percent-total { font-weight: bold; margin: 15px 0; font-size: 17px; }
   </style>
 </head>
@@ -233,7 +218,6 @@
       renderHistory();
       addRecipient();
       addRecipient();
-
       if (window.ethereum) {
         try {
           const accounts = await window.ethereum.request({ method: 'eth_accounts' });
@@ -309,11 +293,9 @@
     function equalSplit() {
       const count = parseInt(document.getElementById("equalCount").value) || 4;
       if (count < 2 || count > 10) return alert("Number must be between 2 and 10");
-
       const list = document.getElementById("recipients-list");
       list.innerHTML = "";
       const percent = (100 / count).toFixed(2);
-
       for (let i = 1; i <= count; i++) {
         addRow(`0x000000000000000000000000000000000000000${i}`, parseFloat(percent));
       }
@@ -334,6 +316,7 @@
       updatePercentTotal();
     }
 
+    // بقیه توابع بدون تغییر
     async function connectWallet() {
       if (!window.ethereum) return alert("MetaMask not found!");
       try {
@@ -432,9 +415,7 @@
         const decimals = await tokenContract.decimals();
         const totalWei = ethers.parseUnits(totalAmount.toString(), decimals);
 
-        statusEl.innerHTML = `<span class="spinner"></span> Estimating gas...`;
         const gasLimit = await estimateGas(addresses, percentages, totalWei);
-
         await (await tokenContract.approve(CONTRACT_ADDRESS, totalWei)).wait();
 
         statusEl.innerHTML = `<span class="spinner"></span> Sending transaction...`;
@@ -454,11 +435,8 @@
         currentPage = 1;
         renderHistory();
 
-        statusEl.className = "success";
-        statusEl.innerHTML = ` Transaction Confirmed!<br>Hash: ${tx.hash}<br>
-          <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View on Explorer</a>`;
+        statusEl.innerHTML = ` Transaction Confirmed!<br>Hash: ${tx.hash}<br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View on Explorer</a>`;
       } catch (error) {
-        statusEl.className = "error";
         statusEl.innerHTML = ` Error: ${error.message.substring(0,180)}...`;
       } finally {
         isProcessing = false;
@@ -474,12 +452,7 @@
 
       let html = "";
       pageTransactions.forEach(tx => {
-        html += `
-          <div class="history-item">
-            <small>${tx.time}</small><br>
-            ${tx.intent}<br>
-            <small><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View Tx</a></small>
-          </div>`;
+        html += `<div class="history-item"><small>${tx.time}</small><br>${tx.intent}<br><small><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View Tx</a></small></div>`;
       });
 
       document.getElementById("history").innerHTML = html || "<p>No transactions yet.</p>";
@@ -492,29 +465,15 @@
         document.getElementById("pagination").innerHTML = "";
         return;
       }
-
-      let html = `
+      document.getElementById("pagination").innerHTML = `
         <button onclick="prevPage()" ${currentPage === 1 ? 'disabled' : ''}>Previous</button>
         <span style="margin:0 15px;">Page ${currentPage} of ${totalPages}</span>
         <button onclick="nextPage()" ${currentPage === totalPages ? 'disabled' : ''}>Next</button>
       `;
-      document.getElementById("pagination").innerHTML = html;
     }
 
-    function nextPage() {
-      const totalPages = Math.ceil(transactions.length / itemsPerPage);
-      if (currentPage < totalPages) {
-        currentPage++;
-        renderHistory();
-      }
-    }
-
-    function prevPage() {
-      if (currentPage > 1) {
-        currentPage--;
-        renderHistory();
-      }
-    }
+    function nextPage() { if (currentPage < Math.ceil(transactions.length / itemsPerPage)) { currentPage++; renderHistory(); }}
+    function prevPage() { if (currentPage > 1) { currentPage--; renderHistory(); }}
 
     function exportHistory() {
       if (transactions.length === 0) return alert("No history to export!");
@@ -523,7 +482,6 @@
       a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
       a.download = `arc-splitter-history-${new Date().toISOString().slice(0,10)}.json`;
       a.click();
-      alert("History exported successfully!");
     }
   </script>
 </body>
