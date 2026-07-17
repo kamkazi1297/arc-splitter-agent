@@ -6,7 +6,7 @@ Live Demo: **[https://kamkazi1297.github.io/arc-splitter-agent/](https://kamkazi
 
 ## Demo
 
-<video src="demo.mp4" controls width="100%" poster="https://via.placeholder.com/800x450?text=Arc+USDC+Splitter+Demo">
+<video src="demo.gif" controls width="100%" poster="https://via.placeholder.com/800x450?text=Arc+USDC+Splitter+Demo">
   Your browser does not support the video tag.
 </video>
 
@@ -46,7 +46,7 @@ Send 100 USDC, 40% to 0xYourAddress1..., 60% to 0xYourAddress2...
 ---
 
 **Made for Arc Testnet**  
-Demo Video: `demo.mp4`
+Demo Video: `demo.gif`
 
 ---
 
