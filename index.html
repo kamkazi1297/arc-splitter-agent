@@ -1,10 +1,17 @@
 <!DOCTYPE html>
-<html lang="fa" dir="ltr">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Arc Splitter - Pro</title>
+  <meta name="description" content="Arc Splitter Pro - Safe & Open Source Token Splitter for Arc Testnet">
+  <meta name="keywords" content="arc testnet, token splitter, usdc, multisend, arc network">
+  <meta name="robots" content="index, follow">
+  <meta name="author" content="kamkazi1297">
+  <link rel="canonical" href="https://kamkazi1297.github.io/arc-splitter-agent/">
+  
+  <title>Arc Splitter Pro - Arc Testnet</title>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+  
   <style>
     :root {
       --primary: #00ffaa;
@@ -34,6 +41,15 @@
     }
 
     h1 { color: var(--primary); text-align: center; text-shadow: 0 0 20px rgba(0,255,170,0.4); }
+
+    .warning-box {
+      background: rgba(255, 100, 100, 0.15);
+      border: 1px solid #ff3366;
+      padding: 14px 18px;
+      border-radius: 12px;
+      margin: 15px 0;
+      font-size: 15px;
+    }
 
     select, input { 
       padding: 14px; 
@@ -68,7 +84,7 @@
     .recipient-row .percent-container input.percent {
       width: 120px !important;
       height: 51.2px !important;
-      padding: 14px 42px 14px 14px;   /* افزایش padding برای جای بهتر % */
+      padding: 14px 42px 14px 14px;
       text-align: center;
       font-size: 16.5px;
       box-sizing: border-box;
@@ -76,7 +92,7 @@
     .recipient-row .percent-container::after {
       content: "%";
       position: absolute;
-      right: 15px;                    /* کمی به چپ‌تر منتقل شد */
+      right: 15px;
       top: 50%;
       transform: translateY(-50%);
       color: #00ffaa;
@@ -113,31 +129,28 @@
     .send-btn:disabled { background: #555; cursor: not-allowed; opacity: 0.7; }
 
     #status { margin: 20px 0; padding: 20px; border-radius: 16px; min-height: 160px; line-height: 1.6; }
-    .spinner {
-      display: inline-block;
-      width: 20px; height: 20px;
-      border: 3px solid rgba(255,255,255,0.2);
-      border-top-color: #00ffaa;
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin-right: 12px;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    .history-item { background: rgba(255,255,255,0.05); padding: 14px; margin: 10px 0; border-radius: 12px; }
-    .footer { text-align: center; margin-top: 50px; color: #777; font-size: 14px; }
-    #percent-total { font-weight: bold; margin: 15px 0; font-size: 17px; }
+    .footer { text-align: center; margin-top: 40px; color: #777; font-size: 14px; }
+    .source-link { color: var(--primary); text-decoration: underline; }
   </style>
 </head>
 <body>
   <div class="container">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
       <h1>Arc Splitter Pro</h1>
       <button onclick="toggleTheme()" style="background:none; border:1px solid #00ffaa; color:#00ffaa; padding:8px 16px; border-radius:999px; font-size:14px;">
          Toggle Theme
       </button>
     </div>
-    <p><strong>Arc Testnet • Multi Token • Advanced</strong></p>
+
+    <div class="warning-box">
+      ⚠️ <strong>Testnet Only</strong> — This tool works only on Arc Testnet.<br>
+      Do not use real funds. Use at your own risk.
+    </div>
+
+    <p><strong>Arc Testnet • Open Source • Multi Token Splitter</strong></p>
+    <a href="https://github.com/kamkazi1297/arc-splitter-agent" target="_blank" class="source-link">
+      View Source Code on GitHub →
+    </a>
 
     <button class="connect-btn" onclick="connectWallet()">Connect MetaMask</button>
     <button onclick="disconnectWallet()">Disconnect</button>
@@ -190,7 +203,11 @@
     <div id="pagination"></div>
 
     <div class="footer">
-      <p><strong>Testnet Only</strong> — Do not use with real funds.</p>
+      <p><strong>Testnet Only • Open Source Tool</strong></p>
+      <p>
+        <a href="https://github.com/kamkazi1297/arc-splitter-agent" target="_blank" style="color:#00ffaa;">GitHub Repository</a> 
+        | Use at your own risk.
+      </p>
     </div>
   </div>
 
@@ -304,7 +321,7 @@
       let remaining = 100 - total;
       
       if (remaining <= 0.01) {
-        alert("درصد باقی‌مانده وجود ندارد!");
+        alert("No remaining percentage to distribute!");
         return;
       }
       
@@ -429,7 +446,7 @@
       });
 
       if (addresses.length < 2) return alert("At least 2 recipients needed!");
-      if (hasDuplicateAddress(addresses)) return alert("آدرس تکراری وارد شده است!");
+      if (hasDuplicateAddress(addresses)) return alert("Duplicate address detected!");
 
       const totalPercent = percentages.reduce((a, b) => a + b, 0);
       if (Math.abs(totalPercent - 100) > 0.01) 
@@ -478,9 +495,9 @@
         currentPage = 1;
         renderHistory();
 
-        statusEl.innerHTML = ` Transaction Confirmed!<br>Hash: ${tx.hash}<br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View on Explorer</a>`;
+        statusEl.innerHTML = `Transaction Confirmed!<br>Hash: ${tx.hash}<br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View on Explorer</a>`;
       } catch (error) {
-        statusEl.innerHTML = ` Error: ${error.message.substring(0,180)}...`;
+        statusEl.innerHTML = `Error: ${error.message.substring(0,180)}...`;
       } finally {
         isProcessing = false;
         btn.disabled = false;
