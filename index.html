@@ -96,11 +96,12 @@
     const USDC_ADDRESS = "0x3600000000000000000000000000000000000000";
     const CHAIN_ID = 5042002;
     const CHAIN_ID_HEX = "0x4cef52";
+    const DECIMALS = 18;   // ← همون عدد قبلی که خواستی
 
     const arcNetwork = {
       chainId: CHAIN_ID_HEX,
       chainName: "Arc Testnet",
-      nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 6 },
+      nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
       rpcUrls: ["https://rpc.testnet.arc.network"],
       blockExplorerUrls: ["https://testnet.arcscan.app"]
     };
@@ -159,7 +160,7 @@
         ], signer);
 
         const bal = await usdc.balanceOf(userAddress);
-        const formatted = ethers.formatUnits(bal, 6);
+        const formatted = ethers.formatUnits(bal, DECIMALS);
         document.getElementById("userBalance").textContent = parseFloat(formatted).toFixed(4);
       } catch(e) {
         document.getElementById("userBalance").textContent = "Error";
@@ -202,11 +203,12 @@
       let percentages = intentText.match(/(\d+\.?\d*)\s*[٪%]/g);
       if (percentages) percentages = percentages.map(p => parseFloat(p.replace('%','').replace('٪','')));
 
-      if (addresses.length < 2 || percentages.length < 2) 
+      if (addresses.length < 2 || percentages.length !== addresses.length) 
         return alert("Could not detect addresses and percentages correctly!");
 
-      if (percentages.reduce((a, b) => a + b, 0) !== 100) 
-        return alert("Percentages must sum exactly to 100%!");
+      const sumPercent = percentages.reduce((a, b) => a + b, 0);
+      if (sumPercent !== 100) 
+        return alert(`Percentages must sum exactly to 100% (Current: ${sumPercent}%)`);
 
       // Preview
       let preview = `You are about to send ${totalAmount} USDC:\n\n`;
@@ -230,8 +232,9 @@
           "function approve(address,uint256) returns (bool)"
         ], signer);
 
-        const totalWei = ethers.parseUnits(totalAmount.toString(), 6);
+        const totalWei = ethers.parseUnits(totalAmount.toString(), DECIMALS);
 
+        // Approve exact amount
         await (await usdc.approve(CONTRACT_ADDRESS, totalWei)).wait();
 
         statusEl.innerHTML = "Sending Split Transaction...";
@@ -249,11 +252,13 @@
         }];
 
         const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
+        
         const tx = await contract.splitPayment(
           addresses, 
           percentages.map(p => Math.round(p)), 
           totalWei
         );
+        
         await tx.wait();
 
         transactions.unshift({
@@ -268,6 +273,7 @@
         statusEl.innerHTML = `✅ Transaction Confirmed!<br>Hash: ${tx.hash}<br>
           <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" style="color:#00ffaa;">View on Explorer</a>`;
       } catch (error) {
+        console.error(error);
         statusEl.className = "error";
         statusEl.innerHTML = `Error: ${error.message.substring(0,160)}...`;
       } finally {
