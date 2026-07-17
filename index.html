@@ -4,11 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Arc Splitter Pro - Safe & Open Source Token Splitter for Arc Testnet">
-  <meta name="keywords" content="arc testnet, token splitter, usdc, multisend, arc network">
-  <meta name="robots" content="index, follow">
-  <meta name="author" content="kamkazi1297">
-  <link rel="canonical" href="https://kamkazi1297.github.io/arc-splitter-agent/">
-  
+  <meta name="keywords" content="arc testnet, token splitter, usdc, multisend">
   <title>Arc Splitter Pro - Arc Testnet</title>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   
@@ -45,10 +41,10 @@
     .warning-box {
       background: rgba(255, 100, 100, 0.15);
       border: 1px solid #ff3366;
-      padding: 14px 18px;
+      padding: 16px 20px;
       border-radius: 12px;
-      margin: 20px 0;
-      font-size: 15px;
+      margin: 30px 0 20px 0;
+      font-size: 15.5px;
       text-align: center;
     }
 
@@ -70,17 +66,12 @@
       align-items: center;
       gap: 15px;
       margin-bottom: 14px;
-      flex-wrap: nowrap;
     }
-    .recipient-row input.address { 
-      flex: 1; 
-      min-width: 260px;
-    }
+    .recipient-row input.address { flex: 1; min-width: 260px; }
 
     .recipient-row .percent-container {
       position: relative;
       flex: 0 0 140px;
-      flex-shrink: 0;
     }
     .recipient-row .percent-container input.percent {
       width: 120px !important;
@@ -88,7 +79,6 @@
       padding: 14px 42px 14px 14px;
       text-align: center;
       font-size: 16.5px;
-      box-sizing: border-box;
     }
     .recipient-row .percent-container::after {
       content: "%";
@@ -112,7 +102,6 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      flex-shrink: 0;
       cursor: pointer;
       border: none;
     }
@@ -130,8 +119,8 @@
     .send-btn:disabled { background: #555; cursor: not-allowed; opacity: 0.7; }
 
     #status { margin: 20px 0; padding: 20px; border-radius: 16px; min-height: 160px; line-height: 1.6; }
-    .footer { text-align: center; margin-top: 30px; color: #777; font-size: 14px; }
-    .source-link { color: var(--primary); text-decoration: underline; }
+    .footer { text-align: center; margin-top: 20px; color: #777; font-size: 14px; }
+    .source-link { color: var(--primary); text-decoration: underline; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -144,6 +133,8 @@
     </div>
 
     <p><strong>Arc Testnet • Open Source • Multi Token Splitter</strong></p>
+    
+    <!-- لینک گیتهاب بالای صفحه -->
     <a href="https://github.com/kamkazi1297/arc-splitter-agent" target="_blank" class="source-link">
       View Source Code on GitHub →
     </a>
@@ -198,21 +189,19 @@
     <div id="history"></div>
     <div id="pagination"></div>
 
-    <!-- Warning Box Moved to Bottom -->
+    <!-- هشدار در آخر صفحه -->
     <div class="warning-box">
       ⚠️ <strong>Testnet Only</strong> — This tool works only on Arc Testnet.<br>
       Do not use real funds. Use at your own risk.
     </div>
 
     <div class="footer">
-      <p>
-        <a href="https://github.com/kamkazi1297/arc-splitter-agent" target="_blank" style="color:#00ffaa;">GitHub Repository</a> 
-        | Open Source Tool
-      </p>
+      Open Source Tool • Made for Arc Testnet
     </div>
   </div>
 
   <script>
+    // === تمام اسکریپت (کامل) ===
     let signer = null;
     let userAddress = null;
     let transactions = JSON.parse(localStorage.getItem('arcTxHistory') || '[]');
@@ -317,17 +306,10 @@
     function distributeRemaining() {
       const percents = Array.from(document.querySelectorAll('.percent'));
       if (percents.length === 0) return;
-      
       let total = percents.reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
       let remaining = 100 - total;
-      
-      if (remaining <= 0.01) {
-        alert("No remaining percentage to distribute!");
-        return;
-      }
-      
-      const lastInput = percents[percents.length - 1];
-      lastInput.value = (parseFloat(lastInput.value) || 0) + remaining;
+      if (remaining <= 0.01) return alert("No remaining percentage!");
+      percents[percents.length - 1].value = (parseFloat(percents[percents.length - 1].value) || 0) + remaining;
       updatePercentTotal();
     }
 
@@ -345,9 +327,7 @@
       const list = document.getElementById("recipients-list");
       list.innerHTML = "";
       const percent = (100 / count).toFixed(2);
-      for (let i = 1; i <= count; i++) {
-        addRow(`0x000000000000000000000000000000000000000${i}`, parseFloat(percent));
-      }
+      for (let i = 1; i <= count; i++) addRow(`0x000000000000000000000000000000000000000${i}`, parseFloat(percent));
     }
 
     function addRow(address, percent) {
@@ -441,16 +421,14 @@
         if (addr && perc > 0) {
           addresses.push(addr);
           percentages.push(perc);
-          const amount = (totalAmount * perc / 100).toFixed(6);
-          amounts.push(amount);
+          amounts.push((totalAmount * perc / 100).toFixed(6));
         }
       });
 
       if (addresses.length < 2) return alert("At least 2 recipients needed!");
       if (hasDuplicateAddress(addresses)) return alert("Duplicate address detected!");
 
-      const totalPercent = percentages.reduce((a, b) => a + b, 0);
-      if (Math.abs(totalPercent - 100) > 0.01) 
+      if (Math.abs(percentages.reduce((a, b) => a + b, 0) - 100) > 0.01) 
         return alert("Percentages must sum exactly to 100%!");
 
       for (let addr of addresses) {
@@ -458,9 +436,7 @@
       }
 
       let preview = `Send ${totalAmount} ${symbol} ?\n\n`;
-      addresses.forEach((addr, i) => {
-        preview += `• ${amounts[i]} ${symbol} → ${addr.slice(0,8)}...\n`;
-      });
+      addresses.forEach((addr, i) => preview += `• ${amounts[i]} ${symbol} → ${addr.slice(0,8)}...\n`);
 
       if (!confirm(preview)) return;
 
@@ -486,13 +462,8 @@
         const tx = await contract.splitPayment(addresses, percentages.map(p => Math.floor(p * 100)), totalWei, { gasLimit });
         await tx.wait();
 
-        transactions.unshift({
-          hash: tx.hash,
-          intent: `${totalAmount} ${symbol} → ${addresses.length} recipients`,
-          time: new Date().toLocaleString()
-        });
+        transactions.unshift({ hash: tx.hash, intent: `${totalAmount} ${symbol} → ${addresses.length} recipients`, time: new Date().toLocaleString() });
         localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
-        
         currentPage = 1;
         renderHistory();
 
@@ -510,12 +481,10 @@
       const start = (currentPage - 1) * itemsPerPage;
       const end = start + itemsPerPage;
       const pageTransactions = transactions.slice(start, end);
-
       let html = "";
       pageTransactions.forEach(tx => {
         html += `<div class="history-item"><small>${tx.time}</small><br>${tx.intent}<br><small><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View Tx</a></small></div>`;
       });
-
       document.getElementById("history").innerHTML = html || "<p>No transactions yet.</p>";
       renderPagination();
     }
@@ -533,18 +502,8 @@
       `;
     }
 
-    function nextPage() { 
-      if (currentPage < Math.ceil(transactions.length / itemsPerPage)) { 
-        currentPage++; 
-        renderHistory(); 
-      }
-    }
-    function prevPage() { 
-      if (currentPage > 1) { 
-        currentPage--; 
-        renderHistory(); 
-      }
-    }
+    function nextPage() { if (currentPage < Math.ceil(transactions.length / itemsPerPage)) { currentPage++; renderHistory(); }}
+    function prevPage() { if (currentPage > 1) { currentPage--; renderHistory(); }}
 
     function exportHistory() {
       if (transactions.length === 0) return alert("No history to export!");
