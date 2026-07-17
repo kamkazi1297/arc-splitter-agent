@@ -71,9 +71,14 @@
     async function getBalance() {
       if (!userAddress) return;
       document.getElementById("balance").innerHTML = `💰 USDC Balance: Checking...`;
-      setTimeout(() => {
-        document.getElementById("balance").innerHTML = `💰 USDC Balance: <strong>42.85</strong>`;
-      }, 800);
+      try {
+        const abi = [{"constant":true,"inputs":[{"name":"_owner","type":"address"}],"name":"balanceOf","outputs":[{"name":"balance","type":"uint256"}],"type":"function"}];
+        const usdc = new ethers.Contract(USDC_ADDRESS, abi, signer);
+        const balance = await usdc.balanceOf(userAddress);
+        document.getElementById("balance").innerHTML = `💰 USDC Balance: <strong>${(Number(balance) / 1e6).toFixed(2)}</strong>`;
+      } catch (e) {
+        document.getElementById("balance").innerHTML = `💰 USDC Balance: Error`;
+      }
     }
 
     async function sendSplit() {
@@ -88,23 +93,13 @@
       const amountMatch = intentText.match(/(\d+)\s*USDC/i);
       const total = amountMatch ? parseInt(amountMatch[1]) : 10;
 
-      if (addresses.length === 0 || percentNumbers.length === 0) return alert("Could not parse addresses!");
+      if (addresses.length === 0 || percentNumbers.length === 0) return alert("Could not parse addresses or percentages!");
       if (percentNumbers.reduce((a,b) => a + b, 0) !== 100) return alert("Percentages must sum to 100%!");
 
       try {
-        document.getElementById("status").innerHTML = "⏳ Approving USDC...";
+        document.getElementById("status").innerHTML = "⏳ Please sign the transaction in MetaMask...";
 
-        // Step 1: Approve
-        const usdcAbi = [{"inputs":[{"name":"spender","type":"address"},{"name":"amount","type":"uint256"}],"name":"approve","outputs":[],"stateMutability":"nonpayable","type":"function"}];
-        const USDC = new ethers.Contract(USDC_ADDRESS, usdcAbi, signer);
-        const totalWei = BigInt(total) * BigInt(1000000);
-        const approveTx = await USDC.approve(CONTRACT_ADDRESS, totalWei * BigInt(2));
-        await approveTx.wait();
-
-        document.getElementById("status").innerHTML = "⏳ Sending Split Transaction... Please sign";
-
-        // Step 2: Split
-        const splitterAbi = [{
+        const abi = [{
           "inputs": [
             {"name": "recipients", "type": "address[]"},
             {"name": "percentages", "type": "uint256[]"},
@@ -116,7 +111,9 @@
           "type": "function"
         }];
 
-        const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
+        const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
+        const totalWei = BigInt(total) * BigInt(1000000);
+
         const tx = await contract.splitPayment(addresses, percentNumbers, totalWei);
         await tx.wait();
 
@@ -133,7 +130,7 @@
           </a>
         `;
       } catch (error) {
-        document.getElementById("status").innerHTML = `❌ ${error.message.substring(0,150)}`;
+        document.getElementById("status").innerHTML = `❌ Error: ${error.message.substring(0,150)}`;
       }
     }
 
