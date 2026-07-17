@@ -2,7 +2,6 @@
 
 A clean, fast and professional USDC splitter tool built for **Arc Testnet**.
 
-![Arc USDC Splitter](demo.gif)
 
 ## 🎯 Live Demo
 
@@ -59,6 +58,8 @@ arc-splitter-agent/
 3. Connect your wallet
 
 ## Disclaimer
+
+![Arc USDC Splitter](demo.gif)
 
 This project is for **Arc Testnet** only.  
 Use at your own risk. Not audited for mainnet usage.
