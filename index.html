@@ -76,7 +76,6 @@
       blockExplorerUrls: ["https://testnet.arcscan.app"]
     };
 
-    // Auto-check connection on page load
     window.addEventListener('load', async () => {
       if (window.ethereum) {
         try {
@@ -101,14 +100,12 @@
       if (!window.ethereum) return alert("MetaMask not found!");
 
       try {
-        // Request accounts
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         userAddress = accounts[0];
 
         const provider = new ethers.BrowserProvider(window.ethereum);
         signer = await provider.getSigner();
 
-        // Check and switch/add network
         const network = await provider.getNetwork();
         if (Number(network.chainId) !== CHAIN_ID) {
           try {
@@ -117,12 +114,11 @@
               params: [{ chainId: CHAIN_ID_HEX }]
             });
           } catch (switchError) {
-            if (switchError.code === 4902) { // Network not added
+            if (switchError.code === 4902) {
               await window.ethereum.request({
                 method: 'wallet_addEthereumChain',
                 params: [arcNetwork]
               });
-              // Switch after adding
               await window.ethereum.request({
                 method: 'wallet_switchEthereumChain',
                 params: [{ chainId: CHAIN_ID_HEX }]
@@ -135,7 +131,6 @@
 
         document.getElementById("status").innerHTML = `Connected: ${userAddress.slice(0,8)}...${userAddress.slice(-6)}`;
         document.getElementById("status").className = "success";
-        
         await getRealBalance();
       } catch (e) {
         console.error(e);
@@ -175,7 +170,6 @@
       }
     }
 
-    // sendSplit and other functions remain the same as previous version
     async function sendSplit() {
       if (!signer) return alert("Please connect your wallet first!");
 
@@ -193,6 +187,17 @@
 
       if (percentages.reduce((a, b) => a + b, 0) !== 100) 
         return alert("Percentages must sum exactly to 100%!");
+
+      // ========== Preview ==========
+      let previewText = `You are about to send ${totalAmount} USDC:\n\n`;
+      for (let i = 0; i < addresses.length; i++) {
+        const share = (totalAmount * percentages[i] / 100).toFixed(2);
+        previewText += `• ${percentages[i]}% → ${addresses[i].slice(0,8)}... = ${share} USDC\n`;
+      }
+      previewText += "\nDo you want to continue?";
+
+      if (!confirm(previewText)) return;
+      // =================================
 
       try {
         const statusEl = document.getElementById("status");
@@ -242,7 +247,7 @@
       } catch (error) {
         console.error(error);
         document.getElementById("status").className = "error";
-        document.getElementById("status").innerHTML = `Error: ${error.message.substring(0, 120)}...`;
+        document.getElementById("status").innerHTML = `Error: ${error.message.substring(0, 150)}...`;
       }
     }
 
