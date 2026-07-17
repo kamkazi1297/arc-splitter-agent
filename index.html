@@ -10,9 +10,8 @@
     .container { max-width: 720px; margin: 0 auto; background: rgba(255,255,255,0.06); padding: 35px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
     button { padding: 14px 30px; font-size: 17px; margin: 10px; border-radius: 12px; cursor: pointer; }
     .connect-btn { background: #00ff9d; color: black; font-weight: bold; }
-    .link-btn { background: #3498db; color: white; font-weight: bold; }
     .send-btn { background: #ff2d55; color: white; font-weight: bold; }
-    input, textarea { width: 85%; padding: 12px; margin: 10px 0; border-radius: 10px; background: #1e1e2e; color: white; }
+    textarea { width: 90%; height: 140px; padding: 15px; margin: 15px 0; border-radius: 12px; background: #1e1e2e; color: white; border: 1px solid #00ff9d; }
   </style>
 </head>
 <body>
@@ -23,44 +22,71 @@
     <button class="connect-btn" onclick="connectWallet()">🔗 Connect MetaMask</button>
     <p id="status"></p>
 
-    <h3>Link Telegram Account</h3>
-    <input type="text" id="telegram_id" placeholder="@username or Telegram ID" />
-    <button class="link-btn" onclick="linkTelegram()">🔗 Send Link Request to Bot</button>
-
     <h3>Enter Split Intent</h3>
-    <textarea id="intent" placeholder="Send 50 USDC, 40% to 0x123..., 60% to 0x456..."></textarea><br>
+    <textarea id="intent" placeholder="Send 100 USDC, 50% to 0x123..., 50% to 0x456..."></textarea><br>
     
     <button class="send-btn" onclick="sendSplit()">🚀 Send Split Transaction</button>
   </div>
 
   <script>
     let signer = null;
-    let userAddress = null;
+    const CONTRACT_ADDRESS = "0xEa86B2d60029bEE76F6858a1Ac7f85B2944004bF";
 
     async function connectWallet() {
       if (!window.ethereum) return alert("MetaMask not found!");
       const provider = new ethers.BrowserProvider(window.ethereum);
       await provider.send("eth_requestAccounts", []);
       signer = await provider.getSigner();
-      userAddress = await signer.getAddress();
-      document.getElementById("status").innerHTML = `✅ Connected: ${userAddress.substring(0,8)}...`;
+      const address = await signer.getAddress();
+      document.getElementById("status").innerHTML = `✅ Connected: ${address.substring(0,8)}...`;
     }
 
-    async function linkTelegram() {
-      if (!userAddress) return alert("First connect MetaMask!");
-
-      const tg = document.getElementById("telegram_id").value.trim();
-      if (!tg) return alert("Enter your Telegram ID or @username!");
-
-      alert(`✅ Link request sent to bot!\n\nGo to your bot and confirm the link.`);
-      
-      // اینجا بعداً به بک‌اند ارسال می‌کنیم
-      console.log("Link Request → Wallet:", userAddress, "Telegram:", tg);
+    function parseIntent(text) {
+      const addresses = text.match(/0x[a-fA-F0-9]{40}/g) || [];
+      const percentages = text.match(/(\d+)[٪%]/g) || [];
+      const percentNumbers = percentages.map(p => parseInt(p));
+      const amountMatch = text.match(/(\d+)\s*USDC/i);
+      const total = amountMatch ? parseInt(amountMatch[1]) : 10;
+      return { addresses, percentages: percentNumbers, total };
     }
 
     async function sendSplit() {
-      if (!signer) return alert("Connect MetaMask first!");
-      alert("✅ Transaction feature is ready.");
+      if (!signer) return alert("Please connect MetaMask first!");
+
+      const intentText = document.getElementById("intent").value.trim();
+      if (!intentText) return alert("Enter your intent!");
+
+      const { addresses, percentages, total } = parseIntent(intentText);
+
+      if (addresses.length < 2 || percentages.length < 2) return alert("Could not parse intent!");
+      if (percentages.reduce((a,b) => a+b, 0) !== 100) return alert("Percentages must sum to 100%!");
+
+      try {
+        document.getElementById("status").innerHTML = "⏳ Sending transaction...";
+
+        const abi = [{
+          "inputs": [
+            {"name": "recipients", "type": "address[]"},
+            {"name": "percentages", "type": "uint256[]"},
+            {"name": "totalAmount", "type": "uint256"}
+          ],
+          "name": "splitPayment",
+          "outputs": [],
+          "stateMutability": "nonpayable",
+          "type": "function"
+        }];
+
+        const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
+        const totalWei = BigInt(total) * BigInt(1000000);
+
+        const tx = await contract.splitPayment(addresses, percentages, totalWei);
+        await tx.wait();
+
+        document.getElementById("status").innerHTML = `✅ Success!<br>Hash: ${tx.hash}<br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View on Explorer</a>`;
+
+      } catch (error) {
+        document.getElementById("status").innerHTML = `❌ Error: ${error.message.substring(0,100)}...`;
+      }
     }
   </script>
 </body>
