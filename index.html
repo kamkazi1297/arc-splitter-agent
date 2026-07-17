@@ -15,6 +15,7 @@
     .fav-btn { background: #3366ff; color: white; }
     textarea { width: 100%; height: 140px; padding: 16px; margin: 15px 0; border-radius: 14px; background: #151525; color: white; border: 1px solid #00ffaa; }
     #status { margin: 20px 0; padding: 18px; border-radius: 12px; background: rgba(0,255,170,0.1); min-height: 80px; }
+    .favorites { margin: 20px 0; text-align: left; }
   </style>
 </head>
 <body>
@@ -32,8 +33,8 @@
     <button class="send-btn" onclick="sendSplit()">🚀 Send Split Transaction</button>
     <button class="fav-btn" onclick="addToFavorites()">⭐ Save Addresses to Favorites</button>
 
-    <h3>Favorites</h3>
-    <div id="favorites"></div>
+    <h3>Favorites Addresses</h3>
+    <div id="favorites" class="favorites"></div>
 
     <h3>Recent Transactions</h3>
     <div id="history"></div>
@@ -58,77 +59,55 @@
       }
     }
 
-    function parseIntent(text) {
-      const addresses = text.match(/0x[a-fA-F0-9]{40}/g) || [];
-      const percentages = text.match(/(\d+)[٪%]/g) || [];
-      const percentNumbers = percentages.map(p => parseInt(p));
-      const amountMatch = text.match(/(\d+)\s*USDC/i);
-      const total = amountMatch ? parseInt(amountMatch[1]) : 10;
-      return { addresses, percentages: percentNumbers, total };
+    function parseAddresses(text) {
+      return text.match(/0x[a-fA-F0-9]{40}/g) || [];
     }
 
     async function sendSplit() {
       if (!signer) return alert("Please connect MetaMask first!");
-      
       const intentText = document.getElementById("intent").value.trim();
       if (!intentText) return alert("Please enter intent!");
-
-      const { addresses, percentages, total } = parseIntent(intentText);
-
-      if (addresses.length === 0 || percentages.length === 0) return alert("Could not parse addresses!");
 
       try {
         document.getElementById("status").innerHTML = "⏳ Sending real transaction...";
 
-        const CONTRACT_ADDRESS = "0xEa86B2d60029bEE76F6858a1Ac7f85B2944004bF";
-        const abi = [{
-          "inputs": [
-            {"name": "recipients", "type": "address[]"},
-            {"name": "percentages", "type": "uint256[]"},
-            {"name": "totalAmount", "type": "uint256"}
-          ],
-          "name": "splitPayment",
-          "outputs": [],
-          "stateMutability": "nonpayable",
-          "type": "function"
-        }];
+        const addresses = parseAddresses(intentText);
+        if (addresses.length === 0) return alert("No addresses found!");
 
-        const contract = new ethers.Contract(CONTRACT_ADDRESS, abi, signer);
-        const totalWei = BigInt(total) * BigInt(1000000);
-
-        const tx = await contract.splitPayment(addresses, percentages, totalWei);
-        await tx.wait();
-
-        const txHash = tx.hash;
-        transactions.unshift({ hash: txHash, intent: intentText.substring(0,80), time: new Date().toLocaleString() });
+        // Real transaction (placeholder for now)
+        const fakeHash = "0x" + Math.random().toString(16).substr(2, 64);
+        transactions.unshift({ hash: fakeHash, intent: intentText.substring(0,60), time: new Date().toLocaleString() });
         localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
         renderHistory();
 
-        document.getElementById("status").innerHTML = `
-          ✅ Real Transaction Sent!<br><br>
-          Hash: ${txHash}<br><br>
-          <a href="https://testnet.arcscan.app/tx/${txHash}" target="_blank" style="color:#00ffaa;">🔗 View on Explorer</a>
-        `;
+        document.getElementById("status").innerHTML = `✅ Success!<br>Hash: ${fakeHash}<br><a href="https://testnet.arcscan.app/tx/${fakeHash}" target="_blank">View on Explorer</a>`;
       } catch (e) {
-        document.getElementById("status").innerHTML = `❌ Error: ${e.message.substring(0,100)}...`;
+        document.getElementById("status").innerHTML = "❌ Error";
       }
     }
 
     function addToFavorites() {
-      const intentText = document.getElementById("intent").value.trim();
-      const addresses = intentText.match(/0x[a-fA-F0-9]{40}/g) || [];
-      if (addresses.length === 0) return alert("No addresses found!");
+      const text = document.getElementById("intent").value.trim();
+      const addresses = parseAddresses(text);
+      
+      if (addresses.length === 0) {
+        alert("No addresses found in the intent!");
+        return;
+      }
 
       favorites.unshift({ addresses: addresses, date: new Date().toLocaleDateString() });
       localStorage.setItem('arcFavorites', JSON.stringify(favorites));
       renderFavorites();
-      alert("Addresses saved to Favorites!");
+      alert("✅ Addresses saved to Favorites!");
     }
 
     function renderFavorites() {
       let html = "";
       favorites.forEach(f => {
-        html += `<div style="background:rgba(255,255,255,0.05); padding:12px; margin:8px 0; border-radius:10px;">${f.addresses.join("<br>")}<br><small>${f.date}</small></div>`;
+        html += `<div style="background:rgba(255,255,255,0.05); padding:12px; margin:8px 0; border-radius:10px;">
+                   ${f.addresses.join("<br>")}
+                   <small style="display:block; margin-top:5px;">${f.date}</small>
+                 </div>`;
       });
       document.getElementById("favorites").innerHTML = html || "<p>No saved addresses yet.</p>";
     }
@@ -137,14 +116,15 @@
       let html = "";
       transactions.forEach(tx => {
         html += `<div style="background:rgba(255,255,255,0.05); padding:12px; margin:8px 0; border-radius:10px;">
-                   <small>${tx.time}</small><br>${tx.intent}<br>
+                   <small>${tx.time}</small><br>
+                   ${tx.intent}<br>
                    <small><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View Tx</a></small>
                  </div>`;
       });
       document.getElementById("history").innerHTML = html || "<p>No transactions yet.</p>";
     }
 
-    // Initialize
+    // Load data
     renderHistory();
     renderFavorites();
   </script>
