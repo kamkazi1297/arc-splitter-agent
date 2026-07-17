@@ -1,54 +1,70 @@
 # Arc USDC Splitter - Pro
 
-A clean and professional USDC splitter tool for **Arc Testnet**.
+A clean, fast and professional USDC splitter tool built for **Arc Testnet**.
 
-Live Demo: **[https://kamkazi1297.github.io/arc-splitter-agent/](https://kamkazi1297.github.io/arc-splitter-agent/)**
+![Arc USDC Splitter](demo.gif)
 
-## Demo
+## 🎯 Live Demo
 
-<video src="demo.gif" controls width="100%" poster="https://via.placeholder.com/800x450?text=Arc+USDC+Splitter+Demo">
-  Your browser does not support the video tag.
-</video>
+👉 [https://kamkazi1297.github.io/arc-splitter-agent/](https://kamkazi1297.github.io/arc-splitter-agent/)
 
 ## ✨ Features
 
 - One-click connection to MetaMask
-- Automatic Arc Testnet detection, add & switch
-- Real-time USDC balance
-- Smart natural language intent parser
-- Approve + Split transaction
-- Transaction history (saved locally)
-- Export history as JSON
+- Automatic **Arc Testnet** detection, add and switch
+- Real USDC balance display
+- Smart text parser for split intents
+- Approve + Split transaction in one flow
+- Transaction history (saved in browser)
+- Export history as JSON file
+- Modern and clean dark UI
 
-## 🚀 How to Use
+## How to Use
 
-1. Go to the live site: **[https://kamkazi1297.github.io/arc-splitter-agent/](https://kamkazi1297.github.io/arc-splitter-agent/)**
+1. Open the [Live Demo](https://kamkazi1297.github.io/arc-splitter-agent/)
 2. Click **"Connect MetaMask"**
-3. The app will automatically add/switch to Arc Testnet
-4. Enter your split intent in the box
-5. Click **"Send Real Transaction"**
+3. The app will automatically switch/add Arc Testnet
+4. Enter your split command, for example:
 
-### Example Intent:
+   Send 100 USDC, 40% to 0xYourAddress1..., 60% to 0xYourAddress2...
 
-Send 100 USDC, 40% to 0xYourAddress1..., 60% to 0xYourAddress2...
+5. Click **"Send Real Transaction"** and confirm in MetaMask
 
-## 🛠 Tech Stack
+## 🛠 Technologies
 
 - HTML + CSS + JavaScript
 - ethers.js v6
 - MetaMask (EIP-1193)
+- Arc Testnet (Chain ID: 5042002)
 
 ## 📌 Contract Addresses (Arc Testnet)
 
-- **USDC**: `0x3600000000000000000000000000000000000000`
-- **Splitter Contract**: `0xEa86B2d60029bEE76F6858a1Ac7f85B2944004bF`
+| Contract       | Address                                          |
+|----------------|--------------------------------------------------|
+| USDC           | `0x3600000000000000000000000000000000000000`    |
+| Splitter       | `0xEa86B2d60029bEE76F6858a1Ac7f85B2944004bF`    |
+
+## 📁 Project Structure
+
+arc-splitter-agent/
+├── index.html
+├── README.md
+├── demo.gif
+└── (other files)
+
+## 🚀 Local Usage
+
+1. Download the project
+2. Open `index.html` in your browser
+3. Connect your wallet
+
+## Disclaimer
+
+This project is for **Arc Testnet** only.  
+Use at your own risk. Not audited for mainnet usage.
 
 ---
 
-**Made for Arc Testnet**  
-Demo Video: ` demo.gif `
+**Made with ❤️ for the Arc Ecosystem**
 
 ---
-
-**Disclaimer**: This project is for testing on Arc Testnet only.
-
