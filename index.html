@@ -14,23 +14,15 @@
     body {
       font-family: 'Inter', system-ui, sans-serif;
     }
-    
     .glass {
       background: rgba(255, 255, 255, 0.08);
       backdrop-filter: blur(20px);
     }
-    
     .gradient-text {
       background: linear-gradient(90deg, #00ffaa, #00ccff);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
-
-    .card-hover:hover {
-      transform: translateY(-6px);
-      box-shadow: 0 30px 60px -15px rgb(0 0 0 / 0.5);
-    }
-
     .btn-gradient {
       background: linear-gradient(90deg, #ff3366, #ff6699);
       transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -38,6 +30,9 @@
     .btn-gradient:hover {
       transform: translateY(-3px);
       box-shadow: 0 20px 25px -5px rgb(255 51 102 / 0.4);
+    }
+    .recipient-row {
+      transition: all 0.3s ease;
     }
   </style>
 </head>
@@ -47,19 +42,18 @@
     <!-- Header -->
     <div class="flex justify-between items-center mb-10">
       <div class="flex items-center gap-3">
-        <div class="w-10 h-10 bg-emerald-500 rounded-2xl flex items-center justify-center text-2xl">⚡</div>
+        <div class="w-11 h-11 bg-gradient-to-br from-emerald-400 to-cyan-400 rounded-2xl flex items-center justify-center text-3xl">⚡</div>
         <div>
-          <h1 class="text-4xl font-bold gradient-text tracking-tight">ArcSplit Pro</h1>
-          <p class="text-gray-400 text-sm">Professional Token Splitter</p>
+          <h1 class="text-4xl font-bold gradient-text">ArcSplit Pro</h1>
+          <p class="text-gray-400">Professional Token Splitter</p>
         </div>
       </div>
-      
-      <div class="flex items-center gap-3">
+      <div class="flex gap-3">
         <button onclick="toggleTheme()" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all">
           <i class="fas fa-moon"></i>
         </button>
         <button onclick="connectWallet()" id="connectBtn"
-                class="px-6 py-3 bg-white text-black font-semibold rounded-2xl flex items-center gap-2 hover:bg-gray-200 transition-all">
+                class="px-6 py-3 bg-white text-black font-semibold rounded-2xl flex items-center gap-2 hover:bg-gray-100">
           <i class="fas fa-wallet"></i>
           <span>Connect Wallet</span>
         </button>
@@ -67,18 +61,17 @@
     </div>
 
     <!-- Status -->
-    <div id="status" class="glass border border-white/10 rounded-3xl p-6 mb-8 text-sm flex items-center gap-3">
-      <i class="fas fa-circle text-emerald-400"></i>
-      <span>Ready to split on Arc Testnet</span>
+    <div id="status" class="glass border border-white/10 rounded-3xl p-6 mb-8 flex items-center gap-3 text-sm">
+      Ready to split tokens on Arc Testnet
     </div>
 
-    <div class="glass border border-white/10 rounded-3xl p-8 shadow-2xl card-hover">
+    <div class="glass border border-white/10 rounded-3xl p-8">
 
-      <!-- Token -->
+      <!-- Token Select -->
       <div class="mb-8">
-        <label class="text-gray-400 text-sm font-medium block mb-2">Select Token</label>
+        <label class="block text-gray-400 text-sm mb-2 font-medium">Select Token</label>
         <select id="tokenSelect" onchange="updateBalance()" 
-                class="w-full bg-white/5 border border-white/20 focus:border-emerald-500 rounded-2xl px-6 py-5 text-lg outline-none">
+                class="w-full bg-white/5 border border-white/20 rounded-2xl px-6 py-5 text-lg focus:outline-none focus:border-emerald-500">
           <option value="0x3600000000000000000000000000000000000000">USDC</option>
           <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
           <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
@@ -87,64 +80,51 @@
 
       <!-- Total Amount -->
       <div class="mb-8">
-        <label class="text-gray-400 text-sm font-medium block mb-2">Total Amount to Split</label>
+        <label class="block text-gray-400 text-sm mb-2 font-medium">Total Amount</label>
         <div class="flex gap-3">
-          <input type="number" id="totalAmount" value="100" step="0.000001"
-                 class="flex-1 bg-white/5 border border-white/20 focus:border-emerald-500 rounded-2xl px-6 py-5 text-3xl outline-none">
-          <button onclick="setMaxAmount()" 
-                  class="px-10 bg-white/10 hover:bg-white/20 rounded-2xl font-semibold">MAX</button>
+          <input type="number" id="totalAmount" value="100" step="0.000001" 
+                 class="flex-1 bg-white/5 border border-white/20 rounded-2xl px-6 py-5 text-3xl focus:outline-none focus:border-emerald-500">
+          <button onclick="setMaxAmount()" class="px-10 bg-white/10 hover:bg-white/20 rounded-2xl font-medium">MAX</button>
         </div>
       </div>
 
       <!-- Quick Templates -->
       <div class="mb-8">
-        <label class="text-gray-400 text-sm font-medium block mb-3">Quick Templates</label>
+        <label class="block text-gray-400 text-sm mb-3 font-medium">Quick Templates</label>
         <div class="grid grid-cols-4 gap-3">
-          <button onclick="loadTemplate(1)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm font-medium transition-all">50% - 50%</button>
-          <button onclick="loadTemplate(2)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm font-medium transition-all">33-33-34</button>
-          <button onclick="loadTemplate(3)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm font-medium transition-all">40% - 60%</button>
-          <button onclick="equalSplit()" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm font-medium transition-all">Equal Split</button>
+          <button onclick="loadTemplate(1)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">50-50</button>
+          <button onclick="loadTemplate(2)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">33-33-34</button>
+          <button onclick="loadTemplate(3)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">40-60</button>
+          <button onclick="equalSplit()" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">Equal</button>
         </div>
       </div>
 
       <!-- Recipients -->
-      <div>
+      <div class="mb-8">
         <div class="flex justify-between mb-4">
-          <h3 class="font-semibold text-lg">Recipients &amp; Percentages</h3>
-          <div class="flex gap-3">
-            <button onclick="addRecipient()" class="text-emerald-400 hover:text-emerald-300 flex items-center gap-1 text-sm">
-              <i class="fas fa-plus"></i> Add
-            </button>
-          </div>
-        </div>
-
-        <div id="recipients-list" class="space-y-4 mb-8"></div>
-
-        <div class="flex justify-between items-center text-sm mb-8">
-          <span id="percent-total" class="font-semibold text-lg">Total: 0%</span>
-          <button onclick="distributeRemaining()" class="text-amber-400 hover:text-amber-300 flex items-center gap-1">
-            <i class="fas fa-balance-scale"></i> Distribute Remaining
+          <h3 class="font-semibold">Recipients</h3>
+          <button onclick="addRecipient()" class="text-emerald-400 hover:text-emerald-300 flex items-center gap-1 text-sm">
+            <i class="fas fa-plus"></i> Add Recipient
           </button>
         </div>
+        <div id="recipients-list" class="space-y-4"></div>
+      </div>
+
+      <div class="flex justify-between items-center mb-8">
+        <span id="percent-total" class="font-bold text-lg">Total: 0%</span>
+        <button onclick="distributeRemaining()" class="text-amber-400 hover:text-amber-300">Distribute Remaining</button>
       </div>
 
       <!-- Send Button -->
       <button id="sendBtn" onclick="sendSplit()" 
-              class="w-full btn-gradient py-7 rounded-3xl text-xl font-bold shadow-xl shadow-pink-500/30">
+              class="w-full btn-gradient py-7 rounded-3xl text-xl font-bold">
         Send Split Transaction
       </button>
     </div>
 
-    <!-- Warning -->
-    <div class="mt-8 text-center text-amber-400/80 text-sm flex items-center justify-center gap-2">
-      <i class="fas fa-shield-alt"></i>
-      <span>Testnet Only — Never send real funds</span>
-    </div>
-
-    <div class="text-center mt-10 text-xs text-gray-500">
-      <a href="https://github.com/kamkazi1297/arc-splitter-agent" target="_blank" class="hover:text-gray-300">
-        View Source on GitHub →
-      </a>
+    <div class="mt-8 text-center text-amber-400 text-sm flex items-center justify-center gap-2">
+      <i class="fas fa-triangle-exclamation"></i>
+      Testnet Only — Do not use real funds
     </div>
   </div>
 
@@ -169,24 +149,20 @@
 
     function toggleTheme() {
       isLightMode = !isLightMode;
-      if (isLightMode) {
-        document.documentElement.classList.add('light');
-      } else {
-        document.documentElement.classList.remove('light');
-      }
+      document.documentElement.classList.toggle('light', isLightMode);
     }
 
-    window.addEventListener('load', () => {
+    window.addEventListener('load', async () => {
       addRecipient();
       addRecipient();
-      renderHistory();
       if (window.ethereum) {
-        window.ethereum.request({ method: 'eth_accounts' }).then(accounts => {
-          if (accounts.length > 0) {
-            userAddress = accounts[0];
-            document.getElementById("connectBtn").innerHTML = `<i class="fas fa-wallet"></i> Connected`;
-          }
-        });
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        if (accounts.length > 0) {
+          userAddress = accounts[0];
+          const provider = new ethers.BrowserProvider(window.ethereum);
+          signer = await provider.getSigner();
+          updateBalance();
+        }
       }
     });
 
@@ -199,13 +175,11 @@
         signer = await provider.getSigner();
         document.getElementById("connectBtn").innerHTML = `<i class="fas fa-wallet"></i> Connected`;
         updateBalance();
-      } catch (e) {
-        console.error(e);
-      }
+      } catch (e) { console.error(e); }
     }
 
     async function updateBalance() {
-      if (!signer) return;
+      if (!signer || !userAddress) return;
       try {
         const tokenAddr = document.getElementById("tokenSelect").value;
         const contract = new ethers.Contract(tokenAddr, ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"], signer);
@@ -217,14 +191,25 @@
       } catch(e) {}
     }
 
+    async function setMaxAmount() {
+      if (!signer) return alert("Connect wallet first!");
+      try {
+        const tokenAddr = document.getElementById("tokenSelect").value;
+        const contract = new ethers.Contract(tokenAddr, ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"], signer);
+        const balance = await contract.balanceOf(userAddress);
+        const decimals = await contract.decimals();
+        document.getElementById("totalAmount").value = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(6);
+      } catch(e) { alert("Could not fetch balance"); }
+    }
+
     function addRecipient() {
       const list = document.getElementById("recipients-list");
       const row = document.createElement("div");
-      row.className = "glass border border-white/10 rounded-2xl p-5 flex items-center gap-4";
+      row.className = "recipient-row glass border border-white/10 rounded-2xl p-5 flex items-center gap-4";
       row.innerHTML = `
         <input type="text" class="address flex-1 bg-transparent border border-white/20 rounded-xl px-5 py-4 focus:outline-none" placeholder="0x...">
         <input type="number" class="percent w-28 bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center focus:outline-none" placeholder="%" step="0.01" oninput="updatePercentTotal()">
-        <button onclick="this.parentElement.remove(); updatePercentTotal()" class="text-rose-400 hover:text-rose-500 text-3xl px-3">×</button>
+        <button onclick="this.parentElement.remove(); updatePercentTotal()" class="text-rose-400 hover:text-rose-500 text-3xl">×</button>
       `;
       list.appendChild(row);
       updatePercentTotal();
@@ -242,8 +227,8 @@
       const percents = Array.from(document.querySelectorAll('.percent'));
       let total = percents.reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
       let remaining = 100 - total;
-      if (remaining <= 0) return alert("No remaining percentage!");
-      percents[percents.length-1].value = remaining;
+      if (remaining <= 0.01) return alert("No remaining percentage!");
+      percents[percents.length - 1].value = remaining;
       updatePercentTotal();
     }
 
@@ -256,7 +241,7 @@
     }
 
     function equalSplit() {
-      const count = parseInt(document.getElementById("equalCount")?.value) || 4;
+      const count = 4;
       const list = document.getElementById("recipients-list");
       list.innerHTML = "";
       const percent = (100 / count).toFixed(2);
@@ -266,11 +251,11 @@
     function addRow(address, percent) {
       const list = document.getElementById("recipients-list");
       const row = document.createElement("div");
-      row.className = "glass border border-white/10 rounded-2xl p-5 flex items-center gap-4";
+      row.className = "recipient-row glass border border-white/10 rounded-2xl p-5 flex items-center gap-4";
       row.innerHTML = `
         <input type="text" class="address flex-1 bg-transparent border border-white/20 rounded-xl px-5 py-4 focus:outline-none" value="${address}">
         <input type="number" class="percent w-28 bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center focus:outline-none" value="${percent}" oninput="updatePercentTotal()">
-        <button onclick="this.parentElement.remove(); updatePercentTotal()" class="text-rose-400 hover:text-rose-500 text-3xl px-3">×</button>
+        <button onclick="this.parentElement.remove(); updatePercentTotal()" class="text-rose-400 hover:text-rose-500 text-3xl">×</button>
       `;
       list.appendChild(row);
       updatePercentTotal();
@@ -280,8 +265,9 @@
       if (!signer) return alert("Please connect your wallet first!");
       if (isProcessing) return;
 
-      const totalAmount = parseFloat(document.getElementById("totalAmount").value);
-      if (!totalAmount) return alert("Enter amount!");
+      const totalAmountStr = document.getElementById("totalAmount").value;
+      const totalAmount = parseFloat(totalAmountStr);
+      if (!totalAmount || totalAmount <= 0) return alert("Enter a valid amount!");
 
       const tokenAddr = document.getElementById("tokenSelect").value;
       const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
@@ -299,14 +285,52 @@
       });
 
       if (addresses.length < 2) return alert("At least 2 recipients needed!");
-      if (percentages.reduce((a,b)=>a+b,0) !== 100) return alert("Percentages must sum to 100%");
+      if (percentages.reduce((a, b) => a + b, 0) !== 100) return alert("Percentages must sum exactly to 100%!");
 
-      // ادامه کد sendSplit (از نسخه قبلی کپی کن) ...
-      alert("Transaction logic ready. Replace this alert with full sendSplit function from previous version.");
-    }
+      for (let addr of addresses) {
+        if (!ethers.isAddress(addr)) return alert(`Invalid address: ${addr}`);
+      }
 
-    function renderHistory() {
-      console.log("History rendered");
+      if (!confirm(`Send ${totalAmount} ${symbol} to ${addresses.length} recipients?`)) return;
+
+      isProcessing = true;
+      const btn = document.getElementById("sendBtn");
+      const statusEl = document.getElementById("status");
+      btn.disabled = true;
+      btn.textContent = "Processing...";
+
+      try {
+        statusEl.innerHTML = `Approving ${symbol}...`;
+
+        const tokenContract = new ethers.Contract(tokenAddr, [
+          "function approve(address,uint256) returns (bool)",
+          "function decimals() view returns (uint8)"
+        ], signer);
+
+        const decimals = await tokenContract.decimals();
+        const totalWei = ethers.parseUnits(totalAmountStr, decimals);
+
+        await (await tokenContract.approve(CONTRACT_ADDRESS, totalWei)).wait();
+
+        statusEl.innerHTML = `Sending transaction...`;
+
+        const splitterAbi = [{"inputs":[{"name":"recipients","type":"address[]"},{"name":"percentages","type":"uint256[]"},{"name":"totalAmount","type":"uint256"}],"name":"splitPayment","outputs":[],"stateMutability":"nonpayable","type":"function"}];
+        const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
+
+        const tx = await contract.splitPayment(addresses, percentages, totalWei, { gasLimit: 800000 });
+        await tx.wait();
+
+        statusEl.innerHTML = `✅ Transaction Confirmed!<br>Hash: ${tx.hash}`;
+
+      } catch (error) {
+        console.error(error);
+        let msg = error.reason || error.message || "Transaction failed";
+        statusEl.innerHTML = `❌ Failed: ${msg}`;
+      } finally {
+        isProcessing = false;
+        btn.disabled = false;
+        btn.textContent = "Send Split Transaction";
+      }
     }
   </script>
 </body>
