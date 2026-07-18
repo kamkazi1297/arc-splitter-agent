@@ -10,18 +10,36 @@
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    
     body { font-family: 'Inter', system-ui, sans-serif; }
     
     .glass { background: rgba(255,255,255,0.08); backdrop-filter: blur(20px); }
-    .light .glass { background: rgba(0,0,0,0.08); }
+    .light .glass { background: rgba(255,255,255,0.7); color: #111827; }
+
+    select {
+      background-color: rgba(255,255,255,0.05);
+      color: white;
+    }
+    .light select {
+      background-color: white;
+      color: #111827;
+    }
+
+    select option {
+      background-color: #1f2937;
+      color: white;
+      padding: 12px;
+    }
+    .light select option {
+      background-color: white;
+      color: #111827;
+    }
 
     .gradient-text { background: linear-gradient(90deg, #00ffaa, #00ccff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    
-    .btn-gradient { background: linear-gradient(90deg, #ff3366, #ff6699); transition: all 0.4s; }
-    .btn-gradient:hover { transform: translateY(-3px); box-shadow: 0 20px 25px -5px rgb(255 51 102 / 0.4); }
+    .btn-gradient { background: linear-gradient(90deg, #ff3366, #ff6699); }
   </style>
 </head>
-<body class="bg-gradient-to-br from-[#0b0b1f] to-[#1a1a2e] text-white min-h-screen">
+<body class="bg-gradient-to-br from-[#0b0b1f] to-[#1a1a2e] text-white min-h-screen transition-all">
 
   <div class="max-w-2xl mx-auto px-4 py-10">
     <div class="flex justify-between items-center mb-10">
@@ -43,14 +61,14 @@
       </div>
     </div>
 
-    <div id="status" class="glass border border-white/10 rounded-3xl p-6 mb-8 text-sm"></div>
+    <div id="status" class="glass border border-white/10 rounded-3xl p-6 mb-8 text-sm">Ready to split tokens on Arc Testnet.</div>
 
     <div class="glass border border-white/10 rounded-3xl p-8 mb-8">
       <!-- Token Select -->
       <div class="mb-8">
         <label class="block text-gray-400 text-sm mb-2">Select Token</label>
         <select id="tokenSelect" onchange="updateBalance()" 
-                class="w-full bg-white/5 border border-white/20 rounded-2xl px-6 py-5 focus:border-emerald-500 outline-none text-white">
+                class="w-full border border-white/20 rounded-2xl px-6 py-5 focus:border-emerald-500 outline-none text-base">
           <option value="0x3600000000000000000000000000000000000000">USDC</option>
           <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
           <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
@@ -82,9 +100,7 @@
       <div class="mb-8">
         <div class="flex justify-between mb-4">
           <h3 class="font-semibold">Recipients</h3>
-          <button onclick="addRecipient()" class="text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
-            <i class="fas fa-plus"></i> Add
-          </button>
+          <button onclick="addRecipient()" class="text-emerald-400 hover:text-emerald-300 flex items-center gap-1"><i class="fas fa-plus"></i> Add</button>
         </div>
         <div id="recipients-list" class="space-y-4"></div>
       </div>
@@ -94,8 +110,7 @@
         <button onclick="distributeRemaining()" class="text-amber-400 hover:text-amber-300">Distribute Remaining</button>
       </div>
 
-      <button id="sendBtn" onclick="sendSplit()" 
-              class="w-full btn-gradient py-7 rounded-3xl text-xl font-bold">Send Split Transaction</button>
+      <button id="sendBtn" onclick="sendSplit()" class="w-full btn-gradient py-7 rounded-3xl text-xl font-bold">Send Split Transaction</button>
     </div>
 
     <!-- History -->
@@ -111,13 +126,11 @@
     let userAddress = null;
     let transactions = JSON.parse(localStorage.getItem('arcTxHistory') || '[]');
     let isProcessing = false;
-    let isLightMode = false;
 
     const CONTRACT_ADDRESS = "0xEa86B2d60029bEE76F6858a1Ac7f85B2944004bF";
 
     function toggleTheme() {
-      isLightMode = !isLightMode;
-      document.documentElement.classList.toggle('light', isLightMode);
+      document.documentElement.classList.toggle('light');
     }
 
     window.addEventListener('load', () => {
@@ -165,7 +178,7 @@
     function addRecipient() {
       const list = document.getElementById("recipients-list");
       const row = document.createElement("div");
-      row.className = "glass border border-white/10 rounded-2xl p-5 flex items-center gap-4";
+      row.className = "recipient-row glass border border-white/10 rounded-2xl p-5 flex items-center gap-4";
       row.innerHTML = `
         <input type="text" class="address flex-1 bg-transparent border border-white/20 rounded-xl px-5 py-4 text-white" placeholder="0x...">
         <input type="number" class="percent w-28 bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" placeholder="%" step="0.01" oninput="updatePercentTotal()">
@@ -211,7 +224,7 @@
     function addRow(address, percent) {
       const list = document.getElementById("recipients-list");
       const row = document.createElement("div");
-      row.className = "glass border border-white/10 rounded-2xl p-5 flex items-center gap-4";
+      row.className = "recipient-row glass border border-white/10 rounded-2xl p-5 flex items-center gap-4";
       row.innerHTML = `
         <input type="text" class="address flex-1 bg-transparent border border-white/20 rounded-xl px-5 py-4 text-white" value="${address}">
         <input type="number" class="percent w-28 bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" value="${percent}" oninput="updatePercentTotal()">
@@ -235,7 +248,7 @@
       const addresses = [];
       const percentages = [];
 
-      document.querySelectorAll('.recipient-row').forEach(row => {
+      document.querySelectorAll('#recipients-list > div').forEach(row => {
         const addr = row.querySelector('.address').value.trim();
         const perc = parseFloat(row.querySelector('.percent').value) || 0;
         if (addr && perc > 0) {
@@ -279,7 +292,7 @@
         localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
         renderHistory();
 
-        document.getElementById("status").innerHTML = `✅ Success! <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="text-emerald-400 underline">View Full Hash →</a>`;
+        document.getElementById("status").innerHTML = `✅ Success! <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="text-emerald-400 underline">View Transaction</a>`;
       } catch (error) {
         console.error(error);
         document.getElementById("status").innerHTML = `❌ Failed: ${error.reason || error.message}`;
@@ -292,25 +305,17 @@
 
     function renderHistory() {
       const container = document.getElementById("history");
-      container.innerHTML = "";
-      if (transactions.length === 0) {
-        container.innerHTML = "<p class='text-gray-400 text-center py-4'>No transactions yet.</p>";
-        return;
-      }
+      container.innerHTML = transactions.length ? "" : "<p class='text-gray-400 text-center py-8'>No transactions yet.</p>";
       transactions.slice(0, 5).forEach(tx => {
         const div = document.createElement("div");
         div.className = "glass border border-white/10 rounded-2xl p-4 text-sm";
-        div.innerHTML = `
-          <div class="text-gray-400 text-xs">${tx.time}</div>
-          <div class="my-1">${tx.intent}</div>
-          <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="text-emerald-400 text-xs hover:underline">View Full Transaction →</a>
-        `;
+        div.innerHTML = `<div class="text-gray-400 text-xs">${tx.time}</div><div>${tx.intent}</div><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="text-emerald-400 text-xs hover:underline">View Full Hash →</a>`;
         container.appendChild(div);
       });
     }
 
     function exportHistory() {
-      if (transactions.length === 0) return alert("No history to export!");
+      if (transactions.length === 0) return alert("No history!");
       const dataStr = JSON.stringify(transactions, null, 2);
       const a = document.createElement('a');
       a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
