@@ -10,7 +10,7 @@ A beautiful and fast tool to split tokens between multiple addresses with custom
 
 ## 🎥 Demo Video
 
-![ArcSplit Pro Demo](demo.mp4)
+![ArcSplit Pro Demo](demo.mp4) 
 
 > *Short demo of ArcSplit Pro in action*
 
