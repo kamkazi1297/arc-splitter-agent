@@ -3,8 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="ArcSplit Pro - Open Source Token Splitter built on Arc Testnet">
-  <title>ArcSplit Pro - Arc Testnet</title>
+  
+  <!-- Meta Tags بهینه شده برای SEO و کاهش اخطار کروم -->
+  <meta name="description" content="ArcSplit Pro - Fast, safe and open source token splitter on Arc Testnet. Split USDC, EURC and other tokens easily and transparently.">
+  <meta name="keywords" content="arc testnet, token splitter, usdc splitter, multisend, arc network, batch transfer, token distribution">
+  <meta name="robots" content="index, follow">
+  <meta name="author" content="kamkazi1297">
+  <link rel="canonical" href="https://arcsplit.kamkazi-1297.workers.dev">
+  
+  <!-- Favicon -->
+  <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/5968/5968890.png" type="image/png">
+  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5968/5968890.png">
+
+  <title>ArcSplit Pro - Token Splitter on Arc Testnet</title>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   
   <style>
@@ -13,7 +24,7 @@
       --accent: #ff3366;
     }
     body { 
-      font-family: 'Segoe UI', system-ui, sans-serif; 
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
       background: linear-gradient(135deg, #0a0a1f, #1a1a35); 
       color: #e0e0ff; 
       margin: 0; padding: 20px; 
@@ -23,27 +34,40 @@
       color: #222;
     }
     .container { 
-      max-width: 820px; margin: 0 auto; 
+      max-width: 860px; margin: 0 auto; 
       background: rgba(255,255,255,0.08); 
       padding: 40px; border-radius: 28px; 
-      box-shadow: 0 25px 60px rgba(0,0,0,0.7); 
-      border: 1px solid rgba(0,255,170,0.15);
+      box-shadow: 0 25px 70px rgba(0,0,0,0.65); 
+      border: 1px solid rgba(0,255,170,0.2);
     }
     body.light .container {
       background: rgba(255,255,255,0.95);
-      box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+      box-shadow: 0 20px 50px rgba(0,0,0,0.12);
       border-color: #ddd;
     }
 
-    h1 { color: var(--primary); text-align: center; text-shadow: 0 0 20px rgba(0,255,170,0.4); }
+    h1 { 
+      color: var(--primary); 
+      text-align: center; 
+      font-size: 2.5rem;
+      margin-bottom: 6px;
+      text-shadow: 0 0 25px rgba(0,255,170,0.5);
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #a0a0ff;
+      margin-bottom: 25px;
+      font-size: 1.15rem;
+    }
 
     .warning-box {
-      background: rgba(255, 100, 100, 0.15);
+      background: rgba(255, 80, 80, 0.15);
       border: 1px solid #ff3366;
-      padding: 16px 20px;
+      padding: 15px 20px;
       border-radius: 12px;
-      margin: 30px 0 20px 0;
-      font-size: 15.5px;
+      margin: 25px 0;
+      font-size: 15.2px;
       text-align: center;
     }
 
@@ -63,19 +87,21 @@
     .recipient-row {
       display: flex;
       align-items: center;
-      gap: 15px;
-      margin-bottom: 14px;
+      gap: 12px;
+      margin-bottom: 16px;
+      background: rgba(255,255,255,0.06);
+      padding: 14px;
+      border-radius: 16px;
     }
-    .recipient-row input.address { flex: 1; min-width: 260px; }
+    .recipient-row input.address { flex: 1; }
 
     .recipient-row .percent-container {
       position: relative;
-      flex: 0 0 140px;
+      flex: 0 0 130px;
     }
     .recipient-row .percent-container input.percent {
-      width: 120px !important;
-      height: 51.2px !important;
-      padding: 14px 14px;
+      width: 110px !important;
+      padding: 14px 12px;
       text-align: center;
       font-size: 16.5px;
     }
@@ -86,7 +112,7 @@
     .delete-btn {
       background: #ff3366;
       color: white;
-      font-size: 22px;
+      font-size: 24px;
       width: 50px;
       height: 50px;
       border-radius: 50%;
@@ -98,32 +124,34 @@
     }
 
     button { 
-      padding: 12px 24px; 
+      padding: 13px 26px; 
       margin: 6px 4px; 
       font-size: 16px; 
       border: none; 
-      border-radius: 12px; 
+      border-radius: 14px; 
       cursor: pointer; 
+      font-weight: 600;
     }
-    .connect-btn { background: var(--primary); color: #000; font-weight: bold; }
-    .send-btn { background: var(--accent); color: white; font-weight: bold; }
+    .connect-btn { background: var(--primary); color: #000; }
+    .send-btn { background: var(--accent); color: white; }
     .send-btn:disabled { background: #555; cursor: not-allowed; opacity: 0.7; }
 
-    #status { margin: 20px 0; padding: 20px; border-radius: 16px; min-height: 160px; line-height: 1.6; }
-    .footer { text-align: center; margin-top: 30px; color: #777; font-size: 14px; }
-    .source-link { color: var(--primary); text-decoration: underline; font-weight: bold; }
+    #status { margin: 25px 0; padding: 22px; border-radius: 18px; min-height: 140px; line-height: 1.6; background: rgba(0,0,0,0.3); }
+    .footer { text-align: center; margin-top: 50px; color: #888; font-size: 14px; }
+    .source-link { color: var(--primary); text-decoration: none; font-weight: bold; }
+    .source-link:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
   <div class="container">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
       <h1>ArcSplit Pro</h1>
-      <button onclick="toggleTheme()" style="background:none; border:1px solid #00ffaa; color:#00ffaa; padding:8px 16px; border-radius:999px; font-size:14px;">
+      <button onclick="toggleTheme()" style="background:none; border:1px solid #00ffaa; color:#00ffaa; padding:8px 18px; border-radius:999px; font-size:14px;">
          Toggle Theme
       </button>
     </div>
 
-    <p><strong>Built on Arc Testnet • Open Source Token Splitter</strong></p>
+    <p class="subtitle">Fast & Transparent Token Splitter on Arc Testnet</p>
 
     <button class="connect-btn" onclick="connectWallet()">Connect MetaMask</button>
     <button onclick="disconnectWallet()">Disconnect</button>
@@ -397,7 +425,7 @@
         const perc = parseFloat(row.querySelector('.percent').value) || 0;
         if (addr && perc > 0) {
           addresses.push(addr);
-          percentages.push(Math.floor(perc));        // درصد معمولی (0-100)
+          percentages.push(Math.floor(perc));
           amounts.push((totalAmount * perc / 100).toFixed(6));
         }
       });
@@ -413,9 +441,7 @@
       }
 
       let preview = `Send ${totalAmount} ${symbol} ?\n\n`;
-      addresses.forEach((addr, i) => {
-        preview += `• ${amounts[i]} ${symbol} → ${addr.slice(0,8)}...\n`;
-      });
+      addresses.forEach((addr, i) => preview += `• ${amounts[i]} ${symbol} → ${addr.slice(0,8)}...\n`);
 
       if (!confirm(preview)) return;
 
@@ -440,18 +466,7 @@
 
         statusEl.innerHTML = `<span class="spinner"></span> Sending transaction...`;
 
-        const splitterAbi = [{
-          "inputs": [
-            {"name":"recipients","type":"address[]"},
-            {"name":"percentages","type":"uint256[]"},
-            {"name":"totalAmount","type":"uint256"}
-          ],
-          "name":"splitPayment",
-          "outputs":[],
-          "stateMutability":"nonpayable",
-          "type":"function"
-        }];
-
+        const splitterAbi = [{"inputs":[{"name":"recipients","type":"address[]"},{"name":"percentages","type":"uint256[]"},{"name":"totalAmount","type":"uint256"}],"name":"splitPayment","outputs":[],"stateMutability":"nonpayable","type":"function"}];
         const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
 
         const tx = await contract.splitPayment(addresses, percentages, totalWei, { gasLimit: 800000 });
@@ -469,8 +484,8 @@
 
       } catch (error) {
         console.error(error);
-        let errorMsg = error.reason || error.message || "Transaction reverted";
-        statusEl.innerHTML = `❌ Transaction Failed<br>${errorMsg}`;
+        let msg = error.reason || error.message || "Transaction failed";
+        statusEl.innerHTML = `❌ Transaction Failed<br>${msg}`;
       } finally {
         isProcessing = false;
         btn.disabled = false;
@@ -503,12 +518,8 @@
       `;
     }
 
-    function nextPage() { 
-      if (currentPage < Math.ceil(transactions.length / itemsPerPage)) { currentPage++; renderHistory(); }
-    }
-    function prevPage() { 
-      if (currentPage > 1) { currentPage--; renderHistory(); }
-    }
+    function nextPage() { if (currentPage < Math.ceil(transactions.length / itemsPerPage)) { currentPage++; renderHistory(); }}
+    function prevPage() { if (currentPage > 1) { currentPage--; renderHistory(); }}
 
     function exportHistory() {
       if (transactions.length === 0) return alert("No history to export!");
