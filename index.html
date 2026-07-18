@@ -11,8 +11,12 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     body { font-family: 'Inter', system-ui, sans-serif; }
+    
     .glass { background: rgba(255,255,255,0.08); backdrop-filter: blur(20px); }
+    .light .glass { background: rgba(0,0,0,0.08); }
+
     .gradient-text { background: linear-gradient(90deg, #00ffaa, #00ccff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    
     .btn-gradient { background: linear-gradient(90deg, #ff3366, #ff6699); transition: all 0.4s; }
     .btn-gradient:hover { transform: translateY(-3px); box-shadow: 0 20px 25px -5px rgb(255 51 102 / 0.4); }
   </style>
@@ -29,47 +33,58 @@
         </div>
       </div>
       <div class="flex gap-3">
-        <button onclick="toggleTheme()" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl"><i class="fas fa-moon"></i></button>
-        <button onclick="connectWallet()" id="connectBtn" class="px-6 py-3 bg-white text-black font-semibold rounded-2xl flex items-center gap-2 hover:bg-gray-100">
+        <button onclick="toggleTheme()" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all">
+          <i class="fas fa-moon"></i>
+        </button>
+        <button onclick="connectWallet()" id="connectBtn" 
+                class="px-6 py-3 bg-white text-black font-semibold rounded-2xl flex items-center gap-2 hover:bg-gray-100">
           <i class="fas fa-wallet"></i> Connect Wallet
         </button>
       </div>
     </div>
 
-    <div id="status" class="glass border border-white/10 rounded-3xl p-6 mb-8">Ready to split tokens on Arc Testnet.</div>
+    <div id="status" class="glass border border-white/10 rounded-3xl p-6 mb-8 text-sm"></div>
 
     <div class="glass border border-white/10 rounded-3xl p-8 mb-8">
+      <!-- Token Select -->
       <div class="mb-8">
         <label class="block text-gray-400 text-sm mb-2">Select Token</label>
-        <select id="tokenSelect" onchange="updateBalance()" class="w-full bg-white/5 border border-white/20 rounded-2xl px-6 py-5 focus:border-emerald-500 outline-none">
+        <select id="tokenSelect" onchange="updateBalance()" 
+                class="w-full bg-white/5 border border-white/20 rounded-2xl px-6 py-5 focus:border-emerald-500 outline-none text-white">
           <option value="0x3600000000000000000000000000000000000000">USDC</option>
           <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
           <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
         </select>
       </div>
 
+      <!-- Total Amount -->
       <div class="mb-8">
         <label class="block text-gray-400 text-sm mb-2">Total Amount</label>
         <div class="flex gap-3">
-          <input type="number" id="totalAmount" value="100" step="0.000001" class="flex-1 bg-white/5 border border-white/20 rounded-2xl px-6 py-5 text-3xl outline-none">
+          <input type="number" id="totalAmount" value="100" step="0.000001" 
+                 class="flex-1 bg-white/5 border border-white/20 rounded-2xl px-6 py-5 text-3xl outline-none text-white">
           <button onclick="setMaxAmount()" class="px-10 bg-white/10 hover:bg-white/20 rounded-2xl font-medium">MAX</button>
         </div>
       </div>
 
+      <!-- Quick Templates -->
       <div class="mb-8">
         <label class="block text-gray-400 text-sm mb-3">Quick Templates</label>
         <div class="grid grid-cols-4 gap-3">
-          <button onclick="loadTemplate(1)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">50-50</button>
-          <button onclick="loadTemplate(2)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">33-33-34</button>
-          <button onclick="loadTemplate(3)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">40-60</button>
-          <button onclick="equalSplit()" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">Equal</button>
+          <button onclick="loadTemplate(1)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm transition-all">50-50</button>
+          <button onclick="loadTemplate(2)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm transition-all">33-33-34</button>
+          <button onclick="loadTemplate(3)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm transition-all">40-60</button>
+          <button onclick="equalSplit()" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm transition-all">Equal</button>
         </div>
       </div>
 
+      <!-- Recipients -->
       <div class="mb-8">
         <div class="flex justify-between mb-4">
           <h3 class="font-semibold">Recipients</h3>
-          <button onclick="addRecipient()" class="text-emerald-400 hover:text-emerald-300 flex items-center gap-1"><i class="fas fa-plus"></i> Add</button>
+          <button onclick="addRecipient()" class="text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
+            <i class="fas fa-plus"></i> Add
+          </button>
         </div>
         <div id="recipients-list" class="space-y-4"></div>
       </div>
@@ -79,14 +94,15 @@
         <button onclick="distributeRemaining()" class="text-amber-400 hover:text-amber-300">Distribute Remaining</button>
       </div>
 
-      <button id="sendBtn" onclick="sendSplit()" class="w-full btn-gradient py-7 rounded-3xl text-xl font-bold">Send Split Transaction</button>
+      <button id="sendBtn" onclick="sendSplit()" 
+              class="w-full btn-gradient py-7 rounded-3xl text-xl font-bold">Send Split Transaction</button>
     </div>
 
     <!-- History -->
     <div class="glass border border-white/10 rounded-3xl p-8">
       <h3 class="font-semibold mb-4">Recent Transactions</h3>
       <div id="history" class="space-y-3 max-h-80 overflow-auto"></div>
-      <button onclick="exportHistory()" class="mt-6 text-sm text-gray-400 hover:text-white">Export History JSON</button>
+      <button onclick="exportHistory()" class="mt-6 text-sm text-gray-400 hover:text-white">Export History</button>
     </div>
   </div>
 
@@ -98,23 +114,13 @@
     let isLightMode = false;
 
     const CONTRACT_ADDRESS = "0xEa86B2d60029bEE76F6858a1Ac7f85B2944004bF";
-    const CHAIN_ID = 5042002;
-    const CHAIN_ID_HEX = "0x4cef52";
-
-    const arcNetwork = {
-      chainId: CHAIN_ID_HEX,
-      chainName: "Arc Testnet",
-      nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
-      rpcUrls: ["https://rpc.testnet.arc.network"],
-      blockExplorerUrls: ["https://testnet.arcscan.app"]
-    };
 
     function toggleTheme() {
       isLightMode = !isLightMode;
       document.documentElement.classList.toggle('light', isLightMode);
     }
 
-    window.addEventListener('load', async () => {
+    window.addEventListener('load', () => {
       addRecipient();
       addRecipient();
       renderHistory();
@@ -161,8 +167,8 @@
       const row = document.createElement("div");
       row.className = "glass border border-white/10 rounded-2xl p-5 flex items-center gap-4";
       row.innerHTML = `
-        <input type="text" class="address flex-1 bg-transparent border border-white/20 rounded-xl px-5 py-4" placeholder="0x...">
-        <input type="number" class="percent w-28 bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center" placeholder="%" step="0.01" oninput="updatePercentTotal()">
+        <input type="text" class="address flex-1 bg-transparent border border-white/20 rounded-xl px-5 py-4 text-white" placeholder="0x...">
+        <input type="number" class="percent w-28 bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" placeholder="%" step="0.01" oninput="updatePercentTotal()">
         <button onclick="this.parentElement.remove(); updatePercentTotal()" class="text-rose-400 text-3xl px-3">×</button>
       `;
       list.appendChild(row);
@@ -207,8 +213,8 @@
       const row = document.createElement("div");
       row.className = "glass border border-white/10 rounded-2xl p-5 flex items-center gap-4";
       row.innerHTML = `
-        <input type="text" class="address flex-1 bg-transparent border border-white/20 rounded-xl px-5 py-4" value="${address}">
-        <input type="number" class="percent w-28 bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center" value="${percent}" oninput="updatePercentTotal()">
+        <input type="text" class="address flex-1 bg-transparent border border-white/20 rounded-xl px-5 py-4 text-white" value="${address}">
+        <input type="number" class="percent w-28 bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" value="${percent}" oninput="updatePercentTotal()">
         <button onclick="this.parentElement.remove(); updatePercentTotal()" class="text-rose-400 text-3xl px-3">×</button>
       `;
       list.appendChild(row);
@@ -245,7 +251,7 @@
         if (!ethers.isAddress(addr)) return alert(`Invalid address: ${addr}`);
       }
 
-      if (!confirm(`Confirm sending ${totalAmount} ${symbol} to ${addresses.length} recipients?`)) return;
+      if (!confirm(`Send ${totalAmount} ${symbol} to ${addresses.length} recipients?`)) return;
 
       isProcessing = true;
       const btn = document.getElementById("sendBtn");
@@ -273,10 +279,10 @@
         localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
         renderHistory();
 
-        document.getElementById("status").innerHTML = `✅ Transaction Confirmed!<br>Hash: ${tx.hash}`;
+        document.getElementById("status").innerHTML = `✅ Success! <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="text-emerald-400 underline">View Full Hash →</a>`;
       } catch (error) {
         console.error(error);
-        document.getElementById("status").innerHTML = `❌ Failed<br>${error.reason || error.message}`;
+        document.getElementById("status").innerHTML = `❌ Failed: ${error.reason || error.message}`;
       } finally {
         isProcessing = false;
         btn.disabled = false;
@@ -286,11 +292,19 @@
 
     function renderHistory() {
       const container = document.getElementById("history");
-      container.innerHTML = transactions.length ? "" : "<p class='text-gray-400'>No transactions yet.</p>";
-      transactions.slice(0, 6).forEach(tx => {
+      container.innerHTML = "";
+      if (transactions.length === 0) {
+        container.innerHTML = "<p class='text-gray-400 text-center py-4'>No transactions yet.</p>";
+        return;
+      }
+      transactions.slice(0, 5).forEach(tx => {
         const div = document.createElement("div");
         div.className = "glass border border-white/10 rounded-2xl p-4 text-sm";
-        div.innerHTML = `<small class="text-gray-400">${tx.time}</small><br>${tx.intent}<br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="text-emerald-400 text-xs">View Tx →</a>`;
+        div.innerHTML = `
+          <div class="text-gray-400 text-xs">${tx.time}</div>
+          <div class="my-1">${tx.intent}</div>
+          <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="text-emerald-400 text-xs hover:underline">View Full Transaction →</a>
+        `;
         container.appendChild(div);
       });
     }
