@@ -389,7 +389,7 @@
       const symbol = await getTokenSymbol();
 
       const addresses = [];
-      const percentages = [];   // basis points (مثلاً 5000 = 50%)
+      const percentages = [];
       const amounts = [];
 
       document.querySelectorAll('.recipient-row').forEach(row => {
@@ -397,7 +397,7 @@
         const perc = parseFloat(row.querySelector('.percent').value) || 0;
         if (addr && perc > 0) {
           addresses.push(addr);
-          percentages.push(Math.floor(perc * 100));   // مهم: تبدیل به basis points
+          percentages.push(Math.floor(perc));        // درصد معمولی (0-100)
           amounts.push((totalAmount * perc / 100).toFixed(6));
         }
       });
@@ -405,8 +405,7 @@
       if (addresses.length < 2) return alert("At least 2 recipients needed!");
       if (hasDuplicateAddress(addresses)) return alert("Duplicate address detected!");
 
-      const totalPercent = percentages.reduce((a, b) => a + b, 0) / 100;
-      if (Math.abs(totalPercent - 100) > 0.01) 
+      if (Math.abs(percentages.reduce((a, b) => a + b, 0) - 100) > 0.01) 
         return alert("Percentages must sum exactly to 100%!");
 
       for (let addr of addresses) {
@@ -439,7 +438,7 @@
 
         await (await tokenContract.approve(CONTRACT_ADDRESS, totalWei)).wait();
 
-        statusEl.innerHTML = `<span class="spinner"></span> Sending split transaction...`;
+        statusEl.innerHTML = `<span class="spinner"></span> Sending transaction...`;
 
         const splitterAbi = [{
           "inputs": [
@@ -470,7 +469,8 @@
 
       } catch (error) {
         console.error(error);
-        statusEl.innerHTML = `❌ Error: ${error.reason || error.message || "Transaction failed"}`;
+        let errorMsg = error.reason || error.message || "Transaction reverted";
+        statusEl.innerHTML = `❌ Transaction Failed<br>${errorMsg}`;
       } finally {
         isProcessing = false;
         btn.disabled = false;
@@ -478,7 +478,6 @@
       }
     }
 
-    // بقیه توابع
     function renderHistory() {
       const start = (currentPage - 1) * itemsPerPage;
       const end = start + itemsPerPage;
@@ -504,8 +503,12 @@
       `;
     }
 
-    function nextPage() { if (currentPage < Math.ceil(transactions.length / itemsPerPage)) { currentPage++; renderHistory(); }}
-    function prevPage() { if (currentPage > 1) { currentPage--; renderHistory(); }}
+    function nextPage() { 
+      if (currentPage < Math.ceil(transactions.length / itemsPerPage)) { currentPage++; renderHistory(); }
+    }
+    function prevPage() { 
+      if (currentPage > 1) { currentPage--; renderHistory(); }
+    }
 
     function exportHistory() {
       if (transactions.length === 0) return alert("No history to export!");
