@@ -6,9 +6,6 @@
   
   <meta name="description" content="ArcSplit Pro - Professional & Open Source Token Splitter on Arc Testnet. Fast, safe and transparent.">
   <meta name="keywords" content="arc testnet, token splitter, usdc splitter, multisend, arc network">
-  <meta name="robots" content="index, follow">
-  <link rel="canonical" href="https://arcsplit.kamkazi-1297.workers.dev">
-  
   <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/5968/5968890.png" type="image/png">
 
   <title>ArcSplit Pro - Token Splitter</title>
@@ -20,14 +17,15 @@
       --accent: #ff3366;
       --glass: rgba(255,255,255,0.07);
       --text: #e0e0ff;
+      --card-bg: rgba(255,255,255,0.06);
     }
     .light {
       --primary: #00cc88;
       --accent: #ff2266;
       --glass: rgba(0,0,0,0.08);
       --text: #1a1a2e;
+      --card-bg: rgba(0,0,0,0.08);
       background: linear-gradient(135deg, #f0f0f5 0%, #e0e0ff 100%) !important;
-      color: #1a1a2e;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -72,7 +70,7 @@
     .main-content { padding: 40px; }
 
     .card {
-      background: rgba(255,255,255,0.06);
+      background: var(--card-bg);
       border-radius: 20px;
       padding: 24px;
       margin-bottom: 24px;
@@ -88,7 +86,7 @@
       color: white;
       font-size: 16px;
     }
-    .light select, .light input { color: #1a1a2e; background: rgba(0,0,0,0.08); }
+    .light select, .light input { color: #1a1a2e; background: rgba(255,255,255,0.9); }
 
     .recipient-row {
       display: flex;
@@ -99,13 +97,7 @@
       padding: 16px;
       border-radius: 18px;
     }
-
-    .percent-container { flex: 0 0 130px; }
-    .percent-container input.percent {
-      width: 110px !important;
-      padding: 16px 12px;
-      text-align: center;
-    }
+    .light .recipient-row { background: rgba(0,0,0,0.05); }
 
     .delete-btn {
       background: #ff3366;
@@ -129,19 +121,14 @@
       transition: all 0.3s ease;
     }
 
-    .connect-btn {
-      background: var(--primary);
-      color: #000;
-      font-size: 1.1rem;
-    }
-
-    .send-btn {
-      background: var(--accent);
-      color: white;
-      width: 100%;
-      padding: 18px;
-      font-size: 1.25rem;
-      margin-top: 15px;
+    .connect-btn { background: var(--primary); color: #000; font-size: 1.1rem; }
+    .send-btn { 
+      background: var(--accent); 
+      color: white; 
+      width: 100%; 
+      padding: 18px; 
+      font-size: 1.25rem; 
+      margin: 10px 0 25px 0;   /* دکمه Send بالاتر آمد */
     }
 
     #status {
@@ -152,15 +139,7 @@
       margin: 25px 0;
       line-height: 1.6;
     }
-
-    .warning-box {
-      background: rgba(255, 70, 70, 0.15);
-      border: 1px solid #ff3366;
-      padding: 16px;
-      border-radius: 16px;
-      text-align: center;
-      margin: 30px 0;
-    }
+    .light #status { background: rgba(0,0,0,0.1); color: #1a1a2e; }
 
     .spinner {
       display: inline-block;
@@ -172,8 +151,16 @@
       animation: spin 1s linear infinite;
       margin-left: 8px;
     }
-
     @keyframes spin { to { transform: rotate(360deg); } }
+
+    .warning-box {
+      background: rgba(255, 70, 70, 0.15);
+      border: 1px solid #ff3366;
+      padding: 16px;
+      border-radius: 16px;
+      text-align: center;
+      margin: 30px 0;
+    }
 
     .footer {
       text-align: center;
@@ -237,6 +224,7 @@
       <p id="percent-total" style="font-weight:bold; margin:20px 0; font-size:17px;">Total: 0%</p>
 
       <button id="sendBtn" class="send-btn" onclick="sendSplit()">Send Split Transaction</button>
+
       <button onclick="exportHistory()" style="background:#444;color:white;">Export History</button>
       <button onclick="clearForm()" style="background:#555;color:white;">Clear Form</button>
 
@@ -289,26 +277,19 @@
       addRecipient();
       addRecipient();
       if (window.ethereum) {
-        try {
-          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-          if (accounts.length > 0) {
-            userAddress = accounts[0];
-            const provider = new ethers.BrowserProvider(window.ethereum);
-            signer = await provider.getSigner();
-            updateStatus();
-            updateBalance();
-          }
-        } catch (e) {}
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        if (accounts.length > 0) {
+          userAddress = accounts[0];
+          const provider = new ethers.BrowserProvider(window.ethereum);
+          signer = await provider.getSigner();
+          updateBalance();
+        }
       }
       updateSendButtonState();
     });
 
-    function updateStatus(text = null) {
-      const el = document.getElementById("status");
-      if (text) el.innerHTML = text;
-      else if (userAddress) {
-        el.innerHTML = `Connected: ${userAddress.slice(0,8)}...${userAddress.slice(-6)}`;
-      }
+    function updateStatus(text = "Ready to split tokens on Arc Testnet.") {
+      document.getElementById("status").innerHTML = text;
     }
 
     async function getCurrentToken() { return document.getElementById("tokenSelect").value; }
@@ -326,8 +307,10 @@
         const decimals = await contract.decimals();
         const formatted = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4);
         const symbol = await getTokenSymbol();
+        
         document.getElementById("status").innerHTML = 
-          `Connected: ${userAddress.slice(0,8)}...${userAddress.slice(-6)}<br><small>Balance: ${formatted} ${symbol}</small>`;
+          `Connected: ${userAddress.slice(0,8)}...${userAddress.slice(-6)}<br>
+           <small>Balance: ${formatted} ${symbol}</small>`;
       } catch(e) {}
     }
 
@@ -382,7 +365,7 @@
       updatePercentTotal();
     }
 
-    function loadTemplate(type) {
+    function loadTemplate(type) { /* همان قبلی */ 
       const list = document.getElementById("recipients-list");
       list.innerHTML = "";
       if (type === 1) { addRow("0x0000000000000000000000000000000000000001", 50); addRow("0x0000000000000000000000000000000000000002", 50); }
@@ -390,7 +373,7 @@
       else if (type === 3) { addRow("0x0000000000000000000000000000000000000001", 40); addRow("0x0000000000000000000000000000000000000002", 60); }
     }
 
-    function equalSplit() {
+    function equalSplit() { /* همان قبلی */ 
       const count = parseInt(document.getElementById("equalCount").value) || 4;
       if (count < 2 || count > 10) return alert("Number must be between 2 and 10");
       const list = document.getElementById("recipients-list");
@@ -419,7 +402,7 @@
       return set.size !== addresses.length;
     }
 
-    async function connectWallet() {
+    async function connectWallet() { /* همان قبلی - کامل */ 
       if (!window.ethereum) return alert("MetaMask not found!");
       try {
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -438,10 +421,9 @@
             } else throw switchError;
           }
         }
-        updateStatus();
-        await updateBalance();
+        updateBalance();
       } catch (e) {
-        document.getElementById("status").innerHTML = `Error: ${e.message}`;
+        console.error(e);
       }
     }
 
@@ -469,32 +451,29 @@
       const symbol = await getTokenSymbol();
 
       const addresses = [];
-      const percentages = []; // will be sent as integers (e.g. 50 for 50%)
-      const amounts = [];
+      const percentages = [];
 
       document.querySelectorAll('.recipient-row').forEach(row => {
         const addr = row.querySelector('.address').value.trim();
         const perc = parseFloat(row.querySelector('.percent').value) || 0;
         if (addr && perc > 0) {
           addresses.push(addr);
-          percentages.push(Math.round(perc * 100)); // دقت بیشتر
-          amounts.push((totalAmount * perc / 100).toFixed(6));
+          percentages.push(Math.floor(perc));
         }
       });
 
       if (addresses.length < 2) return alert("At least 2 recipients needed!");
       if (hasDuplicateAddress(addresses)) return alert("Duplicate address detected!");
 
-      const totalPerc = percentages.reduce((a, b) => a + b, 0) / 100;
-      if (Math.abs(totalPerc - 100) > 0.1) 
-        return alert("Percentages must sum exactly to 100%!");
+      const totalPerc = percentages.reduce((a, b) => a + b, 0);
+      if (totalPerc !== 100) return alert(`Percentages must sum exactly to 100% (Current: ${totalPerc}%)`);
 
       for (let addr of addresses) {
         if (!ethers.isAddress(addr)) return alert(`Invalid address: ${addr}`);
       }
 
       let preview = `Send ${totalAmount} ${symbol} ?\n\n`;
-      addresses.forEach((addr, i) => preview += `• ${amounts[i]} ${symbol} → ${addr.slice(0,8)}...\n`);
+      addresses.forEach((addr, i) => preview += `• ${(totalAmount * percentages[i] / 100).toFixed(6)} ${symbol} → ${addr.slice(0,8)}...\n`);
 
       if (!confirm(preview)) return;
 
@@ -515,29 +494,16 @@
         const decimals = await tokenContract.decimals();
         const totalWei = ethers.parseUnits(totalAmountStr, decimals);
 
-        const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, totalWei);
-        await approveTx.wait();
+        await (await tokenContract.approve(CONTRACT_ADDRESS, totalWei)).wait();
 
         statusEl.innerHTML = `<span class="spinner"></span> Sending transaction...`;
 
-        const splitterAbi = [{
-          "inputs": [
-            {"name":"recipients","type":"address[]"},
-            {"name":"percentages","type":"uint256[]"},
-            {"name":"totalAmount","type":"uint256"}
-          ],
-          "name":"splitPayment",
-          "outputs":[],
-          "stateMutability":"nonpayable",
-          "type":"function"
-        }];
-
+        const splitterAbi = [{"inputs":[{"name":"recipients","type":"address[]"},{"name":"percentages","type":"uint256[]"},{"name":"totalAmount","type":"uint256"}],"name":"splitPayment","outputs":[],"stateMutability":"nonpayable","type":"function"}];
         const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
 
-        const tx = await contract.splitPayment(addresses, percentages, totalWei, { gasLimit: 900000 });
+        const tx = await contract.splitPayment(addresses, percentages, totalWei, { gasLimit: 800000 });
         await tx.wait();
 
-        // Save history
         transactions.unshift({
           hash: tx.hash,
           intent: `${totalAmount} ${symbol} → ${addresses.length} recipients`,
@@ -550,7 +516,7 @@
 
       } catch (error) {
         console.error(error);
-        let msg = error.reason || error.message || "Transaction failed";
+        let msg = error.reason || error.message || "Transaction reverted";
         if (msg.includes("user rejected")) msg = "Transaction rejected by user";
         statusEl.innerHTML = `❌ Transaction Failed<br>${msg}`;
       } finally {
@@ -560,14 +526,14 @@
       }
     }
 
-    // History functions (same as before)
+    // History Functions
     function renderHistory() {
       const start = (currentPage - 1) * itemsPerPage;
       const end = start + itemsPerPage;
       const pageTransactions = transactions.slice(start, end);
       let html = "";
       pageTransactions.forEach(tx => {
-        html += `<div class="history-item" style="background:rgba(255,255,255,0.05);padding:14px;margin:10px 0;border-radius:12px;">
+        html += `<div style="background:rgba(255,255,255,0.05);padding:14px;margin:10px 0;border-radius:12px;">
           <small>${tx.time}</small><br>${tx.intent}<br>
           <small><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View Tx</a></small>
         </div>`;
