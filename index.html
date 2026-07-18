@@ -10,36 +10,37 @@
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    
     body { font-family: 'Inter', system-ui, sans-serif; }
     
     .glass { background: rgba(255,255,255,0.08); backdrop-filter: blur(20px); }
-    .light .glass { background: rgba(255,255,255,0.7); color: #111827; }
+    .light .glass { background: rgba(255,255,255,0.75); color: #111827; }
 
-    select {
-      background-color: rgba(255,255,255,0.05);
-      color: white;
-    }
-    .light select {
-      background-color: white;
-      color: #111827;
-    }
+    select, input { color: white; }
+    .light select, .light input { color: #111827; }
 
-    select option {
-      background-color: #1f2937;
-      color: white;
-      padding: 12px;
+    .percent-container {
+      position: relative;
     }
-    .light select option {
-      background-color: white;
-      color: #111827;
+    .percent-container input {
+      padding-right: 40px !important;
     }
-
-    .gradient-text { background: linear-gradient(90deg, #00ffaa, #00ccff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-    .btn-gradient { background: linear-gradient(90deg, #ff3366, #ff6699); }
+    .percent-container::after {
+      content: "%";
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #9ca3af;
+      font-weight: 600;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      pointer-events: none;
+    }
+    .light .percent-container::after {
+      color: #6b7280;
+    }
   </style>
 </head>
-<body class="bg-gradient-to-br from-[#0b0b1f] to-[#1a1a2e] text-white min-h-screen transition-all">
+<body class="bg-gradient-to-br from-[#0b0b1f] to-[#1a1a2e] text-white min-h-screen">
 
   <div class="max-w-2xl mx-auto px-4 py-10">
     <div class="flex justify-between items-center mb-10">
@@ -51,11 +52,8 @@
         </div>
       </div>
       <div class="flex gap-3">
-        <button onclick="toggleTheme()" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all">
-          <i class="fas fa-moon"></i>
-        </button>
-        <button onclick="connectWallet()" id="connectBtn" 
-                class="px-6 py-3 bg-white text-black font-semibold rounded-2xl flex items-center gap-2 hover:bg-gray-100">
+        <button onclick="toggleTheme()" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl"><i class="fas fa-moon"></i></button>
+        <button onclick="connectWallet()" id="connectBtn" class="px-6 py-3 bg-white text-black font-semibold rounded-2xl flex items-center gap-2 hover:bg-gray-100">
           <i class="fas fa-wallet"></i> Connect Wallet
         </button>
       </div>
@@ -64,11 +62,10 @@
     <div id="status" class="glass border border-white/10 rounded-3xl p-6 mb-8 text-sm">Ready to split tokens on Arc Testnet.</div>
 
     <div class="glass border border-white/10 rounded-3xl p-8 mb-8">
-      <!-- Token Select -->
+      <!-- Token -->
       <div class="mb-8">
         <label class="block text-gray-400 text-sm mb-2">Select Token</label>
-        <select id="tokenSelect" onchange="updateBalance()" 
-                class="w-full border border-white/20 rounded-2xl px-6 py-5 focus:border-emerald-500 outline-none text-base">
+        <select id="tokenSelect" onchange="updateBalance()" class="w-full border border-white/20 rounded-2xl px-6 py-5 focus:border-emerald-500 outline-none">
           <option value="0x3600000000000000000000000000000000000000">USDC</option>
           <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
           <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
@@ -79,8 +76,7 @@
       <div class="mb-8">
         <label class="block text-gray-400 text-sm mb-2">Total Amount</label>
         <div class="flex gap-3">
-          <input type="number" id="totalAmount" value="100" step="0.000001" 
-                 class="flex-1 bg-white/5 border border-white/20 rounded-2xl px-6 py-5 text-3xl outline-none text-white">
+          <input type="number" id="totalAmount" value="100" step="0.000001" class="flex-1 bg-white/5 border border-white/20 rounded-2xl px-6 py-5 text-3xl outline-none">
           <button onclick="setMaxAmount()" class="px-10 bg-white/10 hover:bg-white/20 rounded-2xl font-medium">MAX</button>
         </div>
       </div>
@@ -89,10 +85,10 @@
       <div class="mb-8">
         <label class="block text-gray-400 text-sm mb-3">Quick Templates</label>
         <div class="grid grid-cols-4 gap-3">
-          <button onclick="loadTemplate(1)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm transition-all">50-50</button>
-          <button onclick="loadTemplate(2)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm transition-all">33-33-34</button>
-          <button onclick="loadTemplate(3)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm transition-all">40-60</button>
-          <button onclick="equalSplit()" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm transition-all">Equal</button>
+          <button onclick="loadTemplate(1)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">50-50</button>
+          <button onclick="loadTemplate(2)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">33-33-34</button>
+          <button onclick="loadTemplate(3)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">40-60</button>
+          <button onclick="equalSplit()" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">Equal</button>
         </div>
       </div>
 
@@ -110,10 +106,9 @@
         <button onclick="distributeRemaining()" class="text-amber-400 hover:text-amber-300">Distribute Remaining</button>
       </div>
 
-      <button id="sendBtn" onclick="sendSplit()" class="w-full btn-gradient py-7 rounded-3xl text-xl font-bold">Send Split Transaction</button>
+      <button id="sendBtn" onclick="sendSplit()" class="w-full bg-gradient-to-r from-pink-500 to-rose-500 py-7 rounded-3xl text-xl font-bold">Send Split Transaction</button>
     </div>
 
-    <!-- History -->
     <div class="glass border border-white/10 rounded-3xl p-8">
       <h3 class="font-semibold mb-4">Recent Transactions</h3>
       <div id="history" class="space-y-3 max-h-80 overflow-auto"></div>
@@ -181,7 +176,9 @@
       row.className = "recipient-row glass border border-white/10 rounded-2xl p-5 flex items-center gap-4";
       row.innerHTML = `
         <input type="text" class="address flex-1 bg-transparent border border-white/20 rounded-xl px-5 py-4 text-white" placeholder="0x...">
-        <input type="number" class="percent w-28 bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" placeholder="%" step="0.01" oninput="updatePercentTotal()">
+        <div class="percent-container w-28">
+          <input type="number" class="percent w-full bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" placeholder="0" step="0.01" oninput="updatePercentTotal()">
+        </div>
         <button onclick="this.parentElement.remove(); updatePercentTotal()" class="text-rose-400 text-3xl px-3">×</button>
       `;
       list.appendChild(row);
@@ -227,7 +224,9 @@
       row.className = "recipient-row glass border border-white/10 rounded-2xl p-5 flex items-center gap-4";
       row.innerHTML = `
         <input type="text" class="address flex-1 bg-transparent border border-white/20 rounded-xl px-5 py-4 text-white" value="${address}">
-        <input type="number" class="percent w-28 bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" value="${percent}" oninput="updatePercentTotal()">
+        <div class="percent-container w-28">
+          <input type="number" class="percent w-full bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" value="${percent}" oninput="updatePercentTotal()">
+        </div>
         <button onclick="this.parentElement.remove(); updatePercentTotal()" class="text-rose-400 text-3xl px-3">×</button>
       `;
       list.appendChild(row);
@@ -309,7 +308,7 @@
       transactions.slice(0, 5).forEach(tx => {
         const div = document.createElement("div");
         div.className = "glass border border-white/10 rounded-2xl p-4 text-sm";
-        div.innerHTML = `<div class="text-gray-400 text-xs">${tx.time}</div><div>${tx.intent}</div><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="text-emerald-400 text-xs hover:underline">View Full Hash →</a>`;
+        div.innerHTML = `<div class="text-gray-400 text-xs">${tx.time}</div><div>${tx.intent}</div><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="text-emerald-400 text-xs hover:underline">View Tx →</a>`;
         container.appendChild(div);
       });
     }
