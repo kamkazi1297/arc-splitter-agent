@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fa" dir="ltr">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,15 +10,31 @@
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    body { font-family: 'Inter', system-ui, sans-serif; }
+    
+    body { 
+      font-family: 'Inter', system-ui, sans-serif; 
+    }
+    
+    .glass {
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(20px);
+    }
+    .light .glass {
+      background: rgba(255,255,255,0.75);
+    }
 
-    .glass { background: rgba(255,255,255,0.08); backdrop-filter: blur(20px); }
-    .light .glass { background: rgba(255,255,255,0.75); color: #111827; }
+    /* Select Token Styling */
+    select {
+      background-color: rgba(255,255,255,0.05);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    .light select {
+      background-color: white;
+      color: #1f2937;
+      border: 1px solid #d1d5db;
+    }
 
-    select, input { color: white; }
-    .light select, .light input { color: #111827; }
-
-    /* Fix for dropdown options */
     select option {
       background-color: #1f2937;
       color: white;
@@ -26,7 +42,7 @@
     }
     .light select option {
       background-color: white;
-      color: #111827;
+      color: #1f2937;
     }
 
     .percent-container {
@@ -40,10 +56,12 @@
       transform: translateY(-50%);
       color: #9ca3af;
       font-weight: 600;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      text-shadow: 0 2px 4px rgba(0,0,0,0.4);
       pointer-events: none;
     }
-    .light .percent-container::after { color: #6b7280; }
+    .light .percent-container::after {
+      color: #6b7280;
+    }
   </style>
 </head>
 <body class="bg-gradient-to-br from-[#0b0b1f] to-[#1a1a2e] text-white min-h-screen">
@@ -58,8 +76,11 @@
         </div>
       </div>
       <div class="flex gap-3">
-        <button onclick="toggleTheme()" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl"><i class="fas fa-moon"></i></button>
-        <button onclick="connectWallet()" id="connectBtn" class="px-6 py-3 bg-white text-black font-semibold rounded-2xl flex items-center gap-2 hover:bg-gray-100">
+        <button onclick="toggleTheme()" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all">
+          <i class="fas fa-moon"></i>
+        </button>
+        <button onclick="connectWallet()" id="connectBtn" 
+                class="px-6 py-3 bg-white text-black font-semibold rounded-2xl flex items-center gap-2 hover:bg-gray-100">
           <i class="fas fa-wallet"></i> Connect Wallet
         </button>
       </div>
@@ -72,7 +93,7 @@
       <div class="mb-8">
         <label class="block text-gray-400 text-sm mb-2">Select Token</label>
         <select id="tokenSelect" onchange="updateBalance()" 
-                class="w-full border border-white/20 rounded-2xl px-6 py-5 focus:border-emerald-500 outline-none text-base">
+                class="w-full rounded-2xl px-6 py-5 focus:border-emerald-500 outline-none text-base">
           <option value="0x3600000000000000000000000000000000000000">USDC</option>
           <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
           <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
@@ -83,7 +104,8 @@
       <div class="mb-8">
         <label class="block text-gray-400 text-sm mb-2">Total Amount</label>
         <div class="flex gap-3">
-          <input type="number" id="totalAmount" value="100" step="0.000001" class="flex-1 bg-white/5 border border-white/20 rounded-2xl px-6 py-5 text-3xl outline-none">
+          <input type="number" id="totalAmount" value="100" step="0.000001" 
+                 class="flex-1 bg-white/5 border border-white/20 rounded-2xl px-6 py-5 text-3xl outline-none">
           <button onclick="setMaxAmount()" class="px-10 bg-white/10 hover:bg-white/20 rounded-2xl font-medium">MAX</button>
         </div>
       </div>
@@ -103,7 +125,9 @@
       <div class="mb-8">
         <div class="flex justify-between mb-4">
           <h3 class="font-semibold">Recipients</h3>
-          <button onclick="addRecipient()" class="text-emerald-400 hover:text-emerald-300 flex items-center gap-1"><i class="fas fa-plus"></i> Add</button>
+          <button onclick="addRecipient()" class="text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
+            <i class="fas fa-plus"></i> Add
+          </button>
         </div>
         <div id="recipients-list" class="space-y-4"></div>
       </div>
@@ -113,9 +137,13 @@
         <button onclick="distributeRemaining()" class="text-amber-400 hover:text-amber-300">Distribute Remaining</button>
       </div>
 
-      <button id="sendBtn" onclick="sendSplit()" class="w-full bg-gradient-to-r from-pink-500 to-rose-500 py-7 rounded-3xl text-xl font-bold">Send Split Transaction</button>
+      <button id="sendBtn" onclick="sendSplit()" 
+              class="w-full bg-gradient-to-r from-pink-500 to-rose-500 py-7 rounded-3xl text-xl font-bold">
+        Send Split Transaction
+      </button>
     </div>
 
+    <!-- History -->
     <div class="glass border border-white/10 rounded-3xl p-8">
       <h3 class="font-semibold mb-4">Recent Transactions</h3>
       <div id="history" class="space-y-3 max-h-80 overflow-auto"></div>
@@ -220,8 +248,9 @@
     }
 
     function equalSplit() {
-      const count = parseInt(prompt("تعداد گیرنده‌ها را وارد کنید (2 تا 10):", "4")) || 4;
-      if (count < 2 || count > 10) return alert("تعداد باید بین 2 تا 10 باشد");
+      const countInput = prompt("Number of recipients (2-10):", "4");
+      const count = parseInt(countInput) || 4;
+      if (count < 2 || count > 10) return alert("Number must be between 2 and 10");
 
       const list = document.getElementById("recipients-list");
       list.innerHTML = "";
@@ -263,7 +292,6 @@
 
       if (!confirm(`Send ${totalAmount} ${symbol} to ${addresses.length} recipients?`)) return;
 
-      // ... (بقیه کد sendSplit مثل قبل)
       isProcessing = true;
       const btn = document.getElementById("sendBtn");
       btn.disabled = true;
