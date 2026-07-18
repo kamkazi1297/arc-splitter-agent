@@ -4,84 +4,84 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <!-- Meta Tags بهینه شده برای SEO و کاهش اخطار کروم -->
-  <meta name="description" content="ArcSplit Pro - Fast, safe and open source token splitter on Arc Testnet. Split USDC, EURC and other tokens easily and transparently.">
-  <meta name="keywords" content="arc testnet, token splitter, usdc splitter, multisend, arc network, batch transfer, token distribution">
+  <!-- Meta Tags بهینه شده -->
+  <meta name="description" content="ArcSplit Pro - Professional & Open Source Token Splitter on Arc Testnet. Fast, safe and transparent.">
+  <meta name="keywords" content="arc testnet, token splitter, usdc splitter, multisend, arc network">
   <meta name="robots" content="index, follow">
-  <meta name="author" content="kamkazi1297">
   <link rel="canonical" href="https://arcsplit.kamkazi-1297.workers.dev">
   
   <!-- Favicon -->
   <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/5968/5968890.png" type="image/png">
-  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/5968/5968890.png">
 
-  <title>ArcSplit Pro - Token Splitter on Arc Testnet</title>
+  <title>ArcSplit Pro - Token Splitter</title>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   
   <style>
     :root {
       --primary: #00ffaa;
       --accent: #ff3366;
+      --glass: rgba(255,255,255,0.07);
     }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
     body { 
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; 
-      background: linear-gradient(135deg, #0a0a1f, #1a1a35); 
+      font-family: 'Segoe UI', system-ui, sans-serif; 
+      background: linear-gradient(135deg, #0b0b1f 0%, #1a1a2e 100%);
       color: #e0e0ff; 
-      margin: 0; padding: 20px; 
-    }
-    body.light {
-      background: linear-gradient(135deg, #f0f0f5, #e0e0f0);
-      color: #222;
-    }
-    .container { 
-      max-width: 860px; margin: 0 auto; 
-      background: rgba(255,255,255,0.08); 
-      padding: 40px; border-radius: 28px; 
-      box-shadow: 0 25px 70px rgba(0,0,0,0.65); 
-      border: 1px solid rgba(0,255,170,0.2);
-    }
-    body.light .container {
-      background: rgba(255,255,255,0.95);
-      box-shadow: 0 20px 50px rgba(0,0,0,0.12);
-      border-color: #ddd;
+      min-height: 100vh;
+      padding: 20px;
     }
 
-    h1 { 
-      color: var(--primary); 
-      text-align: center; 
-      font-size: 2.5rem;
-      margin-bottom: 6px;
-      text-shadow: 0 0 25px rgba(0,255,170,0.5);
+    .container {
+      max-width: 920px;
+      margin: 0 auto;
+      background: var(--glass);
+      backdrop-filter: blur(16px);
+      border-radius: 28px;
+      border: 1px solid rgba(0, 255, 170, 0.2);
+      box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6);
+      overflow: hidden;
+    }
+
+    header {
+      padding: 35px 40px 25px;
+      text-align: center;
+      background: rgba(0,0,0,0.25);
+    }
+
+    h1 {
+      font-size: 2.9rem;
+      background: linear-gradient(90deg, #00ffaa, #00cc88);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
     }
 
     .subtitle {
-      text-align: center;
-      color: #a0a0ff;
-      margin-bottom: 25px;
+      color: #b0b0ff;
       font-size: 1.15rem;
     }
 
-    .warning-box {
-      background: rgba(255, 80, 80, 0.15);
-      border: 1px solid #ff3366;
-      padding: 15px 20px;
-      border-radius: 12px;
-      margin: 25px 0;
-      font-size: 15.2px;
-      text-align: center;
+    .main-content {
+      padding: 40px;
     }
 
-    select, input { 
-      padding: 14px; 
-      border-radius: 14px; 
-      background: #12122b; 
-      color: white; 
-      border: 1px solid #00ffaa; 
-      font-size: 16px;
-      box-sizing: border-box;
+    .card {
+      background: rgba(255,255,255,0.06);
+      border-radius: 20px;
+      padding: 24px;
+      margin-bottom: 24px;
+      border: 1px solid rgba(255,255,255,0.08);
     }
-    body.light select, body.light input {
-      background: white; color: #222; border-color: #00aa77;
+
+    select, input {
+      width: 100%;
+      padding: 16px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(0,255,170,0.3);
+      color: white;
+      font-size: 16px;
     }
 
     .recipient-row {
@@ -89,133 +89,155 @@
       align-items: center;
       gap: 12px;
       margin-bottom: 16px;
-      background: rgba(255,255,255,0.06);
-      padding: 14px;
-      border-radius: 16px;
+      background: rgba(255,255,255,0.05);
+      padding: 16px;
+      border-radius: 18px;
     }
+
     .recipient-row input.address { flex: 1; }
 
-    .recipient-row .percent-container {
+    .percent-container {
       position: relative;
       flex: 0 0 130px;
     }
-    .recipient-row .percent-container input.percent {
+    .percent-container input.percent {
       width: 110px !important;
-      padding: 14px 12px;
+      padding: 16px 12px;
       text-align: center;
-      font-size: 16.5px;
-    }
-    .recipient-row .percent-container::after {
-      display: none;
     }
 
     .delete-btn {
       background: #ff3366;
       color: white;
-      font-size: 24px;
-      width: 50px;
-      height: 50px;
+      width: 52px;
+      height: 52px;
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      cursor: pointer;
+      font-size: 26px;
       border: none;
+      cursor: pointer;
     }
 
-    button { 
-      padding: 13px 26px; 
-      margin: 6px 4px; 
-      font-size: 16px; 
-      border: none; 
-      border-radius: 14px; 
-      cursor: pointer; 
+    button {
+      padding: 14px 28px;
+      border-radius: 16px;
       font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
     }
-    .connect-btn { background: var(--primary); color: #000; }
-    .send-btn { background: var(--accent); color: white; }
-    .send-btn:disabled { background: #555; cursor: not-allowed; opacity: 0.7; }
 
-    #status { margin: 25px 0; padding: 22px; border-radius: 18px; min-height: 140px; line-height: 1.6; background: rgba(0,0,0,0.3); }
-    .footer { text-align: center; margin-top: 50px; color: #888; font-size: 14px; }
-    .source-link { color: var(--primary); text-decoration: none; font-weight: bold; }
-    .source-link:hover { text-decoration: underline; }
+    .connect-btn {
+      background: var(--primary);
+      color: #000;
+      font-size: 1.1rem;
+    }
+
+    .send-btn {
+      background: var(--accent);
+      color: white;
+      width: 100%;
+      padding: 18px;
+      font-size: 1.25rem;
+      margin-top: 15px;
+    }
+
+    #status {
+      min-height: 130px;
+      padding: 22px;
+      background: rgba(0,0,0,0.4);
+      border-radius: 18px;
+      margin: 25px 0;
+      line-height: 1.6;
+    }
+
+    .warning-box {
+      background: rgba(255, 70, 70, 0.15);
+      border: 1px solid #ff3366;
+      padding: 16px;
+      border-radius: 16px;
+      text-align: center;
+      margin: 30px 0;
+    }
+
+    .footer {
+      text-align: center;
+      padding: 30px;
+      color: #777;
+      font-size: 14px;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+    <header>
       <h1>ArcSplit Pro</h1>
-      <button onclick="toggleTheme()" style="background:none; border:1px solid #00ffaa; color:#00ffaa; padding:8px 18px; border-radius:999px; font-size:14px;">
-         Toggle Theme
-      </button>
-    </div>
+      <p class="subtitle">Professional Token Splitter on Arc Testnet</p>
+    </header>
 
-    <p class="subtitle">Fast & Transparent Token Splitter on Arc Testnet</p>
+    <div class="main-content">
+      <button class="connect-btn" onclick="connectWallet()">Connect MetaMask</button>
+      <button onclick="disconnectWallet()" style="background:#333;color:white;margin-left:12px;">Disconnect</button>
 
-    <button class="connect-btn" onclick="connectWallet()">Connect MetaMask</button>
-    <button onclick="disconnectWallet()">Disconnect</button>
+      <p id="status">Ready to split tokens on Arc Testnet.</p>
 
-    <p id="status">Ready to split tokens on Arc Testnet.</p>
-
-    <div style="margin:15px 0;">
-      <strong>Select Token</strong>
-      <select id="tokenSelect" onchange="updateBalance()">
-        <option value="0x3600000000000000000000000000000000000000">USDC</option>
-        <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
-        <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
-      </select>
-    </div>
-
-    <div style="margin:15px 0;">
-      <strong>Total Amount</strong>
-      <div style="display:flex; gap:8px;">
-        <input type="number" id="totalAmount" value="100" step="0.000001" style="flex:1;">
-        <button onclick="setMaxAmount()" style="background:#555;color:white;">MAX</button>
+      <div class="card">
+        <strong>Select Token</strong>
+        <select id="tokenSelect" onchange="updateBalance()" style="margin-top:10px;">
+          <option value="0x3600000000000000000000000000000000000000">USDC</option>
+          <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
+          <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
+        </select>
       </div>
-    </div>
 
-    <h3>Quick Templates</h3>
-    <div>
-      <button onclick="loadTemplate(1)" style="background:#0099ff;color:white;">50% - 50%</button>
-      <button onclick="loadTemplate(2)" style="background:#0099ff;color:white;">33-33-34%</button>
-      <button onclick="loadTemplate(3)" style="background:#0099ff;color:white;">40% - 60%</button>
-      <button onclick="equalSplit()" style="background:#0099ff;color:white;">Equal Split</button>
-    </div>
-
-    <div style="margin:10px 0;">
-      <strong>Number of Equal Recipients:</strong>
-      <input type="number" id="equalCount" value="4" min="2" max="10" style="width:80px; text-align:center;">
-    </div>
-
-    <h3>Recipients & Percentages</h3>
-    <div id="recipients-list"></div>
-    <button onclick="addRecipient()" style="background:#00cc88;color:white;">+ Add Recipient</button>
-    <button onclick="distributeRemaining()" style="background:#ffaa00;color:white;">Distribute Remaining</button>
-    
-    <p id="percent-total">Total: 0%</p>
-
-    <button id="sendBtn" class="send-btn" onclick="sendSplit()">Send Split Transaction</button>
-    <button onclick="exportHistory()">Export History</button>
-    <button onclick="clearForm()" style="background:#555;color:white;">Clear Form</button>
-
-    <h3>Recent Transactions</h3>
-    <div id="history"></div>
-    <div id="pagination"></div>
-
-    <div style="margin-top: 50px; text-align: center;">
-      <a href="https://github.com/kamkazi1297/arc-splitter-agent" target="_blank" class="source-link">
-        View Source Code on GitHub →
-      </a>
-
-      <div class="warning-box">
-        ⚠️ <strong>Testnet Only</strong> — This tool works only on Arc Testnet.<br>
-        Do not use real funds. Use at your own risk.
+      <div class="card">
+        <strong>Total Amount</strong>
+        <div style="display:flex; gap:10px; margin-top:10px;">
+          <input type="number" id="totalAmount" value="100" step="0.000001" style="flex:1;">
+          <button onclick="setMaxAmount()" style="background:#555;color:white; padding:0 24px;">MAX</button>
+        </div>
       </div>
+
+      <h3 style="margin:25px 0 12px 5px;">Quick Templates</h3>
+      <div style="display:flex; flex-wrap:wrap; gap:10px;">
+        <button onclick="loadTemplate(1)" style="background:#0099ff;color:white;">50% - 50%</button>
+        <button onclick="loadTemplate(2)" style="background:#0099ff;color:white;">33-33-34%</button>
+        <button onclick="loadTemplate(3)" style="background:#0099ff;color:white;">40% - 60%</button>
+        <button onclick="equalSplit()" style="background:#0099ff;color:white;">Equal Split</button>
+      </div>
+
+      <div class="card" style="margin-top:20px;">
+        <strong>Number of Equal Recipients:</strong>
+        <input type="number" id="equalCount" value="4" min="2" max="10" style="width:90px; text-align:center; margin-left:12px;">
+      </div>
+
+      <h3 style="margin:20px 0 12px 5px;">Recipients & Percentages</h3>
+      <div id="recipients-list"></div>
+      <button onclick="addRecipient()" style="background:#00cc88;color:white;">+ Add Recipient</button>
+      <button onclick="distributeRemaining()" style="background:#ffaa00;color:white;">Distribute Remaining</button>
+      
+      <p id="percent-total" style="font-weight:bold; margin:20px 0; font-size:17px;">Total: 0%</p>
+
+      <button id="sendBtn" class="send-btn" onclick="sendSplit()">Send Split Transaction</button>
+      <button onclick="exportHistory()" style="background:#444;color:white;">Export History</button>
+      <button onclick="clearForm()" style="background:#555;color:white;">Clear Form</button>
+
+      <h3 style="margin-top:35px;">Recent Transactions</h3>
+      <div id="history"></div>
+      <div id="pagination"></div>
+    </div>
+
+    <div class="warning-box">
+      ⚠️ <strong>Testnet Only</strong> — This tool works only on Arc Testnet.<br>
+      Do not use real funds. Use at your own risk.
     </div>
 
     <div class="footer">
-      ArcSplit Pro — Open Source Tool built on Arc Testnet
+      <a href="https://github.com/kamkazi1297/arc-splitter-agent" target="_blank" style="color:var(--primary); text-decoration:none;">
+        View Source Code on GitHub →
+      </a>
+      <p style="margin-top:12px;">ArcSplit Pro — Open Source Tool</p>
     </div>
   </div>
 
@@ -454,11 +476,7 @@
       try {
         statusEl.innerHTML = `<span class="spinner"></span> Approving ${symbol}...`;
 
-        const tokenContract = new ethers.Contract(tokenAddr, [
-          "function approve(address,uint256) returns (bool)",
-          "function decimals() view returns (uint8)"
-        ], signer);
-
+        const tokenContract = new ethers.Contract(tokenAddr, ["function approve(address,uint256) returns (bool)", "function decimals() view returns (uint8)"], signer);
         const decimals = await tokenContract.decimals();
         const totalWei = ethers.parseUnits(totalAmount.toString(), decimals);
 
@@ -499,7 +517,10 @@
       const pageTransactions = transactions.slice(start, end);
       let html = "";
       pageTransactions.forEach(tx => {
-        html += `<div class="history-item"><small>${tx.time}</small><br>${tx.intent}<br><small><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View Tx</a></small></div>`;
+        html += `<div class="history-item" style="background:rgba(255,255,255,0.05);padding:14px;margin:10px 0;border-radius:12px;">
+          <small>${tx.time}</small><br>${tx.intent}<br>
+          <small><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View Tx</a></small>
+        </div>`;
       });
       document.getElementById("history").innerHTML = html || "<p>No transactions yet.</p>";
       renderPagination();
