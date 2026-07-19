@@ -262,45 +262,14 @@
     </div>
   </div>
 
-  <!-- Wallet Connect Modal -->
-  <div id="connectModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-    <div class="glass border border-white/10 rounded-3xl p-8 max-w-md w-full mx-4">
-      <div class="flex justify-between items-center mb-6">
-        <h3 class="text-2xl font-bold">Connect Wallet</h3>
-        <button onclick="hideConnectModal()" class="text-gray-400 hover:text-white text-3xl leading-none">×</button>
-      </div>
-      
-      <div class="space-y-3">
-        <button onclick="connectMetaMask()" 
-                class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" width="40" height="40" alt="MetaMask">
-          <div class="text-left">
-            <div class="font-semibold text-lg">MetaMask</div>
-            <div class="text-sm text-gray-400">Popular browser wallet</div>
-          </div>
-        </button>
-
-        <button onclick="connectWalletConnect()" 
-                class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group">
-          <img src="https://walletconnect.com/_next/static/media/walletconnect.2f8f1b5a.svg" width="40" height="40" alt="WalletConnect">
-          <div class="text-left">
-            <div class="font-semibold text-lg">WalletConnect</div>
-            <div class="text-sm text-gray-400">Connect with mobile wallets</div>
-          </div>
-        </button>
-      </div>
-
-      <p class="text-center text-xs text-gray-500 mt-8">
-        By connecting, you accept our Terms of Service
-      </p>
-    </div>
-  </div>
-
   <!-- Toast -->
   <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 border border-white/20 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 z-50">
     <span id="toastText"></span>
   </div>
 
+  <!-- Wallet Script -->
+  <script type="module" src="js/wallet.js"></script>
+  
   <script>
     let signer = null;
     let userAddress = null;
@@ -345,63 +314,7 @@
       }
     }
 
-    function showConnectModal() {
-      document.getElementById("connectModal").classList.remove("hidden");
-    }
-
-    function hideConnectModal() {
-      document.getElementById("connectModal").classList.add("hidden");
-    }
-
-    async function connectMetaMask() {
-      hideConnectModal();
-      if (!window.ethereum) return showToast("MetaMask not found!");
-
-      try {
-        provider = new ethers.BrowserProvider(window.ethereum);
-        const network = await provider.getNetwork();
-        if (network.chainId !== BigInt(ARC_CHAIN_ID)) {
-          showToast("Please switch to <b>Arc Testnet</b> (Chain ID: 5042002)", 6000);
-          return;
-        }
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        userAddress = accounts[0];
-        signer = await provider.getSigner();
-
-        document.getElementById("logoContainer").classList.add("connected");
-        updateConnectButton();
-        showToast("Wallet connected successfully");
-        await updateBalance();
-      } catch (e) {
-        console.error(e);
-        showToast("Failed to connect wallet");
-      }
-    }
-
-    async function connectWalletConnect() {
-      hideConnectModal();
-      showToast("WalletConnect will be available soon", 3000);
-    }
-
-    function updateConnectButton() {
-      const btn = document.getElementById("connectBtn");
-      const short = userAddress ? `${userAddress.slice(0,6)}...${userAddress.slice(-4)}` : "";
-      btn.innerHTML = `<i class="fas fa-wallet"></i> <span>${short}</span>`;
-      btn.onclick = disconnectWallet;
-      btn.classList.add("!bg-emerald-500", "!text-white");
-    }
-
-    function disconnectWallet() {
-      signer = null; userAddress = null; provider = null;
-      document.getElementById("logoContainer").classList.remove("connected");
-      const btn = document.getElementById("connectBtn");
-      btn.innerHTML = `<i class="fas fa-wallet"></i> <span>Connect Wallet</span>`;
-      btn.onclick = showConnectModal;
-      btn.classList.remove("!bg-emerald-500", "!text-white");
-      document.getElementById("status").innerHTML = "Ready to split tokens on Arc Testnet.";
-      showToast("Wallet disconnected");
-    }
-
+    // بقیه توابع اصلی بدون تغییر
     function getTotalAmount() {
       return parseFloat(document.getElementById("totalAmount").value) || 0;
     }
