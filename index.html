@@ -622,6 +622,7 @@
       }
     }
 
+    // === تابع آپدیت شده sendSplit ===
     async function sendSplit() {
       if (!signer) return showToast("Please connect your wallet first!");
       if (isProcessing) return;
@@ -655,6 +656,10 @@
       const totalAmount = parseFloat(totalAmountStr);
       if (!totalAmount || totalAmount <= 0) return showToast("Enter a valid amount!");
 
+      if (addresses.length > 120) {
+        return showToast("Maximum 120 recipients per transaction", 5000);
+      }
+
       if (!confirm(`Send ${totalAmount} tokens to ${addresses.length} recipients?`)) return;
 
       isProcessing = true;
@@ -679,7 +684,25 @@
         await (await tokenContract.approve(CONTRACT_ADDRESS, totalWei)).wait();
 
         const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
-        const tx = await contract.splitPayment(tokenAddr, addresses, percentages, totalWei, { gasLimit: 800000 });
+
+        // Dynamic Gas Estimation with fallback
+        let gasLimit = 4500000;
+
+        try {
+          const estimated = await contract.splitPayment.estimateGas(
+            tokenAddr, addresses, percentages, totalWei
+          );
+          gasLimit = Math.floor(Number(estimated) * 1.30);
+          console.log(`Estimated gas: ${estimated} → Using: ${gasLimit}`);
+        } catch (estError) {
+          console.log("Gas estimation failed, using fallback");
+        }
+
+        const tx = await contract.splitPayment(
+          tokenAddr, addresses, percentages, totalWei, 
+          { gasLimit: gasLimit }
+        );
+
         await tx.wait();
 
         successDiv.innerHTML = ` Transaction Successful!<br>
