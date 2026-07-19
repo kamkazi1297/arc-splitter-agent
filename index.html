@@ -355,10 +355,13 @@
 
     async function connectWalletConnect() {
       try {
+        showToast("Opening WalletConnect...", 4000);
+
         wcProvider = await EthereumProvider.init({
           projectId: PROJECT_ID,
           chains: [ARC_CHAIN_ID],
           showQrModal: true,
+          qrModalOptions: { themeMode: "dark" }
         });
 
         await wcProvider.connect();
@@ -445,7 +448,7 @@
       }
     }
 
-    // ==================== بقیه توابع اصلی ====================
+    // ==================== توابع اصلی ====================
     function getTotalAmount() {
       return parseFloat(document.getElementById("totalAmount").value) || 0;
     }
@@ -474,63 +477,38 @@
         
         <div class="percent-container w-28">
           <input type="number" class="percent w-full bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" 
-                 value="${percent}" placeholder="0" step="0.01" 
+                 value="${percent}" placeholder="0" step="0.01" min="0" max="100"
                  oninput="handlePercentChange(this); updateAll()">
         </div>
 
         <div class="amount-container w-36">
           <input type="number" class="amount w-full bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" 
-                 placeholder="0" step="0.000001" 
+                 placeholder="0" step="any" min="0"
                  oninput="handleAmountChange(this); updateAll()">
         </div>
 
-        <button onclick="this.parentElement.remove(); updateAll()" class="text-rose-400 text-3xl px-3">×</button>
+        <button onclick="this.parentElement.remove(); updateAll()" class="text-rose-400 text-3xl px-3 hover:scale-110 transition-transform">×</button>
       `;
       list.appendChild(row);
-      autoDistributePercentages();
-    }
-
-    function autoDistributePercentages() {
-      const rows = document.querySelectorAll('.recipient-row');
-      if (rows.length === 0) return;
-      
-      const base = Math.floor(10000 / rows.length) / 100;
-      let total = 0;
-
-      rows.forEach((row, index) => {
-        const percentInput = row.querySelector('.percent');
-        let value = base;
-        
-        if (index === rows.length - 1) {
-          value = 100 - total;
-        }
-        
-        percentInput.value = value.toFixed(2);
-        total += value;
-      });
-      
-      updateAll();
     }
 
     function handlePercentChange(percentInput) {
+      let val = parseFloat(percentInput.value) || 0;
+      if (val < 0) val = 0;
+      if (val > 100) val = 100;
+      percentInput.value = val.toFixed(2);
+
       const row = percentInput.closest('.recipient-row');
-      let current = parseFloat(percentInput.value) || 0;
-      if (current < 0) current = 0;
-      if (current > 100) current = 100;
-      percentInput.value = current.toFixed(2);
-
       const otherRows = Array.from(document.querySelectorAll('.recipient-row')).filter(r => r !== row);
-      if (otherRows.length > 0) {
-        const remaining = Math.max(0, 100 - current);
-        const base = Math.floor((remaining * 100) / otherRows.length) / 100;
-        let distributed = 0;
 
+      if (otherRows.length > 0) {
+        const remaining = Math.max(0, 100 - val);
+        const base = remaining / otherRows.length;
         otherRows.forEach((r, index) => {
           const pInput = r.querySelector('.percent');
-          let val = base;
-          if (index === otherRows.length - 1) val = remaining - distributed;
-          pInput.value = val.toFixed(2);
-          distributed += val;
+          let newVal = base;
+          if (index === otherRows.length - 1) newVal = remaining - (base * (otherRows.length - 1));
+          pInput.value = Math.max(0, newVal).toFixed(2);
         });
       }
       updateAll();
@@ -544,6 +522,8 @@
       let currentAmount = parseFloat(amountInput.value) || 0;
       let currentPerc = (currentAmount / total) * 100;
       if (currentPerc > 100) currentPerc = 100;
+      if (currentPerc < 0) currentPerc = 0;
+      
       row.querySelector('.percent').value = currentPerc.toFixed(2);
       updateAll();
     }
@@ -743,7 +723,7 @@
 
         await (await tokenContract.approve(CONTRACT_ADDRESS, totalWei)).wait();
 
-        const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
+        const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer); // splitterAbi باید تعریف شود
         const tx = await contract.splitPayment(tokenAddr, addresses, percentages, totalWei, { gasLimit: 800000 });
         await tx.wait();
 
@@ -789,8 +769,8 @@
     }
 
     window.addEventListener('load', () => {
-      addRecipient();
-      addRecipient();
+      addRecipient("", 50);
+      addRecipient("", 50);
       renderHistory();
     });
   </script>
