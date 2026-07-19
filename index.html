@@ -83,7 +83,7 @@
       overflow-y: auto;
     }
 
-    /* === Glow Logo Styles === */
+    /* Glow Logo Styles */
     #logoContainer {
       position: relative;
     }
@@ -127,13 +127,27 @@
   <div class="max-w-2xl mx-auto px-4 py-10">
     <div class="flex justify-between items-center mb-10">
       <div class="flex items-center gap-3">
-        <!-- Logo with subtle rotating glow -->
-        <div id="logoContainer">
+        <!-- لوگوی جدید SVG با حرف A -->
+        <div id="logoContainer" class="relative">
           <div id="glowRing"></div>
-          <div class="w-12 h-12 bg-gradient-to-br from-emerald-400 to-cyan-400 rounded-3xl flex items-center justify-center text-3xl relative z-10 border border-white/30 shadow-2xl">
-            ⚡
-          </div>
+          <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg" class="relative z-10 drop-shadow-2xl">
+            <circle cx="26" cy="26" r="23" stroke="url(#grad1)" stroke-width="3" stroke-opacity="0.6"/>
+            <circle cx="26" cy="26" r="20" fill="#0f172a"/>
+            <text x="26" y="37" font-family="Inter, sans-serif" font-size="32" font-weight="700" fill="url(#grad2)" text-anchor="middle" dominant-baseline="middle">A</text>
+            <line x1="18" y1="32" x2="34" y2="32" stroke="#67e8f9" stroke-width="2.5" stroke-opacity="0.9"/>
+            <defs>
+              <linearGradient id="grad1" x1="10" y1="10" x2="42" y2="42" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#10b981"/>
+                <stop offset="100%" stop-color="#22d3ee"/>
+              </linearGradient>
+              <linearGradient id="grad2" x1="15" y1="15" x2="38" y2="38" gradientUnits="userSpaceOnUse">
+                <stop offset="0%" stop-color="#67e8f9"/>
+                <stop offset="100%" stop-color="#34d399"/>
+              </linearGradient>
+            </defs>
+          </svg>
         </div>
+
         <div>
           <h1 class="text-4xl font-bold">ArcSplit Pro</h1>
           <p class="text-gray-400">Professional Token Splitter</p>
@@ -153,9 +167,7 @@
     <div id="status" class="glass border border-white/10 rounded-3xl p-6 mb-8 text-base font-medium">Ready to split tokens on Arc Testnet.</div>
     <div id="successMessage" class="hidden glass border border-emerald-500/30 bg-emerald-500/10 rounded-3xl p-6 mb-8 text-emerald-400"></div>
 
-    <!-- بقیه کد بدون تغییر -->
     <div class="glass border border-white/10 rounded-3xl p-8 mb-8">
-      <!-- Token Select -->
       <div class="mb-8">
         <label class="block text-gray-400 text-sm mb-2">Select Token</label>
         <select id="tokenSelect" onchange="handleTokenChange()" 
@@ -167,7 +179,6 @@
         </select>
       </div>
 
-      <!-- Total Amount -->
       <div class="mb-8">
         <label class="block text-gray-400 text-sm mb-2">Total Amount</label>
         <div class="flex gap-3">
@@ -177,7 +188,6 @@
         </div>
       </div>
 
-      <!-- Quick Templates -->
       <div class="mb-8">
         <label class="block text-gray-400 text-sm mb-3">Quick Templates</label>
         <div class="grid grid-cols-4 gap-3">
@@ -188,7 +198,6 @@
         </div>
       </div>
 
-      <!-- Recipients -->
       <div class="mb-6">
         <div class="flex justify-between mb-4">
           <h3 class="font-semibold">Recipients</h3>
@@ -204,7 +213,6 @@
         <div id="recipients-list" class="space-y-4"></div>
       </div>
 
-      <!-- Preview Table -->
       <div class="mb-8">
         <h4 class="text-gray-400 text-sm mb-3">Split Preview</h4>
         <div class="glass rounded-2xl overflow-hidden">
@@ -234,7 +242,6 @@
       </button>
     </div>
 
-    <!-- History -->
     <div class="glass border border-white/10 rounded-3xl p-8">
       <h3 class="font-semibold mb-4">Recent Transactions</h3>
       <div id="history" class="space-y-3 max-h-80 overflow-auto"></div>
@@ -326,7 +333,6 @@
         userAddress = accounts[0];
         signer = await provider.getSigner();
 
-        // فعال کردن glow ثابت بعد از اتصال والت
         document.getElementById("logoContainer").classList.add("connected");
 
         document.getElementById("connectBtn").innerHTML = `<i class="fas fa-wallet"></i> Connected`;
@@ -338,7 +344,6 @@
       }
     }
 
-    // بقیه توابع بدون تغییر (کپی شده)
     async function updateBalance(retry = 0) {
       if (!signer || !userAddress) return;
       const statusEl = document.getElementById("status");
