@@ -11,22 +11,12 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     
-    body { 
-      font-family: 'Inter', system-ui, sans-serif; 
-    }
+    body { font-family: 'Inter', system-ui, sans-serif; }
     
-    .glass {
-      background: rgba(255,255,255,0.08);
-      backdrop-filter: blur(20px);
-    }
-    .light .glass {
-      background: rgba(255,255,255,0.88);
-      border-color: rgba(0,0,0,0.12);
-    }
+    .glass { background: rgba(255,255,255,0.08); backdrop-filter: blur(20px); }
+    .light .glass { background: rgba(255,255,255,0.88); border-color: rgba(0,0,0,0.12); }
 
-    .light body, .light h1, .light h3, .light label, .light .text-white {
-      color: #1f2937;
-    }
+    .light body, .light h1, .light h3, .light label, .light .text-white { color: #1f2937; }
     .light .text-gray-400 { color: #64748b; }
 
     select, input {
@@ -40,14 +30,18 @@
       border: 1px solid #e2e8f0;
     }
 
-    .invalid {
-      border-color: #ef4444 !important;
-      animation: shake 0.3s;
+    select option {
+      background-color: #1f2937;
+      color: white;
+    }
+    .light select option {
+      background-color: #f8fafc;
+      color: #1f2937;
     }
 
-    .percent-container {
-      position: relative;
-    }
+    .invalid { border-color: #ef4444 !important; animation: shake 0.3s; }
+
+    .percent-container { position: relative; }
     .percent-container::after {
       content: "%";
       position: absolute;
@@ -58,9 +52,7 @@
       font-weight: 600;
       pointer-events: none;
     }
-    .light .percent-container::after {
-      color: #64748b;
-    }
+    .light .percent-container::after { color: #64748b; }
 
     @keyframes shake {
       0%, 100% { transform: translateX(0); }
@@ -68,14 +60,17 @@
       75% { transform: translateX(4px); }
     }
 
-    @media (max-width: 640px) {
-      .max-w-2xl { max-width: 100% !important; padding-left: 8px; padding-right: 8px; }
-      .recipient-row { flex-direction: column; gap: 14px; padding: 18px !important; }
-      input[type="text"], input[type="number"] {
-        font-size: 1.05rem !important;
-        padding: 16px 14px !important;
-      }
+    #preview-container {
+      max-height: 280px;
+      overflow-y: auto;
     }
+    #preview-container::-webkit-scrollbar { width: 6px; }
+    #preview-container::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.3);
+      border-radius: 20px;
+    }
+
+    .balance-text { font-size: 1.15rem; font-weight: 600; }
   </style>
 </head>
 <body class="bg-gradient-to-br from-[#0b0b1f] to-[#1a1a2e] text-white min-h-screen">
@@ -93,8 +88,7 @@
         <button onclick="toggleTheme()" id="themeBtn" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all">
           <i class="fas fa-moon text-xl"></i>
         </button>
-        <button onclick="connectWallet()" id="connectBtn" 
-                class="px-6 py-3 bg-white text-black font-semibold rounded-2xl flex items-center gap-2 hover:bg-gray-100">
+        <button onclick="connectWallet()" id="connectBtn" class="px-6 py-3 bg-white text-black font-semibold rounded-2xl flex items-center gap-2 hover:bg-gray-100">
           <i class="fas fa-wallet"></i> Connect Wallet
         </button>
       </div>
@@ -105,22 +99,17 @@
 
     <div class="glass border border-white/10 rounded-3xl p-8 mb-8">
       <!-- Token Select -->
-      <div class="mb-6">
+      <div class="mb-8">
         <label class="block text-gray-400 text-sm mb-2">Select Token</label>
-        <select id="tokenSelect" onchange="updateBalance()" 
-                class="w-full rounded-2xl px-6 py-5 focus:border-emerald-500 outline-none text-base">
-          <option value="0x3600000000000000000000000000000000000000">USDC</option>
-          <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
-          <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
-        </select>
-      </div>
-
-      <!-- Custom Token -->
-      <div class="mb-8 flex gap-3">
-        <input id="customToken" type="text" placeholder="Custom Token Address (0x...)" 
-               class="flex-1 bg-white/5 border border-white/20 rounded-2xl px-6 py-5 outline-none">
-        <button onclick="addCustomToken()" 
-                class="px-8 bg-emerald-500 hover:bg-emerald-600 rounded-2xl font-medium">Add Token</button>
+        <div class="flex gap-3">
+          <select id="tokenSelect" onchange="updateBalance()" 
+                  class="flex-1 rounded-2xl px-6 py-5 focus:border-emerald-500 outline-none text-base">
+            <option value="0x3600000000000000000000000000000000000000">USDC</option>
+            <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
+            <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
+          </select>
+          <button onclick="addCustomTokenPrompt()" class="px-8 bg-white/10 hover:bg-white/20 rounded-2xl font-medium">Custom</button>
+        </div>
       </div>
 
       <!-- Total Amount -->
@@ -160,10 +149,10 @@
         <div id="recipients-list" class="space-y-4"></div>
       </div>
 
-      <!-- Preview Table -->
+      <!-- Preview -->
       <div class="mb-8">
         <h4 class="text-gray-400 text-sm mb-3">Split Preview</h4>
-        <div class="glass rounded-2xl overflow-hidden">
+        <div id="preview-container" class="glass rounded-2xl overflow-hidden">
           <table class="w-full">
             <thead>
               <tr class="border-b border-white/10">
@@ -199,19 +188,17 @@
   <div id="importModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
     <div class="glass rounded-3xl p-8 max-w-md w-full mx-4">
       <h3 class="text-xl font-bold mb-4">Import Recipients</h3>
-      <textarea id="importText" rows="8" 
-                class="w-full bg-white/5 border border-white/20 rounded-2xl p-5 text-sm font-mono"
-                placeholder="0x1234567890abcdef1234567890abcdef12345678,50&#10;0xabcdef1234567890abcdef1234567890abcdef12,50"></textarea>
-      <p class="text-xs text-gray-400 mt-2">Format: address,percent (one per line)</p>
+      <textarea id="importText" rows="8" class="w-full bg-white/5 border border-white/20 rounded-2xl p-5 text-sm font-mono" 
+                placeholder="0x1234567890abcdef1234567890abcdef12345678,50"></textarea>
       <div class="flex gap-3 mt-6">
-        <button onclick="hideImportModal()" class="flex-1 py-4 rounded-2xl border border-white/20 hover:bg-white/10">Cancel</button>
-        <button onclick="importRecipients()" class="flex-1 py-4 bg-emerald-500 hover:bg-emerald-600 rounded-2xl">Import</button>
+        <button onclick="hideImportModal()" class="flex-1 py-4 rounded-2xl border border-white/20">Cancel</button>
+        <button onclick="importRecipients()" class="flex-1 py-4 bg-emerald-500 rounded-2xl">Import</button>
       </div>
     </div>
   </div>
 
   <!-- Toast -->
-  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 border border-white/20 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 z-50">
+  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 border border-white/20 text-white px-6 py-4 rounded-2xl shadow-2xl z-50">
     <span id="toastText"></span>
   </div>
 
@@ -249,13 +236,8 @@
     function toggleTheme() {
       document.documentElement.classList.toggle('light');
       const icon = document.getElementById("themeBtn").querySelector("i");
-      if (icon.classList.contains("fa-moon")) {
-        icon.classList.remove("fa-moon");
-        icon.classList.add("fa-sun");
-      } else {
-        icon.classList.remove("fa-sun");
-        icon.classList.add("fa-moon");
-      }
+      icon.classList.toggle("fa-moon");
+      icon.classList.toggle("fa-sun");
     }
 
     window.addEventListener('load', () => {
@@ -266,30 +248,25 @@
 
     async function connectWallet() {
       if (!window.ethereum) return showToast("MetaMask not found!");
-
       try {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const network = await provider.getNetwork();
-
         if (network.chainId !== BigInt(ARC_CHAIN_ID)) {
-          showToast("Please switch to <b>Arc Testnet</b> (Chain ID: 5042002)", 6000);
+          showToast("Please switch to Arc Testnet (Chain ID: 5042002)", 5000);
           return;
         }
-
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         userAddress = accounts[0];
         signer = await provider.getSigner();
-
         document.getElementById("connectBtn").innerHTML = `<i class="fas fa-wallet"></i> Connected`;
         await updateBalance();
         showToast("Wallet connected successfully");
       } catch (e) {
-        console.error(e);
-        showToast("Failed to connect wallet");
+        showToast("Connection failed");
       }
     }
 
-    async function updateBalance() {
+    async function updateBalance(retry = 0) {
       if (!signer || !userAddress) return;
       const statusEl = document.getElementById("status");
       statusEl.innerHTML = `Connected • Loading balance...`;
@@ -297,7 +274,6 @@
       try {
         const tokenAddr = document.getElementById("tokenSelect").value;
         const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
-
         const contract = new ethers.Contract(tokenAddr, [
           "function balanceOf(address) view returns (uint256)",
           "function decimals() view returns (uint8)"
@@ -305,9 +281,13 @@
 
         const [balance, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
         const formatted = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4);
-        statusEl.innerHTML = `Connected • Balance: <span class="text-emerald-400 font-semibold">${formatted} ${symbol}</span>`;
+        statusEl.innerHTML = `Connected • Balance: <span class="text-emerald-400 font-semibold balance-text">${formatted} ${symbol}</span>`;
       } catch (e) {
-        statusEl.innerHTML = `Connected • <span class="text-amber-400">Balance unavailable</span>`;
+        if (retry < 3) {
+          setTimeout(() => updateBalance(retry + 1), 900);
+        } else {
+          statusEl.innerHTML = `Connected • <span class="text-amber-400">Balance unavailable</span>`;
+        }
       }
     }
 
@@ -319,23 +299,19 @@
           "function balanceOf(address) view returns (uint256)",
           "function decimals() view returns (uint8)"
         ], signer);
-
         const [balance, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
         document.getElementById("totalAmount").value = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(6);
         updatePreview();
-      } catch (e) {
-        showToast("Could not fetch balance");
-      }
+      } catch (e) { showToast("Could not fetch balance"); }
     }
 
-    function addCustomToken() {
-      const addr = document.getElementById("customToken").value.trim();
-      if (!ethers.isAddress(addr)) return showToast("Invalid token address");
+    function addCustomTokenPrompt() {
+      const addr = prompt("Enter custom token address (0x...):");
+      if (!addr) return;
+      if (!ethers.isAddress(addr)) return showToast("Invalid address!");
 
       const select = document.getElementById("tokenSelect");
-      if ([...select.options].some(opt => opt.value === addr)) {
-        return showToast("Token already added");
-      }
+      if ([...select.options].some(opt => opt.value === addr)) return showToast("Token already added");
 
       const option = document.createElement("option");
       option.value = addr;
@@ -343,7 +319,7 @@
       select.appendChild(option);
       select.value = addr;
       updateBalance();
-      showToast("Custom token added successfully");
+      showToast("Custom token added");
     }
 
     function addRecipient(address = "", percent = "") {
@@ -364,8 +340,7 @@
     }
 
     function validateAddress(input) {
-      const isValid = !input.value || ethers.isAddress(input.value.trim());
-      input.classList.toggle("invalid", !isValid);
+      input.classList.toggle("invalid", input.value && !ethers.isAddress(input.value.trim()));
     }
 
     function autoDistributePercentages() {
@@ -373,14 +348,9 @@
       if (count === 0) return;
       const base = Math.floor(100 / count);
       let remainder = 100 % count;
-
       document.querySelectorAll('.percent').forEach((input, index) => {
-        let val = base;
-        if (remainder > 0) {
-          val += 1;
-          remainder--;
-        }
-        input.value = val;
+        input.value = base + (remainder > 0 ? 1 : 0);
+        remainder--;
       });
       updatePercentTotal();
     }
@@ -400,19 +370,15 @@
       const totalAmount = parseFloat(document.getElementById("totalAmount").value) || 0;
 
       document.querySelectorAll('.recipient-row').forEach(row => {
-        const addrInput = row.querySelector('.address');
-        const percInput = row.querySelector('.percent');
-        const addr = addrInput.value.trim();
-        const perc = parseFloat(percInput.value) || 0;
-        const amount = (totalAmount * perc / 100).toFixed(6);
-
+        const addr = row.querySelector('.address').value.trim();
+        const perc = parseFloat(row.querySelector('.percent').value) || 0;
         if (addr) {
           const tr = document.createElement("tr");
           tr.className = "border-b border-white/10 last:border-none";
           tr.innerHTML = `
             <td class="p-4 font-mono text-xs">${addr.substring(0,12)}...</td>
             <td class="text-right p-4">${perc.toFixed(2)}%</td>
-            <td class="text-right p-4 font-medium">${amount}</td>
+            <td class="text-right p-4 font-medium">${(totalAmount * perc / 100).toFixed(6)}</td>
           `;
           tbody.appendChild(tr);
         }
@@ -423,8 +389,7 @@
       const percents = Array.from(document.querySelectorAll('.percent'));
       let total = percents.reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
       let remaining = 100 - total;
-      if (remaining <= 0.01) return showToast("No remaining percentage!");
-      percents[percents.length - 1].value = remaining.toFixed(2);
+      if (remaining > 0.01) percents[percents.length - 1].value = remaining.toFixed(2);
       updatePercentTotal();
     }
 
@@ -439,12 +404,9 @@
     function equalSplit() {
       const count = parseInt(prompt("Number of recipients (2-10):", "4")) || 4;
       if (count < 2 || count > 10) return showToast("Number must be between 2 and 10");
-
       const list = document.getElementById("recipients-list");
       list.innerHTML = "";
-      for (let i = 0; i < count; i++) {
-        addRecipient("", "");
-      }
+      for (let i = 0; i < count; i++) addRecipient("", "");
     }
 
     function showImportModal() {
@@ -458,18 +420,12 @@
     function importRecipients() {
       const text = document.getElementById("importText").value.trim();
       if (!text) return hideImportModal();
-
-      const lines = text.split("\n");
       const list = document.getElementById("recipients-list");
       list.innerHTML = "";
-
-      lines.forEach(line => {
+      text.split("\n").forEach(line => {
         const [addr, perc] = line.split(",").map(s => s.trim());
-        if (addr && ethers.isAddress(addr)) {
-          addRecipient(addr, perc || "");
-        }
+        if (addr && ethers.isAddress(addr)) addRecipient(addr, perc || "");
       });
-
       hideImportModal();
       showToast("Recipients imported successfully");
     }
@@ -479,7 +435,7 @@
       if (isProcessing) return;
 
       const rows = document.querySelectorAll('.recipient-row');
-      if (rows.length < 2) return showToast("At least 2 recipients are required");
+      if (rows.length < 2) return showToast("At least 2 recipients required");
 
       const addresses = [];
       const percentages = [];
@@ -496,7 +452,7 @@
       });
 
       if (addresses.length < 2) return showToast("At least 2 valid recipients needed");
-      if (Math.abs(totalPerc - 100) > 0.1) return showToast("Percentages must sum exactly to 100%");
+      if (Math.abs(totalPerc - 100) > 0.1) return showToast("Percentages must sum to 100%");
       if (percentages.some(p => p <= 0)) return showToast("Percentage cannot be zero");
 
       for (let addr of addresses) {
@@ -536,7 +492,7 @@
 
         successDiv.innerHTML = `✅ Transaction Successful!<br>
           <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline font-medium">
-            View on Explorer: ${tx.hash.substring(0,12)}...
+            View Tx: ${tx.hash.substring(0,12)}...
           </a>`;
         successDiv.classList.remove('hidden');
 
@@ -549,7 +505,7 @@
         renderHistory();
         await updateBalance();
 
-        showToast("Transaction sent successfully!");
+        showToast("Transaction completed successfully!");
 
       } catch (error) {
         console.error(error);
@@ -567,11 +523,7 @@
       transactions.slice(0, 5).forEach(tx => {
         const div = document.createElement("div");
         div.className = "glass border border-white/10 rounded-2xl p-4 text-sm";
-        div.innerHTML = `
-          <div class="text-gray-400 text-xs">${tx.time}</div>
-          <div>${tx.intent}</div>
-          <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="text-emerald-400 text-xs hover:underline">View Tx →</a>
-        `;
+        div.innerHTML = `<div class="text-gray-400 text-xs">${tx.time}</div><div>${tx.intent}</div><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="text-emerald-400 text-xs hover:underline">View Tx →</a>`;
         container.appendChild(div);
       });
     }
