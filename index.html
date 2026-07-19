@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fa" dir="ltr">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -55,6 +55,9 @@
       animation: shake 0.3s;
     }
 
+    .percent-container, .amount-container {
+      position: relative;
+    }
     .percent-container::after {
       content: "%";
       position: absolute;
@@ -71,7 +74,8 @@
 
     @keyframes shake {
       0%, 100% { transform: translateX(0); }
-      25%, 75% { transform: translateX(-4px); }
+      25% { transform: translateX(-4px); }
+      75% { transform: translateX(4px); }
     }
 
     .preview-scroll {
@@ -92,6 +96,7 @@
       filter: blur(8px);
       z-index: -1;
       animation: rotateGlow 10s linear infinite;
+      transition: all 0.8s ease;
     }
 
     @keyframes rotateGlow {
@@ -141,107 +146,105 @@
           </svg>
         </div>
 
-        <div>
-          <h1 class="text-4xl font-bold">ArcSplit Pro</h1>
-          <p class="text-gray-400">Professional Token Splitter</p>
-        </div>
-      </div>
-
-      <div class="flex gap-3">
-        <button onclick="toggleTheme()" id="themeBtn" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all">
-          <i class="fas fa-moon text-xl"></i>
-        </button>
-        <button onclick="showConnectModal()" id="connectBtn" 
-                class="px-6 py-3 bg-white text-black font-semibold rounded-2xl flex items-center gap-2 hover:bg-gray-100 transition-all">
-          <i class="fas fa-wallet"></i> 
-          <span id="connectText">Connect Wallet</span>
-        </button>
-      </div>
-    </div>
-
-    <div id="status" class="glass border border-white/10 rounded-3xl p-6 mb-8 text-base font-medium">Ready to split tokens on Arc Testnet.</div>
-    <div id="successMessage" class="hidden glass border border-emerald-500/30 bg-emerald-500/10 rounded-3xl p-6 mb-8 text-emerald-400"></div>
-
-    <div class="glass border border-white/10 rounded-3xl p-8 mb-8">
-      <div class="mb-8">
-        <label class="block text-gray-400 text-sm mb-2">Select Token</label>
-        <select id="tokenSelect" onchange="handleTokenChange()" 
-                class="w-full rounded-2xl px-6 py-5 focus:border-emerald-500 outline-none text-base">
-          <option value="0x3600000000000000000000000000000000000000">USDC</option>
-          <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
-          <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
-          <option value="custom">Add Custom Token...</option>
-        </select>
-      </div>
-
-      <div class="mb-8">
-        <label class="block text-gray-400 text-sm mb-2">Total Amount</label>
-        <div class="flex gap-3">
-          <input type="number" id="totalAmount" value="100" step="0.000001" 
-                 class="flex-1 bg-white/5 border border-white/20 rounded-2xl px-6 py-5 text-3xl outline-none" oninput="updateAll()">
-          <button onclick="setMaxAmount()" class="px-10 bg-white/10 hover:bg-white/20 rounded-2xl font-medium">MAX</button>
-        </div>
-      </div>
-
-      <div class="mb-8">
-        <label class="block text-gray-400 text-sm mb-3">Quick Templates</label>
-        <div class="grid grid-cols-4 gap-3">
-          <button onclick="loadTemplate(1)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">50-50</button>
-          <button onclick="loadTemplate(2)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">33-33-34</button>
-          <button onclick="loadTemplate(3)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">40-60</button>
-          <button onclick="equalSplit()" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">Equal Split</button>
-        </div>
-      </div>
-
-      <div class="mb-6">
-        <div class="flex justify-between mb-4">
-          <h3 class="font-semibold">Recipients</h3>
-          <div class="flex gap-3">
-            <button onclick="showImportModal()" class="text-sky-400 hover:text-sky-300 flex items-center gap-1 text-sm">
-              <i class="fas fa-upload"></i> Import
-            </button>
-            <button onclick="addRecipient()" class="text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
-              <i class="fas fa-plus"></i> Add
-            </button>
-          </div>
-        </div>
-        <div id="recipients-list" class="space-y-4"></div>
-      </div>
-
-      <div class="mb-8">
-        <h4 class="text-gray-400 text-sm mb-3">Split Preview</h4>
-        <div class="glass rounded-2xl overflow-hidden">
-          <div class="preview-scroll">
-            <table class="w-full">
-              <thead>
-                <tr class="border-b border-white/10 sticky top-0 bg-[#1a1a2e]">
-                  <th class="text-left p-4 text-gray-400">Recipient</th>
-                  <th class="text-right p-4 text-gray-400">Percent</th>
-                  <th class="text-right p-4 text-gray-400">Amount</th>
-                </tr>
-              </thead>
-              <tbody id="preview-body" class="text-sm"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <div class="flex justify-between mb-8">
-        <span id="percent-total" class="font-bold text-lg">Total: 0%</span>
-        <button onclick="distributeRemaining()" class="text-amber-400 hover:text-amber-300">Distribute Remaining</button>
-      </div>
-
-      <button id="sendBtn" onclick="sendSplit()" 
-              class="w-full bg-gradient-to-r from-pink-500 to-rose-500 py-7 rounded-3xl text-xl font-bold">
-        Send Split Transaction
-      </button>
-    </div>
-
-    <div class="glass border border-white/10 rounded-3xl p-8">
-      <h3 class="font-semibold mb-4">Recent Transactions</h3>
-      <div id="history" class="space-y-3 max-h-80 overflow-auto"></div>
+    <div>
+      <h1 class="text-4xl font-bold">ArcSplit Pro</h1>
+      <p class="text-gray-400">Professional Token Splitter</p>
     </div>
   </div>
+  <div class="flex gap-3">
+    <button onclick="toggleTheme()" id="themeBtn" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all">
+      <i class="fas fa-moon text-xl"></i>
+    </button>
+    <button onclick="showConnectModal()" id="connectBtn" 
+            class="px-6 py-3 bg-white text-black font-semibold rounded-2xl flex items-center gap-2 hover:bg-gray-100 transition-all">
+      <i class="fas fa-wallet"></i> 
+      <span id="connectText">Connect Wallet</span>
+    </button>
+  </div>
+</div>
+
+<div id="status" class="glass border border-white/10 rounded-3xl p-6 mb-8 text-base font-medium">Ready to split tokens on Arc Testnet.</div>
+<div id="successMessage" class="hidden glass border border-emerald-500/30 bg-emerald-500/10 rounded-3xl p-6 mb-8 text-emerald-400"></div>
+
+<div class="glass border border-white/10 rounded-3xl p-8 mb-8">
+  <div class="mb-8">
+    <label class="block text-gray-400 text-sm mb-2">Select Token</label>
+    <select id="tokenSelect" onchange="handleTokenChange()" 
+            class="w-full rounded-2xl px-6 py-5 focus:border-emerald-500 outline-none text-base">
+      <option value="0x3600000000000000000000000000000000000000">USDC</option>
+      <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
+      <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
+      <option value="custom">Add Custom Token...</option>
+    </select>
+  </div>
+
+  <div class="mb-8">
+    <label class="block text-gray-400 text-sm mb-2">Total Amount</label>
+    <div class="flex gap-3">
+      <input type="number" id="totalAmount" value="100" step="0.000001" 
+             class="flex-1 bg-white/5 border border-white/20 rounded-2xl px-6 py-5 text-3xl outline-none" oninput="updateAll()">
+      <button onclick="setMaxAmount()" class="px-10 bg-white/10 hover:bg-white/20 rounded-2xl font-medium">MAX</button>
+    </div>
+  </div>
+
+  <div class="mb-8">
+    <label class="block text-gray-400 text-sm mb-3">Quick Templates</label>
+    <div class="grid grid-cols-4 gap-3">
+      <button onclick="loadTemplate(1)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">50-50</button>
+      <button onclick="loadTemplate(2)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">33-33-34</button>
+      <button onclick="loadTemplate(3)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">40-60</button>
+      <button onclick="equalSplit()" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">Equal Split</button>
+    </div>
+  </div>
+
+  <div class="mb-6">
+    <div class="flex justify-between mb-4">
+      <h3 class="font-semibold">Recipients</h3>
+      <div class="flex gap-3">
+        <button onclick="showImportModal()" class="text-sky-400 hover:text-sky-300 flex items-center gap-1 text-sm">
+          <i class="fas fa-upload"></i> Import
+        </button>
+        <button onclick="addRecipient()" class="text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
+          <i class="fas fa-plus"></i> Add
+        </button>
+      </div>
+    </div>
+    <div id="recipients-list" class="space-y-4"></div>
+  </div>
+
+  <div class="mb-8">
+    <h4 class="text-gray-400 text-sm mb-3">Split Preview</h4>
+    <div class="glass rounded-2xl overflow-hidden">
+      <div class="preview-scroll">
+        <table class="w-full">
+          <thead>
+            <tr class="border-b border-white/10 sticky top-0 bg-[#1a1a2e]">
+              <th class="text-left p-4 text-gray-400">Recipient</th>
+              <th class="text-right p-4 text-gray-400">Percent</th>
+              <th class="text-right p-4 text-gray-400">Amount</th>
+            </tr>
+          </thead>
+          <tbody id="preview-body" class="text-sm"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex justify-between mb-8">
+    <span id="percent-total" class="font-bold text-lg">Total: 0%</span>
+    <button onclick="distributeRemaining()" class="text-amber-400 hover:text-amber-300">Distribute Remaining</button>
+  </div>
+
+  <button id="sendBtn" onclick="sendSplit()" 
+          class="w-full bg-gradient-to-r from-pink-500 to-rose-500 py-7 rounded-3xl text-xl font-bold">
+    Send Split Transaction
+  </button>
+</div>
+
+<div class="glass border border-white/10 rounded-3xl p-8">
+  <h3 class="font-semibold mb-4">Recent Transactions</h3>
+  <div id="history" class="space-y-3 max-h-80 overflow-auto"></div>
+</div>  
 
   <!-- Import Modal -->
   <div id="importModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
@@ -266,31 +269,30 @@
         <button onclick="hideConnectModal()" class="text-gray-400 hover:text-white text-3xl leading-none">×</button>
       </div>
       
-      <div class="space-y-3">
-        <button onclick="connectMetaMask()" 
-                class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" width="40" height="40" alt="MetaMask">
-          <div class="text-left">
-            <div class="font-semibold text-lg">MetaMask</div>
-            <div class="text-sm text-gray-400">Popular browser wallet</div>
-          </div>
-        </button>
-
-        <button onclick="connectWalletConnect()" 
-                class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group">
-          <img src="https://walletconnect.com/_next/static/media/walletconnect.2f8f1b5a.svg" width="40" height="40" alt="WalletConnect">
-          <div class="text-left">
-            <div class="font-semibold text-lg">WalletConnect</div>
-            <div class="text-sm text-gray-400">Connect with mobile wallets</div>
-          </div>
-        </button>
+  <div class="space-y-3">
+    <button onclick="connectMetaMask()" 
+            class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group">
+      <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" width="40" height="40" alt="MetaMask">
+      <div class="text-left">
+        <div class="font-semibold text-lg">MetaMask</div>
+        <div class="text-sm text-gray-400">Popular browser wallet</div>
       </div>
+    </button>
 
-      <p class="text-center text-xs text-gray-500 mt-8">
-        By connecting, you accept our Terms of Service
-      </p>
-    </div>
+    <button onclick="connectWalletConnect()" 
+            class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group">
+      <img src="https://walletconnect.com/_next/static/media/walletconnect.2f8f1b5a.svg" width="40" height="40" alt="WalletConnect">
+      <div class="text-left">
+        <div class="font-semibold text-lg">WalletConnect</div>
+        <div class="text-sm text-gray-400">Connect with mobile wallets</div>
+      </div>
+    </button>
   </div>
+
+  <p class="text-center text-xs text-gray-500 mt-8">
+    By connecting, you accept our Terms of Service
+  </p>
+</div>  </div>
 
   <!-- Toast -->
   <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 border border-white/20 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 z-50">
@@ -332,8 +334,13 @@
     function toggleTheme() {
       document.documentElement.classList.toggle('light');
       const icon = document.getElementById("themeBtn").querySelector("i");
-      icon.classList.toggle("fa-moon");
-      icon.classList.toggle("fa-sun");
+      if (icon.classList.contains("fa-moon")) {
+        icon.classList.remove("fa-moon");
+        icon.classList.add("fa-sun");
+      } else {
+        icon.classList.remove("fa-sun");
+        icon.classList.add("fa-moon");
+      }
     }
 
     function showConnectModal() {
@@ -397,21 +404,10 @@
       return parseFloat(document.getElementById("totalAmount").value) || 0;
     }
 
-    function autoDistributePercentages() {
-      const rows = document.querySelectorAll('.recipient-row');
-      if (rows.length === 0) return;
-
-      const base = (100 / rows.length).toFixed(2);
-      let sum = 0;
-
-      rows.forEach((row, index) => {
-        const percentInput = row.querySelector('.percent');
-        let value = parseFloat(base);
-        if (index === rows.length - 1) value = (100 - sum).toFixed(2);
-        percentInput.value = value;
-        sum += parseFloat(value);
-      });
-      updateAll();
+    function updateAll() {
+      updateRecipientsAmounts();
+      updatePercentTotal();
+      updatePreview();
     }
 
     function addRecipient(address = "", percent = "") {
@@ -422,36 +418,93 @@
         <input type="text" class="address flex-1 bg-transparent border border-white/20 rounded-xl px-5 py-4 text-white placeholder-gray-400" 
                placeholder="0x..." value="${address}" oninput="validateAddress(this); updateAll()">
         
-        <div class="percent-container w-28 relative">
+        <div class="percent-container w-28">
           <input type="number" class="percent w-full bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" 
                  value="${percent}" placeholder="0" step="0.01" min="0" max="100"
-                 oninput="updateAll()">
+                 oninput="handlePercentChange(this); updateAll()">
         </div>
 
         <div class="amount-container w-36">
           <input type="number" class="amount w-full bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" 
-                 placeholder="0" step="0.000001"
-                 oninput="updateAll()">
+                 placeholder="0" step="0.000001" min="0"
+                 oninput="handleAmountChange(this); updateAll()">
         </div>
 
-        <button onclick="this.parentElement.remove(); setTimeout(autoDistributePercentages, 10)" class="text-rose-400 text-3xl px-3">×</button>
+        <button onclick="this.parentElement.remove(); updateAll()" class="text-rose-400 text-3xl px-3">×</button>
       `;
       list.appendChild(row);
-      setTimeout(autoDistributePercentages, 10);
+      
+      if (!percent) autoDistributePercentages();
+      else updateAll();
     }
 
-    function updateAll() {
-      updateRecipientsAmounts();
-      updatePercentTotal();
-      updatePreview();
+    function autoDistributePercentages() {
+      const rows = document.querySelectorAll('.recipient-row');
+      if (rows.length === 0) return;
+      
+      const base = (100 / rows.length).toFixed(2);
+      let total = 0;
+
+      rows.forEach((row, index) => {
+        const percentInput = row.querySelector('.percent');
+        if (!percentInput.value || parseFloat(percentInput.value) === 0) {
+          let value = parseFloat(base);
+          if (index === rows.length - 1) {
+            value = 100 - total;
+          }
+          percentInput.value = value.toFixed(2);
+          total += value;
+        } else {
+          total += parseFloat(percentInput.value) || 0;
+        }
+      });
+      updateAll();
+    }
+
+    function handlePercentChange(percentInput) {
+      const row = percentInput.closest('.recipient-row');
+      let current = parseFloat(percentInput.value) || 0;
+      
+      if (current < 0) current = 0;
+      if (current > 100) current = 100;
+      percentInput.value = current.toFixed(2);
+      
+      const total = getTotalAmount();
+      if (total > 0) {
+        const amountInput = row.querySelector('.amount');
+        amountInput.value = (total * current / 100).toFixed(6);
+      }
+      updateAll();
+    }
+
+    function handleAmountChange(amountInput) {
+      const row = amountInput.closest('.recipient-row');
+      const total = getTotalAmount();
+      if (total <= 0) return;
+      
+      let currentAmount = parseFloat(amountInput.value) || 0;
+      let currentPerc = (currentAmount / total) * 100;
+      
+      if (currentPerc > 100) currentPerc = 100;
+      row.querySelector('.percent').value = currentPerc.toFixed(2);
+      
+      updateAll();
     }
 
     function updateRecipientsAmounts() {
       const total = getTotalAmount();
+      if (total <= 0) return;
+
       document.querySelectorAll('.recipient-row').forEach(row => {
         const perc = parseFloat(row.querySelector('.percent').value) || 0;
-        row.querySelector('.amount').value = (total * perc / 100).toFixed(6);
+        const amountInput = row.querySelector('.amount');
+        amountInput.value = (total * perc / 100).toFixed(6);
       });
+    }
+
+    function validateAddress(input) {
+      const isValid = !input.value || ethers.isAddress(input.value.trim());
+      input.classList.toggle("invalid", !isValid);
     }
 
     function updatePercentTotal() {
@@ -459,26 +512,26 @@
       const total = percents.reduce((a, b) => a + b, 0);
       const el = document.getElementById("percent-total");
       el.textContent = `Total: ${total.toFixed(2)}%`;
-      el.style.color = total > 100.1 ? '#ff3366' : (Math.abs(total - 100) < 0.2 ? '#00ffaa' : '#facc15');
+      el.style.color = total === 100 ? '#00ffaa' : (total > 100 ? '#ff3366' : '#facc15');
     }
 
     function updatePreview() {
       const tbody = document.getElementById("preview-body");
       tbody.innerHTML = "";
-      const total = getTotalAmount();
+      const totalAmount = getTotalAmount();
 
       document.querySelectorAll('.recipient-row').forEach(row => {
         const addr = row.querySelector('.address').value.trim();
         const perc = parseFloat(row.querySelector('.percent').value) || 0;
-        const amt = parseFloat(row.querySelector('.amount').value) || 0;
+        const amount = parseFloat(row.querySelector('.amount').value) || 0;
 
         if (addr) {
           const tr = document.createElement("tr");
           tr.className = "border-b border-white/10 last:border-none";
           tr.innerHTML = `
-            <td class="p-4 font-mono text-xs">${addr.slice(0,12)}...</td>
+            <td class="p-4 font-mono text-xs">${addr.substring(0,12)}...</td>
             <td class="text-right p-4">${perc.toFixed(2)}%</td>
-            <td class="text-right p-4 font-medium">${amt.toFixed(6)}</td>
+            <td class="text-right p-4 font-medium">${amount.toFixed(6)}</td>
           `;
           tbody.appendChild(tr);
         }
@@ -487,24 +540,18 @@
 
     function distributeRemaining() {
       const percents = Array.from(document.querySelectorAll('.percent'));
-      if (percents.length === 0) return;
       let total = percents.reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
       let remaining = 100 - total;
-      if (remaining < 0.01) return showToast("No remaining percentage!");
+      if (remaining <= 0.01) return showToast("No remaining percentage!");
       percents[percents.length - 1].value = remaining.toFixed(2);
       updateAll();
-    }
-
-    function validateAddress(input) {
-      const isValid = !input.value || ethers.isAddress(input.value.trim());
-      input.classList.toggle("invalid", !isValid);
     }
 
     function loadTemplate(type) {
       const list = document.getElementById("recipients-list");
       list.innerHTML = "";
       if (type === 1) { addRecipient("", 50); addRecipient("", 50); }
-      else if (type === 2) { addRecipient("", ""); addRecipient("", ""); addRecipient("", ""); }
+      else if (type === 2) { addRecipient("", 33); addRecipient("", 33); addRecipient("", 34); }
       else if (type === 3) { addRecipient("", 40); addRecipient("", 60); }
     }
 
@@ -617,6 +664,11 @@
 
       if (addresses.length < 2) return showToast("At least 2 valid recipients needed");
       if (Math.abs(totalPerc - 100) > 0.1) return showToast("Percentages must sum exactly to 100%");
+      if (percentages.some(p => p <= 0)) return showToast("Percentage cannot be zero");
+
+      for (let addr of addresses) {
+        if (!ethers.isAddress(addr)) return showToast(`Invalid address: ${addr}`);
+      }
 
       const totalAmountStr = document.getElementById("totalAmount").value;
       const totalAmount = parseFloat(totalAmountStr);
