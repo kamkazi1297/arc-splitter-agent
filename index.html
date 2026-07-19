@@ -6,7 +6,6 @@
   <title>ArcSplit Pro - Token Splitter</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
-  <!-- WalletConnect Library -->
   <script src="https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.17.0/dist/index.umd.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 
@@ -169,7 +168,6 @@
     <div id="successMessage" class="hidden glass border border-emerald-500/30 bg-emerald-500/10 rounded-3xl p-6 mb-8 text-emerald-400"></div>
 
     <div class="glass border border-white/10 rounded-3xl p-8 mb-8">
-      <!-- تمام بخش‌های اصلی صفحه شما بدون تغییر -->
       <div class="mb-8">
         <label class="block text-gray-400 text-sm mb-2">Select Token</label>
         <select id="tokenSelect" onchange="handleTokenChange()" 
@@ -282,7 +280,7 @@
     const ARC_CHAIN_ID = 5042002;
     const PROJECT_ID = "1c0e752ab2d259f09fd2eeae3784448c";
 
-    // ==================== WALLET FUNCTIONS (جدید و کامل) ====================
+    // ===================== WALLET FUNCTIONS =====================
     function showConnectModal() {
       const html = `
         <div id="connectModal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
@@ -296,7 +294,7 @@
                 <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" width="42">
                 <div class="text-left">
                   <div class="font-semibold text-lg">MetaMask</div>
-                  <div class="text-sm text-gray-400">Browser Wallet</div>
+                  <div class="text-sm text-gray-400">Chrome Extension</div>
                 </div>
               </button>
               <button onclick="connectWallet('walletconnect')" class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all">
@@ -307,6 +305,7 @@
                 </div>
               </button>
             </div>
+            <p class="text-center text-xs text-gray-500 mt-6">WalletConnect needs mobile wallet to scan QR code</p>
           </div>
         </div>`;
 
@@ -330,7 +329,7 @@
     }
 
     async function connectMetaMask() {
-      if (!window.ethereum) return showToast("MetaMask not found!");
+      if (!window.ethereum) return showToast("MetaMask extension not found!");
 
       try {
         provider = new ethers.BrowserProvider(window.ethereum);
@@ -374,7 +373,7 @@
         finishConnection();
       } catch (err) {
         console.error(err);
-        showToast("WalletConnect cancelled or failed");
+        showToast("WalletConnect cancelled or failed.<br>Please try again.", 6000);
       }
     }
 
@@ -446,7 +445,7 @@
       }
     }
 
-    // ==================== بقیه کدهای اصلی شما (کاملاً بدون تغییر) ====================
+    // ==================== بقیه توابع اصلی ====================
     function getTotalAmount() {
       return parseFloat(document.getElementById("totalAmount").value) || 0;
     }
