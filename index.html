@@ -6,6 +6,7 @@
   <title>ArcSplit Pro - Token Splitter</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+  <script src="https://unpkg.com/@walletconnect/ethereum-provider@2.17.0/dist/index.umd.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 
   <style>
@@ -269,30 +270,8 @@
         <h3 class="text-2xl font-bold">Connect Wallet</h3>
         <button onclick="hideConnectModal()" class="text-gray-400 hover:text-white text-3xl leading-none">×</button>
       </div>
-      
-      <div class="space-y-3">
-        <button onclick="connectMetaMask()" 
-                class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" width="40" height="40" alt="MetaMask">
-          <div class="text-left">
-            <div class="font-semibold text-lg">MetaMask</div>
-            <div class="text-sm text-gray-400">Popular browser wallet</div>
-          </div>
-        </button>
-
-        <button onclick="connectWalletConnect()" 
-                class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group">
-          <img src="https://walletconnect.com/_next/static/media/walletconnect.2f8f1b5a.svg" width="40" height="40" alt="WalletConnect">
-          <div class="text-left">
-            <div class="font-semibold text-lg">WalletConnect</div>
-            <div class="text-sm text-gray-400">Connect with mobile wallets</div>
-          </div>
-        </button>
-      </div>
-
-      <p class="text-center text-xs text-gray-500 mt-8">
-        By connecting, you accept our Terms of Service
-      </p>
+      <div class="space-y-3" id="walletOptions"></div>
+      <p class="text-center text-xs text-gray-500 mt-8">By connecting, you accept our Terms of Service</p>
     </div>
   </div>
 
@@ -305,11 +284,13 @@
     let signer = null;
     let userAddress = null;
     let provider = null;
+    let wcProvider = null;
     let transactions = JSON.parse(localStorage.getItem('arcTxHistory') || '[]');
     let isProcessing = false;
 
     const CONTRACT_ADDRESS = "0x73Da94F0D960Ef8FD49Ed28a94f667aF3C062cB2";
     const ARC_CHAIN_ID = 5042002;
+    const WC_PROJECT_ID = "1c0e752ab2d259f09fd2eeae3784448c";
 
     const splitterAbi = [
       {
@@ -353,99 +334,134 @@
       document.getElementById("connectModal").classList.add("hidden");
     }
 
-    async function connectMetaMask() {
-      hideConnectModal();
-      if (!window.ethereum) return showToast("MetaMask not found!");
+    const SUPPORTED_WALLETS = [
+      { name: "MetaMask", icon: "https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg", type: "metamask" },
+      { name: "WalletConnect", icon: "https://walletconnect.com/_next/static/media/walletconnect.2f8f1b5a.svg", type: "walletconnect" },
+      { name: "Trust Wallet", icon: "https://trustwallet.com/assets/images/logo.png", type: "walletconnect" },
+      { name: "Rainbow", icon: "https://rainbow.me/images/rainbow-icon.png", type: "walletconnect" }
+    ];
 
+    function renderWalletOptions() {
+      const container = document.getElementById("walletOptions");
+      container.innerHTML = "";
+      SUPPORTED_WALLETS.forEach(wallet => {
+        const btn = document.createElement("button");
+        btn.className = "w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group border border-transparent hover:border-white/10";
+        btn.innerHTML = `
+          <img src="${wallet.icon}" width="48" height="48" class="rounded-xl" alt="${wallet.name}">
+          <div class="text-left flex-1">
+            <div class="font-semibold text-lg">${wallet.name}</div>
+          </div>
+        `;
+        btn.onclick = () => {
+          hideConnectModal();
+          if (wallet.type === "metamask") connectMetaMask();
+          else connectWalletConnect();
+        };
+        container.appendChild(btn);
+      });
+    }
+
+    async function connectMetaMask() {
+      if (!window.ethereum) return showToast("MetaMask not found!");
       try {
         provider = new ethers.BrowserProvider(window.ethereum);
         const network = await provider.getNetwork();
-
         if (network.chainId !== BigInt(ARC_CHAIN_ID)) {
-          showToast("Please switch to <b>Arc Testnet</b> (Chain ID: 5042002)", 6000);
-          return;
+          await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: '0x' + ARC_CHAIN_ID.toString(16) }] });
         }
-
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         userAddress = accounts[0];
         signer = await provider.getSigner();
 
         document.getElementById("logoContainer").classList.add("connected");
-        updateConnectButton();
-        showToast("Wallet connected successfully");
+        updateConnectButton("MetaMask");
+        showToast("Connected with MetaMask");
         await updateBalance();
       } catch (e) {
         console.error(e);
-        showToast("Failed to connect wallet");
+        showToast("Connection failed");
       }
     }
 
     async function connectWalletConnect() {
-      hideConnectModal();
-      showToast("WalletConnect will be available soon", 3000);
+      try {
+        wcProvider = await EthereumProvider.init({
+          projectId: WC_PROJECT_ID,
+          chains: [ARC_CHAIN_ID],
+          showQrModal: true,
+          metadata: {
+            name: "ArcSplit Pro",
+            description: "Professional Token Splitter on Arc Testnet",
+            url: window.location.href,
+            icons: ["https://via.placeholder.com/200"]
+          }
+        });
+
+        await wcProvider.connect();
+        provider = new ethers.BrowserProvider(wcProvider);
+        const accounts = await provider.listAccounts();
+        userAddress = accounts[0].address;
+        signer = await provider.getSigner();
+
+        document.getElementById("logoContainer").classList.add("connected");
+        updateConnectButton("WalletConnect");
+        showToast("Connected successfully!");
+        await updateBalance();
+      } catch (e) {
+        console.error(e);
+        showToast("Connection cancelled or failed");
+      }
     }
 
-    function updateConnectButton() {
+    function updateConnectButton(walletName = "") {
       const btn = document.getElementById("connectBtn");
       const short = userAddress ? `${userAddress.slice(0,6)}...${userAddress.slice(-4)}` : "";
-      
-      btn.innerHTML = `
-        <i class="fas fa-wallet"></i> 
-        <span>${short}</span>
-      `;
+      btn.innerHTML = `<i class="fas fa-wallet"></i> <span>${short}</span>`;
       btn.onclick = disconnectWallet;
       btn.classList.add("!bg-emerald-500", "!text-white");
     }
 
     function disconnectWallet() {
+      if (wcProvider) wcProvider.disconnect();
       signer = null;
       userAddress = null;
       provider = null;
+      wcProvider = null;
 
       document.getElementById("logoContainer").classList.remove("connected");
-      
       const btn = document.getElementById("connectBtn");
       btn.innerHTML = `<i class="fas fa-wallet"></i> <span>Connect Wallet</span>`;
       btn.onclick = showConnectModal;
       btn.classList.remove("!bg-emerald-500", "!text-white");
-
-      document.getElementById("status").innerHTML = "Ready to split tokens on Arc Testnet.";
       showToast("Wallet disconnected");
     }
 
+    // بقیه توابع (کاملاً مثل نسخه قبلی)
     window.addEventListener('load', () => {
+      renderWalletOptions();
       addRecipient();
       addRecipient();
       renderHistory();
     });
 
-    async function updateBalance(retry = 0) {
+    async function updateBalance() { /* همان کد قبلی */ 
       if (!signer || !userAddress) return;
       const statusEl = document.getElementById("status");
       statusEl.innerHTML = `Connected • Loading balance...`;
-
       try {
         const tokenAddr = document.getElementById("tokenSelect").value;
         if (tokenAddr === "custom") return;
-
         const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
-
         const contract = new ethers.Contract(tokenAddr, [
           "function balanceOf(address) view returns (uint256)",
           "function decimals() view returns (uint8)"
         ], signer);
-
         const [balance, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
         const formatted = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4);
-        
         statusEl.innerHTML = `Connected • Balance: <span class="text-emerald-400 font-semibold text-lg">${formatted} ${symbol}</span>`;
       } catch (e) {
-        console.error(e);
-        if (retry < 2) {
-          setTimeout(() => updateBalance(retry + 1), 1000);
-        } else {
-          statusEl.innerHTML = `Connected • <span class="text-amber-400">Balance unavailable</span>`;
-        }
+        statusEl.innerHTML = `Connected • <span class="text-amber-400">Balance unavailable</span>`;
       }
     }
 
@@ -476,7 +492,6 @@
           "function balanceOf(address) view returns (uint256)",
           "function decimals() view returns (uint8)"
         ], signer);
-
         const [balance, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
         document.getElementById("totalAmount").value = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(6);
         updatePreview();
@@ -512,13 +527,9 @@
       if (count === 0) return;
       const base = Math.floor(100 / count);
       let remainder = 100 % count;
-
       document.querySelectorAll('.percent').forEach((input, index) => {
         let val = base;
-        if (remainder > 0) {
-          val += 1;
-          remainder--;
-        }
+        if (remainder > 0) { val += 1; remainder--; }
         input.value = val;
       });
       updatePercentTotal();
@@ -537,14 +548,12 @@
       const tbody = document.getElementById("preview-body");
       tbody.innerHTML = "";
       const totalAmount = parseFloat(document.getElementById("totalAmount").value) || 0;
-
       document.querySelectorAll('.recipient-row').forEach(row => {
         const addrInput = row.querySelector('.address');
         const percInput = row.querySelector('.percent');
         const addr = addrInput.value.trim();
         const perc = parseFloat(percInput.value) || 0;
         const amount = (totalAmount * perc / 100).toFixed(6);
-
         if (addr) {
           const tr = document.createElement("tr");
           tr.className = "border-b border-white/10 last:border-none";
@@ -578,12 +587,9 @@
     function equalSplit() {
       const count = parseInt(prompt("Number of recipients (2-10):", "4")) || 4;
       if (count < 2 || count > 10) return showToast("Number must be between 2 and 10");
-
       const list = document.getElementById("recipients-list");
       list.innerHTML = "";
-      for (let i = 0; i < count; i++) {
-        addRecipient("", "");
-      }
+      for (let i = 0; i < count; i++) addRecipient("", "");
     }
 
     function showImportModal() {
@@ -597,18 +603,15 @@
     function importRecipients() {
       const text = document.getElementById("importText").value.trim();
       if (!text) return hideImportModal();
-
       const lines = text.split("\n");
       const list = document.getElementById("recipients-list");
       list.innerHTML = "";
-
       lines.forEach(line => {
         const [addr, perc] = line.split(",").map(s => s.trim());
         if (addr && ethers.isAddress(addr)) {
           addRecipient(addr, perc || "");
         }
       });
-
       hideImportModal();
       showToast("Recipients imported successfully");
     }
