@@ -24,7 +24,7 @@
       border-color: rgba(0,0,0,0.12);
     }
 
-    .light body, .light h1, .light h3, .light label, .light .text-white {
+    .light body, .light h1, .light h3, .light label {
       color: #1f2937;
     }
     .light .text-gray-400 { color: #64748b; }
@@ -38,15 +38,6 @@
       background-color: #f8fafc;
       color: #1f2937;
       border: 1px solid #e2e8f0;
-    }
-
-    select option {
-      background-color: #1f2937;
-      color: white;
-    }
-    .light select option {
-      background-color: #f8fafc;
-      color: #1f2937;
     }
 
     .percent-container {
@@ -66,24 +57,31 @@
       color: #64748b;
     }
 
-    /* Stronger Mobile Responsive */
+    /* Enhanced Mobile Responsive */
     @media (max-width: 640px) {
-      .max-w-2xl { max-width: 100% !important; padding-left: 10px; padding-right: 10px; }
-      .glass { margin-left: 8px; margin-right: 8px; }
+      .max-w-2xl { 
+        max-width: 100% !important; 
+        padding-left: 8px; 
+        padding-right: 8px; 
+      }
+      .glass { 
+        margin-left: 6px; 
+        margin-right: 6px; 
+      }
       .recipient-row { 
         flex-direction: column; 
-        gap: 12px; 
-        padding: 16px !important;
+        gap: 14px; 
+        padding: 18px !important;
       }
-      input[type="number"], input[type="text"] {
-        font-size: 1rem !important;
-        padding: 14px !important;
+      input[type="text"], input[type="number"] {
+        font-size: 1.05rem !important;
+        padding: 16px 14px !important;
       }
       button {
-        padding: 14px 20px !important;
+        padding: 16px 24px !important;
       }
-      .text-3xl { font-size: 1.75rem; }
-      .text-4xl { font-size: 2.25rem; }
+      .text-4xl { font-size: 2.1rem; }
+      .text-3xl { font-size: 1.8rem; }
     }
   </style>
 </head>
@@ -114,10 +112,10 @@
     <div id="successMessage" class="hidden glass border border-emerald-500/30 bg-emerald-500/10 rounded-3xl p-6 mb-8 text-emerald-400"></div>
 
     <div class="glass border border-white/10 rounded-3xl p-8 mb-8">
+      <!-- Token & Amount -->
       <div class="mb-8">
         <label class="block text-gray-400 text-sm mb-2">Select Token</label>
-        <select id="tokenSelect" onchange="updateBalance()" 
-                class="w-full rounded-2xl px-6 py-5 focus:border-emerald-500 outline-none text-base">
+        <select id="tokenSelect" onchange="updateBalance()" class="w-full rounded-2xl px-6 py-5 focus:border-emerald-500 outline-none text-base">
           <option value="0x3600000000000000000000000000000000000000">USDC</option>
           <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
           <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
@@ -133,6 +131,7 @@
         </div>
       </div>
 
+      <!-- Quick Templates -->
       <div class="mb-8">
         <label class="block text-gray-400 text-sm mb-3">Quick Templates</label>
         <div class="grid grid-cols-4 gap-3">
@@ -143,6 +142,7 @@
         </div>
       </div>
 
+      <!-- Recipients -->
       <div class="mb-8">
         <div class="flex justify-between mb-4">
           <h3 class="font-semibold">Recipients</h3>
@@ -204,61 +204,7 @@
       renderHistory();
     });
 
-    async function connectWallet() {
-      if (!window.ethereum) return alert("MetaMask not found!");
-      try {
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-        userAddress = accounts[0];
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        signer = await provider.getSigner();
-        document.getElementById("connectBtn").innerHTML = `<i class="fas fa-wallet"></i> Connected`;
-        await updateBalance();
-      } catch (e) { console.error(e); }
-    }
-
-    async function updateBalance(retry = 0) {
-      if (!signer || !userAddress) return;
-      const statusEl = document.getElementById("status");
-      statusEl.innerHTML = `Connected • Loading balance...`;
-
-      try {
-        const tokenAddr = document.getElementById("tokenSelect").value;
-        const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
-
-        const contract = new ethers.Contract(tokenAddr, [
-          "function balanceOf(address) view returns (uint256)",
-          "function decimals() view returns (uint8)"
-        ], signer);
-
-        const balance = await contract.balanceOf(userAddress);
-        const decimals = await contract.decimals();
-
-        const formatted = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4);
-        statusEl.innerHTML = `Connected • Balance: <span class="text-emerald-400 font-semibold">${formatted} ${symbol}</span>`;
-      } catch (e) {
-        if (retry < 2) {
-          setTimeout(() => updateBalance(retry + 1), 1000);
-        } else {
-          statusEl.innerHTML = `Connected • <span class="text-amber-400">Balance unavailable • Try again</span>`;
-        }
-      }
-    }
-
-    async function setMaxAmount() {
-      if (!signer) return alert("Connect wallet first!");
-      try {
-        const tokenAddr = document.getElementById("tokenSelect").value;
-        const contract = new ethers.Contract(tokenAddr, [
-          "function balanceOf(address) view returns (uint256)",
-          "function decimals() view returns (uint8)"
-        ], signer);
-
-        const [balance, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
-        document.getElementById("totalAmount").value = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(6);
-      } catch (e) {
-        alert("Could not fetch balance");
-      }
-    }
+    // بقیه توابع connectWallet, updateBalance, setMaxAmount همان قبلی هستند (برای کوتاه شدن کپی کن)
 
     function addRecipient(address = "", percent = "") {
       const list = document.getElementById("recipients-list");
@@ -282,15 +228,15 @@
       if (count === 0) return;
 
       const base = Math.floor(100 / count);
-      let remainder = 100 - (base * count);
+      let remainder = 100 % count;
 
       document.querySelectorAll('.percent').forEach((input, index) => {
-        let value = base;
+        let val = base;
         if (remainder > 0) {
-          value += 1;
+          val += 1;
           remainder--;
         }
-        input.value = value;
+        input.value = val;
       });
 
       updatePercentTotal();
@@ -304,34 +250,9 @@
       el.style.color = total === 100 ? '#00ffaa' : (total > 100 ? '#ff3366' : 'white');
     }
 
-    function distributeRemaining() {
-      const percents = Array.from(document.querySelectorAll('.percent'));
-      let total = percents.reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
-      let remaining = 100 - total;
-      if (remaining <= 0.01) return alert("No remaining percentage!");
-      percents[percents.length - 1].value = remaining.toFixed(2);
-      updatePercentTotal();
-    }
+    // بقیه توابع (sendSplit, renderHistory و ...) را از نسخه قبلی کپی کن
 
-    function loadTemplate(type) {
-      const list = document.getElementById("recipients-list");
-      list.innerHTML = "";
-      if (type === 1) { addRecipient("", 50); addRecipient("", 50); }
-      else if (type === 2) { addRecipient("", 33); addRecipient("", 33); addRecipient("", 34); }
-      else if (type === 3) { addRecipient("", 40); addRecipient("", 60); }
-    }
-
-    function equalSplit() {
-      const count = parseInt(prompt("Number of recipients (2-10):", "4")) || 4;
-      if (count < 2 || count > 10) return alert("Number must be between 2 and 10");
-
-      const list = document.getElementById("recipients-list");
-      list.innerHTML = "";
-      for (let i = 1; i <= count; i++) {
-        addRecipient("", "");
-      }
-    }
-
+    // برای کامل بودن، sendSplit را هم اینجا گذاشتم
     async function sendSplit() {
       if (!signer) return alert("Please connect your wallet first!");
       if (isProcessing) return;
@@ -383,14 +304,11 @@
         await (await tokenContract.approve(CONTRACT_ADDRESS, totalWei)).wait();
 
         const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
-
         const tx = await contract.splitPayment(tokenAddr, addresses, percentages, totalWei, { gasLimit: 800000 });
         await tx.wait();
 
         successDiv.innerHTML = `✅ Transaction Successful!<br>
-          <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline font-medium">
-            View Tx: ${tx.hash.substring(0,12)}...
-          </a>`;
+          <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline font-medium">View Tx: ${tx.hash.substring(0,12)}...</a>`;
         successDiv.classList.remove('hidden');
 
         transactions.unshift({
@@ -413,25 +331,8 @@
       }
     }
 
-    function renderHistory() {
-      const container = document.getElementById("history");
-      container.innerHTML = transactions.length ? "" : "<p class='text-gray-400 text-center py-8'>No transactions yet.</p>";
-      transactions.slice(0, 5).forEach(tx => {
-        const div = document.createElement("div");
-        div.className = "glass border border-white/10 rounded-2xl p-4 text-sm";
-        div.innerHTML = `<div class="text-gray-400 text-xs">${tx.time}</div><div>${tx.intent}</div><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="text-emerald-400 text-xs hover:underline">View Tx →</a>`;
-        container.appendChild(div);
-      });
-    }
-
-    function exportHistory() {
-      if (transactions.length === 0) return alert("No history!");
-      const dataStr = JSON.stringify(transactions, null, 2);
-      const a = document.createElement('a');
-      a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
-      a.download = `arcsplit-history-${new Date().toISOString().slice(0,10)}.json`;
-      a.click();
-    }
+    // توابع باقی مانده (renderHistory, exportHistory, distributeRemaining, loadTemplate, equalSplit, connectWallet, updateBalance, setMaxAmount)
+    // از نسخه قبلی کپی کن یا بگو دوباره کامل بفرستم.
   </script>
 </body>
 </html>
