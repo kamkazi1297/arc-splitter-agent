@@ -40,16 +40,6 @@
       border: 1px solid #e2e8f0;
     }
 
-    select option {
-      background-color: #1a1a2e;
-      color: white;
-      padding: 12px 16px;
-    }
-    .light select option {
-      background-color: #f8fafc;
-      color: #1f2937;
-    }
-
     .invalid {
       border-color: #ef4444 !important;
       animation: shake 0.3s;
@@ -67,9 +57,6 @@
       color: #9ca3af;
       font-weight: 600;
       pointer-events: none;
-    }
-    .light .percent-container::after {
-      color: #64748b;
     }
 
     @keyframes shake {
@@ -96,12 +83,6 @@
       filter: blur(8px);
       z-index: -1;
       animation: rotateGlow 10s linear infinite;
-      transition: all 0.8s ease;
-    }
-
-    @keyframes rotateGlow {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
     }
 
     #logoContainer.connected #glowRing {
@@ -109,11 +90,6 @@
       opacity: 0.45;
       filter: blur(10px);
       box-shadow: 0 0 25px -2px rgb(16 185 129 / 0.6);
-    }
-
-    @media (max-width: 640px) {
-      .max-w-2xl { max-width: 100% !important; padding-left: 8px; padding-right: 8px; }
-      .recipient-row { grid-template-columns: 1fr 1fr 1fr auto !important; gap: 12px; }
     }
   </style>
 </head>
@@ -141,7 +117,6 @@
             </defs>
           </svg>
         </div>
-
         <div>
           <h1 class="text-4xl font-bold">ArcSplit Pro</h1>
           <p class="text-gray-400">Professional Token Splitter</p>
@@ -237,8 +212,7 @@
   <div id="importModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
     <div class="glass rounded-3xl p-8 max-w-md w-full mx-4">
       <h3 class="text-xl font-bold mb-4">Import Recipients</h3>
-      <textarea id="importText" rows="8" 
-                class="w-full bg-white/5 border border-white/20 rounded-2xl p-5 text-sm font-mono"
+      <textarea id="importText" rows="8" class="w-full bg-white/5 border border-white/20 rounded-2xl p-5 text-sm font-mono"
                 placeholder="0x1234567890abcdef1234567890abcdef12345678,50"></textarea>
       <p class="text-xs text-gray-400 mt-2">Format: address,percent (one per line)</p>
       <div class="flex gap-3 mt-6">
@@ -255,19 +229,15 @@
         <h3 class="text-2xl font-bold">Connect Wallet</h3>
         <button onclick="hideConnectModal()" class="text-gray-400 hover:text-white text-3xl leading-none">×</button>
       </div>
-      
       <div class="space-y-3">
-        <button onclick="connectMetaMask()" 
-                class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group">
+        <button onclick="connectMetaMask()" class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group">
           <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" width="40" height="40" alt="MetaMask">
           <div class="text-left">
             <div class="font-semibold text-lg">MetaMask</div>
             <div class="text-sm text-gray-400">Popular browser wallet</div>
           </div>
         </button>
-
-        <button onclick="connectWalletConnect()" 
-                class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group">
+        <button onclick="connectWalletConnect()" class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group">
           <img src="https://walletconnect.com/_next/static/media/walletconnect.2f8f1b5a.svg" width="40" height="40" alt="WalletConnect">
           <div class="text-left">
             <div class="font-semibold text-lg">WalletConnect</div>
@@ -275,10 +245,6 @@
           </div>
         </button>
       </div>
-
-      <p class="text-center text-xs text-gray-500 mt-8">
-        By connecting, you accept our Terms of Service
-      </p>
     </div>
   </div>
 
@@ -331,31 +297,22 @@
       }
     }
 
-    function showConnectModal() {
-      document.getElementById("connectModal").classList.remove("hidden");
-    }
-
-    function hideConnectModal() {
-      document.getElementById("connectModal").classList.add("hidden");
-    }
+    function showConnectModal() { document.getElementById("connectModal").classList.remove("hidden"); }
+    function hideConnectModal() { document.getElementById("connectModal").classList.add("hidden"); }
 
     async function connectMetaMask() {
       hideConnectModal();
       if (!window.ethereum) return showToast("MetaMask not found!");
-
       try {
         provider = new ethers.BrowserProvider(window.ethereum);
         const network = await provider.getNetwork();
-
         if (network.chainId !== BigInt(ARC_CHAIN_ID)) {
           showToast("Please switch to <b>Arc Testnet</b> (Chain ID: 5042002)", 6000);
           return;
         }
-
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         userAddress = accounts[0];
         signer = await provider.getSigner();
-
         document.getElementById("logoContainer").classList.add("connected");
         updateConnectButton();
         showToast("Wallet connected successfully");
@@ -380,9 +337,7 @@
     }
 
     function disconnectWallet() {
-      signer = null;
-      userAddress = null;
-      provider = null;
+      signer = null; userAddress = null; provider = null;
       document.getElementById("logoContainer").classList.remove("connected");
       const btn = document.getElementById("connectBtn");
       btn.innerHTML = `<i class="fas fa-wallet"></i> <span>Connect Wallet</span>`;
@@ -400,8 +355,8 @@
       try {
         const tokenAddr = document.getElementById("tokenSelect").value;
         if (tokenAddr === "custom") return;
-
         const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
+
         const contract = new ethers.Contract(tokenAddr, [
           "function balanceOf(address) view returns (uint256)",
           "function decimals() view returns (uint8)"
@@ -412,8 +367,11 @@
         statusEl.innerHTML = `Connected • Balance: <span class="text-emerald-400 font-semibold text-lg">${formatted} ${symbol}</span>`;
       } catch (e) {
         console.error(e);
-        if (retry < 2) setTimeout(() => updateBalance(retry + 1), 1000);
-        else statusEl.innerHTML = `Connected • <span class="text-amber-400">Balance unavailable</span>`;
+        if (retry < 2) {
+          setTimeout(() => updateBalance(retry + 1), 1200);
+        } else {
+          statusEl.innerHTML = `Connected • <span class="text-amber-400">Balance unavailable</span>`;
+        }
       }
     }
 
@@ -427,13 +385,11 @@
           option.text = addr.substring(0, 10) + "...";
           select.appendChild(option);
           select.value = addr;
-          await updateBalance();
         } else {
           select.value = "0x3600000000000000000000000000000000000000";
         }
-      } else {
-        await updateBalance();
       }
+      await updateBalance();
     }
 
     async function setMaxAmount() {
@@ -444,7 +400,6 @@
           "function balanceOf(address) view returns (uint256)",
           "function decimals() view returns (uint8)"
         ], signer);
-
         const [balance, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
         document.getElementById("totalAmount").value = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(6);
         updateAllAmounts();
@@ -460,23 +415,30 @@
       row.innerHTML = `
         <input type="text" class="address col-span-5 bg-transparent border border-white/20 rounded-xl px-5 py-4 text-white placeholder-gray-400" 
                placeholder="0x..." value="${address}" oninput="validateAddress(this); updatePreview()">
-
         <div class="percent-container col-span-3 relative">
           <input type="number" class="percent w-full bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" 
-                 value="${percent}" placeholder="0" step="0.01" oninput="handlePercentChange(this)">
+                 value="${percent}" step="0.01" oninput="handlePercentChange(this)">
         </div>
-
         <input type="number" class="amount col-span-3 bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" 
                value="0" step="0.000001" oninput="handleAmountChange(this)">
-
         <button onclick="removeRecipient(this)" class="text-rose-400 text-3xl px-3 col-span-1">×</button>
       `;
       list.appendChild(row);
-      updateAllAmounts();
+      autoDistributePercentages();
     }
 
     function removeRecipient(btn) {
       btn.parentElement.remove();
+      autoDistributePercentages();
+    }
+
+    function autoDistributePercentages() {
+      const rows = document.querySelectorAll('.recipient-row');
+      if (rows.length === 0) return;
+      const equal = (100 / rows.length).toFixed(2);
+      rows.forEach(row => {
+        row.querySelector('.percent').value = equal;
+      });
       updateAllAmounts();
     }
 
@@ -516,7 +478,6 @@
       const el = document.getElementById("percent-total");
       el.textContent = `Total: ${total.toFixed(2)}%`;
       el.style.color = total === 100 ? '#00ffaa' : (total > 100 ? '#ff3366' : 'white');
-      updatePreview();
     }
 
     function updatePreview() {
@@ -528,7 +489,6 @@
         const addr = row.querySelector('.address').value.trim();
         const perc = parseFloat(row.querySelector('.percent').value) || 0;
         const amount = parseFloat(row.querySelector('.amount').value) || 0;
-
         if (addr) {
           const tr = document.createElement("tr");
           tr.className = "border-b border-white/10 last:border-none";
@@ -547,7 +507,7 @@
       let total = percents.reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
       let remaining = 100 - total;
       if (remaining <= 0.01) return showToast("No remaining percentage!");
-      percents[percents.length - 1].value = (parseFloat(percents[percents.length - 1].value || 0) + remaining).toFixed(2);
+      percents[percents.length - 1].value = (parseFloat(percents[percents.length - 1].value) + remaining).toFixed(2);
       updateAllAmounts();
     }
 
@@ -572,13 +532,8 @@
       for (let i = 0; i < count; i++) addRecipient("", "");
     }
 
-    function showImportModal() {
-      document.getElementById("importModal").classList.remove("hidden");
-    }
-
-    function hideImportModal() {
-      document.getElementById("importModal").classList.add("hidden");
-    }
+    function showImportModal() { document.getElementById("importModal").classList.remove("hidden"); }
+    function hideImportModal() { document.getElementById("importModal").classList.add("hidden"); }
 
     function importRecipients() {
       const text = document.getElementById("importText").value.trim();
@@ -588,9 +543,7 @@
       list.innerHTML = "";
       lines.forEach(line => {
         const [addr, perc] = line.split(",").map(s => s.trim());
-        if (addr && ethers.isAddress(addr)) {
-          addRecipient(addr, perc || "");
-        }
+        if (addr && ethers.isAddress(addr)) addRecipient(addr, perc || "");
       });
       hideImportModal();
       showToast("Recipients imported successfully");
@@ -603,8 +556,7 @@
       const rows = document.querySelectorAll('.recipient-row');
       if (rows.length < 2) return showToast("At least 2 recipients are required");
 
-      const addresses = [];
-      const percentages = [];
+      const addresses = [], percentages = [];
       let totalPerc = 0;
 
       rows.forEach(row => {
@@ -619,11 +571,6 @@
 
       if (addresses.length < 2) return showToast("At least 2 valid recipients needed");
       if (Math.abs(totalPerc - 100) > 0.1) return showToast("Percentages must sum exactly to 100%");
-      if (percentages.some(p => p <= 0)) return showToast("Percentage cannot be zero");
-
-      for (let addr of addresses) {
-        if (!ethers.isAddress(addr)) return showToast(`Invalid address: ${addr}`);
-      }
 
       const totalAmountStr = document.getElementById("totalAmount").value;
       const totalAmount = parseFloat(totalAmountStr);
@@ -635,8 +582,6 @@
       const btn = document.getElementById("sendBtn");
       btn.disabled = true;
       btn.textContent = "Processing...";
-
-      const successDiv = document.getElementById("successMessage");
 
       try {
         const tokenAddr = document.getElementById("tokenSelect").value;
@@ -656,11 +601,9 @@
         const tx = await contract.splitPayment(tokenAddr, addresses, percentages, totalWei, { gasLimit: 800000 });
         await tx.wait();
 
-        successDiv.innerHTML = `✅ Transaction Successful!<br>
-          <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline font-medium">
-            View on Explorer: ${tx.hash.substring(0,12)}...
-          </a>`;
-        successDiv.classList.remove('hidden');
+        document.getElementById("successMessage").innerHTML = `✅ Transaction Successful!<br>
+          <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline font-medium">View on Explorer</a>`;
+        document.getElementById("successMessage").classList.remove('hidden');
 
         transactions.unshift({
           hash: tx.hash,
@@ -670,7 +613,6 @@
         localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
         renderHistory();
         await updateBalance();
-
         showToast("Transaction sent successfully!");
 
       } catch (error) {
@@ -678,8 +620,8 @@
         showToast(error.reason || error.message || "Transaction failed");
       } finally {
         isProcessing = false;
-        btn.disabled = false;
-        btn.textContent = "Send Split Transaction";
+        document.getElementById("sendBtn").disabled = false;
+        document.getElementById("sendBtn").textContent = "Send Split Transaction";
       }
     }
 
@@ -699,8 +641,8 @@
     }
 
     window.addEventListener('load', () => {
-      addRecipient("", 50);
-      addRecipient("", 50);
+      addRecipient("", "");
+      addRecipient("", "");
       renderHistory();
     });
   </script>
