@@ -333,16 +333,13 @@
       try {
         provider = new ethers.BrowserProvider(window.ethereum);
         const network = await provider.getNetwork();
-
         if (network.chainId !== BigInt(ARC_CHAIN_ID)) {
           showToast("Please switch to <b>Arc Testnet</b> (Chain ID: 5042002)", 6000);
           return;
         }
-
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         userAddress = accounts[0];
         signer = await provider.getSigner();
-
         document.getElementById("logoContainer").classList.add("connected");
         updateConnectButton();
         showToast("Wallet connected successfully");
@@ -367,9 +364,7 @@
     }
 
     function disconnectWallet() {
-      signer = null;
-      userAddress = null;
-      provider = null;
+      signer = null; userAddress = null; provider = null;
       document.getElementById("logoContainer").classList.remove("connected");
       const btn = document.getElementById("connectBtn");
       btn.innerHTML = `<i class="fas fa-wallet"></i> <span>Connect Wallet</span>`;
@@ -379,11 +374,23 @@
     }
 
     async function updateBalance() {
-      // همان تابع قبلی (کوتاه شده)
       if (!signer || !userAddress) return;
       const statusEl = document.getElementById("status");
       statusEl.innerHTML = `Connected • Loading balance...`;
-      // ... (بقیه کد updateBalance قبلی)
+      try {
+        const tokenAddr = document.getElementById("tokenSelect").value;
+        if (tokenAddr === "custom") return;
+        const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
+        const contract = new ethers.Contract(tokenAddr, [
+          "function balanceOf(address) view returns (uint256)",
+          "function decimals() view returns (uint8)"
+        ], signer);
+        const [balance, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
+        const formatted = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4);
+        statusEl.innerHTML = `Connected • Balance: <span class="text-emerald-400 font-semibold">${formatted} ${symbol}</span>`;
+      } catch (e) {
+        statusEl.innerHTML = `Connected • <span class="text-amber-400">Balance unavailable</span>`;
+      }
     }
 
     async function handleTokenChange() {
@@ -405,25 +412,33 @@
 
     async function setMaxAmount() {
       if (!signer) return showToast("Connect wallet first!");
-      // همان کد قبلی
+      try {
+        const tokenAddr = document.getElementById("tokenSelect").value;
+        const contract = new ethers.Contract(tokenAddr, [
+          "function balanceOf(address) view returns (uint256)",
+          "function decimals() view returns (uint8)"
+        ], signer);
+        const [balance, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
+        document.getElementById("totalAmount").value = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(6);
+        updateAllAmounts();
+      } catch (e) {
+        showToast("Could not fetch balance");
+      }
     }
 
-    function addRecipient(address = "", percent = 0) {
+    function addRecipient(address = "", percent = 50) {
       const list = document.getElementById("recipients-list");
       const row = document.createElement("div");
       row.className = "recipient-row glass border border-white/10 rounded-2xl p-5 grid grid-cols-12 gap-4 items-center";
       row.innerHTML = `
         <input type="text" class="address col-span-5 bg-transparent border border-white/20 rounded-xl px-5 py-4 text-white placeholder-gray-400" 
                placeholder="0x..." value="${address}" oninput="validateAddress(this); updatePreview()">
-
         <div class="percent-container col-span-3 relative">
           <input type="number" class="percent w-full bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center" 
                  value="${percent}" step="0.01" oninput="handlePercentChange(this)">
         </div>
-
         <input type="number" class="amount col-span-3 bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center" 
                step="0.000001" oninput="handleAmountChange(this)">
-
         <button onclick="removeRecipient(this)" class="text-rose-400 text-3xl px-3 col-span-1">×</button>
       `;
       list.appendChild(row);
@@ -490,8 +505,13 @@
       });
     }
 
-    function showImportModal() { document.getElementById("importModal").classList.remove("hidden"); }
-    function hideImportModal() { document.getElementById("importModal").classList.add("hidden"); }
+    function showImportModal() {
+      document.getElementById("importModal").classList.remove("hidden");
+    }
+
+    function hideImportModal() {
+      document.getElementById("importModal").classList.add("hidden");
+    }
 
     function importRecipients() {
       const text = document.getElementById("importText").value.trim();
@@ -533,24 +553,57 @@
       if (addresses.length < 2) return showToast("At least 2 valid recipients needed");
       if (Math.abs(totalPerc - 100) > 0.1) return showToast("Percentages must sum exactly to 100%");
 
-      // بقیه کد sendSplit همان قبلی است
       const totalAmountStr = document.getElementById("totalAmount").value;
       const totalAmount = parseFloat(totalAmountStr);
       if (!totalAmount || totalAmount <= 0) return showToast("Enter a valid amount!");
 
       if (!confirm(`Send ${totalAmount} tokens to ${addresses.length} recipients?`)) return;
 
-      // ... (بقیه کد تراکنش همان قبلی)
       isProcessing = true;
       const btn = document.getElementById("sendBtn");
       btn.disabled = true;
       btn.textContent = "Processing...";
 
+      const successDiv = document.getElementById("successMessage");
+
       try {
-        // approve + splitPayment (همان کد قبلی)
+        const tokenAddr = document.getElementById("tokenSelect").value;
+        const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
+
+        const tokenContract = new ethers.Contract(tokenAddr, [
+          "function approve(address,uint256) returns (bool)",
+          "function decimals() view returns (uint8)"
+        ], signer);
+
+        const decimals = await tokenContract.decimals();
+        const totalWei = ethers.parseUnits(totalAmountStr, decimals);
+
+        await (await tokenContract.approve(CONTRACT_ADDRESS, totalWei)).wait();
+
+        const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
+        const tx = await contract.splitPayment(tokenAddr, addresses, percentages, totalWei, { gasLimit: 800000 });
+        await tx.wait();
+
+        successDiv.innerHTML = `✅ Transaction Successful!<br>
+          <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline font-medium">
+            View on Explorer: ${tx.hash.substring(0,12)}...
+          </a>`;
+        successDiv.classList.remove('hidden');
+
+        transactions.unshift({
+          hash: tx.hash,
+          intent: `${totalAmount} ${symbol} → ${addresses.length} recipients`,
+          time: new Date().toLocaleString()
+        });
+        localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
+        renderHistory();
+        await updateBalance();
+
         showToast("Transaction sent successfully!");
+
       } catch (error) {
-        showToast(error.message || "Transaction failed");
+        console.error(error);
+        showToast(error.reason || error.message || "Transaction failed");
       } finally {
         isProcessing = false;
         btn.disabled = false;
@@ -561,7 +614,16 @@
     function renderHistory() {
       const container = document.getElementById("history");
       container.innerHTML = transactions.length ? "" : "<p class='text-gray-400 text-center py-8'>No transactions yet.</p>";
-      // ... (بقیه همان قبلی)
+      transactions.slice(0, 5).forEach(tx => {
+        const div = document.createElement("div");
+        div.className = "glass border border-white/10 rounded-2xl p-4 text-sm";
+        div.innerHTML = `
+          <div class="text-gray-400 text-xs">${tx.time}</div>
+          <div>${tx.intent}</div>
+          <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="text-emerald-400 text-xs hover:underline">View Tx →</a>
+        `;
+        container.appendChild(div);
+      });
     }
 
     window.addEventListener('load', () => {
