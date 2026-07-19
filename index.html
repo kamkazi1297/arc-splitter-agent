@@ -40,12 +40,22 @@
       border: 1px solid #e2e8f0;
     }
 
+    select option {
+      background-color: #1a1a2e;
+      color: white;
+      padding: 12px 16px;
+    }
+    .light select option {
+      background-color: #f8fafc;
+      color: #1f2937;
+    }
+
     .invalid {
       border-color: #ef4444 !important;
       animation: shake 0.3s;
     }
 
-    .percent-container {
+    .percent-container, .amount-container {
       position: relative;
     }
     .percent-container::after {
@@ -57,6 +67,9 @@
       color: #9ca3af;
       font-weight: 600;
       pointer-events: none;
+    }
+    .light .percent-container::after {
+      color: #64748b;
     }
 
     @keyframes shake {
@@ -83,6 +96,12 @@
       filter: blur(8px);
       z-index: -1;
       animation: rotateGlow 10s linear infinite;
+      transition: all 0.8s ease;
+    }
+
+    @keyframes rotateGlow {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
     }
 
     #logoContainer.connected #glowRing {
@@ -90,6 +109,15 @@
       opacity: 0.45;
       filter: blur(10px);
       box-shadow: 0 0 25px -2px rgb(16 185 129 / 0.6);
+    }
+
+    @media (max-width: 640px) {
+      .max-w-2xl { max-width: 100% !important; padding-left: 8px; padding-right: 8px; }
+      .recipient-row { flex-direction: column; gap: 14px; padding: 18px !important; }
+      input[type="text"], input[type="number"] {
+        font-size: 1.05rem !important;
+        padding: 16px 14px !important;
+      }
     }
   </style>
 </head>
@@ -117,6 +145,7 @@
             </defs>
           </svg>
         </div>
+
         <div>
           <h1 class="text-4xl font-bold">ArcSplit Pro</h1>
           <p class="text-gray-400">Professional Token Splitter</p>
@@ -153,8 +182,18 @@
         <label class="block text-gray-400 text-sm mb-2">Total Amount</label>
         <div class="flex gap-3">
           <input type="number" id="totalAmount" value="100" step="0.000001" 
-                 class="flex-1 bg-white/5 border border-white/20 rounded-2xl px-6 py-5 text-3xl outline-none" oninput="updateAllAmounts()">
+                 class="flex-1 bg-white/5 border border-white/20 rounded-2xl px-6 py-5 text-3xl outline-none" oninput="updatePreview()">
           <button onclick="setMaxAmount()" class="px-10 bg-white/10 hover:bg-white/20 rounded-2xl font-medium">MAX</button>
+        </div>
+      </div>
+
+      <div class="mb-8">
+        <label class="block text-gray-400 text-sm mb-3">Quick Templates</label>
+        <div class="grid grid-cols-4 gap-3">
+          <button onclick="loadTemplate(1)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">50-50</button>
+          <button onclick="loadTemplate(2)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">33-33-34</button>
+          <button onclick="loadTemplate(3)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">40-60</button>
+          <button onclick="equalSplit()" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">Equal Split</button>
         </div>
       </div>
 
@@ -212,7 +251,8 @@
   <div id="importModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
     <div class="glass rounded-3xl p-8 max-w-md w-full mx-4">
       <h3 class="text-xl font-bold mb-4">Import Recipients</h3>
-      <textarea id="importText" rows="8" class="w-full bg-white/5 border border-white/20 rounded-2xl p-5 text-sm font-mono"
+      <textarea id="importText" rows="8" 
+                class="w-full bg-white/5 border border-white/20 rounded-2xl p-5 text-sm font-mono"
                 placeholder="0x1234567890abcdef1234567890abcdef12345678,50"></textarea>
       <p class="text-xs text-gray-400 mt-2">Format: address,percent (one per line)</p>
       <div class="flex gap-3 mt-6">
@@ -229,15 +269,19 @@
         <h3 class="text-2xl font-bold">Connect Wallet</h3>
         <button onclick="hideConnectModal()" class="text-gray-400 hover:text-white text-3xl leading-none">×</button>
       </div>
+      
       <div class="space-y-3">
-        <button onclick="connectMetaMask()" class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group">
+        <button onclick="connectMetaMask()" 
+                class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group">
           <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" width="40" height="40" alt="MetaMask">
           <div class="text-left">
             <div class="font-semibold text-lg">MetaMask</div>
             <div class="text-sm text-gray-400">Popular browser wallet</div>
           </div>
         </button>
-        <button onclick="connectWalletConnect()" class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group">
+
+        <button onclick="connectWalletConnect()" 
+                class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group">
           <img src="https://walletconnect.com/_next/static/media/walletconnect.2f8f1b5a.svg" width="40" height="40" alt="WalletConnect">
           <div class="text-left">
             <div class="font-semibold text-lg">WalletConnect</div>
@@ -245,6 +289,10 @@
           </div>
         </button>
       </div>
+
+      <p class="text-center text-xs text-gray-500 mt-8">
+        By connecting, you accept our Terms of Service
+      </p>
     </div>
   </div>
 
@@ -297,22 +345,31 @@
       }
     }
 
-    function showConnectModal() { document.getElementById("connectModal").classList.remove("hidden"); }
-    function hideConnectModal() { document.getElementById("connectModal").classList.add("hidden"); }
+    function showConnectModal() {
+      document.getElementById("connectModal").classList.remove("hidden");
+    }
+
+    function hideConnectModal() {
+      document.getElementById("connectModal").classList.add("hidden");
+    }
 
     async function connectMetaMask() {
       hideConnectModal();
       if (!window.ethereum) return showToast("MetaMask not found!");
+
       try {
         provider = new ethers.BrowserProvider(window.ethereum);
         const network = await provider.getNetwork();
+
         if (network.chainId !== BigInt(ARC_CHAIN_ID)) {
           showToast("Please switch to <b>Arc Testnet</b> (Chain ID: 5042002)", 6000);
           return;
         }
+
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         userAddress = accounts[0];
         signer = await provider.getSigner();
+
         document.getElementById("logoContainer").classList.add("connected");
         updateConnectButton();
         showToast("Wallet connected successfully");
@@ -331,21 +388,45 @@
     function updateConnectButton() {
       const btn = document.getElementById("connectBtn");
       const short = userAddress ? `${userAddress.slice(0,6)}...${userAddress.slice(-4)}` : "";
-      btn.innerHTML = `<i class="fas fa-wallet"></i> <span>${short}</span>`;
+      
+      btn.innerHTML = `
+        <i class="fas fa-wallet"></i> 
+        <span>${short}</span>
+      `;
       btn.onclick = disconnectWallet;
       btn.classList.add("!bg-emerald-500", "!text-white");
     }
 
     function disconnectWallet() {
-      signer = null; userAddress = null; provider = null;
+      signer = null;
+      userAddress = null;
+      provider = null;
+
       document.getElementById("logoContainer").classList.remove("connected");
+      
       const btn = document.getElementById("connectBtn");
       btn.innerHTML = `<i class="fas fa-wallet"></i> <span>Connect Wallet</span>`;
       btn.onclick = showConnectModal;
       btn.classList.remove("!bg-emerald-500", "!text-white");
+
       document.getElementById("status").innerHTML = "Ready to split tokens on Arc Testnet.";
       showToast("Wallet disconnected");
     }
+
+    function getTotalAmount() {
+      return parseFloat(document.getElementById("totalAmount").value) || 0;
+    }
+
+    function updateAll() {
+      updatePercentTotal();
+      updatePreview();
+    }
+
+    window.addEventListener('load', () => {
+      addRecipient();
+      addRecipient();
+      renderHistory();
+    });
 
     async function updateBalance(retry = 0) {
       if (!signer || !userAddress) return;
@@ -355,6 +436,7 @@
       try {
         const tokenAddr = document.getElementById("tokenSelect").value;
         if (tokenAddr === "custom") return;
+
         const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
 
         const contract = new ethers.Contract(tokenAddr, [
@@ -364,11 +446,12 @@
 
         const [balance, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
         const formatted = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4);
+        
         statusEl.innerHTML = `Connected • Balance: <span class="text-emerald-400 font-semibold text-lg">${formatted} ${symbol}</span>`;
       } catch (e) {
         console.error(e);
         if (retry < 2) {
-          setTimeout(() => updateBalance(retry + 1), 1200);
+          setTimeout(() => updateBalance(retry + 1), 1000);
         } else {
           statusEl.innerHTML = `Connected • <span class="text-amber-400">Balance unavailable</span>`;
         }
@@ -385,11 +468,13 @@
           option.text = addr.substring(0, 10) + "...";
           select.appendChild(option);
           select.value = addr;
+          await updateBalance();
         } else {
           select.value = "0x3600000000000000000000000000000000000000";
         }
+      } else {
+        await updateBalance();
       }
-      await updateBalance();
     }
 
     async function setMaxAmount() {
@@ -400,9 +485,10 @@
           "function balanceOf(address) view returns (uint256)",
           "function decimals() view returns (uint8)"
         ], signer);
+
         const [balance, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
         document.getElementById("totalAmount").value = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(6);
-        updateAllAmounts();
+        updateAll();
       } catch (e) {
         showToast("Could not fetch balance");
       }
@@ -411,17 +497,24 @@
     function addRecipient(address = "", percent = "") {
       const list = document.getElementById("recipients-list");
       const row = document.createElement("div");
-      row.className = "recipient-row glass border border-white/10 rounded-2xl p-5 grid grid-cols-12 gap-4 items-center";
+      row.className = "recipient-row glass border border-white/10 rounded-2xl p-5 flex items-center gap-4";
       row.innerHTML = `
-        <input type="text" class="address col-span-5 bg-transparent border border-white/20 rounded-xl px-5 py-4 text-white placeholder-gray-400" 
-               placeholder="0x..." value="${address}" oninput="validateAddress(this); updatePreview()">
-        <div class="percent-container col-span-3 relative">
+        <input type="text" class="address flex-1 bg-transparent border border-white/20 rounded-xl px-5 py-4 text-white placeholder-gray-400" 
+               placeholder="0x..." value="${address}" oninput="validateAddress(this); updateAll()">
+        
+        <div class="percent-container w-28">
           <input type="number" class="percent w-full bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" 
-                 value="${percent}" step="0.01" oninput="handlePercentChange(this)">
+                 value="${percent}" placeholder="0" step="0.01" 
+                 oninput="syncAmountFromPercent(this); updateAll()">
         </div>
-        <input type="number" class="amount col-span-3 bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" 
-               value="0" step="0.000001" oninput="handleAmountChange(this)">
-        <button onclick="removeRecipient(this)" class="text-rose-400 text-3xl px-3 col-span-1">×</button>
+
+        <div class="amount-container w-36">
+          <input type="number" class="amount w-full bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" 
+                 placeholder="0" step="0.000001" 
+                 oninput="syncPercentFromAmount(this); updateAll()">
+        </div>
+
+        <button onclick="this.parentElement.remove(); updateAll()" class="text-rose-400 text-3xl px-3">×</button>
       `;
       list.appendChild(row);
       autoDistributePercentages();
@@ -429,47 +522,49 @@
 
     function removeRecipient(btn) {
       btn.parentElement.remove();
-      autoDistributePercentages();
+      updateAll();
+    }
+
+    function validateAddress(input) {
+      const isValid = !input.value || ethers.isAddress(input.value.trim());
+      input.classList.toggle("invalid", !isValid);
+    }
+
+    function syncAmountFromPercent(percentInput) {
+      const row = percentInput.closest('.recipient-row');
+      const amountInput = row.querySelector('.amount');
+      const total = getTotalAmount();
+      const perc = parseFloat(percentInput.value) || 0;
+      amountInput.value = (total * perc / 100).toFixed(6);
+    }
+
+    function syncPercentFromAmount(amountInput) {
+      const row = amountInput.closest('.recipient-row');
+      const percentInput = row.querySelector('.percent');
+      const total = getTotalAmount();
+      const amt = parseFloat(amountInput.value) || 0;
+      if (total > 0) {
+        percentInput.value = ((amt / total) * 100).toFixed(2);
+      }
     }
 
     function autoDistributePercentages() {
       const rows = document.querySelectorAll('.recipient-row');
       if (rows.length === 0) return;
-      const equal = (100 / rows.length).toFixed(2);
+      const base = Math.floor(100 / rows.length);
+      let remainder = 100 % rows.length;
+
       rows.forEach(row => {
-        row.querySelector('.percent').value = equal;
+        const percInput = row.querySelector('.percent');
+        let val = base;
+        if (remainder > 0) {
+          val += 1;
+          remainder--;
+        }
+        percInput.value = val;
+        syncAmountFromPercent(percInput);
       });
-      updateAllAmounts();
-    }
-
-    function handlePercentChange(input) {
-      const row = input.closest('.recipient-row');
-      const total = parseFloat(document.getElementById("totalAmount").value) || 0;
-      const perc = parseFloat(input.value) || 0;
-      row.querySelector('.amount').value = (total * perc / 100).toFixed(6);
-      updatePercentTotal();
-      updatePreview();
-    }
-
-    function handleAmountChange(input) {
-      const row = input.closest('.recipient-row');
-      const total = parseFloat(document.getElementById("totalAmount").value) || 0;
-      const amt = parseFloat(input.value) || 0;
-      if (total > 0) {
-        row.querySelector('.percent').value = (amt / total * 100).toFixed(2);
-      }
-      updatePercentTotal();
-      updatePreview();
-    }
-
-    function updateAllAmounts() {
-      const total = parseFloat(document.getElementById("totalAmount").value) || 0;
-      document.querySelectorAll('.recipient-row').forEach(row => {
-        const perc = parseFloat(row.querySelector('.percent').value) || 0;
-        row.querySelector('.amount').value = (total * perc / 100).toFixed(6);
-      });
-      updatePercentTotal();
-      updatePreview();
+      updateAll();
     }
 
     function updatePercentTotal() {
@@ -483,12 +578,14 @@
     function updatePreview() {
       const tbody = document.getElementById("preview-body");
       tbody.innerHTML = "";
-      const totalAmount = parseFloat(document.getElementById("totalAmount").value) || 0;
+      const totalAmount = getTotalAmount();
 
       document.querySelectorAll('.recipient-row').forEach(row => {
-        const addr = row.querySelector('.address').value.trim();
+        const addrInput = row.querySelector('.address');
         const perc = parseFloat(row.querySelector('.percent').value) || 0;
         const amount = parseFloat(row.querySelector('.amount').value) || 0;
+        const addr = addrInput.value.trim();
+
         if (addr) {
           const tr = document.createElement("tr");
           tr.className = "border-b border-white/10 last:border-none";
@@ -507,13 +604,9 @@
       let total = percents.reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
       let remaining = 100 - total;
       if (remaining <= 0.01) return showToast("No remaining percentage!");
-      percents[percents.length - 1].value = (parseFloat(percents[percents.length - 1].value) + remaining).toFixed(2);
-      updateAllAmounts();
-    }
-
-    function validateAddress(input) {
-      const isValid = !input.value || ethers.isAddress(input.value.trim());
-      input.classList.toggle("invalid", !isValid);
+      percents[percents.length - 1].value = remaining.toFixed(2);
+      syncAmountFromPercent(percents[percents.length - 1]);
+      updateAll();
     }
 
     function loadTemplate(type) {
@@ -527,24 +620,37 @@
     function equalSplit() {
       const count = parseInt(prompt("Number of recipients (2-10):", "4")) || 4;
       if (count < 2 || count > 10) return showToast("Number must be between 2 and 10");
+
       const list = document.getElementById("recipients-list");
       list.innerHTML = "";
-      for (let i = 0; i < count; i++) addRecipient("", "");
+      for (let i = 0; i < count; i++) {
+        addRecipient("", "");
+      }
     }
 
-    function showImportModal() { document.getElementById("importModal").classList.remove("hidden"); }
-    function hideImportModal() { document.getElementById("importModal").classList.add("hidden"); }
+    function showImportModal() {
+      document.getElementById("importModal").classList.remove("hidden");
+    }
+
+    function hideImportModal() {
+      document.getElementById("importModal").classList.add("hidden");
+    }
 
     function importRecipients() {
       const text = document.getElementById("importText").value.trim();
       if (!text) return hideImportModal();
+
       const lines = text.split("\n");
       const list = document.getElementById("recipients-list");
       list.innerHTML = "";
+
       lines.forEach(line => {
         const [addr, perc] = line.split(",").map(s => s.trim());
-        if (addr && ethers.isAddress(addr)) addRecipient(addr, perc || "");
+        if (addr && ethers.isAddress(addr)) {
+          addRecipient(addr, perc || "");
+        }
       });
+
       hideImportModal();
       showToast("Recipients imported successfully");
     }
@@ -556,7 +662,8 @@
       const rows = document.querySelectorAll('.recipient-row');
       if (rows.length < 2) return showToast("At least 2 recipients are required");
 
-      const addresses = [], percentages = [];
+      const addresses = [];
+      const percentages = [];
       let totalPerc = 0;
 
       rows.forEach(row => {
@@ -571,6 +678,11 @@
 
       if (addresses.length < 2) return showToast("At least 2 valid recipients needed");
       if (Math.abs(totalPerc - 100) > 0.1) return showToast("Percentages must sum exactly to 100%");
+      if (percentages.some(p => p <= 0)) return showToast("Percentage cannot be zero");
+
+      for (let addr of addresses) {
+        if (!ethers.isAddress(addr)) return showToast(`Invalid address: ${addr}`);
+      }
 
       const totalAmountStr = document.getElementById("totalAmount").value;
       const totalAmount = parseFloat(totalAmountStr);
@@ -582,6 +694,8 @@
       const btn = document.getElementById("sendBtn");
       btn.disabled = true;
       btn.textContent = "Processing...";
+
+      const successDiv = document.getElementById("successMessage");
 
       try {
         const tokenAddr = document.getElementById("tokenSelect").value;
@@ -601,9 +715,11 @@
         const tx = await contract.splitPayment(tokenAddr, addresses, percentages, totalWei, { gasLimit: 800000 });
         await tx.wait();
 
-        document.getElementById("successMessage").innerHTML = `✅ Transaction Successful!<br>
-          <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline font-medium">View on Explorer</a>`;
-        document.getElementById("successMessage").classList.remove('hidden');
+        successDiv.innerHTML = ` Transaction Successful!<br>
+          <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline font-medium">
+            View on Explorer: ${tx.hash.substring(0,12)}...
+          </a>`;
+        successDiv.classList.remove('hidden');
 
         transactions.unshift({
           hash: tx.hash,
@@ -613,6 +729,7 @@
         localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
         renderHistory();
         await updateBalance();
+
         showToast("Transaction sent successfully!");
 
       } catch (error) {
@@ -620,8 +737,8 @@
         showToast(error.reason || error.message || "Transaction failed");
       } finally {
         isProcessing = false;
-        document.getElementById("sendBtn").disabled = false;
-        document.getElementById("sendBtn").textContent = "Send Split Transaction";
+        btn.disabled = false;
+        btn.textContent = "Send Split Transaction";
       }
     }
 
@@ -639,12 +756,6 @@
         container.appendChild(div);
       });
     }
-
-    window.addEventListener('load', () => {
-      addRecipient("", "");
-      addRecipient("", "");
-      renderHistory();
-    });
   </script>
 </body>
 </html>
