@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="fa" dir="ltr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -24,77 +24,16 @@
       border-color: rgba(0,0,0,0.12);
     }
 
-    .light body, .light h1, .light h3, .light label, .light .text-white {
-      color: #1f2937;
+    .toast {
+      animation: slideIn 0.3s ease;
     }
-    .light .text-gray-400 { color: #64748b; }
-
-    select {
-      background-color: rgba(255,255,255,0.05);
-      color: white;
-      border: 1px solid rgba(255,255,255,0.25);
-    }
-    .light select {
-      background-color: #f8fafc;
-      color: #1f2937;
-      border: 1px solid #e2e8f0;
-    }
-
-    select option {
-      background-color: #1f2937;
-      color: white;
-    }
-    .light select option {
-      background-color: #f8fafc;
-      color: #1f2937;
-    }
-
-    .percent-container {
-      position: relative;
-    }
-    .percent-container::after {
-      content: "%";
-      position: absolute;
-      right: 16px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: #9ca3af;
-      font-weight: 600;
-      pointer-events: none;
-    }
-    .light .percent-container::after {
-      color: #64748b;
-    }
-
-    /* Enhanced Mobile Responsive */
-    @media (max-width: 640px) {
-      .max-w-2xl { 
-        max-width: 100% !important; 
-        padding-left: 8px; 
-        padding-right: 8px; 
-      }
-      .glass { 
-        margin-left: 6px; 
-        margin-right: 6px; 
-      }
-      .recipient-row { 
-        flex-direction: column; 
-        gap: 14px; 
-        padding: 18px !important;
-      }
-      input[type="text"], input[type="number"] {
-        font-size: 1.05rem !important;
-        padding: 16px 14px !important;
-      }
-      button {
-        padding: 16px 24px !important;
-      }
-      .text-4xl { font-size: 2.1rem; }
-      .text-3xl { font-size: 1.8rem; }
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
     }
   </style>
 </head>
-<body class="bg-gradient-to-br from-[#0b0b1f] to-[#1a1a2e] text-white min-h-screen">
+<body class="bg-gradient-to-br from-[#0b0b1f] to-[#1a1a2e] text-white min-h-screen dark">
 
   <div class="max-w-2xl mx-auto px-4 py-10">
     <div class="flex justify-between items-center mb-10">
@@ -157,9 +96,14 @@
       <div class="mb-8">
         <div class="flex justify-between mb-4">
           <h3 class="font-semibold">Recipients</h3>
-          <button onclick="addRecipient()" class="text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
-            <i class="fas fa-plus"></i> Add
-          </button>
+          <div class="flex gap-2">
+            <button onclick="importRecipients()" class="text-emerald-400 hover:text-emerald-300 flex items-center gap-1 text-sm">
+              <i class="fas fa-upload"></i> Import
+            </button>
+            <button onclick="addRecipient()" class="text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
+              <i class="fas fa-plus"></i> Add
+            </button>
+          </div>
         </div>
         <div id="recipients-list" class="space-y-4"></div>
       </div>
@@ -170,8 +114,8 @@
       </div>
 
       <button id="sendBtn" onclick="sendSplit()" 
-              class="w-full bg-gradient-to-r from-pink-500 to-rose-500 py-7 rounded-3xl text-xl font-bold">
-        Send Split Transaction
+              class="w-full bg-gradient-to-r from-pink-500 to-rose-500 py-7 rounded-3xl text-xl font-bold flex items-center justify-center gap-2">
+        <span>Send Split Transaction</span>
       </button>
     </div>
 
@@ -183,6 +127,9 @@
     </div>
   </div>
 
+  <!-- Toast Container -->
+  <div id="toastContainer" class="fixed bottom-6 right-6 space-y-3 z-50"></div>
+
   <script>
     let signer = null;
     let userAddress = null;
@@ -190,6 +137,8 @@
     let isProcessing = false;
 
     const CONTRACT_ADDRESS = "0x12ABfB0866a72E90963E59F83AA53B95D6E173AE";
+    const ARC_TESTNET_CHAIN_ID = 5042002n;   // Testnet
+    // const ARC_MAINNET_CHAIN_ID = ???n;    // بعداً عوض کن
 
     const splitterAbi = [
       {
@@ -206,29 +155,74 @@
       }
     ];
 
+    function showToast(message, type = "info") {
+      const container = document.getElementById("toastContainer");
+      const toast = document.createElement("div");
+      toast.className = `toast glass border ${type === "success" ? "border-emerald-500 text-emerald-400" : type === "error" ? "border-rose-500 text-rose-400" : "border-white/20"} rounded-2xl p-4 max-w-xs`;
+      toast.innerHTML = message;
+      container.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.transition = "all 0.3s";
+        toast.style.opacity = "0";
+        toast.style.transform = "translateY(20px)";
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
     function toggleTheme() {
       document.documentElement.classList.toggle('light');
     }
 
     window.addEventListener('load', () => {
+      // Dark mode default
+      if (!document.documentElement.classList.contains('light')) {
+        document.documentElement.classList.add('dark');
+      }
       addRecipient();
       addRecipient();
       renderHistory();
     });
 
+    async function checkNetwork() {
+      if (!window.ethereum) return false;
+      try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const network = await provider.getNetwork();
+        if (network.chainId !== ARC_TESTNET_CHAIN_ID) {
+          showToast("لطفاً به Arc Testnet وصل شوید (Chain ID: 5042002)", "error");
+          return false;
+        }
+        return true;
+      } catch (e) {
+        console.error(e);
+        return false;
+      }
+    }
+
     async function connectWallet() {
-      if (!window.ethereum) return alert("MetaMask not found!");
+      if (!window.ethereum) return showToast("MetaMask not found!", "error");
+      
       try {
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         userAddress = accounts[0];
+        
+        const isCorrectNetwork = await checkNetwork();
+        if (!isCorrectNetwork) return;
+
         const provider = new ethers.BrowserProvider(window.ethereum);
         signer = await provider.getSigner();
+        
         document.getElementById("connectBtn").innerHTML = `<i class="fas fa-wallet"></i> Connected`;
+        showToast("Wallet connected successfully", "success");
         await updateBalance();
-      } catch (e) { console.error(e); }
+      } catch (e) {
+        console.error(e);
+        showToast("Connection failed", "error");
+      }
     }
 
-    async function updateBalance(retry = 0) {
+    async function updateBalance() {
       if (!signer || !userAddress) return;
       const statusEl = document.getElementById("status");
       statusEl.innerHTML = `Connected • Loading balance...`;
@@ -242,22 +236,20 @@
           "function decimals() view returns (uint8)"
         ], signer);
 
-        const balance = await contract.balanceOf(userAddress);
-        const decimals = await contract.decimals();
+        const [balance, decimals] = await Promise.all([
+          contract.balanceOf(userAddress),
+          contract.decimals()
+        ]);
 
         const formatted = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4);
         statusEl.innerHTML = `Connected • Balance: <span class="text-emerald-400 font-semibold">${formatted} ${symbol}</span>`;
       } catch (e) {
-        if (retry < 2) {
-          setTimeout(() => updateBalance(retry + 1), 1000);
-        } else {
-          statusEl.innerHTML = `Connected • <span class="text-amber-400">Balance unavailable • Try again</span>`;
-        }
+        statusEl.innerHTML = `Connected • <span class="text-amber-400">Balance unavailable</span>`;
       }
     }
 
     async function setMaxAmount() {
-      if (!signer) return alert("Connect wallet first!");
+      if (!signer) return showToast("Connect wallet first!", "error");
       try {
         const tokenAddr = document.getElementById("tokenSelect").value;
         const contract = new ethers.Contract(tokenAddr, [
@@ -268,7 +260,7 @@
         const [balance, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
         document.getElementById("totalAmount").value = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(6);
       } catch (e) {
-        alert("Could not fetch balance");
+        showToast("Could not fetch balance", "error");
       }
     }
 
@@ -292,19 +284,14 @@
     function autoDistributePercentages() {
       const count = document.querySelectorAll('.recipient-row').length;
       if (count === 0) return;
-
       const base = Math.floor(100 / count);
       let remainder = 100 % count;
 
       document.querySelectorAll('.percent').forEach((input, index) => {
         let val = base;
-        if (remainder > 0) {
-          val += 1;
-          remainder--;
-        }
+        if (remainder > 0) { val += 1; remainder--; }
         input.value = val;
       });
-
       updatePercentTotal();
     }
 
@@ -320,7 +307,7 @@
       const percents = Array.from(document.querySelectorAll('.percent'));
       let total = percents.reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
       let remaining = 100 - total;
-      if (remaining <= 0.01) return alert("No remaining percentage!");
+      if (remaining <= 0.01) return showToast("No remaining percentage!", "error");
       percents[percents.length - 1].value = remaining.toFixed(2);
       updatePercentTotal();
     }
@@ -335,22 +322,34 @@
 
     function equalSplit() {
       const count = parseInt(prompt("Number of recipients (2-10):", "4")) || 4;
-      if (count < 2 || count > 10) return alert("Number must be between 2 and 10");
+      if (count < 2 || count > 10) return showToast("Number must be between 2 and 10", "error");
 
       const list = document.getElementById("recipients-list");
       list.innerHTML = "";
-      for (let i = 1; i <= count; i++) {
-        addRecipient("", "");
-      }
+      for (let i = 1; i <= count; i++) addRecipient("", "");
+    }
+
+    // Smart Approve
+    async function ensureAllowance(tokenContract, spender, amount) {
+      const allowance = await tokenContract.allowance(userAddress, spender);
+      if (allowance >= amount) return true;
+
+      showToast("Approving tokens...", "info");
+      const tx = await tokenContract.approve(spender, amount);
+      await tx.wait();
+      showToast("Approval successful", "success");
+      return true;
     }
 
     async function sendSplit() {
-      if (!signer) return alert("Please connect your wallet first!");
+      if (!signer) return showToast("Please connect your wallet first!", "error");
       if (isProcessing) return;
+
+      if (!(await checkNetwork())) return;
 
       const totalAmountStr = document.getElementById("totalAmount").value;
       const totalAmount = parseFloat(totalAmountStr);
-      if (!totalAmount || totalAmount <= 0) return alert("Enter a valid amount!");
+      if (!totalAmount || totalAmount <= 0) return showToast("Enter a valid amount!", "error");
 
       const tokenAddr = document.getElementById("tokenSelect").value;
       const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
@@ -363,15 +362,15 @@
         const perc = parseFloat(row.querySelector('.percent').value) || 0;
         if (addr && perc > 0) {
           addresses.push(addr);
-          percentages.push(Math.round(perc));
+          percentages.push(Math.round(perc)); // فعلاً نگه داشتم - تست کن
         }
       });
 
-      if (addresses.length < 2) return alert("At least 2 recipients needed!");
-      if (percentages.reduce((a,b)=>a+b,0) !== 100) return alert("Percentages must sum exactly to 100%!");
+      if (addresses.length < 2) return showToast("At least 2 recipients needed!", "error");
+      if (percentages.reduce((a,b)=>a+b,0) !== 100) return showToast("Percentages must sum exactly to 100%!", "error");
 
       for (let addr of addresses) {
-        if (!ethers.isAddress(addr)) return alert(`Invalid address: ${addr}`);
+        if (!ethers.isAddress(addr)) return showToast(`Invalid address: ${addr}`, "error");
       }
 
       if (!confirm(`Send ${totalAmount} ${symbol} to ${addresses.length} recipients?`)) return;
@@ -379,20 +378,21 @@
       isProcessing = true;
       const btn = document.getElementById("sendBtn");
       btn.disabled = true;
-      btn.textContent = "Processing...";
+      btn.innerHTML = `<span class="animate-pulse">Processing...</span>`;
 
       const successDiv = document.getElementById("successMessage");
 
       try {
         const tokenContract = new ethers.Contract(tokenAddr, [
           "function approve(address,uint256) returns (bool)",
+          "function allowance(address,address) view returns (uint256)",
           "function decimals() view returns (uint8)"
         ], signer);
 
         const decimals = await tokenContract.decimals();
         const totalWei = ethers.parseUnits(totalAmountStr, decimals);
 
-        await (await tokenContract.approve(CONTRACT_ADDRESS, totalWei)).wait();
+        await ensureAllowance(tokenContract, CONTRACT_ADDRESS, totalWei);
 
         const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
         const tx = await contract.splitPayment(tokenAddr, addresses, percentages, totalWei, { gasLimit: 800000 });
@@ -411,16 +411,17 @@
         });
         localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
         renderHistory();
-
         await updateBalance();
+
+        showToast("Transaction confirmed successfully!", "success");
 
       } catch (error) {
         console.error(error);
-        document.getElementById("status").innerHTML = `❌ Failed: ${error.reason || error.message || error}`;
+        showToast(`Failed: ${error.reason || error.message || "Unknown error"}`, "error");
       } finally {
         isProcessing = false;
         btn.disabled = false;
-        btn.textContent = "Send Split Transaction";
+        btn.innerHTML = `<span>Send Split Transaction</span>`;
       }
     }
 
@@ -436,12 +437,49 @@
     }
 
     function exportHistory() {
-      if (transactions.length === 0) return alert("No history!");
+      if (transactions.length === 0) return showToast("No history!", "error");
       const dataStr = JSON.stringify(transactions, null, 2);
       const a = document.createElement('a');
       a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
       a.download = `arcsplit-history-${new Date().toISOString().slice(0,10)}.json`;
       a.click();
+    }
+
+    // Import Recipients (CSV or JSON)
+    function importRecipients() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.csv,.json';
+      input.onchange = e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = ev => {
+          try {
+            const text = ev.target.result;
+            let data;
+            if (file.name.endsWith('.json')) {
+              data = JSON.parse(text);
+            } else {
+              // Simple CSV: address,percent
+              data = text.split('\n').slice(1).map(line => {
+                const [addr, perc] = line.split(',').map(s => s.trim());
+                return {addr, perc};
+              });
+            }
+            const list = document.getElementById("recipients-list");
+            list.innerHTML = "";
+            data.forEach(item => {
+              if (item.addr) addRecipient(item.addr, item.perc || "");
+            });
+            showToast("Recipients imported successfully", "success");
+          } catch (err) {
+            showToast("Import failed. Check file format.", "error");
+          }
+        };
+        reader.readAsText(file);
+      };
+      input.click();
     }
   </script>
 </body>
