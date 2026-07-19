@@ -23,7 +23,6 @@
       background: rgba(255,255,255,0.75);
     }
 
-    /* Select Token Styling */
     select {
       background-color: rgba(255,255,255,0.05);
       color: white;
@@ -33,16 +32,6 @@
       background-color: white;
       color: #1f2937;
       border: 1px solid #d1d5db;
-    }
-
-    select option {
-      background-color: #1f2937;
-      color: white;
-      padding: 12px 16px;
-    }
-    .light select option {
-      background-color: white;
-      color: #1f2937;
     }
 
     .percent-container {
@@ -56,11 +45,29 @@
       transform: translateY(-50%);
       color: #9ca3af;
       font-weight: 600;
-      text-shadow: 0 2px 4px rgba(0,0,0,0.4);
       pointer-events: none;
     }
     .light .percent-container::after {
       color: #6b7280;
+    }
+
+    /* Mobile Improvements */
+    @media (max-width: 640px) {
+      .max-w-2xl {
+        max-width: 100% !important;
+        padding-left: 12px;
+        padding-right: 12px;
+      }
+      .recipient-row {
+        flex-direction: column;
+        gap: 12px;
+      }
+      .percent-container {
+        width: 100% !important;
+      }
+      button {
+        padding: 14px 20px !important;
+      }
     }
   </style>
 </head>
@@ -157,7 +164,22 @@
     let transactions = JSON.parse(localStorage.getItem('arcTxHistory') || '[]');
     let isProcessing = false;
 
-    const CONTRACT_ADDRESS = "0xEa86B2d60029bEE76F6858a1Ac7f85B2944004bF";
+    const CONTRACT_ADDRESS = "0x12ABfB0866a72E90963E59F83AA53B95D6E173AE";
+
+    const splitterAbi = [
+      {
+        "inputs": [
+          { "name": "token", "type": "address" },
+          { "name": "recipients", "type": "address[]" },
+          { "name": "percentages", "type": "uint256[]" },
+          { "name": "totalAmount", "type": "uint256" }
+        ],
+        "name": "splitPayment",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      }
+    ];
 
     function toggleTheme() {
       document.documentElement.classList.toggle('light');
@@ -178,31 +200,57 @@
         signer = await provider.getSigner();
         document.getElementById("connectBtn").innerHTML = `<i class="fas fa-wallet"></i> Connected`;
         updateBalance();
-      } catch (e) { console.error(e); }
+      } catch (e) {
+        console.error(e);
+      }
     }
 
     async function updateBalance() {
       if (!signer || !userAddress) return;
+      const statusEl = document.getElementById("status");
+      statusEl.innerHTML = `Connected • Fetching balance...`;
+
       try {
         const tokenAddr = document.getElementById("tokenSelect").value;
-        const contract = new ethers.Contract(tokenAddr, ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"], signer);
-        const balance = await contract.balanceOf(userAddress);
-        const decimals = await contract.decimals();
-        const formatted = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4);
         const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
-        document.getElementById("status").innerHTML = `Connected • Balance: <span class="text-emerald-400">${formatted} ${symbol}</span>`;
-      } catch(e) {}
+
+        const contract = new ethers.Contract(tokenAddr, [
+          "function balanceOf(address) view returns (uint256)",
+          "function decimals() view returns (uint8)"
+        ], signer);
+
+        const [balance, decimals] = await Promise.all([
+          contract.balanceOf(userAddress),
+          contract.decimals()
+        ]);
+
+        const formatted = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4);
+        statusEl.innerHTML = `Connected • Balance: <span class="text-emerald-400 font-medium">${formatted} ${symbol}</span>`;
+      } catch (e) {
+        console.error(e);
+        statusEl.innerHTML = `Connected • <span class="text-amber-400">Could not load balance</span>`;
+      }
     }
 
     async function setMaxAmount() {
       if (!signer) return alert("Connect wallet first!");
       try {
         const tokenAddr = document.getElementById("tokenSelect").value;
-        const contract = new ethers.Contract(tokenAddr, ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"], signer);
-        const balance = await contract.balanceOf(userAddress);
-        const decimals = await contract.decimals();
-        document.getElementById("totalAmount").value = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(6);
-      } catch(e) { alert("Could not fetch balance"); }
+        const contract = new ethers.Contract(tokenAddr, [
+          "function balanceOf(address) view returns (uint256)",
+          "function decimals() view returns (uint8)"
+        ], signer);
+
+        const [balance, decimals] = await Promise.all([
+          contract.balanceOf(userAddress),
+          contract.decimals()
+        ]);
+
+        const formatted = ethers.formatUnits(balance, decimals);
+        document.getElementById("totalAmount").value = parseFloat(formatted).toFixed(6);
+      } catch (e) {
+        alert("Could not fetch balance");
+      }
     }
 
     function addRecipient(address = "", percent = "") {
@@ -235,7 +283,7 @@
       let total = percents.reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
       let remaining = 100 - total;
       if (remaining <= 0.01) return alert("No remaining percentage!");
-      percents[percents.length - 1].value = remaining;
+      percents[percents.length - 1].value = remaining.toFixed(2);
       updatePercentTotal();
     }
 
@@ -279,7 +327,7 @@
         const perc = parseFloat(row.querySelector('.percent').value) || 0;
         if (addr && perc > 0) {
           addresses.push(addr);
-          percentages.push(Math.floor(perc));
+          percentages.push(Math.round(perc));
         }
       });
 
@@ -298,16 +346,26 @@
       btn.textContent = "Processing...";
 
       try {
-        const tokenContract = new ethers.Contract(tokenAddr, ["function approve(address,uint256) returns (bool)", "function decimals() view returns (uint8)"], signer);
+        const tokenContract = new ethers.Contract(tokenAddr, [
+          "function approve(address,uint256) returns (bool)",
+          "function decimals() view returns (uint8)"
+        ], signer);
+
         const decimals = await tokenContract.decimals();
         const totalWei = ethers.parseUnits(totalAmountStr, decimals);
 
         await (await tokenContract.approve(CONTRACT_ADDRESS, totalWei)).wait();
 
-        const splitterAbi = [{"inputs":[{"name":"recipients","type":"address[]"},{"name":"percentages","type":"uint256[]"},{"name":"totalAmount","type":"uint256"}],"name":"splitPayment","outputs":[],"stateMutability":"nonpayable","type":"function"}];
         const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
 
-        const tx = await contract.splitPayment(addresses, percentages, totalWei, { gasLimit: 800000 });
+        const tx = await contract.splitPayment(
+          tokenAddr,
+          addresses,
+          percentages,
+          totalWei,
+          { gasLimit: 800000 }
+        );
+
         await tx.wait();
 
         transactions.unshift({
@@ -319,9 +377,12 @@
         renderHistory();
 
         document.getElementById("status").innerHTML = `✅ Success! <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="text-emerald-400 underline">View Transaction</a>`;
+
+        updateBalance(); // Refresh balance after success
+
       } catch (error) {
         console.error(error);
-        document.getElementById("status").innerHTML = `❌ Failed: ${error.reason || error.message}`;
+        document.getElementById("status").innerHTML = `❌ Failed: ${error.reason || error.message || error}`;
       } finally {
         isProcessing = false;
         btn.disabled = false;
