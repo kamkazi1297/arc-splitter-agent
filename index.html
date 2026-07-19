@@ -6,7 +6,6 @@
   <title>ArcSplit Pro - Token Splitter</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.17.0/dist/index.umd.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 
   <style>
@@ -39,6 +38,16 @@
       background-color: #f8fafc;
       color: #1f2937;
       border: 1px solid #e2e8f0;
+    }
+
+    select option {
+      background-color: #1a1a2e;
+      color: white;
+      padding: 12px 16px;
+    }
+    .light select option {
+      background-color: #f8fafc;
+      color: #1f2937;
     }
 
     .invalid {
@@ -105,6 +114,10 @@
     @media (max-width: 640px) {
       .max-w-2xl { max-width: 100% !important; padding-left: 8px; padding-right: 8px; }
       .recipient-row { flex-direction: column; gap: 14px; padding: 18px !important; }
+      input[type="text"], input[type="number"] {
+        font-size: 1.05rem !important;
+        padding: 16px 14px !important;
+      }
     }
   </style>
 </head>
@@ -240,7 +253,7 @@
       <h3 class="text-xl font-bold mb-4">Import Recipients</h3>
       <textarea id="importText" rows="8" 
                 class="w-full bg-white/5 border border-white/20 rounded-2xl p-5 text-sm font-mono"
-                placeholder="0x1234567890abcdef1234567890abcdef12345678,50"></textarea>
+                placeholder="0x1234567890abcdef1234567890abcdef12345678,50&#10;0xabcdef1234567890abcdef1234567890abcdef12,50"></textarea>
       <p class="text-xs text-gray-400 mt-2">Format: address,percent (one per line)</p>
       <div class="flex gap-3 mt-6">
         <button onclick="hideImportModal()" class="flex-1 py-4 rounded-2xl border border-white/20 hover:bg-white/10">Cancel</button>
@@ -251,26 +264,34 @@
 
   <!-- Wallet Connect Modal -->
   <div id="connectModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-    <div class="glass border border-white/10 rounded-3xl p-8 max-w-lg w-full mx-4">
+    <div class="glass border border-white/10 rounded-3xl p-8 max-w-md w-full mx-4">
       <div class="flex justify-between items-center mb-6">
-        <h3 class="text-2xl font-bold">Connect a Wallet</h3>
+        <h3 class="text-2xl font-bold">Connect Wallet</h3>
         <button onclick="hideConnectModal()" class="text-gray-400 hover:text-white text-3xl leading-none">×</button>
       </div>
       
-      <div class="grid grid-cols-2 gap-3">
-        <button onclick="connectMetaMask()" class="flex flex-col items-center gap-3 p-6 rounded-2xl hover:bg-white/10 transition-all">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" width="48" height="48" alt="MetaMask">
-          <span class="font-medium">MetaMask</span>
+      <div class="space-y-3">
+        <button onclick="connectMetaMask()" 
+                class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" width="40" height="40" alt="MetaMask">
+          <div class="text-left">
+            <div class="font-semibold text-lg">MetaMask</div>
+            <div class="text-sm text-gray-400">Popular browser wallet</div>
+          </div>
         </button>
 
-        <button onclick="connectWithWalletConnect()" class="flex flex-col items-center gap-3 p-6 rounded-2xl hover:bg-white/10 transition-all">
-          <img src="https://walletconnect.com/_next/static/media/walletconnect.2f8f1b5a.svg" width="48" height="48" alt="WalletConnect">
-          <span class="font-medium">WalletConnect</span>
+        <button onclick="connectWalletConnect()" 
+                class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group">
+          <img src="https://walletconnect.com/_next/static/media/walletconnect.2f8f1b5a.svg" width="40" height="40" alt="WalletConnect">
+          <div class="text-left">
+            <div class="font-semibold text-lg">WalletConnect</div>
+            <div class="text-sm text-gray-400">Connect with mobile wallets</div>
+          </div>
         </button>
       </div>
 
       <p class="text-center text-xs text-gray-500 mt-8">
-        Trust Wallet, Coinbase Wallet, OKX, Rainbow and more
+        By connecting, you accept our Terms of Service
       </p>
     </div>
   </div>
@@ -284,7 +305,6 @@
     let signer = null;
     let userAddress = null;
     let provider = null;
-    let wcProvider = null;
     let transactions = JSON.parse(localStorage.getItem('arcTxHistory') || '[]');
     let isProcessing = false;
 
@@ -352,45 +372,27 @@
 
         document.getElementById("logoContainer").classList.add("connected");
         updateConnectButton();
-        showToast("Connected to MetaMask");
+        showToast("Wallet connected successfully");
         await updateBalance();
       } catch (e) {
         console.error(e);
-        showToast("Failed to connect");
+        showToast("Failed to connect wallet");
       }
     }
 
-    async function connectWithWalletConnect() {
+    async function connectWalletConnect() {
       hideConnectModal();
-      try {
-        wcProvider = await EthereumProvider.init({
-          projectId: "ee7b6f00f36fd22ec032c3a3535253eb",
-          chains: [ARC_CHAIN_ID],
-          methods: ["eth_sendTransaction", "personal_sign"],
-          showQrModal: true,
-        });
-
-        await wcProvider.connect();
-        provider = new ethers.BrowserProvider(wcProvider);
-        
-        const accounts = await provider.send("eth_requestAccounts", []);
-        userAddress = accounts[0];
-        signer = await provider.getSigner();
-
-        document.getElementById("logoContainer").classList.add("connected");
-        updateConnectButton();
-        showToast("Connected via WalletConnect");
-        await updateBalance();
-      } catch (e) {
-        console.error(e);
-        showToast("WalletConnect connection failed");
-      }
+      showToast("WalletConnect will be available soon", 3000);
     }
 
     function updateConnectButton() {
       const btn = document.getElementById("connectBtn");
       const short = userAddress ? `${userAddress.slice(0,6)}...${userAddress.slice(-4)}` : "";
-      btn.innerHTML = `<i class="fas fa-wallet"></i> <span>${short}</span>`;
+      
+      btn.innerHTML = `
+        <i class="fas fa-wallet"></i> 
+        <span>${short}</span>
+      `;
       btn.onclick = disconnectWallet;
       btn.classList.add("!bg-emerald-500", "!text-white");
     }
@@ -398,8 +400,8 @@
     function disconnectWallet() {
       signer = null;
       userAddress = null;
-      if (wcProvider) wcProvider.disconnect();
-      
+      provider = null;
+
       document.getElementById("logoContainer").classList.remove("connected");
       
       const btn = document.getElementById("connectBtn");
@@ -427,6 +429,7 @@
         if (tokenAddr === "custom") return;
 
         const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
+
         const contract = new ethers.Contract(tokenAddr, [
           "function balanceOf(address) view returns (uint256)",
           "function decimals() view returns (uint8)"
@@ -437,6 +440,7 @@
         
         statusEl.innerHTML = `Connected • Balance: <span class="text-emerald-400 font-semibold text-lg">${formatted} ${symbol}</span>`;
       } catch (e) {
+        console.error(e);
         if (retry < 2) {
           setTimeout(() => updateBalance(retry + 1), 1000);
         } else {
@@ -455,11 +459,13 @@
           option.text = addr.substring(0, 10) + "...";
           select.appendChild(option);
           select.value = addr;
+          await updateBalance();
         } else {
           select.value = "0x3600000000000000000000000000000000000000";
         }
+      } else {
+        await updateBalance();
       }
-      await updateBalance();
     }
 
     async function setMaxAmount() {
@@ -506,9 +512,13 @@
       if (count === 0) return;
       const base = Math.floor(100 / count);
       let remainder = 100 % count;
+
       document.querySelectorAll('.percent').forEach((input, index) => {
         let val = base;
-        if (remainder > 0) { val += 1; remainder--; }
+        if (remainder > 0) {
+          val += 1;
+          remainder--;
+        }
         input.value = val;
       });
       updatePercentTotal();
@@ -568,9 +578,12 @@
     function equalSplit() {
       const count = parseInt(prompt("Number of recipients (2-10):", "4")) || 4;
       if (count < 2 || count > 10) return showToast("Number must be between 2 and 10");
+
       const list = document.getElementById("recipients-list");
       list.innerHTML = "";
-      for (let i = 0; i < count; i++) addRecipient("", "");
+      for (let i = 0; i < count; i++) {
+        addRecipient("", "");
+      }
     }
 
     function showImportModal() {
@@ -584,15 +597,18 @@
     function importRecipients() {
       const text = document.getElementById("importText").value.trim();
       if (!text) return hideImportModal();
+
       const lines = text.split("\n");
       const list = document.getElementById("recipients-list");
       list.innerHTML = "";
+
       lines.forEach(line => {
         const [addr, perc] = line.split(",").map(s => s.trim());
         if (addr && ethers.isAddress(addr)) {
           addRecipient(addr, perc || "");
         }
       });
+
       hideImportModal();
       showToast("Recipients imported successfully");
     }
@@ -620,6 +636,11 @@
 
       if (addresses.length < 2) return showToast("At least 2 valid recipients needed");
       if (Math.abs(totalPerc - 100) > 0.1) return showToast("Percentages must sum exactly to 100%");
+      if (percentages.some(p => p <= 0)) return showToast("Percentage cannot be zero");
+
+      for (let addr of addresses) {
+        if (!ethers.isAddress(addr)) return showToast(`Invalid address: ${addr}`);
+      }
 
       const totalAmountStr = document.getElementById("totalAmount").value;
       const totalAmount = parseFloat(totalAmountStr);
@@ -631,6 +652,8 @@
       const btn = document.getElementById("sendBtn");
       btn.disabled = true;
       btn.textContent = "Processing...";
+
+      const successDiv = document.getElementById("successMessage");
 
       try {
         const tokenAddr = document.getElementById("tokenSelect").value;
@@ -650,9 +673,11 @@
         const tx = await contract.splitPayment(tokenAddr, addresses, percentages, totalWei, { gasLimit: 800000 });
         await tx.wait();
 
-        document.getElementById("successMessage").innerHTML = `✅ Transaction Successful!<br>
-          <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline font-medium">View on Explorer</a>`;
-        document.getElementById("successMessage").classList.remove('hidden');
+        successDiv.innerHTML = `✅ Transaction Successful!<br>
+          <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline font-medium">
+            View on Explorer: ${tx.hash.substring(0,12)}...
+          </a>`;
+        successDiv.classList.remove('hidden');
 
         transactions.unshift({
           hash: tx.hash,
@@ -662,7 +687,9 @@
         localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
         renderHistory();
         await updateBalance();
+
         showToast("Transaction sent successfully!");
+
       } catch (error) {
         console.error(error);
         showToast(error.reason || error.message || "Transaction failed");
