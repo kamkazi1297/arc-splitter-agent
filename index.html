@@ -20,21 +20,21 @@
       backdrop-filter: blur(20px);
     }
     .light .glass {
-      background: rgba(255,255,255,0.75);
+      background: rgba(255,255,255,0.85);
+      border-color: rgba(0,0,0,0.1);
     }
 
     select {
       background-color: rgba(255,255,255,0.05);
       color: white;
-      border: 1px solid rgba(255,255,255,0.2);
+      border: 1px solid rgba(255,255,255,0.25);
     }
     .light select {
-      background-color: white;
+      background-color: #f8fafc;
       color: #1f2937;
-      border: 1px solid #d1d5db;
+      border: 1px solid #e2e8f0;
     }
 
-    /* Fix Select Dropdown */
     select option {
       background-color: #1f2937;
       color: white;
@@ -59,14 +59,13 @@
       pointer-events: none;
     }
     .light .percent-container::after {
-      color: #6b7280;
+      color: #64748b;
     }
 
-    /* Mobile */
+    /* Mobile Fix */
     @media (max-width: 640px) {
       .max-w-2xl { max-width: 100% !important; padding-left: 12px; padding-right: 12px; }
       .recipient-row { flex-direction: column; gap: 12px; }
-      .percent-container { width: 100% !important; }
     }
   </style>
 </head>
@@ -94,8 +93,8 @@
 
     <div id="status" class="glass border border-white/10 rounded-3xl p-6 mb-8 text-sm">Ready to split tokens on Arc Testnet.</div>
 
-    <!-- Success Message Area -->
-    <div id="successMessage" class="hidden glass border border-emerald-500/30 bg-emerald-500/10 rounded-3xl p-6 mb-8"></div>
+    <!-- Success Message -->
+    <div id="successMessage" class="hidden glass border border-emerald-500/30 bg-emerald-500/10 rounded-3xl p-6 mb-8 text-emerald-400"></div>
 
     <div class="glass border border-white/10 rounded-3xl p-8 mb-8">
       <!-- Token Select -->
@@ -205,8 +204,9 @@
       } catch (e) { console.error(e); }
     }
 
-    async function updateBalance() {
+    async function updateBalance(retry = 0) {
       if (!signer || !userAddress) return;
+      
       const statusEl = document.getElementById("status");
       statusEl.innerHTML = `Connected • Loading balance...`;
 
@@ -223,10 +223,14 @@
         const decimals = await contract.decimals();
 
         const formatted = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4);
-        statusEl.innerHTML = `Connected • Balance: <span class="text-emerald-400 font-medium">${formatted} ${symbol}</span>`;
+        statusEl.innerHTML = `Connected • Balance: <span class="text-emerald-400 font-semibold">${formatted} ${symbol}</span>`;
       } catch (e) {
         console.error(e);
-        statusEl.innerHTML = `Connected • <span class="text-amber-400">Balance unavailable</span>`;
+        if (retry < 2) {
+          setTimeout(() => updateBalance(retry + 1), 1000);
+        } else {
+          statusEl.innerHTML = `Connected • <span class="text-amber-400">Balance unavailable • Try again</span>`;
+        }
       }
     }
 
@@ -239,14 +243,16 @@
           "function decimals() view returns (uint8)"
         ], signer);
 
-        const [balance, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
+        const [balance, decimals] = await Promise.all([
+          contract.balanceOf(userAddress),
+          contract.decimals()
+        ]);
         document.getElementById("totalAmount").value = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(6);
       } catch (e) {
         alert("Could not fetch balance");
       }
     }
 
-    // بقیه توابع (addRecipient, updatePercentTotal, distributeRemaining, loadTemplate, equalSplit, renderHistory, exportHistory) بدون تغییر باقی می‌مانند
     function addRecipient(address = "", percent = "") {
       const list = document.getElementById("recipients-list");
       const row = document.createElement("div");
@@ -358,12 +364,10 @@
         await tx.wait();
 
         // Success Message
-        successDiv.innerHTML = `
-          ✅ Transaction Successful!<br>
-          <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="text-emerald-400 underline font-medium">
-            View Transaction: ${tx.hash.substring(0, 10)}...
-          </a>
-        `;
+        successDiv.innerHTML = `✅ Transaction Successful!<br>
+          <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline font-medium">
+            View Tx: ${tx.hash.substring(0,12)}...
+          </a>`;
         successDiv.classList.remove('hidden');
 
         // History
