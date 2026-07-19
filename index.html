@@ -239,8 +239,7 @@
   <div id="importModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
     <div class="glass rounded-3xl p-8 max-w-md w-full mx-4">
       <h3 class="text-xl font-bold mb-4">Import Recipients</h3>
-      <textarea id="importText" rows="8" 
-                class="w-full bg-white/5 border border-white/20 rounded-2xl p-5 text-sm font-mono"
+      <textarea id="importText" rows="8" class="w-full bg-white/5 border border-white/20 rounded-2xl p-5 text-sm font-mono"
                 placeholder="0x1234567890abcdef1234567890abcdef12345678,50"></textarea>
       <p class="text-xs text-gray-400 mt-2">Format: address,percent (one per line)</p>
       <div class="flex gap-3 mt-6">
@@ -257,19 +256,15 @@
         <h3 class="text-2xl font-bold">Connect Wallet</h3>
         <button onclick="hideConnectModal()" class="text-gray-400 hover:text-white text-3xl leading-none">×</button>
       </div>
-      
       <div class="space-y-3">
-        <button onclick="connectMetaMask()" 
-                class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group">
+        <button onclick="connectMetaMask()" class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group">
           <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" width="40" height="40" alt="MetaMask">
           <div class="text-left">
             <div class="font-semibold text-lg">MetaMask</div>
             <div class="text-sm text-gray-400">Popular browser wallet</div>
           </div>
         </button>
-
-        <button onclick="connectWalletConnect()" 
-                class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group">
+        <button onclick="connectWalletConnect()" class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group">
           <img src="https://walletconnect.com/_next/static/media/walletconnect.2f8f1b5a.svg" width="40" height="40" alt="WalletConnect">
           <div class="text-left">
             <div class="font-semibold text-lg">WalletConnect</div>
@@ -395,15 +390,10 @@
       rows.forEach((row, index) => {
         const percentInput = row.querySelector('.percent');
         let value = parseFloat(base);
-
-        if (index === rows.length - 1) {
-          value = (100 - sum).toFixed(2);
-        }
-
+        if (index === rows.length - 1) value = (100 - sum).toFixed(2);
         percentInput.value = value;
         sum += parseFloat(value);
       });
-
       updateAll();
     }
 
@@ -417,14 +407,12 @@
         
         <div class="percent-container w-28 relative">
           <input type="number" class="percent w-full bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" 
-                 value="${percent}" placeholder="0" step="0.01" min="0" max="100"
-                 oninput="updateAll()">
+                 value="${percent}" placeholder="0" step="0.01" min="0" max="100" oninput="updateAll()">
         </div>
 
         <div class="amount-container w-36">
           <input type="number" class="amount w-full bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" 
-                 placeholder="0" step="0.000001"
-                 oninput="updateAll()">
+                 placeholder="0" step="0.000001" oninput="updateAll()">
         </div>
 
         <button onclick="this.parentElement.remove(); setTimeout(() => { autoDistributePercentages(); }, 10)" 
@@ -465,7 +453,6 @@
         const addr = row.querySelector('.address').value.trim();
         const perc = parseFloat(row.querySelector('.percent').value) || 0;
         const amt = parseFloat(row.querySelector('.amount').value) || 0;
-
         if (addr) {
           const tr = document.createElement("tr");
           tr.className = "border-b border-white/10 last:border-none";
@@ -482,11 +469,9 @@
     function distributeRemaining() {
       const percents = Array.from(document.querySelectorAll('.percent'));
       if (percents.length === 0) return;
-
       let total = percents.reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
       let remaining = 100 - total;
       if (remaining < 0.01) return showToast("No remaining percentage!");
-
       percents[percents.length - 1].value = remaining.toFixed(2);
       updateAll();
     }
@@ -534,10 +519,60 @@
       input.classList.toggle("invalid", !isValid);
     }
 
-    // بقیه توابع wallet، balance، sendSplit و ... (کامل)
-    async function updateBalance() { /* همان کد قبلی */ }
-    async function handleTokenChange() { /* همان کد قبلی */ }
-    async function setMaxAmount() { /* همان کد قبلی */ }
+    async function updateBalance() {
+      if (!signer || !userAddress) return;
+      const statusEl = document.getElementById("status");
+      statusEl.innerHTML = `Connected • Loading balance...`;
+      try {
+        const tokenAddr = document.getElementById("tokenSelect").value;
+        if (tokenAddr === "custom") return;
+        const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
+        const contract = new ethers.Contract(tokenAddr, [
+          "function balanceOf(address) view returns (uint256)",
+          "function decimals() view returns (uint8)"
+        ], signer);
+        const [balance, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
+        const formatted = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4);
+        statusEl.innerHTML = `Connected • Balance: <span class="text-emerald-400 font-semibold text-lg">${formatted} ${symbol}</span>`;
+      } catch (e) {
+        statusEl.innerHTML = `Connected • <span class="text-amber-400">Balance unavailable</span>`;
+      }
+    }
+
+    async function handleTokenChange() {
+      const select = document.getElementById("tokenSelect");
+      if (select.value === "custom") {
+        const addr = prompt("Enter Custom Token Address (0x...):");
+        if (addr && ethers.isAddress(addr)) {
+          const option = document.createElement("option");
+          option.value = addr;
+          option.text = addr.substring(0, 10) + "...";
+          select.appendChild(option);
+          select.value = addr;
+          await updateBalance();
+        } else {
+          select.value = "0x3600000000000000000000000000000000000000";
+        }
+      } else {
+        await updateBalance();
+      }
+    }
+
+    async function setMaxAmount() {
+      if (!signer) return showToast("Connect wallet first!");
+      try {
+        const tokenAddr = document.getElementById("tokenSelect").value;
+        const contract = new ethers.Contract(tokenAddr, [
+          "function balanceOf(address) view returns (uint256)",
+          "function decimals() view returns (uint8)"
+        ], signer);
+        const [balance, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
+        document.getElementById("totalAmount").value = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(6);
+        updateAll();
+      } catch (e) {
+        showToast("Could not fetch balance");
+      }
+    }
 
     async function sendSplit() {
       if (!signer) return showToast("Please connect your wallet first!");
