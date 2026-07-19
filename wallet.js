@@ -7,16 +7,6 @@ let wcProvider = null;
 const PROJECT_ID = "1c0e752ab2d259f09fd2eeae3784448c";
 const ARC_CHAIN_ID = 5042002;
 
-async function initWalletConnect() {
-  if (!wcProvider) {
-    wcProvider = await EthereumProvider.init({
-      projectId: PROJECT_ID,
-      chains: [ARC_CHAIN_ID],
-      showQrModal: true,
-    });
-  }
-}
-
 window.showConnectModal = function() {
   const html = `
     <div id="connectModal" class="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
@@ -37,14 +27,13 @@ window.showConnectModal = function() {
             <img src="https://walletconnect.com/_next/static/media/walletconnect.2f8f1b5a.svg" width="42">
             <div class="text-left">
               <div class="font-semibold text-lg">WalletConnect</div>
-              <div class="text-sm text-gray-400">Trust • OKX • Rainbow • Kepler ...</div>
+              <div class="text-sm text-gray-400">Trust • OKX • Rainbow ...</div>
             </div>
           </button>
         </div>
       </div>
     </div>`;
 
-  // حذف مدال قبلی
   const old = document.getElementById("connectModal");
   if (old) old.remove();
 
@@ -63,7 +52,7 @@ window.connectWallet = async function(type) {
 
   if (type === "metamask") {
     await connectMetaMask();
-  } else if (type === "walletconnect") {
+  } else {
     await connectWalletConnect();
   }
 };
@@ -95,7 +84,12 @@ async function connectMetaMask() {
 
 async function connectWalletConnect() {
   try {
-    await initWalletConnect();
+    wcProvider = await EthereumProvider.init({
+      projectId: PROJECT_ID,
+      chains: [ARC_CHAIN_ID],
+      showQrModal: true,
+    });
+
     await wcProvider.connect();
     await wcProvider.enable();
 
@@ -108,7 +102,7 @@ async function connectWalletConnect() {
     finishConnection();
   } catch (err) {
     console.error(err);
-    showToast("WalletConnect failed or cancelled");
+    showToast("WalletConnect failed or cancelled by user");
   }
 }
 
