@@ -6,6 +6,8 @@
   <title>ArcSplit Pro - Token Splitter</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+  <!-- WalletConnect Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@walletconnect/ethereum-provider@2.17.0/dist/index.umd.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 
   <style>
@@ -166,6 +168,7 @@
     <div id="status" class="glass border border-white/10 rounded-3xl p-6 mb-8 text-base font-medium">Ready to split tokens on Arc Testnet.</div>
     <div id="successMessage" class="hidden glass border border-emerald-500/30 bg-emerald-500/10 rounded-3xl p-6 mb-8 text-emerald-400"></div>
 
+    <!-- بقیه بخش‌های اصلی صفحه بدون تغییر -->
     <div class="glass border border-white/10 rounded-3xl p-8 mb-8">
       <div class="mb-8">
         <label class="block text-gray-400 text-sm mb-2">Select Token</label>
@@ -267,7 +270,7 @@
     <span id="toastText"></span>
   </div>
 
-  <!-- Wallet Connection Script -->
+  <!-- Wallet Script -->
   <script type="module" src="wallet.js"></script>
 
   <script>
@@ -314,7 +317,7 @@
       }
     }
 
-    // ==================== بقیه توابع بدون هیچ تغییری ====================
+    // ==================== تمام توابع اصلی بدون تغییر ====================
     function getTotalAmount() {
       return parseFloat(document.getElementById("totalAmount").value) || 0;
     }
@@ -384,13 +387,11 @@
     function handlePercentChange(percentInput) {
       const row = percentInput.closest('.recipient-row');
       let current = parseFloat(percentInput.value) || 0;
-      
       if (current < 0) current = 0;
       if (current > 100) current = 100;
       percentInput.value = current.toFixed(2);
 
       const otherRows = Array.from(document.querySelectorAll('.recipient-row')).filter(r => r !== row);
-      
       if (otherRows.length > 0) {
         const remaining = Math.max(0, 100 - current);
         const base = Math.floor((remaining * 100) / otherRows.length) / 100;
@@ -399,16 +400,11 @@
         otherRows.forEach((r, index) => {
           const pInput = r.querySelector('.percent');
           let val = base;
-          
-          if (index === otherRows.length - 1) {
-            val = remaining - distributed;
-          }
-          
+          if (index === otherRows.length - 1) val = remaining - distributed;
           pInput.value = val.toFixed(2);
           distributed += val;
         });
       }
-      
       updateAll();
     }
 
@@ -419,30 +415,8 @@
       
       let currentAmount = parseFloat(amountInput.value) || 0;
       let currentPerc = (currentAmount / total) * 100;
-      
       if (currentPerc > 100) currentPerc = 100;
       row.querySelector('.percent').value = currentPerc.toFixed(2);
-
-      const otherRows = Array.from(document.querySelectorAll('.recipient-row')).filter(r => r !== row);
-      
-      if (otherRows.length > 0) {
-        const remaining = Math.max(0, 100 - currentPerc);
-        const base = Math.floor((remaining * 100) / otherRows.length) / 100;
-        let distributed = 0;
-
-        otherRows.forEach((r, index) => {
-          const pInput = r.querySelector('.percent');
-          let val = base;
-          
-          if (index === otherRows.length - 1) {
-            val = remaining - distributed;
-          }
-          
-          pInput.value = Math.max(0, val).toFixed(2);
-          distributed += val;
-        });
-      }
-      
       updateAll();
     }
 
