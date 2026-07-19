@@ -24,8 +24,7 @@
       border-color: rgba(0,0,0,0.12);
     }
 
-    /* Light Mode Text Color */
-    .light body, .light .text-white, .light h1, .light h3, .light label {
+    .light body, .light h1, .light h3, .light label, .light .text-white {
       color: #1f2937;
     }
     .light .text-gray-400 { color: #64748b; }
@@ -67,15 +66,24 @@
       color: #64748b;
     }
 
-    /* Bigger Balance */
-    #status .text-emerald-400 {
-      font-size: 1.1rem;
-      font-weight: 600;
-    }
-
+    /* Stronger Mobile Responsive */
     @media (max-width: 640px) {
-      .max-w-2xl { max-width: 100% !important; padding-left: 12px; padding-right: 12px; }
-      .recipient-row { flex-direction: column; gap: 12px; }
+      .max-w-2xl { max-width: 100% !important; padding-left: 10px; padding-right: 10px; }
+      .glass { margin-left: 8px; margin-right: 8px; }
+      .recipient-row { 
+        flex-direction: column; 
+        gap: 12px; 
+        padding: 16px !important;
+      }
+      input[type="number"], input[type="text"] {
+        font-size: 1rem !important;
+        padding: 14px !important;
+      }
+      button {
+        padding: 14px 20px !important;
+      }
+      .text-3xl { font-size: 1.75rem; }
+      .text-4xl { font-size: 2.25rem; }
     }
   </style>
 </head>
@@ -270,13 +278,21 @@
     }
 
     function autoDistributePercentages() {
-      const rows = document.querySelectorAll('.recipient-row');
-      if (rows.length === 0) return;
-      
-      const equalShare = (100 / rows.length).toFixed(2);
-      document.querySelectorAll('.percent').forEach(input => {
-        input.value = equalShare;
+      const count = document.querySelectorAll('.recipient-row').length;
+      if (count === 0) return;
+
+      const base = Math.floor(100 / count);
+      let remainder = 100 - (base * count);
+
+      document.querySelectorAll('.percent').forEach((input, index) => {
+        let value = base;
+        if (remainder > 0) {
+          value += 1;
+          remainder--;
+        }
+        input.value = value;
       });
+
       updatePercentTotal();
     }
 
