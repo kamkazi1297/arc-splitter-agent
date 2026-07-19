@@ -83,6 +83,35 @@
       overflow-y: auto;
     }
 
+    /* === Glow Logo Styles === */
+    #logoContainer {
+      position: relative;
+    }
+
+    #glowRing {
+      position: absolute;
+      inset: -10px;
+      background: linear-gradient(45deg, #10b981, #22d3ee, #10b981);
+      border-radius: 2rem;
+      opacity: 0.25;
+      filter: blur(8px);
+      z-index: -1;
+      animation: rotateGlow 10s linear infinite;
+      transition: all 0.8s ease;
+    }
+
+    @keyframes rotateGlow {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    #logoContainer.connected #glowRing {
+      animation: none;
+      opacity: 0.45;
+      filter: blur(10px);
+      box-shadow: 0 0 25px -2px rgb(16 185 129 / 0.6);
+    }
+
     @media (max-width: 640px) {
       .max-w-2xl { max-width: 100% !important; padding-left: 8px; padding-right: 8px; }
       .recipient-row { flex-direction: column; gap: 14px; padding: 18px !important; }
@@ -98,7 +127,13 @@
   <div class="max-w-2xl mx-auto px-4 py-10">
     <div class="flex justify-between items-center mb-10">
       <div class="flex items-center gap-3">
-        <div class="w-12 h-12 bg-gradient-to-br from-emerald-400 to-cyan-400 rounded-3xl flex items-center justify-center text-3xl"></div>
+        <!-- Logo with subtle rotating glow -->
+        <div id="logoContainer">
+          <div id="glowRing"></div>
+          <div class="w-12 h-12 bg-gradient-to-br from-emerald-400 to-cyan-400 rounded-3xl flex items-center justify-center text-3xl relative z-10 border border-white/30 shadow-2xl">
+            ⚡
+          </div>
+        </div>
         <div>
           <h1 class="text-4xl font-bold">ArcSplit Pro</h1>
           <p class="text-gray-400">Professional Token Splitter</p>
@@ -118,6 +153,7 @@
     <div id="status" class="glass border border-white/10 rounded-3xl p-6 mb-8 text-base font-medium">Ready to split tokens on Arc Testnet.</div>
     <div id="successMessage" class="hidden glass border border-emerald-500/30 bg-emerald-500/10 rounded-3xl p-6 mb-8 text-emerald-400"></div>
 
+    <!-- بقیه کد بدون تغییر -->
     <div class="glass border border-white/10 rounded-3xl p-8 mb-8">
       <!-- Token Select -->
       <div class="mb-8">
@@ -290,6 +326,9 @@
         userAddress = accounts[0];
         signer = await provider.getSigner();
 
+        // فعال کردن glow ثابت بعد از اتصال والت
+        document.getElementById("logoContainer").classList.add("connected");
+
         document.getElementById("connectBtn").innerHTML = `<i class="fas fa-wallet"></i> Connected`;
         showToast("Wallet connected successfully");
         await updateBalance();
@@ -299,6 +338,7 @@
       }
     }
 
+    // بقیه توابع بدون تغییر (کپی شده)
     async function updateBalance(retry = 0) {
       if (!signer || !userAddress) return;
       const statusEl = document.getElementById("status");
@@ -509,7 +549,7 @@
         const perc = parseFloat(row.querySelector('.percent').value) || 0;
         if (addr && perc > 0) {
           addresses.push(addr);
-          percentages.push(Math.round(perc * 100)); // تبدیل به basis points (10000 = 100%)
+          percentages.push(Math.round(perc * 100));
           totalPerc += perc;
         }
       });
