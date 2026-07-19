@@ -34,6 +34,17 @@
       border: 1px solid #d1d5db;
     }
 
+    /* Fix Select Dropdown */
+    select option {
+      background-color: #1f2937;
+      color: white;
+      padding: 12px 16px;
+    }
+    .light select option {
+      background-color: #f8fafc;
+      color: #1f2937;
+    }
+
     .percent-container {
       position: relative;
     }
@@ -51,23 +62,11 @@
       color: #6b7280;
     }
 
-    /* Mobile Improvements */
+    /* Mobile */
     @media (max-width: 640px) {
-      .max-w-2xl {
-        max-width: 100% !important;
-        padding-left: 12px;
-        padding-right: 12px;
-      }
-      .recipient-row {
-        flex-direction: column;
-        gap: 12px;
-      }
-      .percent-container {
-        width: 100% !important;
-      }
-      button {
-        padding: 14px 20px !important;
-      }
+      .max-w-2xl { max-width: 100% !important; padding-left: 12px; padding-right: 12px; }
+      .recipient-row { flex-direction: column; gap: 12px; }
+      .percent-container { width: 100% !important; }
     }
   </style>
 </head>
@@ -94,6 +93,9 @@
     </div>
 
     <div id="status" class="glass border border-white/10 rounded-3xl p-6 mb-8 text-sm">Ready to split tokens on Arc Testnet.</div>
+
+    <!-- Success Message Area -->
+    <div id="successMessage" class="hidden glass border border-emerald-500/30 bg-emerald-500/10 rounded-3xl p-6 mb-8"></div>
 
     <div class="glass border border-white/10 rounded-3xl p-8 mb-8">
       <!-- Token Select -->
@@ -199,16 +201,14 @@
         const provider = new ethers.BrowserProvider(window.ethereum);
         signer = await provider.getSigner();
         document.getElementById("connectBtn").innerHTML = `<i class="fas fa-wallet"></i> Connected`;
-        updateBalance();
-      } catch (e) {
-        console.error(e);
-      }
+        await updateBalance();
+      } catch (e) { console.error(e); }
     }
 
     async function updateBalance() {
       if (!signer || !userAddress) return;
       const statusEl = document.getElementById("status");
-      statusEl.innerHTML = `Connected • Fetching balance...`;
+      statusEl.innerHTML = `Connected • Loading balance...`;
 
       try {
         const tokenAddr = document.getElementById("tokenSelect").value;
@@ -219,16 +219,14 @@
           "function decimals() view returns (uint8)"
         ], signer);
 
-        const [balance, decimals] = await Promise.all([
-          contract.balanceOf(userAddress),
-          contract.decimals()
-        ]);
+        const balance = await contract.balanceOf(userAddress);
+        const decimals = await contract.decimals();
 
         const formatted = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4);
         statusEl.innerHTML = `Connected • Balance: <span class="text-emerald-400 font-medium">${formatted} ${symbol}</span>`;
       } catch (e) {
         console.error(e);
-        statusEl.innerHTML = `Connected • <span class="text-amber-400">Could not load balance</span>`;
+        statusEl.innerHTML = `Connected • <span class="text-amber-400">Balance unavailable</span>`;
       }
     }
 
@@ -241,18 +239,14 @@
           "function decimals() view returns (uint8)"
         ], signer);
 
-        const [balance, decimals] = await Promise.all([
-          contract.balanceOf(userAddress),
-          contract.decimals()
-        ]);
-
-        const formatted = ethers.formatUnits(balance, decimals);
-        document.getElementById("totalAmount").value = parseFloat(formatted).toFixed(6);
+        const [balance, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
+        document.getElementById("totalAmount").value = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(6);
       } catch (e) {
         alert("Could not fetch balance");
       }
     }
 
+    // بقیه توابع (addRecipient, updatePercentTotal, distributeRemaining, loadTemplate, equalSplit, renderHistory, exportHistory) بدون تغییر باقی می‌مانند
     function addRecipient(address = "", percent = "") {
       const list = document.getElementById("recipients-list");
       const row = document.createElement("div");
@@ -345,6 +339,8 @@
       btn.disabled = true;
       btn.textContent = "Processing...";
 
+      const successDiv = document.getElementById("successMessage");
+
       try {
         const tokenContract = new ethers.Contract(tokenAddr, [
           "function approve(address,uint256) returns (bool)",
@@ -358,16 +354,19 @@
 
         const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
 
-        const tx = await contract.splitPayment(
-          tokenAddr,
-          addresses,
-          percentages,
-          totalWei,
-          { gasLimit: 800000 }
-        );
-
+        const tx = await contract.splitPayment(tokenAddr, addresses, percentages, totalWei, { gasLimit: 800000 });
         await tx.wait();
 
+        // Success Message
+        successDiv.innerHTML = `
+          ✅ Transaction Successful!<br>
+          <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="text-emerald-400 underline font-medium">
+            View Transaction: ${tx.hash.substring(0, 10)}...
+          </a>
+        `;
+        successDiv.classList.remove('hidden');
+
+        // History
         transactions.unshift({
           hash: tx.hash,
           intent: `${totalAmount} ${symbol} → ${addresses.length} recipients`,
@@ -376,9 +375,7 @@
         localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
         renderHistory();
 
-        document.getElementById("status").innerHTML = `✅ Success! <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="text-emerald-400 underline">View Transaction</a>`;
-
-        updateBalance(); // Refresh balance after success
+        await updateBalance(); // Refresh balance
 
       } catch (error) {
         console.error(error);
