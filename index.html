@@ -11,12 +11,22 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     
-    body { font-family: 'Inter', system-ui, sans-serif; }
+    body { 
+      font-family: 'Inter', system-ui, sans-serif; 
+    }
     
-    .glass { background: rgba(255,255,255,0.08); backdrop-filter: blur(20px); }
-    .light .glass { background: rgba(255,255,255,0.88); border-color: rgba(0,0,0,0.12); }
+    .glass {
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(20px);
+    }
+    .light .glass {
+      background: rgba(255,255,255,0.88);
+      border-color: rgba(0,0,0,0.12);
+    }
 
-    .light body, .light h1, .light h3, .light label, .light .text-white { color: #1f2937; }
+    .light body, .light h1, .light h3, .light label, .light .text-white {
+      color: #1f2937;
+    }
     .light .text-gray-400 { color: #64748b; }
 
     select, input {
@@ -30,17 +40,25 @@
       border: 1px solid #e2e8f0;
     }
 
-    /* Fix for dark mode dropdown */
+    /* بهبود نمایش dropdown در دارک و لایت مود */
     select option {
-      background-color: #1f2937;
+      background-color: #1a1a2e;
       color: white;
+      padding: 12px 16px;
     }
     .light select option {
       background-color: #f8fafc;
       color: #1f2937;
     }
 
-    .invalid { border-color: #ef4444 !important; animation: shake 0.3s; }
+    .invalid {
+      border-color: #ef4444 !important;
+      animation: shake 0.3s;
+    }
+
+    .percent-container {
+      position: relative;
+    }
     .percent-container::after {
       content: "%";
       position: absolute;
@@ -51,20 +69,30 @@
       font-weight: 600;
       pointer-events: none;
     }
-    .light .percent-container::after { color: #64748b; }
-
-    @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
-
-    /* Scrollable Preview */
-    #preview-body {
-      max-height: 260px;
-      overflow-y: auto;
-      scrollbar-width: thin;
+    .light .percent-container::after {
+      color: #64748b;
     }
-    #preview-body::-webkit-scrollbar { width: 6px; }
-    #preview-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.3); border-radius: 10px; }
 
-    .balance-text { font-size: 1.1rem; font-weight: 600; }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      75% { transform: translateX(4px); }
+    }
+
+    /* اسکرول preview */
+    .preview-scroll {
+      max-height: 320px;
+      overflow-y: auto;
+    }
+
+    @media (max-width: 640px) {
+      .max-w-2xl { max-width: 100% !important; padding-left: 8px; padding-right: 8px; }
+      .recipient-row { flex-direction: column; gap: 14px; padding: 18px !important; }
+      input[type="text"], input[type="number"] {
+        font-size: 1.05rem !important;
+        padding: 16px 14px !important;
+      }
+    }
   </style>
 </head>
 <body class="bg-gradient-to-br from-[#0b0b1f] to-[#1a1a2e] text-white min-h-screen">
@@ -89,24 +117,19 @@
       </div>
     </div>
 
-    <div id="status" class="glass border border-white/10 rounded-3xl p-6 mb-8 text-sm flex items-center justify-between">
-      <span>Ready to split tokens on Arc Testnet.</span>
-      <button onclick="updateBalance()" class="text-emerald-400 hover:text-emerald-300 text-xs flex items-center gap-1">
-        <i class="fas fa-sync"></i> Refresh
-      </button>
-    </div>
-
+    <div id="status" class="glass border border-white/10 rounded-3xl p-6 mb-8 text-base font-medium">Ready to split tokens on Arc Testnet.</div>
     <div id="successMessage" class="hidden glass border border-emerald-500/30 bg-emerald-500/10 rounded-3xl p-6 mb-8 text-emerald-400"></div>
 
     <div class="glass border border-white/10 rounded-3xl p-8 mb-8">
       <!-- Token Select -->
       <div class="mb-8">
         <label class="block text-gray-400 text-sm mb-2">Select Token</label>
-        <select id="tokenSelect" onchange="updateBalance()" 
+        <select id="tokenSelect" onchange="handleTokenChange()" 
                 class="w-full rounded-2xl px-6 py-5 focus:border-emerald-500 outline-none text-base">
           <option value="0x3600000000000000000000000000000000000000">USDC</option>
           <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
           <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
+          <option value="custom">Add Custom Token...</option>
         </select>
       </div>
 
@@ -151,16 +174,18 @@
       <div class="mb-8">
         <h4 class="text-gray-400 text-sm mb-3">Split Preview</h4>
         <div class="glass rounded-2xl overflow-hidden">
-          <table class="w-full">
-            <thead>
-              <tr class="border-b border-white/10">
-                <th class="text-left p-4 text-gray-400">Recipient</th>
-                <th class="text-right p-4 text-gray-400">Percent</th>
-                <th class="text-right p-4 text-gray-400">Amount</th>
-              </tr>
-            </thead>
-            <tbody id="preview-body" class="text-sm"></tbody>
-          </table>
+          <div class="preview-scroll">
+            <table class="w-full">
+              <thead>
+                <tr class="border-b border-white/10 sticky top-0 bg-[#1a1a2e]">
+                  <th class="text-left p-4 text-gray-400">Recipient</th>
+                  <th class="text-right p-4 text-gray-400">Percent</th>
+                  <th class="text-right p-4 text-gray-400">Amount</th>
+                </tr>
+              </thead>
+              <tbody id="preview-body" class="text-sm"></tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -186,8 +211,10 @@
   <div id="importModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
     <div class="glass rounded-3xl p-8 max-w-md w-full mx-4">
       <h3 class="text-xl font-bold mb-4">Import Recipients</h3>
-      <textarea id="importText" rows="8" class="w-full bg-white/5 border border-white/20 rounded-2xl p-5 text-sm font-mono"
-                placeholder="0x1234567890abcdef1234567890abcdef12345678,50"></textarea>
+      <textarea id="importText" rows="8" 
+                class="w-full bg-white/5 border border-white/20 rounded-2xl p-5 text-sm font-mono"
+                placeholder="0x1234567890abcdef1234567890abcdef12345678,50&#10;0xabcdef1234567890abcdef1234567890abcdef12,50"></textarea>
+      <p class="text-xs text-gray-400 mt-2">Format: address,percent (one per line)</p>
       <div class="flex gap-3 mt-6">
         <button onclick="hideImportModal()" class="flex-1 py-4 rounded-2xl border border-white/20 hover:bg-white/10">Cancel</button>
         <button onclick="importRecipients()" class="flex-1 py-4 bg-emerald-500 hover:bg-emerald-600 rounded-2xl">Import</button>
@@ -196,7 +223,7 @@
   </div>
 
   <!-- Toast -->
-  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 border border-white/20 text-white px-6 py-4 rounded-2xl shadow-2xl z-50">
+  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 border border-white/20 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 z-50">
     <span id="toastText"></span>
   </div>
 
@@ -205,12 +232,24 @@
     let userAddress = null;
     let transactions = JSON.parse(localStorage.getItem('arcTxHistory') || '[]');
     let isProcessing = false;
-    let balanceRetryCount = 0;
 
     const CONTRACT_ADDRESS = "0x12ABfB0866a72E90963E59F83AA53B95D6E173AE";
     const ARC_CHAIN_ID = 5042002;
 
-    const splitterAbi = [{ inputs: [{ name: "token", type: "address" }, { name: "recipients", type: "address[]" }, { name: "percentages", type: "uint256[]" }, { name: "totalAmount", type: "uint256" }], name: "splitPayment", outputs: [], stateMutability: "nonpayable", type: "function" }];
+    const splitterAbi = [
+      {
+        "inputs": [
+          { "name": "token", "type": "address" },
+          { "name": "recipients", "type": "address[]" },
+          { "name": "percentages", "type": "uint256[]" },
+          { "name": "totalAmount", "type": "uint256" }
+        ],
+        "name": "splitPayment",
+        "outputs": [],
+        "stateMutability": "nonpayable",
+        "type": "function"
+      }
+    ];
 
     function showToast(msg, duration = 3500) {
       const toast = document.getElementById("toast");
@@ -222,8 +261,13 @@
     function toggleTheme() {
       document.documentElement.classList.toggle('light');
       const icon = document.getElementById("themeBtn").querySelector("i");
-      icon.classList.toggle("fa-moon");
-      icon.classList.toggle("fa-sun");
+      if (icon.classList.contains("fa-moon")) {
+        icon.classList.remove("fa-moon");
+        icon.classList.add("fa-sun");
+      } else {
+        icon.classList.remove("fa-sun");
+        icon.classList.add("fa-moon");
+      }
     }
 
     window.addEventListener('load', () => {
@@ -238,27 +282,34 @@
       try {
         const provider = new ethers.BrowserProvider(window.ethereum);
         const network = await provider.getNetwork();
+
         if (network.chainId !== BigInt(ARC_CHAIN_ID)) {
-          showToast("Please switch to Arc Testnet (Chain ID: 5042002)", 6000);
+          showToast("Please switch to <b>Arc Testnet</b> (Chain ID: 5042002)", 6000);
           return;
         }
+
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         userAddress = accounts[0];
         signer = await provider.getSigner();
+
         document.getElementById("connectBtn").innerHTML = `<i class="fas fa-wallet"></i> Connected`;
-        await updateBalance();
         showToast("Wallet connected successfully");
+        await updateBalance();
       } catch (e) {
-        showToast("Connection failed");
+        console.error(e);
+        showToast("Failed to connect wallet");
       }
     }
 
     async function updateBalance(retry = 0) {
       if (!signer || !userAddress) return;
       const statusEl = document.getElementById("status");
+      statusEl.innerHTML = `Connected • Loading balance...`;
 
       try {
         const tokenAddr = document.getElementById("tokenSelect").value;
+        if (tokenAddr === "custom") return;
+
         const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
 
         const contract = new ethers.Contract(tokenAddr, [
@@ -269,17 +320,33 @@
         const [balance, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
         const formatted = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4);
         
-        statusEl.innerHTML = `
-          Connected • Balance: <span class="text-emerald-400 font-semibold balance-text">${formatted} ${symbol}</span>
-          <button onclick="updateBalance()" class="text-emerald-400 hover:text-emerald-300 text-xs ml-3"><i class="fas fa-sync"></i></button>
-        `;
-        balanceRetryCount = 0;
+        statusEl.innerHTML = `Connected • Balance: <span class="text-emerald-400 font-semibold text-lg">${formatted} ${symbol}</span>`;
       } catch (e) {
-        if (retry < 3) {
-          setTimeout(() => updateBalance(retry + 1), 800);
+        console.error(e);
+        if (retry < 2) {
+          setTimeout(() => updateBalance(retry + 1), 1000);
         } else {
           statusEl.innerHTML = `Connected • <span class="text-amber-400">Balance unavailable</span>`;
         }
+      }
+    }
+
+    async function handleTokenChange() {
+      const select = document.getElementById("tokenSelect");
+      if (select.value === "custom") {
+        const addr = prompt("Enter Custom Token Address (0x...):");
+        if (addr && ethers.isAddress(addr)) {
+          const option = document.createElement("option");
+          option.value = addr;
+          option.text = addr.substring(0, 10) + "...";
+          select.appendChild(option);
+          select.value = addr;
+          await updateBalance();
+        } else {
+          select.value = "0x3600000000000000000000000000000000000000";
+        }
+      } else {
+        await updateBalance();
       }
     }
 
@@ -287,7 +354,11 @@
       if (!signer) return showToast("Connect wallet first!");
       try {
         const tokenAddr = document.getElementById("tokenSelect").value;
-        const contract = new ethers.Contract(tokenAddr, ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"], signer);
+        const contract = new ethers.Contract(tokenAddr, [
+          "function balanceOf(address) view returns (uint256)",
+          "function decimals() view returns (uint8)"
+        ], signer);
+
         const [balance, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
         document.getElementById("totalAmount").value = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(6);
         updatePreview();
@@ -314,7 +385,8 @@
     }
 
     function validateAddress(input) {
-      input.classList.toggle("invalid", input.value && !ethers.isAddress(input.value.trim()));
+      const isValid = !input.value || ethers.isAddress(input.value.trim());
+      input.classList.toggle("invalid", !isValid);
     }
 
     function autoDistributePercentages() {
@@ -322,9 +394,13 @@
       if (count === 0) return;
       const base = Math.floor(100 / count);
       let remainder = 100 % count;
-      document.querySelectorAll('.percent').forEach((input, i) => {
+
+      document.querySelectorAll('.percent').forEach((input, index) => {
         let val = base;
-        if (remainder > 0) { val += 1; remainder--; }
+        if (remainder > 0) {
+          val += 1;
+          remainder--;
+        }
         input.value = val;
       });
       updatePercentTotal();
@@ -345,8 +421,10 @@
       const totalAmount = parseFloat(document.getElementById("totalAmount").value) || 0;
 
       document.querySelectorAll('.recipient-row').forEach(row => {
-        const addr = row.querySelector('.address').value.trim();
-        const perc = parseFloat(row.querySelector('.percent').value) || 0;
+        const addrInput = row.querySelector('.address');
+        const percInput = row.querySelector('.percent');
+        const addr = addrInput.value.trim();
+        const perc = parseFloat(percInput.value) || 0;
         const amount = (totalAmount * perc / 100).toFixed(6);
 
         if (addr) {
@@ -382,36 +460,50 @@
     function equalSplit() {
       const count = parseInt(prompt("Number of recipients (2-10):", "4")) || 4;
       if (count < 2 || count > 10) return showToast("Number must be between 2 and 10");
+
       const list = document.getElementById("recipients-list");
       list.innerHTML = "";
-      for (let i = 0; i < count; i++) addRecipient("", "");
+      for (let i = 0; i < count; i++) {
+        addRecipient("", "");
+      }
     }
 
-    function showImportModal() { document.getElementById("importModal").classList.remove("hidden"); }
-    function hideImportModal() { document.getElementById("importModal").classList.add("hidden"); }
+    function showImportModal() {
+      document.getElementById("importModal").classList.remove("hidden");
+    }
+
+    function hideImportModal() {
+      document.getElementById("importModal").classList.add("hidden");
+    }
 
     function importRecipients() {
       const text = document.getElementById("importText").value.trim();
       if (!text) return hideImportModal();
+
       const lines = text.split("\n");
       const list = document.getElementById("recipients-list");
       list.innerHTML = "";
+
       lines.forEach(line => {
         const [addr, perc] = line.split(",").map(s => s.trim());
-        if (addr && ethers.isAddress(addr)) addRecipient(addr, perc || "");
+        if (addr && ethers.isAddress(addr)) {
+          addRecipient(addr, perc || "");
+        }
       });
+
       hideImportModal();
       showToast("Recipients imported successfully");
     }
 
-    async function sendSplit() { /* همان کد قبلی بدون تغییر */ 
+    async function sendSplit() {
       if (!signer) return showToast("Please connect your wallet first!");
       if (isProcessing) return;
 
       const rows = document.querySelectorAll('.recipient-row');
       if (rows.length < 2) return showToast("At least 2 recipients are required");
 
-      const addresses = [], percentages = [];
+      const addresses = [];
+      const percentages = [];
       let totalPerc = 0;
 
       rows.forEach(row => {
@@ -425,23 +517,35 @@
       });
 
       if (addresses.length < 2) return showToast("At least 2 valid recipients needed");
-      if (Math.abs(totalPerc - 100) > 0.1) return showToast("Percentages must sum to 100%");
+      if (Math.abs(totalPerc - 100) > 0.1) return showToast("Percentages must sum exactly to 100%");
       if (percentages.some(p => p <= 0)) return showToast("Percentage cannot be zero");
 
-      const totalAmountStr = document.getElementById("totalAmount").value;
-      if (!totalAmountStr || parseFloat(totalAmountStr) <= 0) return showToast("Enter a valid amount!");
+      for (let addr of addresses) {
+        if (!ethers.isAddress(addr)) return showToast(`Invalid address: ${addr}`);
+      }
 
-      if (!confirm(`Send ${totalAmountStr} tokens to ${addresses.length} recipients?`)) return;
+      const totalAmountStr = document.getElementById("totalAmount").value;
+      const totalAmount = parseFloat(totalAmountStr);
+      if (!totalAmount || totalAmount <= 0) return showToast("Enter a valid amount!");
+
+      if (!confirm(`Send ${totalAmount} tokens to ${addresses.length} recipients?`)) return;
 
       isProcessing = true;
       const btn = document.getElementById("sendBtn");
       btn.disabled = true;
       btn.textContent = "Processing...";
 
+      const successDiv = document.getElementById("successMessage");
+
       try {
         const tokenAddr = document.getElementById("tokenSelect").value;
         const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
-        const tokenContract = new ethers.Contract(tokenAddr, ["function approve(address,uint256) returns (bool)", "function decimals() view returns (uint8)"], signer);
+
+        const tokenContract = new ethers.Contract(tokenAddr, [
+          "function approve(address,uint256) returns (bool)",
+          "function decimals() view returns (uint8)"
+        ], signer);
+
         const decimals = await tokenContract.decimals();
         const totalWei = ethers.parseUnits(totalAmountStr, decimals);
 
@@ -451,20 +555,30 @@
         const tx = await contract.splitPayment(tokenAddr, addresses, percentages, totalWei, { gasLimit: 800000 });
         await tx.wait();
 
-        document.getElementById("successMessage").innerHTML = `✅ Transaction Successful!<br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline">View Tx: ${tx.hash.substring(0,12)}...</a>`;
-        document.getElementById("successMessage").classList.remove('hidden');
+        successDiv.innerHTML = `✅ Transaction Successful!<br>
+          <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline font-medium">
+            View on Explorer: ${tx.hash.substring(0,12)}...
+          </a>`;
+        successDiv.classList.remove('hidden');
 
-        transactions.unshift({ hash: tx.hash, intent: `${totalAmountStr} ${symbol} → ${addresses.length} recipients`, time: new Date().toLocaleString() });
+        transactions.unshift({
+          hash: tx.hash,
+          intent: `${totalAmount} ${symbol} → ${addresses.length} recipients`,
+          time: new Date().toLocaleString()
+        });
         localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
         renderHistory();
         await updateBalance();
-        showToast("Transaction completed successfully!");
+
+        showToast("Transaction sent successfully!");
+
       } catch (error) {
+        console.error(error);
         showToast(error.reason || error.message || "Transaction failed");
       } finally {
         isProcessing = false;
-        document.getElementById("sendBtn").disabled = false;
-        document.getElementById("sendBtn").textContent = "Send Split Transaction";
+        btn.disabled = false;
+        btn.textContent = "Send Split Transaction";
       }
     }
 
@@ -474,7 +588,11 @@
       transactions.slice(0, 5).forEach(tx => {
         const div = document.createElement("div");
         div.className = "glass border border-white/10 rounded-2xl p-4 text-sm";
-        div.innerHTML = `<div class="text-gray-400 text-xs">${tx.time}</div><div>${tx.intent}</div><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="text-emerald-400 text-xs hover:underline">View Tx →</a>`;
+        div.innerHTML = `
+          <div class="text-gray-400 text-xs">${tx.time}</div>
+          <div>${tx.intent}</div>
+          <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="text-emerald-400 text-xs hover:underline">View Tx →</a>
+        `;
         container.appendChild(div);
       });
     }
