@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en" dir="ltr">
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -28,24 +29,20 @@
     }
     .light .text-gray-400 { color: #64748b; }
 
-    select {
+    select, input {
       background-color: rgba(255,255,255,0.05);
       color: white;
       border: 1px solid rgba(255,255,255,0.25);
     }
-    .light select {
+    .light select, .light input {
       background-color: #f8fafc;
       color: #1f2937;
       border: 1px solid #e2e8f0;
     }
 
-    select option {
-      background-color: #1f2937;
-      color: white;
-    }
-    .light select option {
-      background-color: #f8fafc;
-      color: #1f2937;
+    .invalid {
+      border-color: #ef4444 !important;
+      animation: shake 0.3s;
     }
 
     .percent-container {
@@ -65,31 +62,19 @@
       color: #64748b;
     }
 
-    /* Enhanced Mobile Responsive */
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      75% { transform: translateX(4px); }
+    }
+
     @media (max-width: 640px) {
-      .max-w-2xl { 
-        max-width: 100% !important; 
-        padding-left: 8px; 
-        padding-right: 8px; 
-      }
-      .glass { 
-        margin-left: 6px; 
-        margin-right: 6px; 
-      }
-      .recipient-row { 
-        flex-direction: column; 
-        gap: 14px; 
-        padding: 18px !important;
-      }
+      .max-w-2xl { max-width: 100% !important; padding-left: 8px; padding-right: 8px; }
+      .recipient-row { flex-direction: column; gap: 14px; padding: 18px !important; }
       input[type="text"], input[type="number"] {
         font-size: 1.05rem !important;
         padding: 16px 14px !important;
       }
-      button {
-        padding: 16px 24px !important;
-      }
-      .text-4xl { font-size: 2.1rem; }
-      .text-3xl { font-size: 1.8rem; }
     }
   </style>
 </head>
@@ -98,15 +83,15 @@
   <div class="max-w-2xl mx-auto px-4 py-10">
     <div class="flex justify-between items-center mb-10">
       <div class="flex items-center gap-3">
-        <div class="w-12 h-12 bg-gradient-to-br from-emerald-400 to-cyan-400 rounded-3xl flex items-center justify-center text-3xl"></div>
+        <div class="w-12 h-12 bg-gradient-to-br from-emerald-400 to-cyan-400 rounded-3xl flex items-center justify-center text-3xl">⚡</div>
         <div>
-          <h1 class="text-4xl font-bold gradient-text">ArcSplit Pro</h1>
+          <h1 class="text-4xl font-bold">ArcSplit Pro</h1>
           <p class="text-gray-400">Professional Token Splitter</p>
         </div>
       </div>
       <div class="flex gap-3">
-        <button onclick="toggleTheme()" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all">
-          <i class="fas fa-moon"></i>
+        <button onclick="toggleTheme()" id="themeBtn" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all">
+          <i class="fas fa-moon text-xl"></i>
         </button>
         <button onclick="connectWallet()" id="connectBtn" 
                 class="px-6 py-3 bg-white text-black font-semibold rounded-2xl flex items-center gap-2 hover:bg-gray-100">
@@ -115,71 +100,120 @@
       </div>
     </div>
 
-<div id="status" class="glass border border-white/10 rounded-3xl p-6 mb-8 text-sm">Ready to split tokens on Arc Testnet.</div>
+    <div id="status" class="glass border border-white/10 rounded-3xl p-6 mb-8 text-sm">Ready to split tokens on Arc Testnet.</div>
+    <div id="successMessage" class="hidden glass border border-emerald-500/30 bg-emerald-500/10 rounded-3xl p-6 mb-8 text-emerald-400"></div>
 
-<div id="successMessage" class="hidden glass border border-emerald-500/30 bg-emerald-500/10 rounded-3xl p-6 mb-8 text-emerald-400"></div>
+    <div class="glass border border-white/10 rounded-3xl p-8 mb-8">
+      <!-- Token Select -->
+      <div class="mb-6">
+        <label class="block text-gray-400 text-sm mb-2">Select Token</label>
+        <select id="tokenSelect" onchange="updateBalance()" 
+                class="w-full rounded-2xl px-6 py-5 focus:border-emerald-500 outline-none text-base">
+          <option value="0x3600000000000000000000000000000000000000">USDC</option>
+          <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
+          <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
+        </select>
+      </div>
 
-<div class="glass border border-white/10 rounded-3xl p-8 mb-8">
-  <!-- Token Select -->
-  <div class="mb-8">
-    <label class="block text-gray-400 text-sm mb-2">Select Token</label>
-    <select id="tokenSelect" onchange="updateBalance()" 
-            class="w-full rounded-2xl px-6 py-5 focus:border-emerald-500 outline-none text-base">
-      <option value="0x3600000000000000000000000000000000000000">USDC</option>
-      <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
-      <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
-    </select>
-  </div>
+      <!-- Custom Token -->
+      <div class="mb-8 flex gap-3">
+        <input id="customToken" type="text" placeholder="Custom Token Address (0x...)" 
+               class="flex-1 bg-white/5 border border-white/20 rounded-2xl px-6 py-5 outline-none">
+        <button onclick="addCustomToken()" 
+                class="px-8 bg-emerald-500 hover:bg-emerald-600 rounded-2xl font-medium">Add Token</button>
+      </div>
 
-  <!-- Total Amount -->
-  <div class="mb-8">
-    <label class="block text-gray-400 text-sm mb-2">Total Amount</label>
-    <div class="flex gap-3">
-      <input type="number" id="totalAmount" value="100" step="0.000001" 
-             class="flex-1 bg-white/5 border border-white/20 rounded-2xl px-6 py-5 text-3xl outline-none">
-      <button onclick="setMaxAmount()" class="px-10 bg-white/10 hover:bg-white/20 rounded-2xl font-medium">MAX</button>
-    </div>
-  </div>
+      <!-- Total Amount -->
+      <div class="mb-8">
+        <label class="block text-gray-400 text-sm mb-2">Total Amount</label>
+        <div class="flex gap-3">
+          <input type="number" id="totalAmount" value="100" step="0.000001" 
+                 class="flex-1 bg-white/5 border border-white/20 rounded-2xl px-6 py-5 text-3xl outline-none" oninput="updatePreview()">
+          <button onclick="setMaxAmount()" class="px-10 bg-white/10 hover:bg-white/20 rounded-2xl font-medium">MAX</button>
+        </div>
+      </div>
 
-  <!-- Quick Templates -->
-  <div class="mb-8">
-    <label class="block text-gray-400 text-sm mb-3">Quick Templates</label>
-    <div class="grid grid-cols-4 gap-3">
-      <button onclick="loadTemplate(1)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">50-50</button>
-      <button onclick="loadTemplate(2)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">33-33-34</button>
-      <button onclick="loadTemplate(3)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">40-60</button>
-      <button onclick="equalSplit()" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">Equal Split</button>
-    </div>
-  </div>
+      <!-- Quick Templates -->
+      <div class="mb-8">
+        <label class="block text-gray-400 text-sm mb-3">Quick Templates</label>
+        <div class="grid grid-cols-4 gap-3">
+          <button onclick="loadTemplate(1)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">50-50</button>
+          <button onclick="loadTemplate(2)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">33-33-34</button>
+          <button onclick="loadTemplate(3)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">40-60</button>
+          <button onclick="equalSplit()" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">Equal Split</button>
+        </div>
+      </div>
 
-  <!-- Recipients -->
-  <div class="mb-8">
-    <div class="flex justify-between mb-4">
-      <h3 class="font-semibold">Recipients</h3>
-      <button onclick="addRecipient()" class="text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
-        <i class="fas fa-plus"></i> Add
+      <!-- Recipients -->
+      <div class="mb-6">
+        <div class="flex justify-between mb-4">
+          <h3 class="font-semibold">Recipients</h3>
+          <div class="flex gap-3">
+            <button onclick="showImportModal()" class="text-sky-400 hover:text-sky-300 flex items-center gap-1 text-sm">
+              <i class="fas fa-upload"></i> Import
+            </button>
+            <button onclick="addRecipient()" class="text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
+              <i class="fas fa-plus"></i> Add
+            </button>
+          </div>
+        </div>
+        <div id="recipients-list" class="space-y-4"></div>
+      </div>
+
+      <!-- Preview Table -->
+      <div class="mb-8">
+        <h4 class="text-gray-400 text-sm mb-3">Split Preview</h4>
+        <div class="glass rounded-2xl overflow-hidden">
+          <table class="w-full">
+            <thead>
+              <tr class="border-b border-white/10">
+                <th class="text-left p-4 text-gray-400">Recipient</th>
+                <th class="text-right p-4 text-gray-400">Percent</th>
+                <th class="text-right p-4 text-gray-400">Amount</th>
+              </tr>
+            </thead>
+            <tbody id="preview-body" class="text-sm"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="flex justify-between mb-8">
+        <span id="percent-total" class="font-bold text-lg">Total: 0%</span>
+        <button onclick="distributeRemaining()" class="text-amber-400 hover:text-amber-300">Distribute Remaining</button>
+      </div>
+
+      <button id="sendBtn" onclick="sendSplit()" 
+              class="w-full bg-gradient-to-r from-pink-500 to-rose-500 py-7 rounded-3xl text-xl font-bold">
+        Send Split Transaction
       </button>
     </div>
-    <div id="recipients-list" class="space-y-4"></div>
+
+    <!-- History -->
+    <div class="glass border border-white/10 rounded-3xl p-8">
+      <h3 class="font-semibold mb-4">Recent Transactions</h3>
+      <div id="history" class="space-y-3 max-h-80 overflow-auto"></div>
+    </div>
   </div>
 
-  <div class="flex justify-between mb-8">
-    <span id="percent-total" class="font-bold text-lg">Total: 0%</span>
-    <button onclick="distributeRemaining()" class="text-amber-400 hover:text-amber-300">Distribute Remaining</button>
+  <!-- Import Modal -->
+  <div id="importModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+    <div class="glass rounded-3xl p-8 max-w-md w-full mx-4">
+      <h3 class="text-xl font-bold mb-4">Import Recipients</h3>
+      <textarea id="importText" rows="8" 
+                class="w-full bg-white/5 border border-white/20 rounded-2xl p-5 text-sm font-mono"
+                placeholder="0x1234567890abcdef1234567890abcdef12345678,50&#10;0xabcdef1234567890abcdef1234567890abcdef12,50"></textarea>
+      <p class="text-xs text-gray-400 mt-2">Format: address,percent (one per line)</p>
+      <div class="flex gap-3 mt-6">
+        <button onclick="hideImportModal()" class="flex-1 py-4 rounded-2xl border border-white/20 hover:bg-white/10">Cancel</button>
+        <button onclick="importRecipients()" class="flex-1 py-4 bg-emerald-500 hover:bg-emerald-600 rounded-2xl">Import</button>
+      </div>
+    </div>
   </div>
 
-  <button id="sendBtn" onclick="sendSplit()" 
-          class="w-full bg-gradient-to-r from-pink-500 to-rose-500 py-7 rounded-3xl text-xl font-bold">
-    Send Split Transaction
-  </button>
-</div>
-
-<!-- History -->
-<div class="glass border border-white/10 rounded-3xl p-8">
-  <h3 class="font-semibold mb-4">Recent Transactions</h3>
-  <div id="history" class="space-y-3 max-h-80 overflow-auto"></div>
-  <button onclick="exportHistory()" class="mt-6 text-sm text-gray-400 hover:text-white">Export History</button>
-</div>  </div>
+  <!-- Toast -->
+  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 border border-white/20 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 z-50">
+    <span id="toastText"></span>
+  </div>
 
   <script>
     let signer = null;
@@ -188,6 +222,7 @@
     let isProcessing = false;
 
     const CONTRACT_ADDRESS = "0x12ABfB0866a72E90963E59F83AA53B95D6E173AE";
+    const ARC_CHAIN_ID = 5042002;
 
     const splitterAbi = [
       {
@@ -204,8 +239,23 @@
       }
     ];
 
+    function showToast(msg, duration = 3500) {
+      const toast = document.getElementById("toast");
+      document.getElementById("toastText").innerHTML = msg;
+      toast.classList.remove("hidden");
+      setTimeout(() => toast.classList.add("hidden"), duration);
+    }
+
     function toggleTheme() {
       document.documentElement.classList.toggle('light');
+      const icon = document.getElementById("themeBtn").querySelector("i");
+      if (icon.classList.contains("fa-moon")) {
+        icon.classList.remove("fa-moon");
+        icon.classList.add("fa-sun");
+      } else {
+        icon.classList.remove("fa-sun");
+        icon.classList.add("fa-moon");
+      }
     }
 
     window.addEventListener('load', () => {
@@ -215,18 +265,31 @@
     });
 
     async function connectWallet() {
-      if (!window.ethereum) return alert("MetaMask not found!");
+      if (!window.ethereum) return showToast("MetaMask not found!");
+
       try {
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const network = await provider.getNetwork();
+
+        if (network.chainId !== BigInt(ARC_CHAIN_ID)) {
+          showToast("Please switch to <b>Arc Testnet</b> (Chain ID: 5042002)", 6000);
+          return;
+        }
+
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         userAddress = accounts[0];
-        const provider = new ethers.BrowserProvider(window.ethereum);
         signer = await provider.getSigner();
+
         document.getElementById("connectBtn").innerHTML = `<i class="fas fa-wallet"></i> Connected`;
         await updateBalance();
-      } catch (e) { console.error(e); }
+        showToast("Wallet connected successfully");
+      } catch (e) {
+        console.error(e);
+        showToast("Failed to connect wallet");
+      }
     }
 
-    async function updateBalance(retry = 0) {
+    async function updateBalance() {
       if (!signer || !userAddress) return;
       const statusEl = document.getElementById("status");
       statusEl.innerHTML = `Connected • Loading balance...`;
@@ -240,22 +303,16 @@
           "function decimals() view returns (uint8)"
         ], signer);
 
-        const balance = await contract.balanceOf(userAddress);
-        const decimals = await contract.decimals();
-
+        const [balance, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
         const formatted = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4);
         statusEl.innerHTML = `Connected • Balance: <span class="text-emerald-400 font-semibold">${formatted} ${symbol}</span>`;
       } catch (e) {
-        if (retry < 2) {
-          setTimeout(() => updateBalance(retry + 1), 1000);
-        } else {
-          statusEl.innerHTML = `Connected • <span class="text-amber-400">Balance unavailable • Try again</span>`;
-        }
+        statusEl.innerHTML = `Connected • <span class="text-amber-400">Balance unavailable</span>`;
       }
     }
 
     async function setMaxAmount() {
-      if (!signer) return alert("Connect wallet first!");
+      if (!signer) return showToast("Connect wallet first!");
       try {
         const tokenAddr = document.getElementById("tokenSelect").value;
         const contract = new ethers.Contract(tokenAddr, [
@@ -265,9 +322,28 @@
 
         const [balance, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
         document.getElementById("totalAmount").value = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(6);
+        updatePreview();
       } catch (e) {
-        alert("Could not fetch balance");
+        showToast("Could not fetch balance");
       }
+    }
+
+    function addCustomToken() {
+      const addr = document.getElementById("customToken").value.trim();
+      if (!ethers.isAddress(addr)) return showToast("Invalid token address");
+
+      const select = document.getElementById("tokenSelect");
+      if ([...select.options].some(opt => opt.value === addr)) {
+        return showToast("Token already added");
+      }
+
+      const option = document.createElement("option");
+      option.value = addr;
+      option.text = addr.substring(0, 10) + "...";
+      select.appendChild(option);
+      select.value = addr;
+      updateBalance();
+      showToast("Custom token added successfully");
     }
 
     function addRecipient(address = "", percent = "") {
@@ -276,21 +352,25 @@
       row.className = "recipient-row glass border border-white/10 rounded-2xl p-5 flex items-center gap-4";
       row.innerHTML = `
         <input type="text" class="address flex-1 bg-transparent border border-white/20 rounded-xl px-5 py-4 text-white placeholder-gray-400" 
-               placeholder="0x..." value="${address}">
+               placeholder="0x..." value="${address}" oninput="validateAddress(this); updatePreview()">
         <div class="percent-container w-28">
           <input type="number" class="percent w-full bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" 
-                 value="${percent}" placeholder="0" step="0.01" oninput="updatePercentTotal()">
+                 value="${percent}" placeholder="0" step="0.01" oninput="updatePercentTotal(); updatePreview()">
         </div>
-        <button onclick="this.parentElement.remove(); updatePercentTotal()" class="text-rose-400 text-3xl px-3">×</button>
+        <button onclick="this.parentElement.remove(); updatePercentTotal(); updatePreview()" class="text-rose-400 text-3xl px-3">×</button>
       `;
       list.appendChild(row);
       autoDistributePercentages();
     }
 
+    function validateAddress(input) {
+      const isValid = !input.value || ethers.isAddress(input.value.trim());
+      input.classList.toggle("invalid", !isValid);
+    }
+
     function autoDistributePercentages() {
       const count = document.querySelectorAll('.recipient-row').length;
       if (count === 0) return;
-
       const base = Math.floor(100 / count);
       let remainder = 100 % count;
 
@@ -302,7 +382,6 @@
         }
         input.value = val;
       });
-
       updatePercentTotal();
     }
 
@@ -312,13 +391,39 @@
       const el = document.getElementById("percent-total");
       el.textContent = `Total: ${total.toFixed(2)}%`;
       el.style.color = total === 100 ? '#00ffaa' : (total > 100 ? '#ff3366' : 'white');
+      updatePreview();
+    }
+
+    function updatePreview() {
+      const tbody = document.getElementById("preview-body");
+      tbody.innerHTML = "";
+      const totalAmount = parseFloat(document.getElementById("totalAmount").value) || 0;
+
+      document.querySelectorAll('.recipient-row').forEach(row => {
+        const addrInput = row.querySelector('.address');
+        const percInput = row.querySelector('.percent');
+        const addr = addrInput.value.trim();
+        const perc = parseFloat(percInput.value) || 0;
+        const amount = (totalAmount * perc / 100).toFixed(6);
+
+        if (addr) {
+          const tr = document.createElement("tr");
+          tr.className = "border-b border-white/10 last:border-none";
+          tr.innerHTML = `
+            <td class="p-4 font-mono text-xs">${addr.substring(0,12)}...</td>
+            <td class="text-right p-4">${perc.toFixed(2)}%</td>
+            <td class="text-right p-4 font-medium">${amount}</td>
+          `;
+          tbody.appendChild(tr);
+        }
+      });
     }
 
     function distributeRemaining() {
       const percents = Array.from(document.querySelectorAll('.percent'));
       let total = percents.reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
       let remaining = 100 - total;
-      if (remaining <= 0.01) return alert("No remaining percentage!");
+      if (remaining <= 0.01) return showToast("No remaining percentage!");
       percents[percents.length - 1].value = remaining.toFixed(2);
       updatePercentTotal();
     }
@@ -333,46 +438,76 @@
 
     function equalSplit() {
       const count = parseInt(prompt("Number of recipients (2-10):", "4")) || 4;
-      if (count < 2 || count > 10) return alert("Number must be between 2 and 10");
+      if (count < 2 || count > 10) return showToast("Number must be between 2 and 10");
 
       const list = document.getElementById("recipients-list");
       list.innerHTML = "";
-      for (let i = 1; i <= count; i++) {
+      for (let i = 0; i < count; i++) {
         addRecipient("", "");
       }
     }
 
+    function showImportModal() {
+      document.getElementById("importModal").classList.remove("hidden");
+    }
+
+    function hideImportModal() {
+      document.getElementById("importModal").classList.add("hidden");
+    }
+
+    function importRecipients() {
+      const text = document.getElementById("importText").value.trim();
+      if (!text) return hideImportModal();
+
+      const lines = text.split("\n");
+      const list = document.getElementById("recipients-list");
+      list.innerHTML = "";
+
+      lines.forEach(line => {
+        const [addr, perc] = line.split(",").map(s => s.trim());
+        if (addr && ethers.isAddress(addr)) {
+          addRecipient(addr, perc || "");
+        }
+      });
+
+      hideImportModal();
+      showToast("Recipients imported successfully");
+    }
+
     async function sendSplit() {
-      if (!signer) return alert("Please connect your wallet first!");
+      if (!signer) return showToast("Please connect your wallet first!");
       if (isProcessing) return;
 
-      const totalAmountStr = document.getElementById("totalAmount").value;
-      const totalAmount = parseFloat(totalAmountStr);
-      if (!totalAmount || totalAmount <= 0) return alert("Enter a valid amount!");
-
-      const tokenAddr = document.getElementById("tokenSelect").value;
-      const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
+      const rows = document.querySelectorAll('.recipient-row');
+      if (rows.length < 2) return showToast("At least 2 recipients are required");
 
       const addresses = [];
       const percentages = [];
+      let totalPerc = 0;
 
-      document.querySelectorAll('#recipients-list > div').forEach(row => {
+      rows.forEach(row => {
         const addr = row.querySelector('.address').value.trim();
         const perc = parseFloat(row.querySelector('.percent').value) || 0;
         if (addr && perc > 0) {
           addresses.push(addr);
           percentages.push(Math.round(perc));
+          totalPerc += perc;
         }
       });
 
-      if (addresses.length < 2) return alert("At least 2 recipients needed!");
-      if (percentages.reduce((a,b)=>a+b,0) !== 100) return alert("Percentages must sum exactly to 100%!");
+      if (addresses.length < 2) return showToast("At least 2 valid recipients needed");
+      if (Math.abs(totalPerc - 100) > 0.1) return showToast("Percentages must sum exactly to 100%");
+      if (percentages.some(p => p <= 0)) return showToast("Percentage cannot be zero");
 
       for (let addr of addresses) {
-        if (!ethers.isAddress(addr)) return alert(`Invalid address: ${addr}`);
+        if (!ethers.isAddress(addr)) return showToast(`Invalid address: ${addr}`);
       }
 
-      if (!confirm(`Send ${totalAmount} ${symbol} to ${addresses.length} recipients?`)) return;
+      const totalAmountStr = document.getElementById("totalAmount").value;
+      const totalAmount = parseFloat(totalAmountStr);
+      if (!totalAmount || totalAmount <= 0) return showToast("Enter a valid amount!");
+
+      if (!confirm(`Send ${totalAmount} tokens to ${addresses.length} recipients?`)) return;
 
       isProcessing = true;
       const btn = document.getElementById("sendBtn");
@@ -382,6 +517,9 @@
       const successDiv = document.getElementById("successMessage");
 
       try {
+        const tokenAddr = document.getElementById("tokenSelect").value;
+        const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
+
         const tokenContract = new ethers.Contract(tokenAddr, [
           "function approve(address,uint256) returns (bool)",
           "function decimals() view returns (uint8)"
@@ -396,9 +534,9 @@
         const tx = await contract.splitPayment(tokenAddr, addresses, percentages, totalWei, { gasLimit: 800000 });
         await tx.wait();
 
-        successDiv.innerHTML = ` Transaction Successful!<br>
+        successDiv.innerHTML = `✅ Transaction Successful!<br>
           <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline font-medium">
-            View Tx: ${tx.hash.substring(0,12)}...
+            View on Explorer: ${tx.hash.substring(0,12)}...
           </a>`;
         successDiv.classList.remove('hidden');
 
@@ -409,12 +547,13 @@
         });
         localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
         renderHistory();
-
         await updateBalance();
+
+        showToast("Transaction sent successfully!");
 
       } catch (error) {
         console.error(error);
-        document.getElementById("status").innerHTML = ` Failed: ${error.reason || error.message || error}`;
+        showToast(error.reason || error.message || "Transaction failed");
       } finally {
         isProcessing = false;
         btn.disabled = false;
@@ -428,20 +567,14 @@
       transactions.slice(0, 5).forEach(tx => {
         const div = document.createElement("div");
         div.className = "glass border border-white/10 rounded-2xl p-4 text-sm";
-        div.innerHTML = `<div class="text-gray-400 text-xs">${tx.time}</div><div>${tx.intent}</div><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="text-emerald-400 text-xs hover:underline">View Tx →</a>`;
+        div.innerHTML = `
+          <div class="text-gray-400 text-xs">${tx.time}</div>
+          <div>${tx.intent}</div>
+          <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="text-emerald-400 text-xs hover:underline">View Tx →</a>
+        `;
         container.appendChild(div);
       });
-    }
-
-    function exportHistory() {
-      if (transactions.length === 0) return alert("No history!");
-      const dataStr = JSON.stringify(transactions, null, 2);
-      const a = document.createElement('a');
-      a.href = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
-      a.download = `arcsplit-history-${new Date().toISOString().slice(0,10)}.json`;
-      a.click();
     }
   </script>
 </body>
 </html>
-
