@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fa" dir="ltr">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -55,6 +55,9 @@
       animation: shake 0.3s;
     }
 
+    .percent-container {
+      position: relative;
+    }
     .percent-container::after {
       content: "%";
       position: absolute;
@@ -106,6 +109,11 @@
       opacity: 0.45;
       filter: blur(10px);
       box-shadow: 0 0 25px -2px rgb(16 185 129 / 0.6);
+    }
+
+    @media (max-width: 640px) {
+      .max-w-2xl { max-width: 100% !important; padding-left: 8px; padding-right: 8px; }
+      .recipient-row { grid-template-columns: 1fr 1fr 1fr auto !important; gap: 12px; }
     }
   </style>
 </head>
@@ -206,6 +214,11 @@
             </table>
           </div>
         </div>
+      </div>
+
+      <div class="flex justify-between mb-8">
+        <span id="percent-total" class="font-bold text-lg">Total: 0%</span>
+        <button onclick="distributeRemaining()" class="text-amber-400 hover:text-amber-300">Distribute Remaining</button>
       </div>
 
       <button id="sendBtn" onclick="sendSplit()" 
@@ -333,13 +346,16 @@
       try {
         provider = new ethers.BrowserProvider(window.ethereum);
         const network = await provider.getNetwork();
+
         if (network.chainId !== BigInt(ARC_CHAIN_ID)) {
           showToast("Please switch to <b>Arc Testnet</b> (Chain ID: 5042002)", 6000);
           return;
         }
+
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
         userAddress = accounts[0];
         signer = await provider.getSigner();
+
         document.getElementById("logoContainer").classList.add("connected");
         updateConnectButton();
         showToast("Wallet connected successfully");
@@ -364,32 +380,40 @@
     }
 
     function disconnectWallet() {
-      signer = null; userAddress = null; provider = null;
+      signer = null;
+      userAddress = null;
+      provider = null;
       document.getElementById("logoContainer").classList.remove("connected");
       const btn = document.getElementById("connectBtn");
       btn.innerHTML = `<i class="fas fa-wallet"></i> <span>Connect Wallet</span>`;
       btn.onclick = showConnectModal;
       btn.classList.remove("!bg-emerald-500", "!text-white");
+      document.getElementById("status").innerHTML = "Ready to split tokens on Arc Testnet.";
       showToast("Wallet disconnected");
     }
 
-    async function updateBalance() {
+    async function updateBalance(retry = 0) {
       if (!signer || !userAddress) return;
       const statusEl = document.getElementById("status");
       statusEl.innerHTML = `Connected • Loading balance...`;
+
       try {
         const tokenAddr = document.getElementById("tokenSelect").value;
         if (tokenAddr === "custom") return;
+
         const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
         const contract = new ethers.Contract(tokenAddr, [
           "function balanceOf(address) view returns (uint256)",
           "function decimals() view returns (uint8)"
         ], signer);
+
         const [balance, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
         const formatted = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4);
-        statusEl.innerHTML = `Connected • Balance: <span class="text-emerald-400 font-semibold">${formatted} ${symbol}</span>`;
+        statusEl.innerHTML = `Connected • Balance: <span class="text-emerald-400 font-semibold text-lg">${formatted} ${symbol}</span>`;
       } catch (e) {
-        statusEl.innerHTML = `Connected • <span class="text-amber-400">Balance unavailable</span>`;
+        console.error(e);
+        if (retry < 2) setTimeout(() => updateBalance(retry + 1), 1000);
+        else statusEl.innerHTML = `Connected • <span class="text-amber-400">Balance unavailable</span>`;
       }
     }
 
@@ -403,11 +427,13 @@
           option.text = addr.substring(0, 10) + "...";
           select.appendChild(option);
           select.value = addr;
+          await updateBalance();
         } else {
           select.value = "0x3600000000000000000000000000000000000000";
         }
+      } else {
+        await updateBalance();
       }
-      await updateBalance();
     }
 
     async function setMaxAmount() {
@@ -418,6 +444,7 @@
           "function balanceOf(address) view returns (uint256)",
           "function decimals() view returns (uint8)"
         ], signer);
+
         const [balance, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
         document.getElementById("totalAmount").value = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(6);
         updateAllAmounts();
@@ -426,19 +453,22 @@
       }
     }
 
-    function addRecipient(address = "", percent = 50) {
+    function addRecipient(address = "", percent = "") {
       const list = document.getElementById("recipients-list");
       const row = document.createElement("div");
       row.className = "recipient-row glass border border-white/10 rounded-2xl p-5 grid grid-cols-12 gap-4 items-center";
       row.innerHTML = `
         <input type="text" class="address col-span-5 bg-transparent border border-white/20 rounded-xl px-5 py-4 text-white placeholder-gray-400" 
                placeholder="0x..." value="${address}" oninput="validateAddress(this); updatePreview()">
+
         <div class="percent-container col-span-3 relative">
-          <input type="number" class="percent w-full bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center" 
-                 value="${percent}" step="0.01" oninput="handlePercentChange(this)">
+          <input type="number" class="percent w-full bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" 
+                 value="${percent}" placeholder="0" step="0.01" oninput="handlePercentChange(this)">
         </div>
-        <input type="number" class="amount col-span-3 bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center" 
-               step="0.000001" oninput="handleAmountChange(this)">
+
+        <input type="number" class="amount col-span-3 bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" 
+               value="0" step="0.000001" oninput="handleAmountChange(this)">
+
         <button onclick="removeRecipient(this)" class="text-rose-400 text-3xl px-3 col-span-1">×</button>
       `;
       list.appendChild(row);
@@ -455,6 +485,7 @@
       const total = parseFloat(document.getElementById("totalAmount").value) || 0;
       const perc = parseFloat(input.value) || 0;
       row.querySelector('.amount').value = (total * perc / 100).toFixed(6);
+      updatePercentTotal();
       updatePreview();
     }
 
@@ -465,6 +496,7 @@
       if (total > 0) {
         row.querySelector('.percent').value = (amt / total * 100).toFixed(2);
       }
+      updatePercentTotal();
       updatePreview();
     }
 
@@ -474,12 +506,17 @@
         const perc = parseFloat(row.querySelector('.percent').value) || 0;
         row.querySelector('.amount').value = (total * perc / 100).toFixed(6);
       });
+      updatePercentTotal();
       updatePreview();
     }
 
-    function validateAddress(input) {
-      const isValid = !input.value || ethers.isAddress(input.value.trim());
-      input.classList.toggle("invalid", !isValid);
+    function updatePercentTotal() {
+      const percents = Array.from(document.querySelectorAll('.percent')).map(el => parseFloat(el.value) || 0);
+      const total = percents.reduce((a, b) => a + b, 0);
+      const el = document.getElementById("percent-total");
+      el.textContent = `Total: ${total.toFixed(2)}%`;
+      el.style.color = total === 100 ? '#00ffaa' : (total > 100 ? '#ff3366' : 'white');
+      updatePreview();
     }
 
     function updatePreview() {
@@ -505,6 +542,36 @@
       });
     }
 
+    function distributeRemaining() {
+      const percents = Array.from(document.querySelectorAll('.percent'));
+      let total = percents.reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
+      let remaining = 100 - total;
+      if (remaining <= 0.01) return showToast("No remaining percentage!");
+      percents[percents.length - 1].value = (parseFloat(percents[percents.length - 1].value || 0) + remaining).toFixed(2);
+      updateAllAmounts();
+    }
+
+    function validateAddress(input) {
+      const isValid = !input.value || ethers.isAddress(input.value.trim());
+      input.classList.toggle("invalid", !isValid);
+    }
+
+    function loadTemplate(type) {
+      const list = document.getElementById("recipients-list");
+      list.innerHTML = "";
+      if (type === 1) { addRecipient("", 50); addRecipient("", 50); }
+      else if (type === 2) { addRecipient("", 33); addRecipient("", 33); addRecipient("", 34); }
+      else if (type === 3) { addRecipient("", 40); addRecipient("", 60); }
+    }
+
+    function equalSplit() {
+      const count = parseInt(prompt("Number of recipients (2-10):", "4")) || 4;
+      if (count < 2 || count > 10) return showToast("Number must be between 2 and 10");
+      const list = document.getElementById("recipients-list");
+      list.innerHTML = "";
+      for (let i = 0; i < count; i++) addRecipient("", "");
+    }
+
     function showImportModal() {
       document.getElementById("importModal").classList.remove("hidden");
     }
@@ -522,7 +589,7 @@
       lines.forEach(line => {
         const [addr, perc] = line.split(",").map(s => s.trim());
         if (addr && ethers.isAddress(addr)) {
-          addRecipient(addr, perc || 0);
+          addRecipient(addr, perc || "");
         }
       });
       hideImportModal();
@@ -552,6 +619,11 @@
 
       if (addresses.length < 2) return showToast("At least 2 valid recipients needed");
       if (Math.abs(totalPerc - 100) > 0.1) return showToast("Percentages must sum exactly to 100%");
+      if (percentages.some(p => p <= 0)) return showToast("Percentage cannot be zero");
+
+      for (let addr of addresses) {
+        if (!ethers.isAddress(addr)) return showToast(`Invalid address: ${addr}`);
+      }
 
       const totalAmountStr = document.getElementById("totalAmount").value;
       const totalAmount = parseFloat(totalAmountStr);
@@ -630,7 +702,6 @@
       addRecipient("", 50);
       addRecipient("", 50);
       renderHistory();
-      updatePreview();
     });
   </script>
 </body>
