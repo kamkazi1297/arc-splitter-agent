@@ -149,16 +149,23 @@
   <p class="text-gray-400">Professional Token Splitter</p>
 </div>  </div>
 
-  <div class="flex gap-3">
-    <button onclick="toggleTheme()" id="themeBtn" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all">
-      <i class="fas fa-moon text-xl"></i>
-    </button>
-    <button onclick="showConnectModal()" id="connectBtn" 
-            class="px-6 py-3 bg-white text-black font-semibold rounded-2xl flex items-center gap-2 hover:bg-gray-100 transition-all">
-      <i class="fas fa-wallet"></i> 
-      <span id="connectText">Connect Wallet</span>
-    </button>
-  </div>
+  <div class="flex gap-3 flex-wrap">
+  <button onclick="toggleTheme()" id="themeBtn" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all">
+    <i class="fas fa-moon text-xl"></i>
+  </button>
+  
+  <button onclick="showConnectModal()" id="connectBtn" 
+          class="px-6 py-3 bg-white text-black font-semibold rounded-2xl flex items-center gap-2 hover:bg-gray-100 transition-all">
+    <i class="fas fa-wallet"></i> 
+    <span id="connectText">Connect Wallet</span>
+  </button>
+
+  <button onclick="connectTelegram()" 
+          class="px-6 py-3 bg-[#229ED9] hover:bg-[#1a8ac4] text-white font-semibold rounded-2xl flex items-center gap-2 transition-all">
+    <i class="fab fa-telegram-plane"></i> 
+    <span id="telegramText">Connect Telegram</span>
+  </button>
+</div>
 </div>
 
 <div id="status" class="glass border border-white/10 rounded-3xl p-6 mb-8 text-base font-medium">Ready to split tokens on Arc Testnet.</div>
@@ -814,7 +821,18 @@
       container.appendChild(div);
     });
   }
+function connectTelegram() {
+  if (!userAddress) {
+    return showToast("Please connect your wallet first!");
+  }
 
+  const botUsername = "ArcSplitPro_bot";   // ← Change this to your bot username
+  
+  const link = `https://t.me/${botUsername}?start=connect`;
+  window.open(link, "_blank");
+  
+  showToast("Telegram bot opened. Send /start");
+}
   window.addEventListener('load', () => {
     addRecipient("", "");
     addRecipient("", "");
