@@ -701,7 +701,7 @@
     const totalAmount = parseFloat(document.getElementById("totalAmount").value);
     if (!totalAmount || totalAmount <= 0) return showToast("Enter a valid total amount!");
 
-    const tolerance = 0.0001;
+    const tolerance = 0.000001;
 
     // ==================== Validation Logic ====================
     if (splitMode === 'manual') {
@@ -714,14 +714,13 @@
         }
       }
     } else {
-      // Auto Mode
-      const diff = Math.abs(totalPerc - 100);
-      if (diff > tolerance) {
-        const lastPerc = percentages[percentages.length - 1];
-        const ideal = 100 / rows.length;
-        const difference = (lastPerc - ideal).toFixed(6);
-        
-        if (!confirm(`⚠️ The last recipient has ${difference}% more due to precise rounding.\n\nDo you want to proceed?`)) {
+      // Auto Mode - Always show warning if last field has any difference
+      const lastPerc = percentages[percentages.length - 1];
+      const ideal = 100 / rows.length;
+      const difference = (lastPerc - ideal).toFixed(6);
+
+      if (Math.abs(difference) > 0) {
+        if (!confirm(`⚠️ Due to precise rounding, the last recipient has ${difference}% more than the others.\n\nDo you want to proceed?`)) {
           return;
         }
       }
