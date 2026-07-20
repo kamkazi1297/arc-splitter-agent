@@ -161,10 +161,10 @@
   </button>
 
   <button onclick="connectTelegram()" 
-          class="px-6 py-3 bg-[#229ED9] hover:bg-[#1a8ac4] text-white font-semibold rounded-2xl flex items-center gap-2 transition-all">
-    <i class="fab fa-telegram-plane"></i> 
-    <span id="telegramText">Connect Telegram</span>
-  </button>
+        class="px-6 py-3 bg-[#229ED9] hover:bg-[#1a8ac4] text-white font-semibold rounded-2xl flex items-center gap-2 transition-all">
+  <i class="fab fa-telegram-plane"></i> 
+  <span id="telegramText">Connect Telegram</span>
+</button>
 </div>
 </div>
 
@@ -826,12 +826,13 @@ function connectTelegram() {
     return showToast("Please connect your wallet first!");
   }
 
-  const botUsername = "ArcSplitPro_bot";   // ← Change this to your bot username
+  const botUsername = "ArcSplitPro_bot";  
+
+  // ارسال آدرس والت به ربات
+  const link = `https://t.me/${botUsername}?start=wallet_${userAddress}`;
   
-  const link = `https://t.me/${botUsername}?start=connect`;
   window.open(link, "_blank");
-  
-  showToast("Telegram bot opened. Send /start");
+  showToast("Connecting your wallet to Telegram...");
 }
   window.addEventListener('load', () => {
     addRecipient("", "");
@@ -840,6 +841,78 @@ function connectTelegram() {
     renderHistory();
     setTimeout(updateAll, 200);
   });
+// Auto-fill from Telegram URL
+// ====================== AUTO FILL FROM TELEGRAM ======================
+function autoFillFromURL() {
+  const urlParams = new URLSearchParams(window.location.search);
+  
+  const action = urlParams.get('action');
+  const amount = urlParams.get('amount');
+  const tokenSymbol = urlParams.get('token');
+  const addressesStr = urlParams.get('addresses');
+  const singleTo = urlParams.get('to');
+
+  if (!action || !amount) return;
+
+  // پر کردن مقدار
+  document.getElementById('totalAmount').value = amount;
+
+  // انتخاب توکن
+  const tokenSelect = document.getElementById('tokenSelect');
+  if (tokenSelect) {
+    if (tokenSymbol === 'USDC') tokenSelect.value = "0x3600000000000000000000000000000000000000";
+    else if (tokenSymbol === 'EURC') tokenSelect.value = "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a";
+    else if (tokenSymbol === 'cirBTC') tokenSelect.value = "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF";
+  }
+
+  // پاک کردن لیست قبلی
+  document.getElementById('recipients-list').innerHTML = '';
+
+  let addresses = [];
+
+  if (addressesStr) {
+    addresses = addressesStr.split(',');
+  } else if (singleTo) {
+    addresses = [singleTo];
+  }
+
+  if (addresses.length > 0) {
+    addresses.forEach(addr => {
+      if (addr && addr.trim()) {
+        addRecipient(addr.trim(), "");
+      }
+    });
+  }
+
+  // اگر یک آدرس بود، درصد 100% بذار
+  if (addresses.length === 1) {
+    setTimeout(() => {
+      const percents = document.querySelectorAll('.percent');
+      if (percents.length > 0) percents[0].value = "100";
+    }, 300);
+  } else {
+    setMode('auto');
+  }
+
+  setTimeout(() => {
+    updateAll();
+    showToast(`📱 Command loaded! (${addresses.length} recipients)`, 5000);
+    document.getElementById('sendBtn').scrollIntoView({ behavior: "smooth" });
+  }, 800);
+}
+// ====================== END OF AUTO FILL ======================
+
+  window.addEventListener('load', () => {
+    addRecipient("", "");
+    addRecipient("", "");
+    setMode('manual');
+    renderHistory();
+    setTimeout(updateAll, 200);
+
+    autoFillFromURL();
+  });
+
+    
 </script></body>
 </html>
 
