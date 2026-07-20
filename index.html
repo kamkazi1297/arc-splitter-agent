@@ -696,10 +696,16 @@
         const rows = document.querySelectorAll('.recipient-row');
         if (rows.length < 2) return showToast("At least 2 recipients are required");
 
-        // Warning for Auto mode
+        // هشدار هوشمند فقط وقتی درصد رند نشود
         if (splitMode === 'auto' && rows.length > 1) {
-          if (!confirm("In Auto mode, due to percentage division, the last recipient's amount is slightly higher.\n\nDo you want to continue?")) {
-            return;
+          const percents = Array.from(rows).map(row => parseFloat(row.querySelector('.percent').value) || 0);
+          const firstPerc = percents[0];
+          const hasRounding = percents.some(p => Math.abs(p - firstPerc) > 0.0001);
+
+          if (hasRounding) {
+            if (!confirm("In Auto mode, due to percentage division, the last recipient's amount is slightly higher.\n\nDo you want to continue?")) {
+              return;
+            }
           }
         }
 
