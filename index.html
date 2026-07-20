@@ -149,22 +149,24 @@
   <p class="text-gray-400">Professional Token Splitter</p>
 </div>  </div>
 
-  <div class="flex gap-3 flex-wrap">
+  <div class="flex gap-3 flex-wrap items-center">
   <button onclick="toggleTheme()" id="themeBtn" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all">
     <i class="fas fa-moon text-xl"></i>
   </button>
   
+  <!-- Wallet Status -->
   <button onclick="showConnectModal()" id="connectBtn" 
           class="px-6 py-3 bg-white text-black font-semibold rounded-2xl flex items-center gap-2 hover:bg-gray-100 transition-all">
     <i class="fas fa-wallet"></i> 
     <span id="connectText">Connect Wallet</span>
   </button>
 
-  <button onclick="connectTelegram()" 
-        class="px-6 py-3 bg-[#229ED9] hover:bg-[#1a8ac4] text-white font-semibold rounded-2xl flex items-center gap-2 transition-all">
-  <i class="fab fa-telegram-plane"></i> 
-  <span id="telegramText">Connect Telegram</span>
-</button>
+  <!-- Telegram Status -->
+  <button onclick="connectTelegram()" id="telegramBtn"
+          class="px-6 py-3 bg-[#229ED9] hover:bg-[#1a8ac4] text-white font-semibold rounded-2xl flex items-center gap-2 transition-all">
+    <i class="fab fa-telegram-plane"></i> 
+    <span id="telegramText">Connect Telegram</span>
+  </button>
 </div>
 </div>
 
@@ -316,6 +318,46 @@
   let transactions = JSON.parse(localStorage.getItem('arcTxHistory') || '[]');
   let isProcessing = false;
   let splitMode = 'manual';
+  let telegramLinked = false;
+let telegramUsername = "";
+
+// Load saved connections
+function loadSavedConnections() {
+  const savedWallet = localStorage.getItem('userAddress');
+  const savedTelegram = localStorage.getItem('telegramUsername');
+
+  if (savedWallet) {
+    userAddress = savedWallet;
+    updateConnectButton();
+  }
+  if (savedTelegram) {
+    telegramLinked = true;
+    telegramUsername = savedTelegram;
+    updateTelegramButton();
+  }
+}
+
+function updateTelegramButton() {
+  const btn = document.getElementById("telegramBtn");
+  if (telegramLinked && telegramUsername) {
+    btn.innerHTML = `<i class="fab fa-telegram-plane"></i> <span>@${telegramUsername}</span>`;
+    btn.onclick = null;
+    btn.style.opacity = "0.9";
+    btn.style.cursor = "default";
+  }
+}
+
+function connectTelegram() {
+  if (!userAddress) {
+    return showToast("Please connect your wallet first!");
+  }
+
+  const botUsername = "ArcSplitPro_bot"; 
+  const link = `https://t.me/${botUsername}?start=wallet_${userAddress}`;
+  
+  window.open(link, "_blank");
+  showToast("Connecting your wallet to Telegram...");
+}
 
   const CONTRACT_ADDRESS = "0x73Da94F0D960Ef8FD49Ed28a94f667aF3C062cB2";
   const ARC_CHAIN_ID = 5042002;
@@ -393,12 +435,16 @@
   }
 
   function updateConnectButton() {
-    const btn = document.getElementById("connectBtn");
-    const short = userAddress ? `${userAddress.slice(0,6)}...${userAddress.slice(-4)}` : "";
-    btn.innerHTML = `<i class="fas fa-wallet"></i> <span>${short}</span>`;
-    btn.onclick = disconnectWallet;
+  const btn = document.getElementById("connectBtn");
+  const short = userAddress ? `${userAddress.slice(0,6)}...${userAddress.slice(-4)}` : "Connect Wallet";
+  btn.innerHTML = `<i class="fas fa-wallet"></i> <span>${short}</span>`;
+  btn.onclick = userAddress ? disconnectWallet : showConnectModal;
+  
+  if (userAddress) {
     btn.classList.add("!bg-emerald-500", "!text-white");
+    localStorage.setItem('userAddress', userAddress);
   }
+}
 
   function disconnectWallet() {
     signer = null; userAddress = null; provider = null;
@@ -835,12 +881,14 @@ function connectTelegram() {
   showToast("Connecting your wallet to Telegram...");
 }
   window.addEventListener('load', () => {
-    addRecipient("", "");
-    addRecipient("", "");
-    setMode('manual');
-    renderHistory();
-    setTimeout(updateAll, 200);
-  });
+  loadSavedConnections();     
+  addRecipient("", "");
+  addRecipient("", "");
+  setMode('manual');
+  renderHistory();
+  setTimeout(updateAll, 200);
+  autoFillFromURL();
+});
 // Auto-fill from Telegram URL
 // ====================== AUTO FILL FROM TELEGRAM ======================
 function autoFillFromURL() {
@@ -903,14 +951,14 @@ function autoFillFromURL() {
 // ====================== END OF AUTO FILL ======================
 
   window.addEventListener('load', () => {
-    addRecipient("", "");
-    addRecipient("", "");
-    setMode('manual');
-    renderHistory();
-    setTimeout(updateAll, 200);
-
-    autoFillFromURL();
-  });
+  loadSavedConnections();     
+  addRecipient("", "");
+  addRecipient("", "");
+  setMode('manual');
+  renderHistory();
+  setTimeout(updateAll, 200);
+  autoFillFromURL();
+});
 
     
 </script></body>
