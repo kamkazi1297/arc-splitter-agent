@@ -442,13 +442,13 @@
         
         <div class="percent-container w-28">
           <input type="number" class="percent w-full bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" 
-                 value="${percent}" placeholder="0" step="0.000001" 
+                 value="${percent}" placeholder="" step="0.000001" 
                  oninput="handlePercentChange(this); updateAll()">
         </div>
 
         <div class="amount-container w-36">
           <input type="number" class="amount w-full bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" 
-                 placeholder="0" step="0.000001" 
+                 placeholder="" step="0.000001" 
                  oninput="handleAmountChange(this); updateAll()">
         </div>
 
@@ -478,6 +478,11 @@
         percentInput.value = (value / 100).toFixed(6);
         total += value;
       });
+
+      // Warning for uneven splits
+      if (rows.length >= 3) {
+        showToast("Last recipient slightly increased to reach exactly 100%", 4000);
+      }
       
       updateAll();
     }
@@ -486,14 +491,13 @@
       if (splitMode === 'auto') {
         autoDistributePercentages();
       } else {
-        let val = percentInput.value;
-        if (val === "") {
+        if (percentInput.value === "") {
           percentInput.value = "";
         } else {
-          let current = parseFloat(val) || 0;
+          let current = parseFloat(percentInput.value) || 0;
           if (current < 0) current = 0;
           if (current > 100) current = 100;
-          percentInput.value = current.toFixed(6);
+          percentInput.value = current;
         }
         updateAll();
       }
@@ -508,7 +512,7 @@
       let currentPerc = (currentAmount / total) * 100;
       
       if (currentPerc > 100) currentPerc = 100;
-      row.querySelector('.percent').value = currentPerc.toFixed(6);
+      row.querySelector('.percent').value = currentPerc;
 
       if (splitMode === 'auto') autoDistributePercentages();
       else updateAll();
@@ -558,7 +562,7 @@
       let remaining = 100 - total;
 
       if (remaining <= 0.000001) {
-        showToast("درصد قبلاً به ۱۰۰ رسیده است");
+        showToast("Percentage is already 100%");
         return;
       }
 
@@ -686,14 +690,13 @@
 
       if (addresses.length < 2) return showToast("At least 2 valid recipients needed");
 
-      // تنظیم دقیق آخرین درصد برای قرارداد
       if (percentages.length > 0) {
         let sum = percentages.reduce((a, b) => a + b, 0);
         percentages[percentages.length - 1] += (10000 - sum);
       }
 
       if (Math.abs(totalPerc - 100) > 0.01) {
-        if (!confirm(`Total percentage is ${totalPerc.toFixed(6)}%. Contract will adjust the last recipient.\n\nContinue?`)) return;
+        if (!confirm(`Total percentage is ${totalPerc.toFixed(6)}%.\nLast recipient will be adjusted to reach exactly 100%.\n\nContinue?`)) return;
       }
 
       for (let addr of addresses) {
