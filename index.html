@@ -153,22 +153,19 @@
       </div>
     </div>
 
-    <!-- Improved Header Buttons -->
+    <!-- Buttons -->
     <div class="flex flex-col sm:flex-row gap-3 mb-8">
-      <button onclick="toggleTheme()" id="themeBtn" 
-              class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all flex-shrink-0">
+      <button onclick="toggleTheme()" id="themeBtn" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all flex-shrink-0">
         <i class="fas fa-moon text-xl"></i>
       </button>
 
       <div class="flex flex-1 gap-3">
-        <button onclick="showConnectModal()" id="connectBtn" 
-                class="flex-1 px-6 py-3.5 bg-white text-black font-semibold rounded-2xl flex items-center justify-center gap-2 hover:bg-gray-100 transition-all">
+        <button onclick="showConnectModal()" id="connectBtn" class="flex-1 px-6 py-3.5 bg-white text-black font-semibold rounded-2xl flex items-center justify-center gap-2 hover:bg-gray-100 transition-all">
           <i class="fas fa-wallet"></i> 
           <span id="connectText">Connect Wallet</span>
         </button>
 
-        <button onclick="connectTelegram()" id="telegramBtn"
-                class="flex-1 px-6 py-3.5 bg-[#229ED9] hover:bg-[#1a8ac4] text-white font-semibold rounded-2xl flex items-center justify-center gap-2 transition-all">
+        <button onclick="connectTelegram()" id="telegramBtn" class="flex-1 px-6 py-3.5 bg-[#229ED9] hover:bg-[#1a8ac4] text-white font-semibold rounded-2xl flex items-center justify-center gap-2 transition-all">
           <i class="fab fa-telegram-plane"></i> 
           <span id="telegramText">Connect Telegram</span>
         </button>
@@ -192,8 +189,7 @@
       <div class="mb-8">
         <label class="block text-gray-400 text-sm mb-2">Total Amount</label>
         <div class="flex gap-3">
-          <input type="number" id="totalAmount" value="100" step="0.000001" 
-                 class="flex-1 bg-white/5 border border-white/20 rounded-2xl px-6 py-5 text-3xl outline-none" oninput="updateAll()">
+          <input type="number" id="totalAmount" value="100" step="0.000001" class="flex-1 bg-white/5 border border-white/20 rounded-2xl px-6 py-5 text-3xl outline-none" oninput="updateAll()">
           <button onclick="setMaxAmount()" class="px-10 bg-white/10 hover:bg-white/20 rounded-2xl font-medium">MAX</button>
         </div>
       </div>
@@ -250,8 +246,7 @@
         <button onclick="distributeRemaining()" class="text-amber-400 hover:text-amber-300">Distribute Remaining</button>
       </div>
 
-      <button id="sendBtn" onclick="sendSplit()" 
-              class="w-full bg-gradient-to-r from-pink-500 to-rose-500 py-7 rounded-3xl text-xl font-bold">
+      <button id="sendBtn" onclick="sendSplit()" class="w-full bg-gradient-to-r from-pink-500 to-rose-500 py-7 rounded-3xl text-xl font-bold">
         Send Split Transaction
       </button>
     </div>
@@ -435,7 +430,6 @@
     showToast("Wallet disconnected");
   }
 
-  // === Original Functions (unchanged) ===
   function getTotalAmount() {
     return parseFloat(document.getElementById("totalAmount").value) || 0;
   }
@@ -474,15 +468,12 @@
     const row = document.createElement("div");
     row.className = "recipient-row glass border border-white/10 rounded-2xl p-5 flex items-center gap-4";
     row.innerHTML = `
-      <input type="text" class="address flex-1 bg-transparent border border-white/20 rounded-xl px-5 py-4 text-white placeholder-gray-400" 
-             placeholder="0x..." value="${address}" oninput="validateAddress(this); updateAll()">
+      <input type="text" class="address flex-1 bg-transparent border border-white/20 rounded-xl px-5 py-4 text-white placeholder-gray-400" placeholder="0x..." value="${address}" oninput="validateAddress(this); updateAll()">
       <div class="percent-container w-28">
-        <input type="text" class="percent w-full bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" 
-               value="${percent}" placeholder="" oninput="handlePercentChange(this); updateAll()">
+        <input type="text" class="percent w-full bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" value="${percent}" oninput="handlePercentChange(this); updateAll()">
       </div>
       <div class="amount-container w-36">
-        <input type="text" class="amount w-full bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" 
-               placeholder="" oninput="handleAmountChange(this); updateAll()">
+        <input type="text" class="amount w-full bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" oninput="handleAmountChange(this); updateAll()">
       </div>
       <button onclick="this.parentElement.remove(); updateAll(); if(splitMode==='auto') autoDistributePercentages();" class="text-rose-400 text-3xl px-3">×</button>
     `;
@@ -696,8 +687,11 @@
     for (let row of rows) {
       const addr = row.querySelector('.address').value.trim();
       let perc = parseFloat(row.querySelector('.percent').value) || 0;
+      let amount = parseFloat(row.querySelector('.amount').value) || 0;
+
       if (!addr || !ethers.isAddress(addr)) return showToast("Invalid address detected");
-      if (perc <= 0) return showToast("Please enter percentage for all recipients");
+      if (perc <= 0 && amount <= 0) return showToast("Please enter amount or percentage for all recipients");
+
       addresses.push(addr);
       percentages.push(Math.round(perc * 100));
       totalPerc += perc;
@@ -716,30 +710,43 @@
     btn.disabled = true;
     btn.textContent = "Processing...";
 
+    const successDiv = document.getElementById("successMessage");
+
     try {
       const tokenAddr = document.getElementById("tokenSelect").value;
       const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
-      const tokenContract = new ethers.Contract(tokenAddr, ["function approve(address,uint256) returns (bool)", "function decimals() view returns (uint8)"], signer);
+
+      const tokenContract = new ethers.Contract(tokenAddr, [
+        "function approve(address,uint256) returns (bool)",
+        "function decimals() view returns (uint8)"
+      ], signer);
+
       const decimals = await tokenContract.decimals();
       const totalWei = ethers.parseUnits(totalAmountStr, decimals);
 
       await (await tokenContract.approve(CONTRACT_ADDRESS, totalWei)).wait();
 
       const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
+      
       let sum = percentages.reduce((a, b) => a + b, 0);
       percentages[percentages.length - 1] += (10000 - sum);
 
       const tx = await contract.splitPayment(tokenAddr, addresses, percentages, totalWei, { gasLimit: 800000 });
       await tx.wait();
 
-      document.getElementById("successMessage").innerHTML = `Transaction Successful!<br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline">View on Explorer</a>`;
-      document.getElementById("successMessage").classList.remove('hidden');
+      successDiv.innerHTML = ` Transaction Successful!<br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline font-medium">View on Explorer: ${tx.hash.substring(0,12)}...</a>`;
+      successDiv.classList.remove('hidden');
 
-      transactions.unshift({ hash: tx.hash, intent: `${totalAmount} ${symbol} → ${addresses.length} recipients`, time: new Date().toLocaleString() });
+      transactions.unshift({
+        hash: tx.hash,
+        intent: `${totalAmount} ${symbol} → ${addresses.length} recipients`,
+        time: new Date().toLocaleString()
+      });
       localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
       renderHistory();
       await updateBalance();
       showToast("Transaction sent successfully!");
+
     } catch (error) {
       console.error(error);
       showToast(error.reason || error.message || "Transaction failed");
@@ -765,7 +772,6 @@
     });
   }
 
-  // Auto-fill from Telegram
   function autoFillFromURL() {
     const urlParams = new URLSearchParams(window.location.search);
     const action = urlParams.get('action');
@@ -786,7 +792,9 @@
 
     document.getElementById('recipients-list').innerHTML = '';
 
-    const addresses = addressesStr ? addressesStr.split(',') : [];
+    let addresses = [];
+    if (addressesStr) addresses = addressesStr.split(',');
+    
     addresses.forEach(addr => {
       if (addr && addr.trim()) addRecipient(addr.trim(), "");
     });
