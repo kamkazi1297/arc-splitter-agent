@@ -204,7 +204,7 @@
           
           <div class="flex bg-white/10 rounded-2xl p-1 text-sm">
             <button onclick="setMode('auto')" id="btn-auto"
-                    class="mode-btn px-5 py-2 rounded-xl font-medium transition-all bg-white/20">Automatic</button>
+                    class="mode-btn px-5 py-2 rounded-xl font-medium transition-all">Automatic</button>
             <button onclick="setMode('manual')" id="btn-manual"
                     class="mode-btn px-5 py-2 rounded-xl font-medium transition-all">Manual</button>
           </div>
@@ -351,7 +351,9 @@
       document.getElementById("btn-manual").classList.toggle("bg-white/20", mode === "manual");
       document.getElementById("distributeBtn").classList.toggle("hidden", mode !== "manual");
       
-      if (mode === "auto") autoDistributePercentages();
+      if (mode === "auto") {
+        autoDistributePercentages();
+      }
       updateAll();
     }
 
@@ -452,7 +454,7 @@
         
         <div class="percent-container w-28">
           <input type="number" class="percent w-full bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" 
-                 value="${percent}" placeholder="0" step="0.01" 
+                 value="${percent}" placeholder="0" step="0.0001" 
                  oninput="handlePercentChange(this); updateAll()">
         </div>
 
@@ -468,9 +470,8 @@
       
       if (currentMode === "auto") {
         setTimeout(autoDistributePercentages, 10);
-      } else {
-        updateAll();
       }
+      updateAll();
     }
 
     function autoDistributePercentages() {
@@ -486,12 +487,10 @@
 
     function handlePercentChange(percentInput) {
       if (currentMode === "auto") return;
-      // ... (بقیه کد قبلی بدون تغییر)
-      const row = percentInput.closest('.recipient-row');
       let current = parseFloat(percentInput.value) || 0;
       if (current < 0) current = 0;
       if (current > 100) current = 100;
-      percentInput.value = current.toFixed(2);
+      percentInput.value = current.toFixed(4);
       updateAll();
     }
 
@@ -504,7 +503,7 @@
       let currentAmount = parseFloat(amountInput.value) || 0;
       let currentPerc = (currentAmount / total) * 100;
       if (currentPerc > 100) currentPerc = 100;
-      row.querySelector('.percent').value = currentPerc.toFixed(2);
+      row.querySelector('.percent').value = currentPerc.toFixed(4);
       updateAll();
     }
 
@@ -517,8 +516,8 @@
       const percents = Array.from(document.querySelectorAll('.percent')).map(el => parseFloat(el.value) || 0);
       const total = percents.reduce((a, b) => a + b, 0);
       const el = document.getElementById("percent-total");
-      el.textContent = `Total: ${total.toFixed(2)}%`;
-      el.style.color = total === 100 ? '#00ffaa' : (total > 100 ? '#ff3366' : 'white');
+      el.textContent = `Total: ${total.toFixed(4)}%`;
+      el.style.color = total > 100 ? '#ff3366' : (Math.abs(total - 100) < 0.01 ? '#00ffaa' : 'white');
     }
 
     function updatePreview() {
@@ -536,7 +535,7 @@
           tr.className = "border-b border-white/10 last:border-none";
           tr.innerHTML = `
             <td class="p-4 font-mono text-xs">${addr.substring(0,12)}...</td>
-            <td class="text-right p-4">${perc.toFixed(2)}%</td>
+            <td class="text-right p-4">${perc.toFixed(4)}%</td>
             <td class="text-right p-4 font-medium">${amount.toFixed(6)}</td>
           `;
           tbody.appendChild(tr);
@@ -553,7 +552,7 @@
       let total = percents.reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
       let remaining = 100 - total;
 
-      if (remaining <= 0.001) return showToast("No remaining percentage!");
+      if (remaining <= 0.0001) return showToast("No remaining percentage!");
 
       percents[percents.length - 1].value = remaining.toFixed(4);
       updateAll();
@@ -563,7 +562,7 @@
       const list = document.getElementById("recipients-list");
       list.innerHTML = "";
       if (type === 1) { addRecipient("", 50); addRecipient("", 50); }
-      else if (type === 2) { addRecipient("", 33); addRecipient("", 33); addRecipient("", 34); }
+      else if (type === 2) { addRecipient("", 33.33); addRecipient("", 33.33); addRecipient("", 33.34); }
       else if (type === 3) { addRecipient("", 40); addRecipient("", 60); }
       setMode("manual");
     }
@@ -672,16 +671,17 @@
         const perc = parseFloat(row.querySelector('.percent').value) || 0;
         if (addr && perc > 0) {
           addresses.push(addr);
-          percentages.push(Math.round(perc * 100));
+          percentages.push(Math.round(perc * 10000));
           totalPerc += perc;
         }
       });
 
       if (addresses.length < 2) return showToast("At least 2 valid recipients needed");
-      
-      // فقط در حالت Automatic بررسی دقیق ۱۰۰٪ انجام شود
-      if (currentMode === "auto" && Math.abs(totalPerc - 100) > 0.1) {
-        return showToast("Percentages must sum exactly to 100% in Automatic mode");
+
+      if (Math.abs(totalPerc - 100) > 0.01) {
+        if (!confirm(`Total percentage is ${totalPerc.toFixed(4)}% (not exactly 100%).\n\nA small amount may remain undistributed due to rounding.\n\nDo you want to continue?`)) {
+          return;
+        }
       }
 
       for (let addr of addresses) {
