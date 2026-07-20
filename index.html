@@ -441,14 +441,14 @@
                placeholder="0x..." value="${address}" oninput="validateAddress(this); updateAll()">
         
         <div class="percent-container w-28">
-          <input type="number" class="percent w-full bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" 
-                 value="${percent}" placeholder="" step="0.000001" 
+          <input type="text" class="percent w-full bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" 
+                 value="${percent}" placeholder="" 
                  oninput="handlePercentChange(this); updateAll()">
         </div>
 
         <div class="amount-container w-36">
-          <input type="number" class="amount w-full bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" 
-                 placeholder="" step="0.000001" 
+          <input type="text" class="amount w-full bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" 
+                 placeholder="" 
                  oninput="handleAmountChange(this); updateAll()">
         </div>
 
@@ -479,36 +479,49 @@
         total += value;
       });
 
-      // Warning for uneven splits
       if (rows.length >= 3) {
-        showToast("Last recipient slightly increased to reach exactly 100%", 4000);
+        showToast("Last recipient slightly increased to reach exactly 100%", 3000);
       }
       
       updateAll();
     }
 
-    function handlePercentChange(percentInput) {
+    function handlePercentChange(input) {
       if (splitMode === 'auto') {
         autoDistributePercentages();
       } else {
-        if (percentInput.value === "") {
-          percentInput.value = "";
+        // Manual mode - clean input
+        let val = input.value.trim();
+        if (val === "") {
+          input.value = "";
+          updateAll();
+          return;
+        }
+        let num = parseFloat(val);
+        if (isNaN(num)) {
+          input.value = "";
         } else {
-          let current = parseFloat(percentInput.value) || 0;
-          if (current < 0) current = 0;
-          if (current > 100) current = 100;
-          percentInput.value = current;
+          if (num < 0) num = 0;
+          if (num > 100) num = 100;
+          input.value = num;
         }
         updateAll();
       }
     }
 
-    function handleAmountChange(amountInput) {
-      const row = amountInput.closest('.recipient-row');
+    function handleAmountChange(input) {
+      const row = input.closest('.recipient-row');
       const total = getTotalAmount();
       if (total <= 0) return;
-      
-      let currentAmount = parseFloat(amountInput.value) || 0;
+
+      let val = input.value.trim();
+      if (val === "") {
+        input.value = "";
+        updateAll();
+        return;
+      }
+
+      let currentAmount = parseFloat(val) || 0;
       let currentPerc = (currentAmount / total) * 100;
       
       if (currentPerc > 100) currentPerc = 100;
@@ -674,6 +687,13 @@
       const rows = document.querySelectorAll('.recipient-row');
       if (rows.length < 2) return showToast("At least 2 recipients are required");
 
+      // Warning for uneven splits in Auto mode
+      if (splitMode === 'auto' && rows.length >= 3) {
+        if (!confirm("In Auto mode with " + rows.length + " recipients, the last recipient will receive a slightly higher amount to reach exactly 100%.\n\nDo you want to continue?")) {
+          return;
+        }
+      }
+
       const addresses = [];
       const percentages = [];
       let totalPerc = 0;
@@ -696,7 +716,7 @@
       }
 
       if (Math.abs(totalPerc - 100) > 0.01) {
-        if (!confirm(`Total percentage is ${totalPerc.toFixed(6)}%.\nLast recipient will be adjusted to reach exactly 100%.\n\nContinue?`)) return;
+        if (!confirm(`Total percentage is ${totalPerc.toFixed(6)}%.\nLast recipient will be adjusted.\n\nContinue?`)) return;
       }
 
       for (let addr of addresses) {
