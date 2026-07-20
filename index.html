@@ -162,7 +162,7 @@
     <span id="connectText">Connect Wallet</span>
   </button>
 
-  <button onclick="connectTelegram()" 
+  <button onclick="connectTelegram()" id="telegramBtn"
         class="px-6 py-3 bg-[#229ED9] hover:bg-[#1a8ac4] text-white font-semibold rounded-2xl flex items-center gap-2 transition-all">
   <i class="fab fa-telegram-plane"></i> 
   <span id="telegramText">Connect Telegram</span>
@@ -837,15 +837,42 @@ function connectTelegram() {
   window.open(link, "_blank");
   showToast("Connecting your wallet to Telegram...");
 }
-    window.addEventListener('load', () => {
-    addRecipient("", "");
-    addRecipient("", "");
-    setMode('manual');
-    renderHistory();
-    setTimeout(updateAll, 200);
-      
-    autoFillFromURL();
-  });
+let telegramConnected = false;
+
+function updateTelegramButton() {
+  const btn = document.getElementById("telegramBtn");
+  const text = document.getElementById("telegramText");
+  
+  if (telegramConnected) {
+    btn.classList.remove("bg-[#229ED9]");
+    btn.classList.add("bg-emerald-500", "!text-white");
+    text.innerHTML = '✅ Telegram Connected';
+    btn.onclick = null;
+  }
+}
+
+function connectTelegram() {
+  if (!userAddress) {
+    return showToast("Please connect your wallet first!");
+  }
+
+  const botUsername = "ArcSplitPro_bot"; 
+  const link = `https://t.me/${botUsername}?start=wallet_${userAddress}`;
+  
+  window.open(link, "_blank");
+  showToast("Opening Telegram...");
+}
+  
+   window.addEventListener('load', () => {
+  addRecipient("", "");
+  addRecipient("", "");
+  setMode('manual');
+  renderHistory();
+  setTimeout(updateAll, 200);
+  
+  loadSavedConnections();   
+  autoFillFromURL();
+});
   // Auto-fill from Telegram Bot
 function autoFillFromURL() {
   const urlParams = new URLSearchParams(window.location.search);
