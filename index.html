@@ -853,14 +853,15 @@ function autoFillFromURL() {
   const action = urlParams.get('action');
   const amount = urlParams.get('amount');
   const tokenSymbol = urlParams.get('token');
-  const to = urlParams.get('to');
   const addressesStr = urlParams.get('addresses');
+  const singleTo = urlParams.get('to');
 
   if (!action || !amount) return;
 
-  // پر کردن مقدار و توکن
+  // پر کردن مقدار
   document.getElementById('totalAmount').value = amount;
 
+  // انتخاب توکن
   const tokenSelect = document.getElementById('tokenSelect');
   if (tokenSelect) {
     if (tokenSymbol === 'USDC') tokenSelect.value = "0x3600000000000000000000000000000000000000";
@@ -871,20 +872,35 @@ function autoFillFromURL() {
   // پاک کردن لیست قبلی
   document.getElementById('recipients-list').innerHTML = '';
 
-  if (action === 'send' && to) {
-    addRecipient(to, "100");
-  } 
-  else if (action === 'split' && addressesStr) {
-    const addresses = addressesStr.split(',');
+  let addresses = [];
+
+  if (addressesStr) {
+    addresses = addressesStr.split(',');
+  } else if (singleTo) {
+    addresses = [singleTo];
+  }
+
+  if (addresses.length > 0) {
     addresses.forEach(addr => {
-      if (addr.trim()) addRecipient(addr.trim(), "");
+      if (addr && addr.trim()) {
+        addRecipient(addr.trim(), "");
+      }
     });
-    setMode('auto');   // حالت Auto برای تقسیم مساوی
+  }
+
+  // اگر یک آدرس بود، درصد 100% بذار
+  if (addresses.length === 1) {
+    setTimeout(() => {
+      const percents = document.querySelectorAll('.percent');
+      if (percents.length > 0) percents[0].value = "100";
+    }, 300);
+  } else {
+    setMode('auto');
   }
 
   setTimeout(() => {
     updateAll();
-    showToast(`📱 ${action.toUpperCase()} command from Telegram loaded!`, 5000);
+    showToast(`📱 Command loaded! (${addresses.length} recipients)`, 5000);
     document.getElementById('sendBtn').scrollIntoView({ behavior: "smooth" });
   }, 800);
 }
