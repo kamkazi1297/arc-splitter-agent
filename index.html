@@ -122,7 +122,7 @@
 </head>
 <body class="bg-gradient-to-br from-[#0b0b1f] to-[#1a1a2e] text-white min-h-screen">
 
-      <div class="max-w-2xl mx-auto px-4 py-10">
+  <div class="max-w-2xl mx-auto px-4 py-10">
     <div class="flex justify-between items-center mb-10">
       <div class="flex items-center gap-3">
         <div id="logoContainer" class="relative">
@@ -145,31 +145,119 @@
           </svg>
         </div>
 
-        <div>
-          <h1 class="text-3xl font-bold">ArcSplit Pro</h1>
-          <p class="text-gray-400 text-sm -mt-1">Professional Token Splitter</p>
+    <div>
+      <h1 class="text-4xl font-bold">ArcSplit Pro</h1>
+      <p class="text-gray-400">Professional Token Splitter</p>
+    </div>
+  </div>
+
+  <div class="flex flex-col sm:flex-row gap-3">
+  <!-- Theme Button -->
+  <button onclick="toggleTheme()" id="themeBtn" 
+          class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all">
+    <i class="fas fa-moon text-xl"></i>
+  </button>
+
+  <!-- Wallet + Telegram Container -->
+  <div class="flex gap-3 flex-1">
+    <button onclick="showConnectModal()" id="connectBtn" 
+            class="flex-1 px-6 py-3 bg-white text-black font-semibold rounded-2xl flex items-center justify-center gap-2 hover:bg-gray-100 transition-all">
+      <i class="fas fa-wallet"></i> 
+      <span id="connectText">Connect Wallet</span>
+    </button>
+
+    <button onclick="connectTelegram()" id="telegramBtn"
+            class="flex-1 px-6 py-3 bg-[#229ED9] hover:bg-[#1a8ac4] text-white font-semibold rounded-2xl flex items-center justify-center gap-2 transition-all">
+      <i class="fab fa-telegram-plane"></i> 
+      <span id="telegramText">Connect Telegram</span>
+    </button>
+  </div>
+</div>
+</div>
+
+<div id="status" class="glass border border-white/10 rounded-3xl p-6 mb-8 text-base font-medium">Ready to split tokens on Arc Testnet.</div>
+<div id="successMessage" class="hidden glass border border-emerald-500/30 bg-emerald-500/10 rounded-3xl p-6 mb-8 text-emerald-400"></div>
+
+<div class="glass border border-white/10 rounded-3xl p-8 mb-8">
+  <div class="mb-8">
+    <label class="block text-gray-400 text-sm mb-2">Select Token</label>
+    <select id="tokenSelect" onchange="handleTokenChange()" 
+            class="w-full rounded-2xl px-6 py-5 focus:border-emerald-500 outline-none text-base">
+      <option value="0x3600000000000000000000000000000000000000">USDC</option>
+      <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
+      <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
+      <option value="custom">Add Custom Token...</option>
+    </select>
+  </div>
+
+  <div class="mb-8">
+    <label class="block text-gray-400 text-sm mb-2">Total Amount</label>
+    <div class="flex gap-3">
+      <input type="number" id="totalAmount" value="100" step="0.000001" 
+             class="flex-1 bg-white/5 border border-white/20 rounded-2xl px-6 py-5 text-3xl outline-none" oninput="updateAll()">
+      <button onclick="setMaxAmount()" class="px-10 bg-white/10 hover:bg-white/20 rounded-2xl font-medium">MAX</button>
+    </div>
+  </div>
+
+  <div class="mb-8">
+    <label class="block text-gray-400 text-sm mb-3">Quick Templates</label>
+    <div class="grid grid-cols-4 gap-3">
+      <button onclick="loadTemplate(1)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">50-50</button>
+      <button onclick="loadTemplate(2)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">33-33-34</button>
+      <button onclick="loadTemplate(3)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">40-60</button>
+      <button onclick="equalSplit()" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">Equal Split</button>
+    </div>
+  </div>
+
+  <div class="mb-6">
+    <div class="flex justify-between mb-4">
+      <h3 class="font-semibold">Recipients</h3>
+      <div class="flex gap-3 items-center">
+        <div class="flex bg-white/10 rounded-2xl p-1 text-sm">
+          <button onclick="setMode('manual')" id="manualBtn"
+                  class="mode-btn px-5 py-2 rounded-xl font-medium transition-all">Manual</button>
+          <button onclick="setMode('auto')" id="autoBtn"
+                  class="mode-btn px-5 py-2 rounded-xl font-medium transition-all">Auto</button>
         </div>
-      </div>
-
-      <div class="flex flex-col sm:flex-row gap-3">
-        <button onclick="toggleTheme()" id="themeBtn" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all">
-          <i class="fas fa-moon text-xl"></i>
+        <button onclick="showImportModal()" class="text-sky-400 hover:text-sky-300 flex items-center gap-1 text-sm">
+          <i class="fas fa-upload"></i> Import
         </button>
-
-        <button onclick="showConnectModal()" id="connectBtn" 
-                class="px-6 py-3 bg-white text-black font-semibold rounded-2xl flex items-center gap-2 hover:bg-gray-100 transition-all">
-          <i class="fas fa-wallet"></i> 
-          <span id="connectText">Connect Wallet</span>
-        </button>
-
-        <button onclick="connectTelegram()" id="telegramBtn"
-                class="px-6 py-3 bg-[#229ED9] hover:bg-[#1a8ac4] text-white font-semibold rounded-2xl flex items-center gap-2 transition-all">
-          <i class="fab fa-telegram-plane"></i> 
-          <span id="telegramText">Connect Telegram</span>
+        <button onclick="addRecipient()" class="text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
+          <i class="fas fa-plus"></i> Add
         </button>
       </div>
     </div>
+    <div id="recipients-list" class="space-y-4"></div>
   </div>
+
+  <div class="mb-8">
+    <h4 class="text-gray-400 text-sm mb-3">Split Preview</h4>
+    <div class="glass rounded-2xl overflow-hidden">
+      <div class="preview-scroll">
+        <table class="w-full">
+          <thead>
+            <tr class="border-b border-white/10 sticky top-0 bg-[#1a1a2e]">
+              <th class="text-left p-4 text-gray-400">Recipient</th>
+              <th class="text-right p-4 text-gray-400">Percent</th>
+              <th class="text-right p-4 text-gray-400">Amount</th>
+            </tr>
+          </thead>
+          <tbody id="preview-body" class="text-sm"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="flex justify-between mb-8">
+    <span id="percent-total" class="font-bold text-lg">Total: 0%</span>
+    <button onclick="distributeRemaining()" class="text-amber-400 hover:text-amber-300">Distribute Remaining</button>
+  </div>
+
+  <button id="sendBtn" onclick="sendSplit()" 
+          class="w-full bg-gradient-to-r from-pink-500 to-rose-500 py-7 rounded-3xl text-xl font-bold">
+    Send Split Transaction
+  </button>
+</div>
 
 <div class="glass border border-white/10 rounded-3xl p-8">
   <h3 class="font-semibold mb-4">Recent Transactions</h3>
