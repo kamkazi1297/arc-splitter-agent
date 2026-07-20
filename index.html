@@ -369,7 +369,7 @@
     showToast("Connecting your wallet to Telegram...");
   }
 
-  function showToast(msg, duration = 3500) {
+  function showToast(msg, duration = 5000) {
     const toast = document.getElementById("toast");
     document.getElementById("toastText").innerHTML = msg;
     toast.classList.remove("hidden");
@@ -693,7 +693,7 @@
       if (perc <= 0 && amount <= 0) return showToast("Please enter amount or percentage for all recipients");
 
       addresses.push(addr);
-      percentages.push(Math.round(perc * 100));
+      percentages.push(perc);
       totalPerc += perc;
     }
 
@@ -702,6 +702,29 @@
     const totalAmountStr = document.getElementById("totalAmount").value;
     const totalAmount = parseFloat(totalAmountStr);
     if (!totalAmount || totalAmount <= 0) return showToast("Enter a valid total amount!");
+
+    // ==================== Percentage Validation ====================
+    const tolerance = 0.0001; // Very precise tolerance
+
+    if (splitMode === 'manual') {
+      if (Math.abs(totalPerc - 100) > tolerance) {
+        if (totalPerc > 100) {
+          return showToast("⚠️ Total percentage is more than 100%! Transaction blocked.", 5000);
+        } else {
+          return showToast(`⚠️ Total is not 100% (${totalPerc.toFixed(6)}%)`, 5000);
+        }
+      }
+    } else {
+      // Auto mode - show info about rounding
+      const diff = Math.abs(totalPerc - 100);
+      if (diff > tolerance) {
+        const lastPerc = percentages[percentages.length - 1];
+        const ideal = 100 / rows.length;
+        const difference = (lastPerc - ideal).toFixed(6);
+        showToast(`ℹ️ In Auto mode, due to precise rounding the last recipient has ${difference}% more than others.`, 6500);
+      }
+    }
+    // ============================================================
 
     if (!confirm(`Send ${totalAmount} tokens to ${addresses.length} recipients?`)) return;
 
@@ -728,10 +751,11 @@
 
       const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
       
-      let sum = percentages.reduce((a, b) => a + b, 0);
-      percentages[percentages.length - 1] += (10000 - sum);
+      let basisPoints = percentages.map(p => Math.round(p * 100));
+      let sum = basisPoints.reduce((a, b) => a + b, 0);
+      basisPoints[basisPoints.length - 1] += (10000 - sum);
 
-      const tx = await contract.splitPayment(tokenAddr, addresses, percentages, totalWei, { gasLimit: 800000 });
+      const tx = await contract.splitPayment(tokenAddr, addresses, basisPoints, totalWei, { gasLimit: 800000 });
       await tx.wait();
 
       successDiv.innerHTML = ` Transaction Successful!<br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline font-medium">View on Explorer: ${tx.hash.substring(0,12)}...</a>`;
