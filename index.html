@@ -429,10 +429,7 @@
       splitMode = mode;
       document.getElementById('manualBtn').classList.toggle('bg-white/20', mode === 'manual');
       document.getElementById('autoBtn').classList.toggle('bg-white/20', mode === 'auto');
-      
-      if (mode === 'auto') {
-        autoDistributePercentages();
-      }
+      if (mode === 'auto') autoDistributePercentages();
     }
 
     function addRecipient(address = "", percent = "") {
@@ -445,7 +442,7 @@
         
         <div class="percent-container w-28">
           <input type="number" class="percent w-full bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" 
-                 value="${percent}" placeholder="0" step="0.01" 
+                 value="${percent}" placeholder="0" step="0.000001" 
                  oninput="handlePercentChange(this); updateAll()">
         </div>
 
@@ -455,7 +452,7 @@
                  oninput="handleAmountChange(this); updateAll()">
         </div>
 
-        <button onclick="this.parentElement.remove(); updateAll()" class="text-rose-400 text-3xl px-3">×</button>
+        <button onclick="this.parentElement.remove(); updateAll(); if(splitMode==='auto') autoDistributePercentages();" class="text-rose-400 text-3xl px-3">×</button>
       `;
       list.appendChild(row);
 
@@ -467,19 +464,21 @@
     function autoDistributePercentages() {
       const rows = document.querySelectorAll('.recipient-row');
       if (rows.length === 0) return;
-      
-      const base = (100 / rows.length).toFixed(4);
+
+      const exact = 100 / rows.length;
       let total = 0;
 
       rows.forEach((row, index) => {
         const percentInput = row.querySelector('.percent');
-        let value = parseFloat(base);
-        
+        let value;
+
         if (index === rows.length - 1) {
           value = 100 - total;
+        } else {
+          value = exact;
         }
-        
-        percentInput.value = value.toFixed(4);
+
+        percentInput.value = value.toFixed(6);
         total += value;
       });
       
@@ -487,14 +486,15 @@
     }
 
     function handlePercentChange(percentInput) {
-      const row = percentInput.closest('.recipient-row');
-      let current = parseFloat(percentInput.value) || 0;
-      
-      if (current < 0) current = 0;
-      if (current > 100) current = 100;
-      percentInput.value = current.toFixed(4);
-
-      updateAll();
+      if (splitMode === 'auto') {
+        autoDistributePercentages();
+      } else {
+        let current = parseFloat(percentInput.value) || 0;
+        if (current < 0) current = 0;
+        if (current > 100) current = 100;
+        percentInput.value = current.toFixed(6);
+        updateAll();
+      }
     }
 
     function handleAmountChange(amountInput) {
@@ -506,9 +506,13 @@
       let currentPerc = (currentAmount / total) * 100;
       
       if (currentPerc > 100) currentPerc = 100;
-      row.querySelector('.percent').value = currentPerc.toFixed(4);
+      row.querySelector('.percent').value = currentPerc.toFixed(6);
 
-      updateAll();
+      if (splitMode === 'auto') {
+        autoDistributePercentages();
+      } else {
+        updateAll();
+      }
     }
 
     function validateAddress(input) {
@@ -520,8 +524,8 @@
       const percents = Array.from(document.querySelectorAll('.percent')).map(el => parseFloat(el.value) || 0);
       const total = percents.reduce((a, b) => a + b, 0);
       const el = document.getElementById("percent-total");
-      el.textContent = `Total: ${total.toFixed(4)}%`;
-      el.style.color = total === 100 ? '#00ffaa' : (total > 100 ? '#ff3366' : 'white');
+      el.textContent = `Total: ${total.toFixed(6)}%`;
+      el.style.color = total > 99.99 ? '#00ffaa' : (total > 100 ? '#ff3366' : 'white');
     }
 
     function updatePreview() {
@@ -539,7 +543,7 @@
           tr.className = "border-b border-white/10 last:border-none";
           tr.innerHTML = `
             <td class="p-4 font-mono text-xs">${addr.substring(0,12)}...</td>
-            <td class="text-right p-4">${perc.toFixed(4)}%</td>
+            <td class="text-right p-4">${perc.toFixed(6)}%</td>
             <td class="text-right p-4 font-medium">${amount.toFixed(6)}</td>
           `;
           tbody.appendChild(tr);
@@ -554,21 +558,20 @@
       let total = percents.reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
       let remaining = 100 - total;
 
-      if (remaining <= 0.001) {
+      if (remaining <= 0.000001) {
         showToast("درصد قبلاً به ۱۰۰ رسیده است");
         return;
       }
 
-      percents[percents.length - 1].value = remaining.toFixed(4);
+      percents[percents.length - 1].value = remaining.toFixed(6);
       updateAll();
-      showToast(`Remaining ${remaining.toFixed(4)}% distributed to last recipient`);
     }
 
     function loadTemplate(type) {
       const list = document.getElementById("recipients-list");
       list.innerHTML = "";
       if (type === 1) { addRecipient("", 50); addRecipient("", 50); }
-      else if (type === 2) { addRecipient("", 33.33); addRecipient("", 33.33); addRecipient("", 33.34); }
+      else if (type === 2) { addRecipient("", ""); addRecipient("", ""); addRecipient("", ""); }
       else if (type === 3) { addRecipient("", 40); addRecipient("", 60); }
       setMode('manual');
     }
@@ -685,7 +688,7 @@
       if (addresses.length < 2) return showToast("At least 2 valid recipients needed");
 
       if (Math.abs(totalPerc - 100) > 0.01) {
-        if (!confirm(`Total percentage is ${totalPerc.toFixed(4)}% (not exactly 100%).\n\nA small remainder may stay in the contract.\n\nDo you want to continue?`)) {
+        if (!confirm(`Total percentage is ${totalPerc.toFixed(6)}% (not exactly 100%).\n\nA small remainder may stay in the contract.\n\nDo you want to continue?`)) {
           return;
         }
       }
@@ -767,8 +770,8 @@
     }
 
     window.addEventListener('load', () => {
-      addRecipient();
-      addRecipient();
+      addRecipient("", ""); // کاملاً خالی
+      addRecipient("", ""); // کاملاً خالی
       setMode('manual');
       renderHistory();
     });
