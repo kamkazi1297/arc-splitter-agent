@@ -156,10 +156,17 @@
         <button onclick="toggleTheme()" id="themeBtn" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all">
           <i class="fas fa-moon text-xl"></i>
         </button>
+        
         <button onclick="showConnectModal()" id="connectBtn" 
                 class="px-6 py-3 bg-white text-black font-semibold rounded-2xl flex items-center gap-2 hover:bg-gray-100 transition-all">
           <i class="fas fa-wallet"></i> 
           <span id="connectText">Connect Wallet</span>
+        </button>
+
+        <button onclick="connectTelegram()" id="telegramBtn"
+                class="px-6 py-3 bg-[#229ED9] hover:bg-[#1a8ac4] text-white font-semibold rounded-2xl flex items-center gap-2 transition-all">
+          <i class="fab fa-telegram-plane text-xl"></i> 
+          <span id="telegramText">Connect Telegram</span>
         </button>
       </div>
     </div>
@@ -203,10 +210,8 @@
           <h3 class="font-semibold">Recipients</h3>
           <div class="flex gap-3 items-center">
             <div class="flex bg-white/10 rounded-2xl p-1 text-sm">
-              <button onclick="setMode('manual')" id="manualBtn"
-                      class="mode-btn px-5 py-2 rounded-xl font-medium transition-all">Manual</button>
-              <button onclick="setMode('auto')" id="autoBtn"
-                      class="mode-btn px-5 py-2 rounded-xl font-medium transition-all">Auto</button>
+              <button onclick="setMode('manual')" id="manualBtn" class="mode-btn px-5 py-2 rounded-xl font-medium transition-all">Manual</button>
+              <button onclick="setMode('auto')" id="autoBtn" class="mode-btn px-5 py-2 rounded-xl font-medium transition-all">Auto</button>
             </div>
             <button onclick="showImportModal()" class="text-sky-400 hover:text-sky-300 flex items-center gap-1 text-sm">
               <i class="fas fa-upload"></i> Import
@@ -295,10 +300,6 @@
             </div>
           </button>
         </div>
-
-        <p class="text-center text-xs text-gray-500 mt-8">
-          By connecting, you accept our Terms of Service
-        </p>
       </div>
     </div>
 
@@ -314,6 +315,10 @@
       let transactions = JSON.parse(localStorage.getItem('arcTxHistory') || '[]');
       let isProcessing = false;
       let splitMode = 'manual';
+
+      // Telegram Variables
+      let telegramConnected = false;
+      let telegramId = null;
 
       const CONTRACT_ADDRESS = "0x73Da94F0D960Ef8FD49Ed28a94f667aF3C062cB2";
       const ARC_CHAIN_ID = 5042002;
@@ -350,6 +355,16 @@
           icon.classList.remove("fa-sun");
           icon.classList.add("fa-moon");
         }
+      }
+
+      function connectTelegram() {
+        if (!userAddress) {
+          return showToast("Please connect your wallet first!");
+        }
+        const botUsername = "ArcSplitPro_bot";
+        const link = `https://t.me/${botUsername}?start=connect`;
+        window.open(link, "_blank");
+        showToast("Telegram bot opened.<br>Please send /start in the bot.", 5000);
       }
 
       function showConnectModal() {
@@ -696,7 +711,6 @@
         const rows = document.querySelectorAll('.recipient-row');
         if (rows.length < 2) return showToast("At least 2 recipients are required");
 
-        // هشدار هوشمند فقط وقتی درصد رند نشود
         if (splitMode === 'auto' && rows.length > 1) {
           const percents = Array.from(rows).map(row => parseFloat(row.querySelector('.percent').value) || 0);
           const firstPerc = percents[0];
