@@ -696,6 +696,13 @@
         const rows = document.querySelectorAll('.recipient-row');
         if (rows.length < 2) return showToast("At least 2 recipients are required");
 
+        // Warning for Auto mode
+        if (splitMode === 'auto' && rows.length > 1) {
+          if (!confirm("In Auto mode, due to percentage division, the last recipient's amount is slightly higher.\n\nDo you want to continue?")) {
+            return;
+          }
+        }
+
         const addresses = [];
         const percentages = [];
         let totalPerc = 0;
@@ -811,7 +818,6 @@
         addRecipient("", "");
         setMode('manual');
         renderHistory();
-        // Initial update
         setTimeout(updateAll, 200);
       });
     </script>
