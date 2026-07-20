@@ -844,6 +844,44 @@ function connectTelegram() {
     renderHistory();
     setTimeout(updateAll, 200);
   });
+  // Auto-fill from URL parameters (from Telegram)
+function autoFillFromURL() {
+  const urlParams = new URLSearchParams(window.location.search);
+  
+  const action = urlParams.get('action');
+  const amount = urlParams.get('amount');
+  const token = urlParams.get('token');
+  const to = urlParams.get('to');
+
+  if (action === 'send' && amount && to) {
+    // پر کردن مقدار کل
+    document.getElementById('totalAmount').value = amount;
+
+    // انتخاب توکن (اگر USDC باشه)
+    const tokenSelect = document.getElementById('tokenSelect');
+    if (token === 'USDC') tokenSelect.value = "0x3600000000000000000000000000000000000000";
+
+    // پاک کردن recipients قبلی و اضافه کردن آدرس جدید
+    document.getElementById('recipients-list').innerHTML = '';
+    addRecipient(to, "100");
+
+    updateAll();
+
+    showToast("✅ Form filled from Telegram command!");
+  }
+}
+
+// اجرا کردن تابع موقع لود صفحه
+window.addEventListener('load', () => {
+  addRecipient("", "");
+  addRecipient("", "");
+  setMode('manual');
+  renderHistory();
+  setTimeout(updateAll, 200);
+  
+  // اضافه کردن این خط
+  autoFillFromURL();
+});
   
 </script></body>
 </html>
