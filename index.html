@@ -456,29 +456,26 @@
       `;
       list.appendChild(row);
 
-      if (splitMode === 'auto') {
-        autoDistributePercentages();
-      }
+      if (splitMode === 'auto') autoDistributePercentages();
     }
 
     function autoDistributePercentages() {
       const rows = document.querySelectorAll('.recipient-row');
       if (rows.length === 0) return;
 
-      const exact = 100 / rows.length;
+      const totalBasis = 10000;
+      const base = Math.floor(totalBasis / rows.length);
       let total = 0;
 
       rows.forEach((row, index) => {
         const percentInput = row.querySelector('.percent');
-        let value;
+        let value = base;
 
         if (index === rows.length - 1) {
-          value = 100 - total;
-        } else {
-          value = exact;
+          value = totalBasis - total;
         }
 
-        percentInput.value = value.toFixed(6);
+        percentInput.value = (value / 100).toFixed(6);
         total += value;
       });
       
@@ -489,10 +486,15 @@
       if (splitMode === 'auto') {
         autoDistributePercentages();
       } else {
-        let current = parseFloat(percentInput.value) || 0;
-        if (current < 0) current = 0;
-        if (current > 100) current = 100;
-        percentInput.value = current.toFixed(6);
+        let val = percentInput.value;
+        if (val === "") {
+          percentInput.value = "";
+        } else {
+          let current = parseFloat(val) || 0;
+          if (current < 0) current = 0;
+          if (current > 100) current = 100;
+          percentInput.value = current.toFixed(6);
+        }
         updateAll();
       }
     }
@@ -508,11 +510,8 @@
       if (currentPerc > 100) currentPerc = 100;
       row.querySelector('.percent').value = currentPerc.toFixed(6);
 
-      if (splitMode === 'auto') {
-        autoDistributePercentages();
-      } else {
-        updateAll();
-      }
+      if (splitMode === 'auto') autoDistributePercentages();
+      else updateAll();
     }
 
     function validateAddress(input) {
@@ -687,10 +686,14 @@
 
       if (addresses.length < 2) return showToast("At least 2 valid recipients needed");
 
+      // تنظیم دقیق آخرین درصد برای قرارداد
+      if (percentages.length > 0) {
+        let sum = percentages.reduce((a, b) => a + b, 0);
+        percentages[percentages.length - 1] += (10000 - sum);
+      }
+
       if (Math.abs(totalPerc - 100) > 0.01) {
-        if (!confirm(`Total percentage is ${totalPerc.toFixed(6)}% (not exactly 100%).\n\nA small remainder may stay in the contract.\n\nDo you want to continue?`)) {
-          return;
-        }
+        if (!confirm(`Total percentage is ${totalPerc.toFixed(6)}%. Contract will adjust the last recipient.\n\nContinue?`)) return;
       }
 
       for (let addr of addresses) {
@@ -770,8 +773,8 @@
     }
 
     window.addEventListener('load', () => {
-      addRecipient("", ""); // کاملاً خالی
-      addRecipient("", ""); // کاملاً خالی
+      addRecipient("", "");
+      addRecipient("", "");
       setMode('manual');
       renderHistory();
     });
