@@ -153,7 +153,6 @@
       </div>
     </div>
 
-    <!-- Buttons -->
     <div class="flex flex-col sm:flex-row gap-3 mb-8">
       <button onclick="toggleTheme()" id="themeBtn" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all flex-shrink-0">
         <i class="fas fa-moon text-xl"></i>
@@ -699,32 +698,35 @@
 
     if (addresses.length < 2) return showToast("At least 2 valid recipients needed");
 
-    const totalAmountStr = document.getElementById("totalAmount").value;
-    const totalAmount = parseFloat(totalAmountStr);
+    const totalAmount = parseFloat(document.getElementById("totalAmount").value);
     if (!totalAmount || totalAmount <= 0) return showToast("Enter a valid total amount!");
 
-    // ==================== Percentage Validation ====================
-    const tolerance = 0.0001; // Very precise tolerance
+    const tolerance = 0.0001;
 
+    // ==================== Validation Logic ====================
     if (splitMode === 'manual') {
+      if (totalPerc > 100 + tolerance) {
+        return showToast("⚠️ Total percentage is more than 100%! Transaction blocked.", 5000);
+      }
       if (Math.abs(totalPerc - 100) > tolerance) {
-        if (totalPerc > 100) {
-          return showToast("⚠️ Total percentage is more than 100%! Transaction blocked.", 5000);
-        } else {
-          return showToast(`⚠️ Total is not 100% (${totalPerc.toFixed(6)}%)`, 5000);
+        if (!confirm(`⚠️ Total percentage is not 100% (${totalPerc.toFixed(6)}%)\n\nDo you want to proceed anyway?`)) {
+          return;
         }
       }
     } else {
-      // Auto mode - show info about rounding
+      // Auto Mode
       const diff = Math.abs(totalPerc - 100);
       if (diff > tolerance) {
         const lastPerc = percentages[percentages.length - 1];
         const ideal = 100 / rows.length;
         const difference = (lastPerc - ideal).toFixed(6);
-        showToast(`ℹ️ In Auto mode, due to precise rounding the last recipient has ${difference}% more than others.`, 6500);
+        
+        if (!confirm(`⚠️ The last recipient has ${difference}% more due to precise rounding.\n\nDo you want to proceed?`)) {
+          return;
+        }
       }
     }
-    // ============================================================
+    // =========================================================
 
     if (!confirm(`Send ${totalAmount} tokens to ${addresses.length} recipients?`)) return;
 
@@ -745,7 +747,7 @@
       ], signer);
 
       const decimals = await tokenContract.decimals();
-      const totalWei = ethers.parseUnits(totalAmountStr, decimals);
+      const totalWei = ethers.parseUnits(totalAmount.toString(), decimals);
 
       await (await tokenContract.approve(CONTRACT_ADDRESS, totalWei)).wait();
 
