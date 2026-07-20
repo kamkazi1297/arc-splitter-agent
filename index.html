@@ -413,17 +413,17 @@
         return parseFloat(document.getElementById("totalAmount").value) || 0;
       }
 
-      function updateAll() {
-        updateRecipientsAmounts();
-        updatePercentTotal();
-        updatePreview();
-      }
-
       function formatAmount(num) {
         if (num === 0 || isNaN(num)) return "";
         let str = num.toFixed(6);
         str = str.replace(/\.?0+$/, "");
         return str;
+      }
+
+      function updateAll() {
+        updateRecipientsAmounts();
+        updatePercentTotal();
+        updatePreview();
       }
 
       function updateRecipientsAmounts() {
@@ -467,6 +467,7 @@
         list.appendChild(row);
 
         if (splitMode === 'auto') autoDistributePercentages();
+        else updateAll();
       }
 
       function autoDistributePercentages() {
@@ -517,7 +518,10 @@
       function handleAmountChange(input) {
         const row = input.closest('.recipient-row');
         const total = getTotalAmount();
-        if (total <= 0) return;
+        if (total <= 0) {
+          updateAll();
+          return;
+        }
 
         let val = input.value.trim();
         if (val === "") {
@@ -807,6 +811,8 @@
         addRecipient("", "");
         setMode('manual');
         renderHistory();
+        // Initial update
+        setTimeout(updateAll, 200);
       });
     </script>
 </body>
