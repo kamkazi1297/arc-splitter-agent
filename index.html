@@ -114,6 +114,10 @@
     @media (max-width: 640px) {
       .max-w-2xl { max-width: 100% !important; padding-left: 8px; padding-right: 8px; }
       .recipient-row { flex-direction: column; gap: 14px; padding: 18px !important; }
+      input[type="text"], input[type="number"] {
+        font-size: 1.05rem !important;
+        padding: 16px 14px !important;
+      }
     }
   </style>
 </head>
@@ -410,8 +414,25 @@
       }
 
       function updateAll() {
+        updateRecipientsAmounts();
         updatePercentTotal();
         updatePreview();
+      }
+
+      function formatAmount(num) {
+        if (num === 0 || isNaN(num)) return "";
+        let str = num.toFixed(6);
+        str = str.replace(/\.?0+$/, "");
+        return str;
+      }
+
+      function updateRecipientsAmounts() {
+        const total = getTotalAmount();
+        document.querySelectorAll('.recipient-row').forEach(row => {
+          const perc = parseFloat(row.querySelector('.percent').value) || 0;
+          const amount = total * perc / 100;
+          row.querySelector('.amount').value = formatAmount(amount);
+        });
       }
 
       function setMode(mode) {
@@ -459,7 +480,11 @@
         rows.forEach((row, index) => {
           const percentInput = row.querySelector('.percent');
           let value = base;
-          if (index === rows.length - 1) value = totalBasis - total;
+
+          if (index === rows.length - 1) {
+            value = totalBasis - total;
+          }
+
           percentInput.value = (value / 100).toFixed(6);
           total += value;
         });
@@ -478,8 +503,9 @@
             return;
           }
           let num = parseFloat(val);
-          if (isNaN(num)) input.value = "";
-          else {
+          if (isNaN(num)) {
+            input.value = "";
+          } else {
             if (num < 0) num = 0;
             if (num > 100) num = 100;
             input.value = num;
@@ -531,7 +557,7 @@
         document.querySelectorAll('.recipient-row').forEach(row => {
           const addr = row.querySelector('.address').value.trim();
           const perc = parseFloat(row.querySelector('.percent').value) || 0;
-          const amountStr = row.querySelector('.amount').value.trim();
+          const amount = parseFloat(row.querySelector('.amount').value) || 0;
 
           if (addr) {
             const tr = document.createElement("tr");
@@ -539,7 +565,7 @@
             tr.innerHTML = `
               <td class="p-4 font-mono text-xs">${addr.substring(0,12)}...</td>
               <td class="text-right p-4">${perc.toFixed(6)}%</td>
-              <td class="text-right p-4 font-medium">${amountStr || '0'}</td>
+              <td class="text-right p-4 font-medium">${amount.toFixed(6)}</td>
             `;
             tbody.appendChild(tr);
           }
@@ -675,8 +701,12 @@
           let perc = parseFloat(row.querySelector('.percent').value) || 0;
           let amount = parseFloat(row.querySelector('.amount').value) || 0;
 
-          if (!addr || !ethers.isAddress(addr)) return showToast("Invalid address detected");
-          if (perc <= 0 && amount <= 0) return showToast("Please enter amount or percentage for all recipients");
+          if (!addr || !ethers.isAddress(addr)) {
+            return showToast("Invalid address detected");
+          }
+          if (perc <= 0 && amount <= 0) {
+            return showToast("Please enter amount or percentage for all recipients");
+          }
 
           addresses.push(addr);
           percentages.push(Math.round(perc * 100));
@@ -686,9 +716,13 @@
         if (addresses.length < 2) return showToast("At least 2 valid recipients needed");
 
         if (splitMode === 'manual') {
-          if (totalPerc > 100.000001) return showToast("Total percentage cannot be more than 100%", 5000);
+          if (totalPerc > 100.000001) {
+            return showToast("Total percentage cannot be more than 100%", 5000);
+          }
           if (Math.abs(totalPerc - 100) > 0.01) {
-            if (!confirm(`Total percentage is ${totalPerc.toFixed(4)}% (not 100%).\n\nLast recipient will be adjusted to reach 100%.\nContinue?`)) return;
+            if (!confirm(`Total percentage is ${totalPerc.toFixed(4)}% (not 100%).\n\nLast recipient will be adjusted to reach 100%.\nContinue?`)) {
+              return;
+            }
           }
         }
 
