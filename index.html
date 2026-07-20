@@ -844,44 +844,43 @@ function connectTelegram() {
     renderHistory();
     setTimeout(updateAll, 200);
   });
-  // Auto-fill from URL parameters (from Telegram)
+  // Auto-fill from Telegram Bot
 function autoFillFromURL() {
   const urlParams = new URLSearchParams(window.location.search);
   
   const action = urlParams.get('action');
   const amount = urlParams.get('amount');
-  const token = urlParams.get('token');
+  const tokenSymbol = urlParams.get('token');
   const to = urlParams.get('to');
 
   if (action === 'send' && amount && to) {
-    // پر کردن مقدار کل
+    // پر کردن مقدار
     document.getElementById('totalAmount').value = amount;
 
-    // انتخاب توکن (اگر USDC باشه)
+    // انتخاب توکن (پشتیبانی از USDC, EURC, cirBTC)
     const tokenSelect = document.getElementById('tokenSelect');
-    if (token === 'USDC') tokenSelect.value = "0x3600000000000000000000000000000000000000";
+    if (tokenSelect) {
+      if (tokenSymbol === 'USDC') {
+        tokenSelect.value = "0x3600000000000000000000000000000000000000";
+      } else if (tokenSymbol === 'EURC') {
+        tokenSelect.value = "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a";
+      } else if (tokenSymbol === 'cirBTC' || tokenSymbol === 'CIRBTC') {
+        tokenSelect.value = "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF";
+      }
+    }
 
-    // پاک کردن recipients قبلی و اضافه کردن آدرس جدید
+    // پاک کردن لیست قبلی و اضافه کردن گیرنده
     document.getElementById('recipients-list').innerHTML = '';
     addRecipient(to, "100");
 
-    updateAll();
-
-    showToast("✅ Form filled from Telegram command!");
+    // بروزرسانی و نمایش پیام
+    setTimeout(() => {
+      updateAll();
+      showToast("📱 Command received from Telegram! Ready to send.", 6000);
+      document.getElementById('sendBtn').scrollIntoView({ behavior: "smooth" });
+    }, 800);
   }
 }
-
-// اجرا کردن تابع موقع لود صفحه
-window.addEventListener('load', () => {
-  addRecipient("", "");
-  addRecipient("", "");
-  setMode('manual');
-  renderHistory();
-  setTimeout(updateAll, 200);
-  
-  // اضافه کردن این خط
-  autoFillFromURL();
-});
   
 </script></body>
 </html>
