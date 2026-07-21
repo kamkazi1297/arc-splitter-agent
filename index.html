@@ -814,20 +814,32 @@ let telegramUsername = "";
       const tx = await contract.splitPayment(tokenAddr, addresses, basisPoints, totalWei, { gasLimit: 800000 });
       await tx.wait();
 
-                           // ارسال هش به تلگرام
-      if (window.telegramChatId) {
-        fetch('https://arcsplit-bot.kamkazi-1297.workers.dev/send-tx', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chatId: window.telegramChatId,
-            txHash: tx.hash,
-            amount: totalAmount,
-            token: symbol,
-            recipientsCount: addresses.length
-          })
-        });
-      }
+                          // === Debugging Telegram Notification ===
+console.log("🔍 Sending notification to Telegram...");
+console.log("Chat ID:", window.telegramChatId || localStorage.getItem('telegramChatId'));
+
+if (!window.telegramChatId) {
+  window.telegramChatId = localStorage.getItem('telegramChatId');
+}
+
+if (window.telegramChatId) {
+  fetch('https://arcsplit-bot.kamkazi-1297.workers.dev/send-tx', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chatId: window.telegramChatId,
+      txHash: tx.hash,
+      amount: totalAmount,
+      token: symbol,
+      recipientsCount: addresses.length
+    })
+  })
+  .then(r => console.log("Notification sent:", r.status))
+  .catch(err => console.error("Notification failed:", err));
+} else {
+  console.warn("⚠️ No Telegram Chat ID found. Notification skipped.");
+}
+// =====================================
       
       successDiv.innerHTML = ` Transaction Successful!<br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline font-medium">View on Explorer: ${tx.hash.substring(0,12)}...</a>`;
       successDiv.classList.remove('hidden');
