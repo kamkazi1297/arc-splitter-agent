@@ -951,6 +951,19 @@ function autoFillFromURL() {
   // تشخیص اتصال و ذخیره username واقعی
   if (telegramConnect === 'true' || chatIdParam || window.location.search.includes('connect_')) {
     telegramLinked = true;
+
+        // ذخیره والت برای ربات
+    if (userAddress) {
+      // ارسال آدرس والت به ربات
+      fetch('https://YOUR-WORKER-NAME.workers.dev/save-wallet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chatId: chatIdParam || window.telegramChatId,
+          walletAddress: userAddress
+        })
+      }).catch(err => console.log("Save wallet failed", err));
+    }
     
     if (usernameParam) {
       telegramUsername = decodeURIComponent(usernameParam);
