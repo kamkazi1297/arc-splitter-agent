@@ -814,31 +814,24 @@ let telegramUsername = "";
       const tx = await contract.splitPayment(tokenAddr, addresses, basisPoints, totalWei, { gasLimit: 800000 });
       await tx.wait();
 
-                  // ارسال هش به تلگرام با chatId
+                       // ارسال هش به تلگرام (Cloudflare Worker)
       if (window.telegramChatId) {
-        const message = `✅ تراکنش با موفقیت انجام شد!\n\n` +
-                       `مقدار: ${totalAmount} ${symbol}\n` +
-                       `تعداد گیرنده: ${addresses.length}\n\n` +
-                       `هش: ${tx.hash}\n\n` +
-                       `🔗 https://testnet.arcscan.app/tx/${tx.hash}`;
-
-        fetch(`https://api.telegram.org/bot8064233325:AAEoUmiv97ypeavlzQJ-VHwwqvsoCPx5xAY/sendMessage`, {
+        fetch('https://arcsplit-bot.kamkazi-1297.workers.dev/send-tx', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            chat_id: window.telegramChatId,
-            text: message,
-            parse_mode: 'HTML'
+            chatId: window.telegramChatId,
+            txHash: tx.hash,
+            amount: totalAmount,
+            token: symbol,
+            recipientsCount: addresses.length
           })
         })
         .then(r => r.json())
-        .then(data => {
-          if (data.ok) console.log("✅ هش به تلگرام ارسال شد");
-          else console.log("❌ Telegram Error:", data);
-        })
-        .catch(err => console.log("Fetch Error:", err));
+        .then(data => console.log("Telegram Response:", data))
+        .catch(err => console.log("Telegram Error:", err));
       }
-
+      
       successDiv.innerHTML = ` Transaction Successful!<br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline font-medium">View on Explorer: ${tx.hash.substring(0,12)}...</a>`;
       successDiv.classList.remove('hidden');
 
