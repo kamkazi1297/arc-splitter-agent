@@ -501,6 +501,16 @@ function updateTelegramButton() {
     // ذخیره والت برای بعد از رفرش
     localStorage.setItem('userAddress', userAddress);
 
+        // ارسال والت به ربات تلگرام اگر chatId وجود داشته باشد
+    const chatId = localStorage.getItem('telegramChatId') || window.telegramChatId;
+    if (chatId && userAddress) {
+      fetch('https://arcsplit-bot.kamkazi-1297.workers.dev/register-wallet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chatId: chatId, wallet: userAddress })
+      }).catch(err => console.log("Failed to sync wallet to bot"));
+    }
+
     signer = await provider.getSigner();
 
     document.getElementById("logoContainer").classList.add("connected");
@@ -508,11 +518,26 @@ function updateTelegramButton() {
     showToast("Wallet connected successfully");
     await updateBalance();
 
+        registerWalletToBot();
+
   } catch (e) {
     console.error(e);
     showToast("Failed to connect wallet");
   }
 }
+
+
+    // ثبت والت در ربات (برای وقتی از سایت والت متصل می‌شه)
+  async function registerWalletToBot() {
+    const chatId = localStorage.getItem('telegramChatId') || window.telegramChatId;
+    if (chatId && userAddress) {
+      await fetch('https://arcsplit-bot.kamkazi-1297.workers.dev/register-wallet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chatId: chatId, wallet: userAddress })
+      });
+    }
+  }
 
   async function connectWalletConnect() {
   hideConnectModal();
@@ -966,6 +991,12 @@ function autoFillFromURL() {
     
     console.log("✅ Telegram Username saved:", telegramUsername);
   }
+      // ثبت والت در ربات
+    if (userAddress) {
+      registerWalletToBot();
+    }
+
+
 
   // پر کردن فرم ارسال (از دستور send)
   if (action === 'send' && amount) {
