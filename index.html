@@ -813,27 +813,26 @@ let telegramUsername = "";
 
       const tx = await contract.splitPayment(tokenAddr, addresses, basisPoints, totalWei, { gasLimit: 800000 });
       await tx.wait();
-               // ارسال هش تراکنش به تلگرام
-     // کامنت کن این بخش رو فعلاً:
-/*
-if (telegramLinked && telegramUsername) {
-  try {
-    await fetch('https://arcsplit-bot.vercel.app/send-tx', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        telegramUsername: telegramUsername,
-        txHash: tx.hash,
-        amount: totalAmount,
-        token: symbol,
-        recipientsCount: addresses.length
-      })
-    });
-  } catch (e) {
-    console.log("Could not send to Telegram");
-  }
-}
-*/
+
+            // تست ارسال هش به تلگرام
+      if (telegramLinked && telegramUsername) {
+        const message = `✅ تراکنش با موفقیت انجام شد!\n\n` +
+                       `مقدار: ${totalAmount} ${symbol}\n` +
+                       `تعداد گیرنده: ${addresses.length}\n` +
+                       `هش: ${tx.hash}`;
+
+        // ارسال مستقیم به تلگرام از طریق API
+        fetch(`https://api.telegram.org/bot8064233325:AAEoUmiv97ypeavlzQJ-VHwwqvsoCPx5xAY/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chat_id: telegramUsername.replace('@', ''),
+            text: message,
+            parse_mode: 'HTML'
+          })
+        }).then(() => console.log("Sent via direct Telegram API"))
+          .catch(() => console.log("Failed"));
+      }
 
       successDiv.innerHTML = ` Transaction Successful!<br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline font-medium">View on Explorer: ${tx.hash.substring(0,12)}...</a>`;
       successDiv.classList.remove('hidden');
