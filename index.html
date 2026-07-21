@@ -372,6 +372,24 @@ let telegramUsername = "";
   }
 }
 
+  async function restoreWalletConnection() {
+  if (!window.ethereum || !userAddress) return;
+
+  try {
+    provider = new ethers.BrowserProvider(window.ethereum);
+    signer = await provider.getSigner();
+    
+    // چک کردن اینکه آدرس درست است
+    const currentAddress = await signer.getAddress();
+    if (currentAddress.toLowerCase() === userAddress.toLowerCase()) {
+      console.log("Wallet restored successfully");
+      await updateBalance();   // بالانس رو لود کن
+    }
+  } catch (e) {
+    console.log("Could not auto-restore signer, user needs to reconnect manually");
+  }
+}
+
   function connectTelegram() {
   if (!userAddress) {
     return showToast("Please connect your wallet first!");
@@ -875,24 +893,21 @@ let telegramUsername = "";
     }, 800);
 }
 
- window.addEventListener('load', () => {
-    // Restore Wallet Connection
+window.addEventListener('load', () => {
+  // Restore Wallet Connection
   const savedAddress = localStorage.getItem('userAddress');
   if (savedAddress) {
     userAddress = savedAddress;
     updateConnectButton();
     document.getElementById("logoContainer").classList.add("connected");
-    
-    // بالانس رو بعد از رفرش لود کن
-    setTimeout(() => {
-      updateBalance();
-    }, 800);
+
+    // تلاش برای بازیابی کامل اتصال (signer + provider)
+    restoreWalletConnection();
   }
 
-  // Restore Telegram Connection
+  // Restore Telegram
   telegramUsername = localStorage.getItem('telegramUsername') || "";
   telegramLinked = localStorage.getItem('telegramLinked') === 'true';
-
   if (telegramLinked) {
     updateTelegramButton();
   }
