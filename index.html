@@ -940,7 +940,7 @@ function autoFillFromURL() {
   const addressesStr = urlParams.get('addresses');
   const chatIdParam = urlParams.get('chatId');
   const telegramConnect = urlParams.get('telegram_connect');
-  const usernameParam = urlParams.get('username');   // ← مهم
+  const usernameParam = urlParams.get('username');
 
   // ذخیره Chat ID
   if (chatIdParam) {
@@ -948,28 +948,14 @@ function autoFillFromURL() {
     localStorage.setItem('telegramChatId', chatIdParam);
   }
 
-  // تشخیص اتصال و ذخیره username واقعی
+  // اتصال تلگرام + ذخیره والت در ربات
   if (telegramConnect === 'true' || chatIdParam || window.location.search.includes('connect_')) {
     telegramLinked = true;
-
-           // === Save Wallet to Bot ===
-      if (userAddress && chatIdParam) {
-        fetch('https://arcsplit-bot.kamkazi-1297.workers.dev/save-wallet', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chatId: chatIdParam,
-            walletAddress: userAddress
-          })
-        })
-        .then(() => console.log("✅ Wallet sent to bot"))
-        .catch(err => console.error("Save wallet failed:", err));
-      }
     
     if (usernameParam) {
-      telegramUsername = decodeURIComponent(usernameParam);
+      telegramUsername = decodeURIComponent(usernameParam).replace('@', '');
     } else {
-      telegramUsername = telegramUsername || "Telegram User";
+      telegramUsername = telegramUsername || "User";
     }
 
     localStorage.setItem('telegramLinked', 'true');
@@ -977,11 +963,28 @@ function autoFillFromURL() {
     
     updateTelegramButton();
     showToast("✅ Telegram connected successfully!", 4000);
-    
     console.log("✅ Telegram Username saved:", telegramUsername);
+
+    // === ذخیره والت در KV ربات ===
+    if (userAddress && chatIdParam) {
+      console.log("📤 Sending wallet to bot:", userAddress);
+      fetch('https://arcsplit-bot.kamkazi-1297.workers.dev/save-wallet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chatId: chatIdParam,
+          walletAddress: userAddress
+        })
+      })
+      .then(r => {
+        console.log("Save wallet status:", r.status);
+        if (r.ok) console.log("✅ Wallet successfully sent to bot");
+      })
+      .catch(err => console.error("❌ Failed to send wallet to bot:", err));
+    }
   }
 
-  // پر کردن فرم ارسال (از دستور send)
+  // پر کردن فرم ارسال (از دستور send در تلگرام)
   if (action === 'send' && amount) {
     document.getElementById('totalAmount').value = amount;
 
@@ -1013,7 +1016,6 @@ function autoFillFromURL() {
     }, 600);
   }
 }
-  
 window.addEventListener('load', () => {
   // Restore Wallet Connection
   const savedAddress = localStorage.getItem('userAddress');
