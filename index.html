@@ -164,14 +164,10 @@
           <span id="connectText">Connect Wallet</span>
         </button>
 
-        <button onclick="connectTelegram()" id="telegramBtn" 
-        class="flex-1 px-6 py-3.5 bg-gradient-to-r from-[#229ED9] to-[#1a8ac4] hover:brightness-110 text-white font-semibold rounded-2xl flex items-center justify-center gap-3 transition-all group">
-  <i class="fab fa-telegram-plane text-2xl"></i> 
-  <div class="text-left flex-1">
-    <div id="telegramMainText" class="font-semibold">Connect Telegram</div>
-    <div id="telegramSubText" class="text-xs opacity-75 -mt-0.5">Receive notifications & fast split</div>
-  </div>
-</button>
+        <button onclick="connectTelegram()" id="telegramBtn" class="flex-1 px-6 py-3.5 bg-[#229ED9] hover:bg-[#1a8ac4] text-white font-semibold rounded-2xl flex items-center justify-center gap-2 transition-all">
+          <i class="fab fa-telegram-plane"></i> 
+          <span id="telegramText">Connect Telegram</span>
+        </button>
       </div>
     </div>
 
@@ -273,52 +269,31 @@
     </div>
   </div>
 
-  <!-- Wallet Connect Modal - نسخه بهبود یافته -->
-<div id="connectModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-  <div class="glass border border-white/10 rounded-3xl p-8 max-w-lg w-full mx-4">
-    <div class="flex justify-between items-center mb-6">
-      <h3 class="text-2xl font-bold">Connect a Wallet</h3>
-      <button onclick="hideConnectModal()" class="text-gray-400 hover:text-white text-3xl leading-none">×</button>
+  <!-- Wallet Connect Modal -->
+  <div id="connectModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+    <div class="glass border border-white/10 rounded-3xl p-8 max-w-md w-full mx-4">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-2xl font-bold">Connect Wallet</h3>
+        <button onclick="hideConnectModal()" class="text-gray-400 hover:text-white text-3xl leading-none">×</button>
+      </div>
+      <div class="space-y-3">
+        <button onclick="connectMetaMask()" class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" width="40" height="40" alt="MetaMask">
+          <div class="text-left">
+            <div class="font-semibold text-lg">MetaMask</div>
+            <div class="text-sm text-gray-400">Popular browser wallet</div>
+          </div>
+        </button>
+        <button onclick="connectWalletConnect()" class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group">
+          <img src="https://walletconnect.com/_next/static/media/walletconnect.2f8f1b5a.svg" width="40" height="40" alt="WalletConnect">
+          <div class="text-left">
+            <div class="font-semibold text-lg">WalletConnect</div>
+            <div class="text-sm text-gray-400">Connect with mobile wallets</div>
+          </div>
+        </button>
+      </div>
     </div>
-    
-    <div class="space-y-3">
-      <!-- MetaMask -->
-      <button onclick="connectMetaMask()" 
-              class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group border border-white/10 hover:border-emerald-500">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" width="48" height="48" alt="MetaMask">
-        <div class="text-left flex-1">
-          <div class="font-semibold text-lg">MetaMask</div>
-          <div class="text-sm text-gray-400">Popular browser extension</div>
-        </div>
-        <span class="text-emerald-400 text-sm font-medium">Recommended</span>
-      </button>
-
-      <!-- WalletConnect -->
-      <button onclick="connectWalletConnect()" 
-              class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group border border-white/10 hover:border-sky-500">
-        <img src="https://walletconnect.com/_next/static/media/walletconnect.2f8f1b5a.svg" width="48" height="48" alt="WalletConnect">
-        <div class="text-left flex-1">
-          <div class="font-semibold text-lg">WalletConnect</div>
-          <div class="text-sm text-gray-400">Connect with mobile & other wallets</div>
-        </div>
-      </button>
-
-      <!-- Trust Wallet (بعداً می‌تونی گسترش بدی) -->
-      <button onclick="showToast('Trust Wallet soon...', 3000)" 
-              class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group border border-white/10 opacity-75">
-        <img src="https://trustwallet.com/assets/images/logo.png" width="48" height="48" alt="Trust">
-        <div class="text-left flex-1">
-          <div class="font-semibold text-lg">Trust Wallet</div>
-          <div class="text-sm text-gray-400">Coming soon</div>
-        </div>
-      </button>
-    </div>
-
-    <p class="text-center text-xs text-gray-500 mt-6">
-      More wallets will be added soon
-    </p>
   </div>
-</div>
 
   <!-- Toast -->
   <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 border border-white/20 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 z-50">
@@ -382,26 +357,12 @@ function updateTelegramButton() {
   if (!btn) return;
 
   if (telegramLinked && telegramUsername) {
-    btn.innerHTML = `
-      <i class="fab fa-telegram-plane text-2xl"></i> 
-      <div class="text-left flex-1">
-        <div class="font-semibold text-emerald-300">${telegramUsername}</div>
-        <div class="text-xs opacity-75">Connected • Notifications ON</div>
-      </div>
-      <i onclick="event.stopImmediatePropagation(); disconnectTelegram();" 
-         class="fas fa-times text-lg opacity-60 hover:opacity-100 ml-2"></i>
-    `;
-    btn.style.background = "linear-gradient(90deg, #10b981, #34d399)";
-    btn.onclick = null; // جلوگیری از باز شدن دوباره
+    btn.innerHTML = `<i class="fab fa-telegram-plane"></i> <span>✅ ${telegramUsername}</span>`;
+    btn.style.backgroundColor = "#0f9d58";
+    btn.onclick = disconnectTelegram;
   } else {
-    btn.innerHTML = `
-      <i class="fab fa-telegram-plane text-2xl"></i> 
-      <div class="text-left flex-1">
-        <div id="telegramMainText" class="font-semibold">Connect Telegram</div>
-        <div id="telegramSubText" class="text-xs opacity-75 -mt-0.5">Receive notifications & fast split</div>
-      </div>
-    `;
-    btn.style.background = "linear-gradient(90deg, #229ED9, #1a8ac4)";
+    btn.innerHTML = `<i class="fab fa-telegram-plane"></i> <span>Connect Telegram</span>`;
+    btn.style.backgroundColor = "#229ED9";
     btn.onclick = connectTelegram;
   }
 }
@@ -494,14 +455,6 @@ function updateTelegramButton() {
       showToast("Please switch to <b>Arc Testnet</b> (Chain ID: 5042002)", 6000);
       return;
     }
-
-    async function connectWalletConnect() {
-  hideConnectModal();
-  showToast("WalletConnect is being prepared... (will be fully added soon)");
-
-  // نسخه ساده فعلاً
-  // بعداً با WalletConnect SDK کامل می‌کنیم
-}
 
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     userAddress = accounts[0];
@@ -940,7 +893,7 @@ function autoFillFromURL() {
   const addressesStr = urlParams.get('addresses');
   const chatIdParam = urlParams.get('chatId');
   const telegramConnect = urlParams.get('telegram_connect');
-  const usernameParam = urlParams.get('username');
+  const usernameParam = urlParams.get('username');   // ← مهم
 
   // ذخیره Chat ID
   if (chatIdParam) {
@@ -948,14 +901,14 @@ function autoFillFromURL() {
     localStorage.setItem('telegramChatId', chatIdParam);
   }
 
-  // اتصال تلگرام + ذخیره والت در ربات
+  // تشخیص اتصال و ذخیره username واقعی
   if (telegramConnect === 'true' || chatIdParam || window.location.search.includes('connect_')) {
     telegramLinked = true;
     
     if (usernameParam) {
-      telegramUsername = decodeURIComponent(usernameParam).replace('@', '');
+      telegramUsername = decodeURIComponent(usernameParam);
     } else {
-      telegramUsername = telegramUsername || "User";
+      telegramUsername = telegramUsername || "Telegram User";
     }
 
     localStorage.setItem('telegramLinked', 'true');
@@ -963,28 +916,11 @@ function autoFillFromURL() {
     
     updateTelegramButton();
     showToast("✅ Telegram connected successfully!", 4000);
+    
     console.log("✅ Telegram Username saved:", telegramUsername);
-
-    // === ذخیره والت در KV ربات ===
-    if (userAddress && chatIdParam) {
-      console.log("📤 Sending wallet to bot:", userAddress);
-      fetch('https://arcsplit-bot.kamkazi-1297.workers.dev/save-wallet', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chatId: chatIdParam,
-          walletAddress: userAddress
-        })
-      })
-      .then(r => {
-        console.log("Save wallet status:", r.status);
-        if (r.ok) console.log("✅ Wallet successfully sent to bot");
-      })
-      .catch(err => console.error("❌ Failed to send wallet to bot:", err));
-    }
   }
 
-  // پر کردن فرم ارسال (از دستور send در تلگرام)
+  // پر کردن فرم ارسال (از دستور send)
   if (action === 'send' && amount) {
     document.getElementById('totalAmount').value = amount;
 
@@ -1016,6 +952,7 @@ function autoFillFromURL() {
     }, 600);
   }
 }
+  
 window.addEventListener('load', () => {
   // Restore Wallet Connection
   const savedAddress = localStorage.getItem('userAddress');
