@@ -406,7 +406,9 @@ let telegramUsername = "";
   }
 
   const botUsername = "ArcSplitPro_bot";   
-  const link = `https://t.me/${botUsername}?start=wallet_${userAddress}`;
+  // اضافه کردن timestamp برای جلوگیری از cache
+  const timestamp = Date.now();
+  const link = `https://t.me/${botUsername}?start=wallet_${userAddress}_${timestamp}`;
   
   window.open(link, "_blank");
   showToast("Connecting to Telegram...");
@@ -850,7 +852,7 @@ let telegramUsername = "";
     });
   }
 
-  // Auto-fill form when coming from Telegram
+  // Auto-fill form when coming from Telegram Bot
 function autoFillFromURL() {
   const urlParams = new URLSearchParams(window.location.search);
   
@@ -859,30 +861,37 @@ function autoFillFromURL() {
   const tokenSymbol = urlParams.get('token');
   const addressesStr = urlParams.get('addresses');
 
-  // Check if user came from Telegram
-  const isFromTelegram = action === 'send' || window.location.search.includes('wallet_');
-
-  if (isFromTelegram && amount) {
+  // === Detect connection from Telegram ===
+  if (window.location.search.includes('wallet_') || urlParams.get('action') === 'connect') {
     telegramLinked = true;
     
-    // Get username if available
     const urlUsername = urlParams.get('username');
     if (urlUsername) {
       telegramUsername = urlUsername;
+    } else if (!telegramUsername) {
+      telegramUsername = "@Connected";
     }
 
     localStorage.setItem('telegramLinked', 'true');
     localStorage.setItem('telegramUsername', telegramUsername);
     updateTelegramButton();
+  }
 
-    // Fill the form
+  // === Auto-fill the form if it's a send command ===
+  if (action === 'send' && amount) {
+    // Fill total amount
     document.getElementById('totalAmount').value = amount;
 
+    // Select correct token
     const tokenSelect = document.getElementById('tokenSelect');
     if (tokenSelect) {
-      if (tokenSymbol === 'USDC') tokenSelect.value = "0x3600000000000000000000000000000000000000";
-      else if (tokenSymbol === 'EURC') tokenSelect.value = "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a";
-      else if (tokenSymbol === 'cirBTC') tokenSelect.value = "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF";
+      if (tokenSymbol === 'USDC') {
+        tokenSelect.value = "0x3600000000000000000000000000000000000000";
+      } else if (tokenSymbol === 'EURC') {
+        tokenSelect.value = "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a";
+      } else if (tokenSymbol === 'cirBTC') {
+        tokenSelect.value = "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF";
+      }
     }
 
     // Clear previous recipients and add new ones
@@ -895,6 +904,7 @@ function autoFillFromURL() {
       }
     });
 
+    // Set 100% if only one recipient
     if (addresses.length === 1) {
       setTimeout(() => {
         const percents = document.querySelectorAll('.percent');
@@ -904,17 +914,15 @@ function autoFillFromURL() {
       setMode('auto');
     }
 
-    // Improved UX for Telegram commands
+    // Improved UX
     setTimeout(() => {
       updateAll();
-      
       showToast(`📱 Command received from Telegram! (${addresses.length} recipients)`, 6000);
       
       // Highlight Send button
       const sendBtn = document.getElementById('sendBtn');
       sendBtn.style.background = 'linear-gradient(to right, #10b981, #34d399)';
       sendBtn.style.transform = 'scale(1.04)';
-      sendBtn.style.transition = 'all 0.3s';
       
       sendBtn.scrollIntoView({ behavior: "smooth" });
     }, 800);
