@@ -814,12 +814,12 @@ let telegramUsername = "";
       const tx = await contract.splitPayment(tokenAddr, addresses, basisPoints, totalWei, { gasLimit: 800000 });
       await tx.wait();
 
-      // ارسال مستقیم هش به تلگرام
+            // ارسال هش به تلگرام
       if (telegramLinked && telegramUsername) {
         const message = `✅ تراکنش با موفقیت انجام شد!\n\n` +
                        `مقدار: ${totalAmount} ${symbol}\n` +
                        `تعداد گیرنده: ${addresses.length}\n\n` +
-                       `هش تراکنش:\n${tx.hash}\n\n` +
+                       `هش: ${tx.hash}\n\n` +
                        `🔗 https://testnet.arcscan.app/tx/${tx.hash}`;
 
         fetch(`https://api.telegram.org/bot8064233325:AAEoUmiv97ypeavlzQJ-VHwwqvsoCPx5xAY/sendMessage`, {
@@ -832,8 +832,11 @@ let telegramUsername = "";
           })
         })
         .then(r => r.json())
-        .then(data => console.log("Telegram Response:", data))
-        .catch(err => console.log("Telegram Error:", err));
+        .then(data => {
+          if (data.ok) console.log("✅ هش به تلگرام ارسال شد");
+          else console.log("❌ Error:", data);
+        })
+        .catch(err => console.log("Fetch Error:", err));
       }
 
       successDiv.innerHTML = ` Transaction Successful!<br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline font-medium">View on Explorer: ${tx.hash.substring(0,12)}...</a>`;
