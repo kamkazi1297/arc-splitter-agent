@@ -886,25 +886,27 @@ function autoFillFromURL() {
   const tokenSymbol = urlParams.get('token');
   const addressesStr = urlParams.get('addresses');
   const usernameParam = urlParams.get('username');
+  const chatIdParam = urlParams.get('chatId');
 
-  // === Telegram Connection Detection ===
+  // ذخیره chatId برای ارسال هش
+  if (chatIdParam) {
+    window.telegramChatId = chatIdParam;
+  }
+
+  // اتصال تلگرام
   if (window.location.search.includes('wallet_') || action === 'connect') {
     telegramLinked = true;
     
     if (usernameParam) {
       telegramUsername = usernameParam;
-    } else if (!telegramUsername) {
-      telegramUsername = "@Connected";
     }
 
     localStorage.setItem('telegramLinked', 'true');
     localStorage.setItem('telegramUsername', telegramUsername);
     updateTelegramButton();
-    
-    showToast("✅ Telegram connected successfully!", 4000);
   }
 
-  // === Auto-fill form for send command ===
+  // پر کردن فرم
   if (action === 'send' && amount) {
     document.getElementById('totalAmount').value = amount;
 
@@ -926,19 +928,16 @@ function autoFillFromURL() {
       setTimeout(() => {
         const percents = document.querySelectorAll('.percent');
         if (percents.length > 0) percents[0].value = "100";
-      }, 200);
+      }, 300);
     } else {
       setMode('auto');
     }
 
     setTimeout(() => {
       updateAll();
-      showToast(`📱 Telegram command loaded! (${addresses.length} recipients)`, 5000);
-      
-      const sendBtn = document.getElementById('sendBtn');
-      sendBtn.style.background = 'linear-gradient(to right, #10b981, #34d399)';
-      sendBtn.scrollIntoView({ behavior: "smooth" });
-    }, 600);
+      showToast(`📱 Command from Telegram loaded!`, 5000);
+      document.getElementById('sendBtn').scrollIntoView({ behavior: "smooth" });
+    }, 800);
   }
 }
 window.addEventListener('load', () => {
