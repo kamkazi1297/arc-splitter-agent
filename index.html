@@ -301,14 +301,15 @@
   </div>
 
 <script>
-  let signer = null;
-  let userAddress = null;
-  let provider = null;
-  let transactions = JSON.parse(localStorage.getItem('arcTxHistory') || '[]');
-  let isProcessing = false;
-  let splitMode = 'manual';
-  let telegramLinked = false;
-  let telegramUsername = "";
+ let signer = null;
+let userAddress = null;
+let provider = null;
+let transactions = JSON.parse(localStorage.getItem('arcTxHistory') || '[]');
+let isProcessing = false;
+let splitMode = 'manual';
+
+let telegramLinked = false;
+let telegramUsername = "";
 
   const CONTRACT_ADDRESS = "0x73Da94F0D960Ef8FD49Ed28a94f667aF3C062cB2";
   const ARC_CHAIN_ID = 5042002;
@@ -351,22 +352,37 @@
   }
 
   function updateTelegramButton() {
-    const btn = document.getElementById("telegramBtn");
-    if (telegramLinked && telegramUsername) {
-      btn.innerHTML = `<i class="fab fa-telegram-plane"></i> <span>@${telegramUsername}</span>`;
-      btn.style.backgroundColor = "#0f8c4f";
-      btn.onclick = null;
-      btn.style.cursor = "default";
-    }
+  const btn = document.querySelector('button[onclick="connectTelegram()"]');
+  if (!btn) return;
+
+  if (telegramLinked && telegramUsername) {
+    btn.innerHTML = `
+      <i class="fab fa-telegram-plane"></i> 
+      <span>✅ ${telegramUsername}</span>
+    `;
+    btn.style.backgroundColor = "#0f9d58"; // سبز
+    btn.onclick = null; // کلیک غیرفعال شود
+  } else {
+    btn.innerHTML = `
+      <i class="fab fa-telegram-plane"></i> 
+      <span>Connect Telegram</span>
+    `;
+    btn.style.backgroundColor = "";
+    btn.onclick = connectTelegram;
   }
+}
 
   function connectTelegram() {
-    if (!userAddress) return showToast("Please connect your wallet first!");
-    const botUsername = "ArcSplitPro_bot";
-    const link = `https://t.me/${botUsername}?start=wallet_${userAddress}`;
-    window.open(link, "_blank");
-    showToast("Connecting your wallet to Telegram...");
+  if (!userAddress) {
+    return showToast("Please connect your wallet first!");
   }
+
+  const botUsername = "ArcSplitPro_bot";   
+  const link = `https://t.me/${botUsername}?start=wallet_${userAddress}`;
+  
+  window.open(link, "_blank");
+  showToast("Connecting to Telegram...");
+}
 
   function showToast(msg, duration = 5000) {
     const toast = document.getElementById("toast");
@@ -407,6 +423,28 @@
       }
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       userAddress = accounts[0];
+      async function connectMetaMask() {
+    hideConnectModal();
+    if (!window.ethereum) return showToast("MetaMask not found!");
+    try {
+      provider = new ethers.BrowserProvider(window.ethereum);
+      const network = await provider.getNetwork();
+      if (network.chainId !== BigInt(ARC_CHAIN_ID)) {
+        showToast("Please switch to <b>Arc Testnet</b> (Chain ID: 5042002)", 6000);
+        return;
+      }
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      userAddress = accounts[0];
+      signer = await provider.getSigner();
+      document.getElementById("logoContainer").classList.add("connected");
+      updateConnectButton();
+      showToast("Wallet connected successfully");
+      await updateBalance();
+    } catch (e) {
+      console.error(e);
+      showToast("Failed to connect wallet");
+    }
+  }
       signer = await provider.getSigner();
       document.getElementById("logoContainer").classList.add("connected");
       updateConnectButton();
@@ -799,10 +837,20 @@
 
   function autoFillFromURL() {
     const urlParams = new URLSearchParams(window.location.search);
+    
     const action = urlParams.get('action');
     const amount = urlParams.get('amount');
     const tokenSymbol = urlParams.get('token');
     const addressesStr = urlParams.get('addresses');
+
+    // === اتصال تلگرام رو ذخیره کن ===
+    if (window.location.search.includes('wallet_') || urlParams.get('start')) {
+        telegramLinked = true;
+        telegramUsername = "@Connected";     // بعداً می‌تونیم username واقعی بگیریم
+        localStorage.setItem('telegramLinked', 'true');
+        localStorage.setItem('telegramUsername', telegramUsername);
+        updateTelegramButton();
+    }
 
     if (!action || !amount) return;
 
@@ -838,17 +886,33 @@
       showToast(`📱 Command loaded! (${addresses.length} recipients)`, 5000);
       document.getElementById('sendBtn').scrollIntoView({ behavior: "smooth" });
     }, 800);
+}
+
+ window.addEventListener('load', () => {
+  // Restore Wallet Connection
+  const savedAddress = localStorage.getItem('userAddress');
+  if (savedAddress) {
+    userAddress = savedAddress;
+    updateConnectButton();
+    document.getElementById("logoContainer").classList.add("connected");
   }
 
-  window.addEventListener('load', () => {
-    loadSavedConnections();
-    addRecipient("", "");
-    addRecipient("", "");
-    setMode('manual');
-    renderHistory();
-    setTimeout(updateAll, 200);
-    autoFillFromURL();
-  });
+  // Restore Telegram Connection
+  telegramUsername = localStorage.getItem('telegramUsername') || "";
+  telegramLinked = localStorage.getItem('telegramLinked') === 'true';
+
+  if (telegramLinked) {
+    updateTelegramButton();
+  }
+
+  addRecipient("", "");
+  addRecipient("", "");
+  setMode('manual');
+  renderHistory();
+  setTimeout(updateAll, 200);
+
+  autoFillFromURL();
+});
 </script>
 </body>
 </html>
