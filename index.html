@@ -841,56 +841,60 @@ let telegramUsername = "";
   }
 
   function autoFillFromURL() {
-    const urlParams = new URLSearchParams(window.location.search);
-    
-    const action = urlParams.get('action');
-    const amount = urlParams.get('amount');
-    const tokenSymbol = urlParams.get('token');
-    const addressesStr = urlParams.get('addresses');
+  const urlParams = new URLSearchParams(window.location.search);
+  
+  const action = urlParams.get('action');
+  const amount = urlParams.get('amount');
+  const tokenSymbol = urlParams.get('token');
+  const addressesStr = urlParams.get('addresses');
 
-    // === اتصال تلگرام رو ذخیره کن ===
-    if (window.location.search.includes('wallet_') || urlParams.get('start')) {
+  // دریافت username واقعی از deep link
+  if (window.location.search.includes('wallet_') || urlParams.get('start')) {
     telegramLinked = true;
-    telegramUsername = username || "@Telegram"; // فعلاً اینطوری
+    
+    // سعی می‌کنیم username رو از URL بگیریم (بعداً بهتر می‌کنیم)
+    const savedUser = localStorage.getItem('telegramUsername');
+    telegramUsername = savedUser && savedUser !== "@Connected" ? savedUser : "@Booz0org"; // فعلاً تست
+
     localStorage.setItem('telegramLinked', 'true');
     localStorage.setItem('telegramUsername', telegramUsername);
     updateTelegramButton();
-}
+  }
 
-    if (!action || !amount) return;
+  if (!action || !amount) return;
 
-    document.getElementById('totalAmount').value = amount;
+  document.getElementById('totalAmount').value = amount;
 
-    const tokenSelect = document.getElementById('tokenSelect');
-    if (tokenSelect) {
-      if (tokenSymbol === 'USDC') tokenSelect.value = "0x3600000000000000000000000000000000000000";
-      else if (tokenSymbol === 'EURC') tokenSelect.value = "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a";
-      else if (tokenSymbol === 'cirBTC') tokenSelect.value = "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF";
-    }
+  const tokenSelect = document.getElementById('tokenSelect');
+  if (tokenSelect) {
+    if (tokenSymbol === 'USDC') tokenSelect.value = "0x3600000000000000000000000000000000000000";
+    else if (tokenSymbol === 'EURC') tokenSelect.value = "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a";
+    else if (tokenSymbol === 'cirBTC') tokenSelect.value = "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF";
+  }
 
-    document.getElementById('recipients-list').innerHTML = '';
+  document.getElementById('recipients-list').innerHTML = '';
 
-    let addresses = [];
-    if (addressesStr) addresses = addressesStr.split(',');
-    
-    addresses.forEach(addr => {
-      if (addr && addr.trim()) addRecipient(addr.trim(), "");
-    });
+  let addresses = [];
+  if (addressesStr) addresses = addressesStr.split(',');
+  
+  addresses.forEach(addr => {
+    if (addr && addr.trim()) addRecipient(addr.trim(), "");
+  });
 
-    if (addresses.length === 1) {
-      setTimeout(() => {
-        const percents = document.querySelectorAll('.percent');
-        if (percents.length > 0) percents[0].value = "100";
-      }, 300);
-    } else {
-      setMode('auto');
-    }
-
+  if (addresses.length === 1) {
     setTimeout(() => {
-      updateAll();
-      showToast(`📱 Command loaded! (${addresses.length} recipients)`, 5000);
-      document.getElementById('sendBtn').scrollIntoView({ behavior: "smooth" });
-    }, 800);
+      const percents = document.querySelectorAll('.percent');
+      if (percents.length > 0) percents[0].value = "100";
+    }, 300);
+  } else {
+    setMode('auto');
+  }
+
+  setTimeout(() => {
+    updateAll();
+    showToast(`📱 Command from Telegram loaded! (${addresses.length} recipients)`, 5000);
+    document.getElementById('sendBtn').scrollIntoView({ behavior: "smooth" });
+  }, 800);
 }
 
 window.addEventListener('load', () => {
