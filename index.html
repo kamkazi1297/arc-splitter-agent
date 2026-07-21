@@ -860,14 +860,14 @@ function autoFillFromURL() {
   const amount = urlParams.get('amount');
   const tokenSymbol = urlParams.get('token');
   const addressesStr = urlParams.get('addresses');
+  const usernameParam = urlParams.get('username');
 
-  // === Detect connection from Telegram ===
-  if (window.location.search.includes('wallet_') || urlParams.get('action') === 'connect') {
+  // === Telegram Connection Detection ===
+  if (window.location.search.includes('wallet_') || action === 'connect') {
     telegramLinked = true;
     
-    const urlUsername = urlParams.get('username');
-    if (urlUsername) {
-      telegramUsername = urlUsername;
+    if (usernameParam) {
+      telegramUsername = usernameParam;
     } else if (!telegramUsername) {
       telegramUsername = "@Connected";
     }
@@ -875,60 +875,47 @@ function autoFillFromURL() {
     localStorage.setItem('telegramLinked', 'true');
     localStorage.setItem('telegramUsername', telegramUsername);
     updateTelegramButton();
+    
+    showToast("✅ Telegram connected successfully!", 4000);
   }
 
-  // === Auto-fill the form if it's a send command ===
+  // === Auto-fill form for send command ===
   if (action === 'send' && amount) {
-    // Fill total amount
     document.getElementById('totalAmount').value = amount;
 
-    // Select correct token
     const tokenSelect = document.getElementById('tokenSelect');
     if (tokenSelect) {
-      if (tokenSymbol === 'USDC') {
-        tokenSelect.value = "0x3600000000000000000000000000000000000000";
-      } else if (tokenSymbol === 'EURC') {
-        tokenSelect.value = "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a";
-      } else if (tokenSymbol === 'cirBTC') {
-        tokenSelect.value = "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF";
-      }
+      if (tokenSymbol === 'USDC') tokenSelect.value = "0x3600000000000000000000000000000000000000";
+      else if (tokenSymbol === 'EURC') tokenSelect.value = "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a";
+      else if (tokenSymbol === 'cirBTC') tokenSelect.value = "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF";
     }
 
-    // Clear previous recipients and add new ones
     document.getElementById('recipients-list').innerHTML = '';
 
     let addresses = addressesStr ? addressesStr.split(',') : [];
     addresses.forEach(addr => {
-      if (addr && addr.trim()) {
-        addRecipient(addr.trim(), "");
-      }
+      if (addr && addr.trim()) addRecipient(addr.trim(), "");
     });
 
-    // Set 100% if only one recipient
     if (addresses.length === 1) {
       setTimeout(() => {
         const percents = document.querySelectorAll('.percent');
         if (percents.length > 0) percents[0].value = "100";
-      }, 300);
+      }, 200);
     } else {
       setMode('auto');
     }
 
-    // Improved UX
     setTimeout(() => {
       updateAll();
-      showToast(`📱 Command received from Telegram! (${addresses.length} recipients)`, 6000);
+      showToast(`📱 Telegram command loaded! (${addresses.length} recipients)`, 5000);
       
-      // Highlight Send button
       const sendBtn = document.getElementById('sendBtn');
       sendBtn.style.background = 'linear-gradient(to right, #10b981, #34d399)';
-      sendBtn.style.transform = 'scale(1.04)';
-      
       sendBtn.scrollIntoView({ behavior: "smooth" });
-    }, 800);
+    }, 600);
   }
 }
-
 window.addEventListener('load', () => {
   // Restore Wallet Connection
   const savedAddress = localStorage.getItem('userAddress');
