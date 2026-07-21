@@ -441,18 +441,18 @@ function updateTelegramButton() {
 }
 
     function connectTelegram() {
-    if (!userAddress) {
-      return showToast("Please connect your wallet first!", 4000);
-    }
-
-    const botUsername = "ArcSplitPro_bot";
-    const timestamp = Date.now();
-    
-    const link = `https://t.me/${botUsername}?start=connect_${userAddress}_${timestamp}`;
-    
-    window.open(link, "_blank");
-    showToast("Opening Telegram to connect...");
+  if (!userAddress) {
+    return showToast("Please connect your wallet first!", 4000);
   }
+
+  const botUsername = "ArcSplitPro_bot";
+  const timestamp = Date.now();
+  
+  const link = `https://t.me/${botUsername}?start=connect_${userAddress}_${timestamp}`;
+  
+  window.open(link, "_blank");
+  showToast("Opening Telegram to connect...");
+}
   
   function showToast(msg, duration = 5000) {
     const toast = document.getElementById("toast");
@@ -500,7 +500,7 @@ function updateTelegramButton() {
     // ذخیره والت برای بعد از رفرش
     localStorage.setItem('userAddress', userAddress);
 
-           // ثبت فوری والت در ربات
+               // ثبت فوری والت در ربات
     const chatId = localStorage.getItem('telegramChatId') || window.telegramChatId;
     if (chatId && userAddress) {
       fetch('https://arcsplit-bot.kamkazi-1297.workers.dev/register-wallet', {
@@ -508,7 +508,7 @@ function updateTelegramButton() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ chatId: chatId, wallet: userAddress })
       })
-      .then(() => console.log("Wallet synced to bot"))
+      .then(() => console.log("✅ Wallet synced to bot"))
       .catch(err => console.log("Sync failed", err));
     }
 
@@ -530,20 +530,20 @@ function updateTelegramButton() {
 
     // ثبت والت در ربات (برای وقتی از سایت والت متصل می‌شه)
     async function registerWalletToBot() {
-    const chatId = localStorage.getItem('telegramChatId') || window.telegramChatId;
-    if (chatId && userAddress) {
-      try {
-        await fetch('https://arcsplit-bot.kamkazi-1297.workers.dev/register-wallet', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chatId: chatId, wallet: userAddress })
-        });
-        console.log("Wallet successfully registered to bot");
-      } catch (e) {
-        console.log("Failed to register wallet to bot");
-      }
+  const chatId = localStorage.getItem('telegramChatId') || window.telegramChatId;
+  if (chatId && userAddress) {
+    try {
+      await fetch('https://arcsplit-bot.kamkazi-1297.workers.dev/register-wallet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chatId: chatId, wallet: userAddress })
+      });
+      console.log("✅ Wallet successfully registered to bot");
+    } catch (e) {
+      console.log("❌ Failed to register wallet to bot");
     }
   }
+}
 
   async function connectWalletConnect() {
   hideConnectModal();
