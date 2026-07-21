@@ -840,7 +840,8 @@ let telegramUsername = "";
     });
   }
 
-  function autoFillFromURL() {
+  // Auto-fill form when coming from Telegram
+function autoFillFromURL() {
   const urlParams = new URLSearchParams(window.location.search);
   
   const action = urlParams.get('action');
@@ -848,19 +849,23 @@ let telegramUsername = "";
   const tokenSymbol = urlParams.get('token');
   const addressesStr = urlParams.get('addresses');
 
-  // تشخیص آمدن از تلگرام
+  // Check if user came from Telegram
   const isFromTelegram = action === 'send' || window.location.search.includes('wallet_');
 
   if (isFromTelegram && amount) {
     telegramLinked = true;
-    const urlUsername = urlParams.get('username');
-    if (urlUsername) telegramUsername = urlUsername;
     
+    // Get username if available
+    const urlUsername = urlParams.get('username');
+    if (urlUsername) {
+      telegramUsername = urlUsername;
+    }
+
     localStorage.setItem('telegramLinked', 'true');
     localStorage.setItem('telegramUsername', telegramUsername);
     updateTelegramButton();
 
-    // پر کردن فرم
+    // Fill the form
     document.getElementById('totalAmount').value = amount;
 
     const tokenSelect = document.getElementById('tokenSelect');
@@ -870,11 +875,14 @@ let telegramUsername = "";
       else if (tokenSymbol === 'cirBTC') tokenSelect.value = "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF";
     }
 
+    // Clear previous recipients and add new ones
     document.getElementById('recipients-list').innerHTML = '';
 
     let addresses = addressesStr ? addressesStr.split(',') : [];
     addresses.forEach(addr => {
-      if (addr && addr.trim()) addRecipient(addr.trim(), "");
+      if (addr && addr.trim()) {
+        addRecipient(addr.trim(), "");
+      }
     });
 
     if (addresses.length === 1) {
@@ -886,15 +894,17 @@ let telegramUsername = "";
       setMode('auto');
     }
 
-    // بهبود UX برای دستورات تلگرام
+    // Improved UX for Telegram commands
     setTimeout(() => {
       updateAll();
-      showToast(`📱 دستور از تلگرام دریافت شد! (${addresses.length} گیرنده)`, 6000);
       
-      // برجسته کردن دکمه ارسال
+      showToast(`📱 Command received from Telegram! (${addresses.length} recipients)`, 6000);
+      
+      // Highlight Send button
       const sendBtn = document.getElementById('sendBtn');
       sendBtn.style.background = 'linear-gradient(to right, #10b981, #34d399)';
-      sendBtn.style.transform = 'scale(1.03)';
+      sendBtn.style.transform = 'scale(1.04)';
+      sendBtn.style.transition = 'all 0.3s';
       
       sendBtn.scrollIntoView({ behavior: "smooth" });
     }, 800);
