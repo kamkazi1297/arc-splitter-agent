@@ -412,39 +412,36 @@ let telegramUsername = "";
   }
 
   async function connectMetaMask() {
-    hideConnectModal();
-    if (!window.ethereum) return showToast("MetaMask not found!");
-    try {
-      provider = new ethers.BrowserProvider(window.ethereum);
-      const network = await provider.getNetwork();
-      if (network.chainId !== BigInt(ARC_CHAIN_ID)) {
-        showToast("Please switch to <b>Arc Testnet</b> (Chain ID: 5042002)", 6000);
-        return;
-      }
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      userAddress = accounts[0];
-      async function connectMetaMask() {
-    hideConnectModal();
-    if (!window.ethereum) return showToast("MetaMask not found!");
-    try {
-      provider = new ethers.BrowserProvider(window.ethereum);
-      const network = await provider.getNetwork();
-      if (network.chainId !== BigInt(ARC_CHAIN_ID)) {
-        showToast("Please switch to <b>Arc Testnet</b> (Chain ID: 5042002)", 6000);
-        return;
-      }
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      userAddress = accounts[0];
-      signer = await provider.getSigner();
-      document.getElementById("logoContainer").classList.add("connected");
-      updateConnectButton();
-      showToast("Wallet connected successfully");
-      await updateBalance();
-    } catch (e) {
-      console.error(e);
-      showToast("Failed to connect wallet");
+  hideConnectModal();
+  if (!window.ethereum) return showToast("MetaMask not found!");
+
+  try {
+    provider = new ethers.BrowserProvider(window.ethereum);
+    const network = await provider.getNetwork();
+    
+    if (network.chainId !== BigInt(ARC_CHAIN_ID)) {
+      showToast("Please switch to <b>Arc Testnet</b> (Chain ID: 5042002)", 6000);
+      return;
     }
+
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    userAddress = accounts[0];
+
+ 
+    localStorage.setItem('userAddress', userAddress);
+
+    signer = await provider.getSigner();
+
+    document.getElementById("logoContainer").classList.add("connected");
+    updateConnectButton();
+    showToast("Wallet connected successfully");
+    await updateBalance();
+
+  } catch (e) {
+    console.error(e);
+    showToast("Failed to connect wallet");
   }
+}
       signer = await provider.getSigner();
       document.getElementById("logoContainer").classList.add("connected");
       updateConnectButton();
