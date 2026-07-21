@@ -848,13 +848,14 @@ let telegramUsername = "";
   const tokenSymbol = urlParams.get('token');
   const addressesStr = urlParams.get('addresses');
 
-  // دریافت username واقعی از deep link
-  if (window.location.search.includes('wallet_') || urlParams.get('start')) {
+    // دریافت username واقعی از deep link
+  if (window.location.search.includes('wallet_') || urlParams.get('start') || urlParams.get('action') === 'connect') {
     telegramLinked = true;
     
-    // سعی می‌کنیم username رو از URL بگیریم (بعداً بهتر می‌کنیم)
-    const savedUser = localStorage.getItem('telegramUsername');
-    telegramUsername = savedUser && savedUser !== "@Connected" ? savedUser : "@Booz0org"; // فعلاً تست
+    const urlUsername = urlParams.get('username');
+    if (urlUsername) {
+      telegramUsername = urlUsername;
+    }
 
     localStorage.setItem('telegramLinked', 'true');
     localStorage.setItem('telegramUsername', telegramUsername);
