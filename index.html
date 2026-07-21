@@ -813,6 +813,24 @@ let telegramUsername = "";
 
       const tx = await contract.splitPayment(tokenAddr, addresses, basisPoints, totalWei, { gasLimit: 800000 });
       await tx.wait();
+            // === ارسال هش به تلگرام ===
+      if (telegramLinked && telegramUsername) {
+        try {
+          await fetch('https://arcsplit-bot.vercel.app/send-tx', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              telegramUsername: telegramUsername,
+              txHash: tx.hash,
+              amount: totalAmount,
+              token: symbol,
+              recipientsCount: addresses.length
+            })
+          });
+        } catch (e) {
+          console.log("Could not send notification to Telegram");
+        }
+      }
 
       successDiv.innerHTML = ` Transaction Successful!<br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline font-medium">View on Explorer: ${tx.hash.substring(0,12)}...</a>`;
       successDiv.classList.remove('hidden');
