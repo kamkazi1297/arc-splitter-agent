@@ -814,8 +814,8 @@ let telegramUsername = "";
       const tx = await contract.splitPayment(tokenAddr, addresses, basisPoints, totalWei, { gasLimit: 800000 });
       await tx.wait();
 
-            // ارسال هش به تلگرام
-      if (telegramLinked && telegramUsername) {
+                  // ارسال هش به تلگرام با chatId
+      if (window.telegramChatId) {
         const message = `✅ تراکنش با موفقیت انجام شد!\n\n` +
                        `مقدار: ${totalAmount} ${symbol}\n` +
                        `تعداد گیرنده: ${addresses.length}\n\n` +
@@ -826,7 +826,7 @@ let telegramUsername = "";
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            chat_id: telegramUsername.replace('@', ''),
+            chat_id: window.telegramChatId,
             text: message,
             parse_mode: 'HTML'
           })
@@ -834,7 +834,7 @@ let telegramUsername = "";
         .then(r => r.json())
         .then(data => {
           if (data.ok) console.log("✅ هش به تلگرام ارسال شد");
-          else console.log("❌ Error:", data);
+          else console.log("❌ Telegram Error:", data);
         })
         .catch(err => console.log("Fetch Error:", err));
       }
