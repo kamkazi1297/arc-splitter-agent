@@ -952,18 +952,19 @@ function autoFillFromURL() {
   if (telegramConnect === 'true' || chatIdParam || window.location.search.includes('connect_')) {
     telegramLinked = true;
 
-        // ذخیره والت برای ربات
-    if (userAddress) {
-      // ارسال آدرس والت به ربات
-      fetch('https://YOUR-WORKER-NAME.workers.dev/save-wallet', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chatId: chatIdParam || window.telegramChatId,
-          walletAddress: userAddress
+           // === Save Wallet to Bot ===
+      if (userAddress && chatIdParam) {
+        fetch('https://arcsplit-bot.kamkazi-1297.workers.dev/save-wallet', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chatId: chatIdParam,
+            walletAddress: userAddress
+          })
         })
-      }).catch(err => console.log("Save wallet failed", err));
-    }
+        .then(() => console.log("✅ Wallet sent to bot"))
+        .catch(err => console.error("Save wallet failed:", err));
+      }
     
     if (usernameParam) {
       telegramUsername = decodeURIComponent(usernameParam);
