@@ -881,7 +881,7 @@ if (window.telegramChatId) {
   }
 
   // Auto-fill form when coming from Telegram Bot
-// Auto Fill when returning from Telegram
+
 function autoFillFromURL() {
   const urlParams = new URLSearchParams(window.location.search);
   
@@ -890,22 +890,20 @@ function autoFillFromURL() {
   const tokenSymbol = urlParams.get('token');
   const addressesStr = urlParams.get('addresses');
   const chatIdParam = urlParams.get('chatId');
+  const telegramConnect = urlParams.get('telegram_connect');   // مهم!
 
-  // === ذخیره Chat ID ===
+  // ذخیره Chat ID
   if (chatIdParam) {
     window.telegramChatId = chatIdParam;
     localStorage.setItem('telegramChatId', chatIdParam);
-    console.log("✅ Telegram Chat ID saved:", chatIdParam);
   }
 
-  // === علامت‌گذاری اتصال تلگرام ===
-  if (chatIdParam || window.location.search.includes('connect_')) {
+  // تشخیص اتصال تلگرام (از هر دو روش)
+  if (chatIdParam || telegramConnect === 'true' || window.location.search.includes('connect_')) {
     telegramLinked = true;
     
-    // اگر username قبلاً ذخیره شده، استفاده کن، иначе یک نام پیش‌فرض
-    if (!telegramUsername || telegramUsername === "") {
-      telegramUsername = "Telegram User";
-    }
+    // سعی کنیم username واقعی بگیریم (در حال حاضر پیش‌فرض)
+    telegramUsername = telegramUsername || "@TelegramUser";
 
     localStorage.setItem('telegramLinked', 'true');
     localStorage.setItem('telegramUsername', telegramUsername);
@@ -914,7 +912,7 @@ function autoFillFromURL() {
     showToast("✅ Telegram connected successfully!", 4000);
   }
 
-  // === پر کردن فرم ارسال (اگر از دستور send بات آمده) ===
+  // پر کردن فرم send
   if (action === 'send' && amount) {
     document.getElementById('totalAmount').value = amount;
 
@@ -925,14 +923,10 @@ function autoFillFromURL() {
       else if (tokenSymbol === 'cirBTC') tokenSelect.value = "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF";
     }
 
-    // پاک کردن لیست قبلی و اضافه کردن آدرس‌ها
     document.getElementById('recipients-list').innerHTML = '';
-
     let addresses = addressesStr ? addressesStr.split(',') : [];
     addresses.forEach(addr => {
-      if (addr && addr.trim()) {
-        addRecipient(addr.trim(), "");
-      }
+      if (addr && addr.trim()) addRecipient(addr.trim(), "");
     });
 
     if (addresses.length <= 1) {
@@ -950,6 +944,7 @@ function autoFillFromURL() {
     }, 600);
   }
 }
+  
 window.addEventListener('load', () => {
   // Restore Wallet Connection
   const savedAddress = localStorage.getItem('userAddress');
