@@ -352,16 +352,15 @@ let telegramUsername = "";
   }
 
   function updateTelegramButton() {
-  const btn = document.querySelector('button[onclick="connectTelegram()"]');
-  if (!btn) return;
-
+  const btn = document.getElementById("telegramBtn");   // یا querySelector اگر id نداره
+  
   if (telegramLinked && telegramUsername) {
     btn.innerHTML = `
       <i class="fab fa-telegram-plane"></i> 
       <span>✅ ${telegramUsername}</span>
     `;
-    btn.style.backgroundColor = "#0f9d58"; // سبز
-    btn.onclick = null; // کلیک غیرفعال شود
+    btn.style.backgroundColor = "#0f9d58";
+    btn.onclick = disconnectTelegram;     // کلیک = Disconnect
   } else {
     btn.innerHTML = `
       <i class="fab fa-telegram-plane"></i> 
@@ -369,6 +368,17 @@ let telegramUsername = "";
     `;
     btn.style.backgroundColor = "";
     btn.onclick = connectTelegram;
+  }
+}
+
+  function disconnectTelegram() {
+  if (confirm("Are you sure you want to disconnect Telegram?")) {
+    telegramLinked = false;
+    telegramUsername = "";
+    localStorage.removeItem('telegramLinked');
+    localStorage.removeItem('telegramUsername');
+    updateTelegramButton();
+    showToast("Telegram disconnected successfully");
   }
 }
 
