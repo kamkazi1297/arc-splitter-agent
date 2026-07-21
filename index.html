@@ -883,6 +883,7 @@ if (window.telegramChatId) {
 
   // Auto-fill form when coming from Telegram Bot
 
+// Auto Fill when returning from Telegram
 function autoFillFromURL() {
   const urlParams = new URLSearchParams(window.location.search);
   
@@ -891,7 +892,8 @@ function autoFillFromURL() {
   const tokenSymbol = urlParams.get('token');
   const addressesStr = urlParams.get('addresses');
   const chatIdParam = urlParams.get('chatId');
-  const telegramConnect = urlParams.get('telegram_connect');   // مهم!
+  const telegramConnect = urlParams.get('telegram_connect');
+  const usernameParam = urlParams.get('username');   // ← مهم
 
   // ذخیره Chat ID
   if (chatIdParam) {
@@ -899,21 +901,26 @@ function autoFillFromURL() {
     localStorage.setItem('telegramChatId', chatIdParam);
   }
 
-  // تشخیص اتصال تلگرام (از هر دو روش)
-  if (chatIdParam || telegramConnect === 'true' || window.location.search.includes('connect_')) {
+  // تشخیص اتصال و ذخیره username واقعی
+  if (telegramConnect === 'true' || chatIdParam || window.location.search.includes('connect_')) {
     telegramLinked = true;
     
-    // سعی کنیم username واقعی بگیریم (در حال حاضر پیش‌فرض)
-    telegramUsername = telegramUsername || "@TelegramUser";
+    if (usernameParam) {
+      telegramUsername = decodeURIComponent(usernameParam);
+    } else {
+      telegramUsername = telegramUsername || "Telegram User";
+    }
 
     localStorage.setItem('telegramLinked', 'true');
     localStorage.setItem('telegramUsername', telegramUsername);
     
     updateTelegramButton();
     showToast("✅ Telegram connected successfully!", 4000);
+    
+    console.log("✅ Telegram Username saved:", telegramUsername);
   }
 
-  // پر کردن فرم send
+  // پر کردن فرم ارسال (از دستور send)
   if (action === 'send' && amount) {
     document.getElementById('totalAmount').value = amount;
 
