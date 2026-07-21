@@ -356,28 +356,26 @@ let telegramUsername = "";
   if (!btn) return;
 
   if (telegramLinked && telegramUsername) {
-    btn.innerHTML = `
-      <i class="fab fa-telegram-plane"></i> 
-      <span>✅ ${telegramUsername}</span>
-    `;
+    btn.innerHTML = `<i class="fab fa-telegram-plane"></i> <span>✅ ${telegramUsername}</span>`;
     btn.style.backgroundColor = "#0f9d58";
     btn.onclick = disconnectTelegram;
   } else {
-    btn.innerHTML = `
-      <i class="fab fa-telegram-plane"></i> 
-      <span>Connect Telegram</span>
-    `;
+    btn.innerHTML = `<i class="fab fa-telegram-plane"></i> <span>Connect Telegram</span>`;
     btn.style.backgroundColor = "#229ED9";
     btn.onclick = connectTelegram;
   }
 }
-
+  
   function disconnectTelegram() {
   if (confirm("Disconnect Telegram account?")) {
     telegramLinked = false;
     telegramUsername = "";
+    window.telegramChatId = null;
+    
     localStorage.removeItem('telegramLinked');
     localStorage.removeItem('telegramUsername');
+    localStorage.removeItem('telegramChatId');
+    
     updateTelegramButton();
     showToast("Telegram disconnected");
   }
@@ -403,17 +401,18 @@ let telegramUsername = "";
 
   function connectTelegram() {
   if (!userAddress) {
-    return showToast("Please connect your wallet first!");
+    return showToast("Please connect your wallet first!", 4000);
   }
 
-  const botUsername = "ArcSplitPro_bot";
-  const timestamp = Date.now(); // جلوگیری از cache
-  const link = `https://t.me/${botUsername}?start=wallet_${userAddress}_${timestamp}`;
+  const botUsername = "ArcSplitPro_bot"; // Change if your bot username is different
+  const timestamp = Date.now();
+  
+  const link = `https://t.me/${botUsername}?start=connect_${userAddress}_${timestamp}`;
   
   window.open(link, "_blank");
   showToast("Opening Telegram to connect...");
 }
-
+  
   function showToast(msg, duration = 5000) {
     const toast = document.getElementById("toast");
     document.getElementById("toastText").innerHTML = msg;
