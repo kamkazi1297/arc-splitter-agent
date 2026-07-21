@@ -351,7 +351,7 @@ let telegramUsername = "";
     if (userAddress) btn.classList.add("!bg-emerald-500", "!text-white");
   }
 
- // بروزرسانی دکمه
+  
 function updateTelegramButton() {
   const btn = document.getElementById("telegramBtn");
   if (!btn) return;
@@ -406,14 +406,13 @@ function updateTelegramButton() {
     return showToast("Please connect your wallet first!", 4000);
   }
 
-  const botUsername = "ArcSplitPro_bot";
+  const botUsername = "ArcSplitPro_bot";  
   const timestamp = Date.now();
   
-  // لینک deep linking
   const link = `https://t.me/${botUsername}?start=connect_${userAddress}_${timestamp}`;
   
   window.open(link, "_blank");
-  showToast("Opening Telegram...");
+  showToast("Opening Telegram to connect...");
 }
   
   function showToast(msg, duration = 5000) {
@@ -882,6 +881,7 @@ if (window.telegramChatId) {
   }
 
   // Auto-fill form when coming from Telegram Bot
+// Auto Fill when returning from Telegram
 function autoFillFromURL() {
   const urlParams = new URLSearchParams(window.location.search);
   
@@ -890,32 +890,34 @@ function autoFillFromURL() {
   const tokenSymbol = urlParams.get('token');
   const addressesStr = urlParams.get('addresses');
   const chatIdParam = urlParams.get('chatId');
-  const usernameParam = urlParams.get('username');
 
-  // === مهم: ذخیره chatId ===
+  // === ذخیره Chat ID ===
   if (chatIdParam) {
     window.telegramChatId = chatIdParam;
-    console.log("✅ Telegram Chat ID saved:", window.telegramChatId);
-    
-    // ذخیره در localStorage هم برای ایمنی
     localStorage.setItem('telegramChatId', chatIdParam);
+    console.log("✅ Telegram Chat ID saved:", chatIdParam);
   }
 
-  // اتصال تلگرام (برای نمایش ✅)
-  if (usernameParam || chatIdParam) {
+  // === علامت‌گذاری اتصال تلگرام ===
+  if (chatIdParam || window.location.search.includes('connect_')) {
     telegramLinked = true;
-    if (usernameParam) telegramUsername = usernameParam;
     
+    // اگر username قبلاً ذخیره شده، استفاده کن، иначе یک نام پیش‌فرض
+    if (!telegramUsername || telegramUsername === "") {
+      telegramUsername = "Telegram User";
+    }
+
     localStorage.setItem('telegramLinked', 'true');
-    localStorage.setItem('telegramUsername', telegramUsername || "Connected");
+    localStorage.setItem('telegramUsername', telegramUsername);
+    
     updateTelegramButton();
+    showToast("✅ Telegram connected successfully!", 4000);
   }
 
-  // پر کردن فرم ارسال
+  // === پر کردن فرم ارسال (اگر از دستور send بات آمده) ===
   if (action === 'send' && amount) {
     document.getElementById('totalAmount').value = amount;
 
-    // انتخاب توکن
     const tokenSelect = document.getElementById('tokenSelect');
     if (tokenSymbol) {
       if (tokenSymbol === 'USDC') tokenSelect.value = "0x3600000000000000000000000000000000000000";
@@ -923,10 +925,10 @@ function autoFillFromURL() {
       else if (tokenSymbol === 'cirBTC') tokenSelect.value = "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF";
     }
 
-    // اضافه کردن آدرس‌ها
+    // پاک کردن لیست قبلی و اضافه کردن آدرس‌ها
     document.getElementById('recipients-list').innerHTML = '';
+
     let addresses = addressesStr ? addressesStr.split(',') : [];
-    
     addresses.forEach(addr => {
       if (addr && addr.trim()) {
         addRecipient(addr.trim(), "");
@@ -944,7 +946,6 @@ function autoFillFromURL() {
 
     setTimeout(() => {
       updateAll();
-      showToast(`📱 Loaded from Telegram! Ready to send.`, 5000);
       document.getElementById('sendBtn').scrollIntoView({ behavior: "smooth" });
     }, 600);
   }
