@@ -814,7 +814,7 @@ let telegramUsername = "";
       const tx = await contract.splitPayment(tokenAddr, addresses, basisPoints, totalWei, { gasLimit: 800000 });
       await tx.wait();
 
-                       // ارسال هش به تلگرام (Cloudflare Worker)
+                           // ارسال هش به تلگرام
       if (window.telegramChatId) {
         fetch('https://arcsplit-bot.kamkazi-1297.workers.dev/send-tx', {
           method: 'POST',
@@ -826,10 +826,7 @@ let telegramUsername = "";
             token: symbol,
             recipientsCount: addresses.length
           })
-        })
-        .then(r => r.json())
-        .then(data => console.log("Telegram Response:", data))
-        .catch(err => console.log("Telegram Error:", err));
+        });
       }
       
       successDiv.innerHTML = ` Transaction Successful!<br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline font-medium">View on Explorer: ${tx.hash.substring(0,12)}...</a>`;
