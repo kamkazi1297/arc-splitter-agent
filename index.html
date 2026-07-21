@@ -875,46 +875,51 @@ function autoFillFromURL() {
   const amount = urlParams.get('amount');
   const tokenSymbol = urlParams.get('token');
   const addressesStr = urlParams.get('addresses');
-  const usernameParam = urlParams.get('username');
   const chatIdParam = urlParams.get('chatId');
+  const usernameParam = urlParams.get('username');
 
-  // ذخیره chatId برای ارسال هش
+  // === مهم: ذخیره chatId ===
   if (chatIdParam) {
     window.telegramChatId = chatIdParam;
+    console.log("✅ Telegram Chat ID saved:", window.telegramChatId);
+    
+    // ذخیره در localStorage هم برای ایمنی
+    localStorage.setItem('telegramChatId', chatIdParam);
   }
 
-  // اتصال تلگرام
-  if (window.location.search.includes('wallet_') || action === 'connect') {
+  // اتصال تلگرام (برای نمایش ✅)
+  if (usernameParam || chatIdParam) {
     telegramLinked = true;
+    if (usernameParam) telegramUsername = usernameParam;
     
-    if (usernameParam) {
-      telegramUsername = usernameParam;
-    }
-
     localStorage.setItem('telegramLinked', 'true');
-    localStorage.setItem('telegramUsername', telegramUsername);
+    localStorage.setItem('telegramUsername', telegramUsername || "Connected");
     updateTelegramButton();
   }
 
-  // پر کردن فرم
+  // پر کردن فرم ارسال
   if (action === 'send' && amount) {
     document.getElementById('totalAmount').value = amount;
 
+    // انتخاب توکن
     const tokenSelect = document.getElementById('tokenSelect');
-    if (tokenSelect) {
+    if (tokenSymbol) {
       if (tokenSymbol === 'USDC') tokenSelect.value = "0x3600000000000000000000000000000000000000";
       else if (tokenSymbol === 'EURC') tokenSelect.value = "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a";
       else if (tokenSymbol === 'cirBTC') tokenSelect.value = "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF";
     }
 
+    // اضافه کردن آدرس‌ها
     document.getElementById('recipients-list').innerHTML = '';
-
     let addresses = addressesStr ? addressesStr.split(',') : [];
+    
     addresses.forEach(addr => {
-      if (addr && addr.trim()) addRecipient(addr.trim(), "");
+      if (addr && addr.trim()) {
+        addRecipient(addr.trim(), "");
+      }
     });
 
-    if (addresses.length === 1) {
+    if (addresses.length <= 1) {
       setTimeout(() => {
         const percents = document.querySelectorAll('.percent');
         if (percents.length > 0) percents[0].value = "100";
@@ -925,9 +930,9 @@ function autoFillFromURL() {
 
     setTimeout(() => {
       updateAll();
-      showToast(`📱 Command from Telegram loaded!`, 5000);
+      showToast(`📱 Loaded from Telegram! Ready to send.`, 5000);
       document.getElementById('sendBtn').scrollIntoView({ behavior: "smooth" });
-    }, 800);
+    }, 600);
   }
 }
 window.addEventListener('load', () => {
