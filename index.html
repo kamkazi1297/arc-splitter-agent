@@ -407,6 +407,24 @@ function updateTelegramButton() {
   }
 }
 
+  async function saveWalletToBot(chatId) {
+  if (!userAddress || !chatId) return;
+  
+  try {
+    await fetch('https://arcsplit-bot.kamkazi-1297.workers.dev/save-connection', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        chatId: chatId,
+        walletAddress: userAddress
+      })
+    });
+    console.log("Wallet address saved to bot KV");
+  } catch (e) {
+    console.error("Failed to save wallet to bot:", e);
+  }
+}
+
   
   function disconnectTelegram() {
   if (confirm("Disconnect Telegram account?")) {
@@ -934,14 +952,14 @@ if (window.telegramChatId) {
 // Auto Fill when returning from Telegram
 function autoFillFromURL() {
   const urlParams = new URLSearchParams(window.location.search);
-  
+ 
   const action = urlParams.get('action');
   const amount = urlParams.get('amount');
   const tokenSymbol = urlParams.get('token');
   const addressesStr = urlParams.get('addresses');
   const chatIdParam = urlParams.get('chatId');
   const telegramConnect = urlParams.get('telegram_connect');
-  const usernameParam = urlParams.get('username');   // ← مهم
+  const usernameParam = urlParams.get('username');
 
   // ذخیره Chat ID
   if (chatIdParam) {
@@ -949,42 +967,44 @@ function autoFillFromURL() {
     localStorage.setItem('telegramChatId', chatIdParam);
   }
 
-  // تشخیص اتصال و ذخیره username واقعی
+  // اتصال تلگرام + ذخیره والت در KV
   if (telegramConnect === 'true' || chatIdParam || window.location.search.includes('connect_')) {
     telegramLinked = true;
-    
+   
     if (usernameParam) {
       telegramUsername = decodeURIComponent(usernameParam);
     } else {
       telegramUsername = telegramUsername || "Telegram User";
     }
-
+    
     localStorage.setItem('telegramLinked', 'true');
     localStorage.setItem('telegramUsername', telegramUsername);
-    
+   
     updateTelegramButton();
     showToast("✅ Telegram connected successfully!", 4000);
-    
-    console.log("✅ Telegram Username saved:", telegramUsername);
+
+    // ذخیره آدرس والت در بات
+    if (userAddress && chatIdParam) {
+      saveWalletToBot(chatIdParam);
+    }
+   
+    console.log("✅ Telegram + Wallet linked successfully");
   }
 
   // پر کردن فرم ارسال (از دستور send)
   if (action === 'send' && amount) {
     document.getElementById('totalAmount').value = amount;
-
     const tokenSelect = document.getElementById('tokenSelect');
     if (tokenSymbol) {
       if (tokenSymbol === 'USDC') tokenSelect.value = "0x3600000000000000000000000000000000000000";
       else if (tokenSymbol === 'EURC') tokenSelect.value = "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a";
       else if (tokenSymbol === 'cirBTC') tokenSelect.value = "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF";
     }
-
     document.getElementById('recipients-list').innerHTML = '';
     let addresses = addressesStr ? addressesStr.split(',') : [];
     addresses.forEach(addr => {
       if (addr && addr.trim()) addRecipient(addr.trim(), "");
     });
-
     if (addresses.length <= 1) {
       setTimeout(() => {
         const percents = document.querySelectorAll('.percent');
@@ -993,7 +1013,6 @@ function autoFillFromURL() {
     } else {
       setMode('auto');
     }
-
     setTimeout(() => {
       updateAll();
       document.getElementById('sendBtn').scrollIntoView({ behavior: "smooth" });
