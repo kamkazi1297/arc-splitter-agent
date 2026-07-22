@@ -964,69 +964,56 @@ if (window.telegramChatId) {
   
 // Auto Fill when returning from Telegram
 function autoFillFromURL() {
-  const urlParams = new URLSearchParams(window.location.search);
- 
-  const action = urlParams.get('action');
-  const amount = urlParams.get('amount');
-  const tokenSymbol = urlParams.get('token');
-  const addressesStr = urlParams.get('addresses');
-  const chatIdParam = urlParams.get('chatId');
-  const telegramConnect = urlParams.get('telegram_connect');
-  const usernameParam = urlParams.get('username');
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const action = urlParams.get('action');
+    const amount = urlParams.get('amount');
+    const tokenSymbol = urlParams.get('token');
+    const addressesStr = urlParams.get('addresses');
+    const chatIdParam = urlParams.get('chatId');
 
-  // فقط برای اتصال تلگرام پیام خوش آمد بفرست
-  if (telegramConnect === 'true' || window.location.search.includes('connect_')) {
-    telegramLinked = true;
-   
-    if (usernameParam) {
-      telegramUsername = decodeURIComponent(usernameParam);
-    } else {
-      telegramUsername = telegramUsername || "Telegram User";
-    }
-    
-    localStorage.setItem('telegramLinked', 'true');
-    localStorage.setItem('telegramUsername', telegramUsername);
-   
-    updateTelegramButton();
-    showToast("✅ Telegram connected successfully!", 4000);
+    if (action === 'send' && amount) {
+      // پر کردن مقدار
+      const totalInput = document.getElementById('totalAmount');
+      if (totalInput) totalInput.value = amount;
 
-    if (userAddress && chatIdParam) {
-      saveWalletToBot(chatIdParam);
-    }
-  }
+      // انتخاب توکن
+      const tokenSelect = document.getElementById('tokenSelect');
+      if (tokenSymbol && tokenSelect) {
+        const upper = tokenSymbol.toUpperCase();
+        if (upper === 'USDC') tokenSelect.value = "0x3600000000000000000000000000000000000000";
+        else if (upper === 'EURC') tokenSelect.value = "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a";
+        else if (upper === 'CIRBTC') tokenSelect.value = "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF";
+      }
 
-  // پر کردن فرم از دستور send بات
-  if (action === 'send' && amount) {
-    document.getElementById('totalAmount').value = amount;
-    const tokenSelect = document.getElementById('tokenSelect');
-    if (tokenSymbol) {
-      if (tokenSymbol.toUpperCase() === 'USDC') tokenSelect.value = "0x3600000000000000000000000000000000000000";
-      else if (tokenSymbol.toUpperCase() === 'EURC') tokenSelect.value = "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a";
-      else if (tokenSymbol.toUpperCase() === 'CIRBTC') tokenSelect.value = "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF";
-    }
-    document.getElementById('recipients-list').innerHTML = '';
-    let addresses = addressesStr ? addressesStr.split(',') : [];
-    addresses.forEach(addr => {
-      if (addr && addr.trim()) addRecipient(addr.trim(), "");
-    });
-    if (addresses.length <= 1) {
+      // پاک کردن recipients قبلی و اضافه کردن جدید
+      const list = document.getElementById('recipients-list');
+      if (list) list.innerHTML = '';
+
+      let addresses = addressesStr ? addressesStr.split(',') : [];
+      addresses.forEach(addr => {
+        if (addr && addr.trim()) {
+          addRecipient(addr.trim(), "");
+        }
+      });
+
+      // ذخیره chatId
+      if (chatIdParam) {
+        window.telegramChatId = chatIdParam;
+        localStorage.setItem('telegramChatId', chatIdParam);
+      }
+
+      // اعمال تغییرات
       setTimeout(() => {
-        const percents = document.querySelectorAll('.percent');
-        if (percents.length > 0) percents[0].value = "100";
-      }, 300);
-    } else {
-      setMode('auto');
+        if (typeof updateAll === 'function') updateAll();
+        if (addresses.length > 1 && typeof setMode === 'function') setMode('auto');
+        
+        const sendBtn = document.getElementById('sendBtn');
+        if (sendBtn) sendBtn.scrollIntoView({ behavior: "smooth" });
+      }, 800);
     }
-
-    if (chatIdParam) {
-      window.telegramChatId = chatIdParam;
-      localStorage.setItem('telegramChatId', chatIdParam);
-    }
-
-    setTimeout(() => {
-      updateAll();
-      document.getElementById('sendBtn').scrollIntoView({ behavior: "smooth" });
-    }, 600);
+  } catch (e) {
+    console.error("AutoFill Error:", e);
   }
 }
   
