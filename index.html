@@ -335,6 +335,7 @@ let splitMode = 'manual';
 
 let telegramLinked = false;
 let telegramUsername = "";
+let telegramChatId = null;
 
   const CONTRACT_ADDRESS = "0x73Da94F0D960Ef8FD49Ed28a94f667aF3C062cB2";
   const ARC_CHAIN_ID = 5042002;
@@ -355,18 +356,22 @@ let telegramUsername = "";
   ];
 
   function loadSavedConnections() {
-    const savedWallet = localStorage.getItem('userAddress');
-    const savedTelegram = localStorage.getItem('telegramUsername');
-    if (savedWallet) {
-      userAddress = savedWallet;
-      updateConnectButton();
-    }
-    if (savedTelegram) {
-      telegramLinked = true;
-      telegramUsername = savedTelegram;
-      updateTelegramButton();
-    }
+  const savedWallet = localStorage.getItem('userAddress');
+  const savedTelegram = localStorage.getItem('telegramUsername');
+  const savedChatId = localStorage.getItem('telegramChatId');
+
+  if (savedWallet) {
+    userAddress = savedWallet;
+    updateConnectButton();
   }
+
+  if (savedTelegram && savedChatId) {
+    telegramLinked = true;
+    telegramUsername = savedTelegram;
+    telegramChatId = savedChatId;
+    updateTelegramButton();
+  }
+}
 
   function updateConnectButton() {
     const btn = document.getElementById("connectBtn");
@@ -381,7 +386,7 @@ function updateTelegramButton() {
   const btn = document.getElementById("telegramBtn");
   if (!btn) return;
 
-  if (telegramLinked && telegramUsername) {
+  if (telegramLinked && telegramUsername && telegramChatId) {
     btn.innerHTML = `
       <i class="fab fa-telegram-plane text-2xl"></i> 
       <div class="text-left flex-1">
@@ -392,13 +397,13 @@ function updateTelegramButton() {
          class="fas fa-times text-lg opacity-60 hover:opacity-100 ml-2"></i>
     `;
     btn.style.background = "linear-gradient(90deg, #10b981, #34d399)";
-    btn.onclick = null; // جلوگیری از باز شدن دوباره
+    btn.onclick = null;
   } else {
     btn.innerHTML = `
       <i class="fab fa-telegram-plane text-2xl"></i> 
       <div class="text-left flex-1">
-        <div id="telegramMainText" class="font-semibold">Connect Telegram</div>
-        <div id="telegramSubText" class="text-xs opacity-75 -mt-0.5">Receive notifications & fast split</div>
+        <div class="font-semibold">Connect Telegram</div>
+        <div class="text-xs opacity-75 -mt-0.5">Receive notifications & fast split</div>
       </div>
     `;
     btn.style.background = "linear-gradient(90deg, #229ED9, #1a8ac4)";
@@ -411,7 +416,7 @@ function updateTelegramButton() {
   if (confirm("Disconnect Telegram account?")) {
     telegramLinked = false;
     telegramUsername = "";
-    window.telegramChatId = null;
+    telegramChatId = null;
     
     localStorage.removeItem('telegramLinked');
     localStorage.removeItem('telegramUsername');
@@ -440,7 +445,8 @@ function updateTelegramButton() {
   }
 }
 
-    function connectTelegram() {
+   // اتصال از سایت به تلگرام
+function connectTelegram() {
   if (!userAddress) {
     return showToast("Please connect your wallet first!", 4000);
   }
@@ -448,10 +454,9 @@ function updateTelegramButton() {
   const botUsername = "ArcSplitPro_bot";
   const timestamp = Date.now();
   
-  const link = `https://t.me/${botUsername}?start=connect_${userAddress}_${timestamp}`;
-  
+  const link = `https://t.me/${botUsername}?start=connect_${userAddress}_${timestamp}_${telegramChatId || 'new'}`;
   window.open(link, "_blank");
-  showToast("Opening Telegram to connect...");
+  showToast("Opening Telegram...");
 }
   
   function showToast(msg, duration = 5000) {
@@ -962,6 +967,7 @@ if (window.telegramChatId) {
   // Auto-fill form when coming from Telegram Bot
 
 // Auto Fill when returning from Telegram
+// Auto Fill when returning from Telegram
 function autoFillFromURL() {
   const urlParams = new URLSearchParams(window.location.search);
   
@@ -969,42 +975,33 @@ function autoFillFromURL() {
   const amount = urlParams.get('amount');
   const tokenSymbol = urlParams.get('token');
   const addressesStr = urlParams.get('addresses');
+  
   const chatIdParam = urlParams.get('chatId');
+  const usernameParam = urlParams.get('username');
   const telegramConnect = urlParams.get('telegram_connect');
-  const usernameParam = urlParams.get('username');   // ← مهم
 
-  // ذخیره Chat ID
+  // ==================== Telegram Connection Handling ====================
   if (chatIdParam) {
-    window.telegramChatId = chatIdParam;
+    telegramChatId = chatIdParam;
     localStorage.setItem('telegramChatId', chatIdParam);
   }
 
-  // تشخیص اتصال و ذخیره username واقعی
-  if (telegramConnect === 'true' || chatIdParam || window.location.search.includes('connect_')) {
+  // اتصال موفق تلگرام از ربات
+  if ((telegramConnect === 'true' || chatIdParam) && usernameParam) {
     telegramLinked = true;
+    telegramUsername = decodeURIComponent(usernameParam);
     
-    if (usernameParam) {
-      telegramUsername = decodeURIComponent(usernameParam);
-    } else {
-      telegramUsername = telegramUsername || "Telegram User";
-    }
-
     localStorage.setItem('telegramLinked', 'true');
     localStorage.setItem('telegramUsername', telegramUsername);
-    
+    localStorage.setItem('telegramChatId', telegramChatId || chatIdParam);
+
     updateTelegramButton();
     showToast("✅ Telegram connected successfully!", 4000);
     
-    console.log("✅ Telegram Username saved:", telegramUsername);
+    console.log("✅ Telegram connected - Username:", telegramUsername, "ChatID:", telegramChatId);
   }
-      // ثبت والت در ربات
-    if (userAddress) {
-      registerWalletToBot();
-    }
 
-
-
-  // پر کردن فرم ارسال (از دستور send)
+  // ==================== Auto Fill Send Request from Bot ====================
   if (action === 'send' && amount) {
     document.getElementById('totalAmount').value = amount;
 
@@ -1015,12 +1012,17 @@ function autoFillFromURL() {
       else if (tokenSymbol === 'cirBTC') tokenSelect.value = "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF";
     }
 
+    // پاک کردن recipients قبلی
     document.getElementById('recipients-list').innerHTML = '';
+
     let addresses = addressesStr ? addressesStr.split(',') : [];
     addresses.forEach(addr => {
-      if (addr && addr.trim()) addRecipient(addr.trim(), "");
+      if (addr && addr.trim()) {
+        addRecipient(addr.trim(), "");
+      }
     });
 
+    // تنظیم درصد
     if (addresses.length <= 1) {
       setTimeout(() => {
         const percents = document.querySelectorAll('.percent');
@@ -1030,6 +1032,7 @@ function autoFillFromURL() {
       setMode('auto');
     }
 
+    // آپدیت و اسکرول به دکمه ارسال
     setTimeout(() => {
       updateAll();
       document.getElementById('sendBtn').scrollIntoView({ behavior: "smooth" });
