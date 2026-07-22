@@ -87,4 +87,4 @@ MIT License
 ![Web Demo](demo.gif)
 
 **Telegram Bot Demo:**  
-*(Soon - I'll record a short demo of the bot)*
+![Web Demo](cemo.gif)
