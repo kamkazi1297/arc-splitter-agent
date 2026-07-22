@@ -3,31 +3,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ArcSplit Giveaway - Create & Distribute</title>
+  <title>ArcSplit Giveaway</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    body { font-family: 'Inter', system-ui, sans-serif; }
     
-    body { 
-      font-family: 'Inter', system-ui, sans-serif; 
-    }
-    
-    .glass {
-      background: rgba(255,255,255,0.08);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(255,255,255,0.1);
-    }
-    .light .glass {
-      background: rgba(255,255,255,0.88);
-      border-color: rgba(0,0,0,0.12);
-    }
+    .glass { background: rgba(255,255,255,0.08); backdrop-filter: blur(20px); }
+    .light .glass { background: rgba(255,255,255,0.88); border-color: rgba(0,0,0,0.12); }
 
-    .light body, .light h1, .light h3, .light label, .light p {
-      color: #1f2937;
-    }
+    .light body, .light h1, .light label { color: #1f2937; }
 
     select, input, textarea {
       background-color: rgba(255,255,255,0.05);
@@ -39,98 +27,68 @@
       color: #1f2937;
       border: 1px solid #e2e8f0;
     }
-
-    /* Fix for select options */
-    select option {
-      background-color: #1a1a2e;
-      color: white;
-    }
-    .light select option {
-      background-color: #f8fafc;
-      color: #1f2937;
-    }
+    select option { background: #1a1a2e; color: white; }
+    .light select option { background: #f8fafc; color: #1f2937; }
   </style>
 </head>
 <body class="bg-gradient-to-br from-[#0b0b1f] to-[#1a1a2e] text-white min-h-screen">
 
   <div class="max-w-2xl mx-auto px-4 py-10">
-    
-    <!-- Header -->
     <div class="flex justify-between items-center mb-10">
-      <div class="flex items-center gap-3">
-        <div class="relative">
-          <div class="absolute inset-[-10px] bg-gradient-to-r from-pink-500 to-rose-500 rounded-2xl blur-xl opacity-30"></div>
-          <h1 class="text-4xl font-bold relative z-10">Giveaway Tool</h1>
-        </div>
-      </div>
-      
-      <div class="flex items-center gap-3">
-        <button onclick="toggleTheme()" id="themeBtn" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all">
-          <i class="fas fa-moon text-xl"></i>
+      <h1 class="text-4xl font-bold">Giveaway Tool</h1>
+      <div class="flex gap-3">
+        <button onclick="toggleTheme()" id="themeBtn" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl">
+          <i class="fas fa-moon"></i>
         </button>
-        
-        <button onclick="connectWallet()" id="connectBtn" 
-                class="px-6 py-3 bg-white text-black font-semibold rounded-2xl flex items-center gap-2 hover:bg-gray-100 transition-all">
-          <i class="fas fa-wallet"></i> 
-          <span id="connectText">Connect Wallet</span>
+        <button onclick="connectWallet()" id="connectBtn" class="px-6 py-3 bg-white text-black font-semibold rounded-2xl flex items-center gap-2">
+          <i class="fas fa-wallet"></i> <span id="connectText">Connect Wallet</span>
         </button>
       </div>
     </div>
 
     <div class="glass border border-white/10 rounded-3xl p-8">
-
-      <div class="mb-8">
-        <label class="block text-gray-400 text-sm mb-2">Select Token</label>
-        <select id="tokenSelect" class="w-full rounded-2xl px-6 py-5 focus:border-pink-500 outline-none text-base">
-          <option value="0x3600000000000000000000000000000000000000">USDC</option>
-          <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
-          <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
-        </select>
-      </div>
-
       <div class="grid grid-cols-2 gap-6 mb-8">
         <div>
-          <label class="block text-gray-400 text-sm mb-2">Total Amount</label>
-          <input type="number" id="totalAmount" value="100" step="0.000001" 
-                 class="w-full rounded-2xl px-6 py-5 text-2xl outline-none">
+          <label class="block text-gray-400 text-sm mb-2">Token</label>
+          <select id="tokenSelect" class="w-full rounded-2xl px-6 py-5">
+            <option value="0x3600000000000000000000000000000000000000">USDC</option>
+            <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
+            <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
+          </select>
         </div>
         <div>
-          <label class="block text-gray-400 text-sm mb-2">Number of Winners</label>
-          <input type="number" id="winnerCount" value="10" min="1" max="100"
-                 class="w-full rounded-2xl px-6 py-5 text-2xl outline-none">
+          <label class="block text-gray-400 text-sm mb-2">Total Amount</label>
+          <input type="number" id="totalAmount" value="100" step="0.000001" class="w-full rounded-2xl px-6 py-5 text-2xl">
         </div>
+      </div>
+
+      <div class="mb-8">
+        <label class="block text-gray-400 text-sm mb-2">Number of Winners</label>
+        <input type="number" id="winnerCount" value="10" min="1" class="w-full rounded-2xl px-6 py-5 text-2xl">
       </div>
 
       <div class="mb-8">
         <label class="block text-gray-400 text-sm mb-2">Giveaway Description</label>
-        <textarea id="description" rows="3" 
-                  class="w-full rounded-2xl px-6 py-5 bg-white/5 border border-white/20 outline-none resize-none"
-                  placeholder="Example: Comment your wallet and win 10 USDC!"></textarea>
+        <textarea id="description" rows="2" class="w-full rounded-2xl px-6 py-5" placeholder="Example: First 10 commenters win 10 USDC!"></textarea>
       </div>
 
-      <div class="mb-8">
-        <button onclick="generateTweetText()" 
-                class="w-full py-4 bg-[#1DA1F2] hover:bg-[#1a8cd8] rounded-2xl font-medium flex items-center justify-center gap-3 transition">
-          <i class="fab fa-twitter"></i>
-          Generate Twitter Post Text
+      <div class="flex gap-3 mb-8">
+        <button onclick="generateTweetText()" class="flex-1 py-4 bg-[#1DA1F2] rounded-2xl font-medium">
+          <i class="fab fa-twitter"></i> Twitter Text
+        </button>
+        <button onclick="selectRandomWinners()" class="flex-1 py-4 bg-purple-600 hover:bg-purple-700 rounded-2xl font-medium">
+          🎲 Random Select
         </button>
       </div>
 
       <div class="mb-8">
-        <label class="block text-gray-400 text-sm mb-3">Winners Wallet Addresses</label>
-        <textarea id="winnersList" rows="8" 
-                  class="w-full rounded-2xl px-6 py-5 bg-white/5 border border-white/20 font-mono text-sm outline-none"
-                  placeholder="One address per line..."></textarea>
-        
-        <button onclick="addRandomWinners()" 
-                class="mt-3 text-pink-400 hover:text-pink-300 text-sm flex items-center gap-2">
-          <i class="fas fa-random"></i> Add Random Test Addresses
-        </button>
+        <label class="block text-gray-400 text-sm mb-3">Winners Addresses</label>
+        <textarea id="winnersList" rows="7" class="w-full rounded-2xl px-6 py-5 font-mono text-sm" placeholder="One address per line"></textarea>
       </div>
 
       <button onclick="createGiveawaySplit()" 
-              class="w-full bg-gradient-to-r from-pink-500 to-rose-500 py-7 rounded-3xl text-xl font-bold mt-4">
-        Create Split Transaction
+              class="w-full bg-gradient-to-r from-pink-500 to-rose-500 py-7 rounded-3xl text-xl font-bold">
+        Send Split to Winners
       </button>
     </div>
   </div>
@@ -142,71 +100,64 @@ let userAddress = null;
 function toggleTheme() {
   document.documentElement.classList.toggle('light');
   const icon = document.getElementById("themeBtn").querySelector("i");
-  if (icon.classList.contains("fa-moon")) {
-    icon.classList.remove("fa-moon");
-    icon.classList.add("fa-sun");
-  } else {
-    icon.classList.remove("fa-sun");
-    icon.classList.add("fa-moon");
-  }
+  icon.classList.toggle("fa-moon");
+  icon.classList.toggle("fa-sun");
 }
 
 async function connectWallet() {
   if (!window.ethereum) return alert("MetaMask not found!");
-
   try {
     const provider = new ethers.BrowserProvider(window.ethereum);
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     userAddress = accounts[0];
     signer = await provider.getSigner();
-
     document.getElementById("connectText").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-    alert("✅ Wallet connected successfully!");
   } catch (e) {
-    console.error(e);
-    alert("Failed to connect wallet");
+    alert("Connection failed");
   }
 }
 
 function generateTweetText() {
   const amount = document.getElementById("totalAmount").value;
   const token = document.getElementById("tokenSelect").selectedOptions[0].text;
-  const winners = document.getElementById("winnerCount").value;
-  const desc = document.getElementById("description").value || "";
-
-  const text = `🎁 GIVEAWAY TIME!\n\n` +
-               `${amount} ${token} to ${winners} lucky winners!\n\n` +
-               `${desc}\n\n` +
-               `How to participate:\n` +
-               `• Follow + Like\n` +
-               `• Comment your wallet address\n\n` +
-               `Good luck! 🔥\n\n` +
-               `#ArcTestnet #Giveaway`;
-
-  navigator.clipboard.writeText(text).then(() => {
-    alert("✅ Twitter post text copied to clipboard!");
-  });
+  const count = document.getElementById("winnerCount").value;
+  const text = `🎁 GIVEAWAY!\n\n${amount} ${token} to ${count} lucky winners!\n\nComment your wallet address below 👇\nGood luck!`;
+  navigator.clipboard.writeText(text);
+  alert("Twitter text copied!");
 }
 
-function addRandomWinners() {
-  const list = document.getElementById("winnersList");
-  let text = "";
-  const count = parseInt(document.getElementById("winnerCount").value) || 5;
-  
-  for(let i = 0; i < count; i++) {
-    const fakeAddr = "0x" + Array(40).fill(0).map(() => Math.floor(Math.random()*16).toString(16)).join('');
-    text += fakeAddr + "\n";
-  }
-  list.value = text;
+function selectRandomWinners() {
+  const text = document.getElementById("winnersList").value.trim();
+  if (!text) return alert("Please enter some addresses first!");
+
+  let addresses = text.split("\n").map(a => a.trim()).filter(a => a.length > 10);
+  const count = parseInt(document.getElementById("winnerCount").value);
+
+  if (addresses.length < count) return alert("Not enough addresses!");
+
+  const shuffled = addresses.sort(() => 0.5 - Math.random());
+  document.getElementById("winnersList").value = shuffled.slice(0, count).join("\n");
+  alert(`${count} winners randomly selected!`);
 }
 
 async function createGiveawaySplit() {
   if (!signer) return alert("Please connect your wallet first!");
-  
-  const winnersText = document.getElementById("winnersList").value.trim();
-  if (!winnersText) return alert("Please enter winner wallet addresses!");
 
-  alert("🎉 Giveaway transaction is ready!\n\nWallet is connected. In final version the split will be executed here.");
+  const listText = document.getElementById("winnersList").value.trim();
+  if (!listText) return alert("No addresses entered!");
+
+  const addresses = listText.split("\n").map(a => a.trim()).filter(a => ethers.isAddress(a));
+  const count = parseInt(document.getElementById("winnerCount").value);
+
+  if (addresses.length < count) return alert("Not enough valid addresses!");
+
+  const totalAmount = parseFloat(document.getElementById("totalAmount").value);
+  const perWinner = (totalAmount / count).toFixed(6);
+
+  if (confirm(`Send ${perWinner} to each of ${count} winners?\nTotal: ${totalAmount}`)) {
+    alert("✅ Transaction logic will be executed here (final version).");
+    // بعداً کد کامل ارسال تراکنش را اضافه می‌کنیم
+  }
 }
 </script>
 </body>
