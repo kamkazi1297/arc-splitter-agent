@@ -955,6 +955,7 @@ if (window.telegramChatId) {
   // Auto-fill form when coming from Telegram Bot
 
 // Auto Fill when returning from Telegram
+// Auto Fill when returning from Telegram Bot
 function autoFillFromURL() {
   const urlParams = new URLSearchParams(window.location.search);
  
@@ -966,14 +967,8 @@ function autoFillFromURL() {
   const telegramConnect = urlParams.get('telegram_connect');
   const usernameParam = urlParams.get('username');
 
-  // ذخیره Chat ID
-  if (chatIdParam) {
-    window.telegramChatId = chatIdParam;
-    localStorage.setItem('telegramChatId', chatIdParam);
-  }
-
-  // فقط برای اتصال تلگرام پیام خوش آمد بفرست
-if (telegramConnect === 'true' || window.location.search.includes('connect_')) {
+  // === فقط برای اتصال تلگرام پیام خوش آمد بفرست ===
+  if (telegramConnect === 'true' || window.location.search.includes('connect_')) {
     telegramLinked = true;
    
     if (usernameParam) {
@@ -991,16 +986,17 @@ if (telegramConnect === 'true' || window.location.search.includes('connect_')) {
     if (userAddress && chatIdParam) {
       saveWalletToBot(chatIdParam);
     }
-}
+  }
 
-// پر کردن فرم ارسال (دستور send از بات)
-if (action === 'send' && amount) {
+  // === پر کردن فرم از دستور send بات ===
+  if (action === 'send' && amount) {
     document.getElementById('totalAmount').value = amount;
+    
     const tokenSelect = document.getElementById('tokenSelect');
     if (tokenSymbol) {
-      if (tokenSymbol === 'USDC') tokenSelect.value = "0x3600000000000000000000000000000000000000";
-      else if (tokenSymbol === 'EURC') tokenSelect.value = "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a";
-      else if (tokenSymbol === 'cirBTC') tokenSelect.value = "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF";
+      if (tokenSymbol.toUpperCase() === 'USDC') tokenSelect.value = "0x3600000000000000000000000000000000000000";
+      else if (tokenSymbol.toUpperCase() === 'EURC') tokenSelect.value = "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a";
+      else if (tokenSymbol.toUpperCase() === 'CIRBTC') tokenSelect.value = "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF";
     }
     
     document.getElementById('recipients-list').innerHTML = '';
@@ -1027,7 +1023,8 @@ if (action === 'send' && amount) {
     setTimeout(() => {
       updateAll();
       document.getElementById('sendBtn').scrollIntoView({ behavior: "smooth" });
-    }, 600);
+    }, 800);
+  }
 }
   
 window.addEventListener('load', () => {
