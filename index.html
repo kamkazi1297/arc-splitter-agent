@@ -408,10 +408,13 @@ function updateTelegramButton() {
 }
 
   async function saveWalletToBot(chatId) {
-  if (!userAddress || !chatId) return;
+  if (!userAddress || !chatId) {
+    console.log("Missing userAddress or chatId");
+    return;
+  }
   
   try {
-    await fetch('https://arcsplit-bot.kamkazi-1297.workers.dev/save-connection', {
+    const response = await fetch('https://arcsplit-bot.kamkazi-1297.workers.dev/save-connection', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -419,7 +422,9 @@ function updateTelegramButton() {
         walletAddress: userAddress
       })
     });
-    console.log("Wallet address saved to bot KV");
+    
+    console.log("Save response:", await response.text());
+    console.log("✅ Wallet address sent to bot KV");
   } catch (e) {
     console.error("Failed to save wallet to bot:", e);
   }
