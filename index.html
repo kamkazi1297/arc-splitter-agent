@@ -944,18 +944,46 @@ if (window.telegramChatId) {
   }
 
   
+
 // Auto Fill when returning from Telegram
 function autoFillFromURL() {
   try {
     const urlParams = new URLSearchParams(window.location.search);
+ 
     const action = urlParams.get('action');
     const amount = urlParams.get('amount');
     const tokenSymbol = urlParams.get('token');
     const addressesStr = urlParams.get('addresses');
     const chatIdParam = urlParams.get('chatId');
+    const telegramConnect = urlParams.get('telegram_connect');
+    const usernameParam = urlParams.get('username');
 
+    // ==================== اتصال تلگرام ====================
+    if (telegramConnect === 'true' || window.location.search.includes('connect_')) {
+      telegramLinked = true;
+      
+      if (usernameParam) {
+        telegramUsername = decodeURIComponent(usernameParam);
+      } else {
+        telegramUsername = telegramUsername || "Telegram User";
+      }
+      
+      localStorage.setItem('telegramLinked', 'true');
+      localStorage.setItem('telegramUsername', telegramUsername);
+      
+      updateTelegramButton();
+      showToast("✅ Telegram connected successfully!", 4000);
+
+      if (userAddress && chatIdParam) {
+        saveWalletToBot(chatIdParam);
+      }
+      
+      console.log("✅ Telegram successfully linked");
+    }
+
+    // ==================== پر کردن فرم ارسال ====================
     if (action === 'send' && amount) {
-      // پر کردن مقدار
+      // مقدار کل
       const totalInput = document.getElementById('totalAmount');
       if (totalInput) totalInput.value = amount;
 
@@ -968,7 +996,7 @@ function autoFillFromURL() {
         else if (upper === 'CIRBTC') tokenSelect.value = "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF";
       }
 
-      // پاک کردن recipients قبلی و اضافه کردن جدید
+      // recipients
       const list = document.getElementById('recipients-list');
       if (list) list.innerHTML = '';
 
@@ -979,13 +1007,13 @@ function autoFillFromURL() {
         }
       });
 
-      // ذخیره chatId
+      // ذخیره chatId برای نوتیفیکیشن
       if (chatIdParam) {
         window.telegramChatId = chatIdParam;
         localStorage.setItem('telegramChatId', chatIdParam);
       }
 
-      // اعمال تغییرات
+      // اعمال نهایی
       setTimeout(() => {
         if (typeof updateAll === 'function') updateAll();
         if (addresses.length > 1 && typeof setMode === 'function') setMode('auto');
