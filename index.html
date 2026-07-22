@@ -514,20 +514,29 @@ function updateTelegramButton() {
     provider = new ethers.BrowserProvider(window.ethereum);
     const network = await provider.getNetwork();
     
-    if (network.chainId !== BigInt(ARC_CHAIN_ID)) {
+        if (network.chainId !== BigInt(ARC_CHAIN_ID)) {
       showToast("Please switch to <b>Arc Testnet</b> (Chain ID: 5042002)", 6000);
       return;
     }
 
-    async function connectWalletConnect() {
-  hideConnectModal();
-  showToast("WalletConnect is being prepared... (will be fully added soon)");
-
-  // نسخه ساده فعلاً
-  // بعداً با WalletConnect SDK کامل می‌کنیم
-}
-
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    userAddress = accounts[0];
+
+    // ذخیره والت برای بعد از رفرش
+    localStorage.setItem('userAddress', userAddress);
+
+    signer = await provider.getSigner();
+
+    document.getElementById("logoContainer").classList.add("connected");
+    updateConnectButton();
+    showToast("Wallet connected successfully");
+    await updateBalance();
+
+  } catch (e) {
+    console.error(e);
+    showToast("Failed to connect wallet");
+  }
+}
     userAddress = accounts[0];
 
     // ذخیره والت برای بعد از رفرش
