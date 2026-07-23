@@ -12,18 +12,26 @@
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     body { font-family: 'Inter', system-ui, sans-serif; }
     
-    .glass {
-      background: rgba(255,255,255,0.08);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(255,255,255,0.1);
+    .glass { 
+      background: rgba(255,255,255,0.08); 
+      backdrop-filter: blur(20px); 
+      border: 1px solid rgba(255,255,255,0.1); 
     }
-    .light .glass {
-      background: rgba(255,255,255,0.88);
-      border-color: rgba(0,0,0,0.12);
+    .light .glass { 
+      background: rgba(255,255,255,0.88); 
+      border-color: rgba(0,0,0,0.12); 
     }
+    .light body, .light h1, .light label { color: #1f2937; }
 
-    .light body, .light h1, .light label {
-      color: #1f2937;
+    select, input, textarea {
+      background-color: rgba(255,255,255,0.05); 
+      color: white; 
+      border: 1px solid rgba(255,255,255,0.25);
+    }
+    .light select, .light input, .light textarea {
+      background-color: #f8fafc; 
+      color: #1f2937; 
+      border: 1px solid #e2e8f0;
     }
   </style>
 </head>
@@ -31,7 +39,7 @@
 
   <div class="max-w-2xl mx-auto px-4 py-10">
     <div class="flex justify-between items-center mb-10">
-      <h1 class="text-4xl font-bold">Giveaway Tool</h1>
+      <h1 class="text-4xl font-bold">ArcSplit Giveaway</h1>
       <div class="flex gap-3">
         <button onclick="toggleTheme()" id="themeBtn" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl">
           <i class="fas fa-moon text-xl"></i>
@@ -43,8 +51,11 @@
       </div>
     </div>
 
+    <div id="status" class="glass border border-white/10 rounded-3xl p-6 mb-8 text-base font-medium">
+      Ready for Giveaway on Arc Testnet
+    </div>
+
     <div id="successMessage" class="hidden glass border border-emerald-500/30 bg-emerald-500/10 rounded-3xl p-6 mb-8 text-emerald-400"></div>
-    <div id="errorBox" class="hidden glass border border-red-500/30 bg-red-500/10 rounded-3xl p-6 mb-8"></div>
 
     <div class="glass border border-white/10 rounded-3xl p-8">
       <div class="grid grid-cols-2 gap-6 mb-8">
@@ -64,34 +75,55 @@
 
       <div class="mb-8">
         <label class="block text-gray-400 text-sm mb-2">Number of Winners</label>
-        <input type="number" id="winnerCount" value="5" min="1" class="w-full rounded-2xl px-6 py-5 text-2xl outline-none">
+        <input type="number" id="winnerCount" value="10" min="1" max="300" class="w-full rounded-2xl px-6 py-5 text-2xl outline-none">
       </div>
 
       <div class="mb-8">
-        <label class="block text-gray-400 text-sm mb-3">Winner Addresses</label>
-        <textarea id="winnersList" rows="7" class="w-full rounded-2xl px-6 py-5 font-mono text-sm outline-none" placeholder="One address per line..."></textarea>
+        <label class="block text-gray-400 text-sm mb-2">Description (Optional)</label>
+        <textarea id="description" rows="2" class="w-full rounded-2xl px-6 py-5 outline-none" placeholder="Giveaway description..."></textarea>
+      </div>
+
+      <div class="flex gap-3 mb-8">
+        <button onclick="generateTweetText()" class="flex-1 py-4 bg-[#1DA1F2] rounded-2xl font-medium hover:brightness-110 transition">
+          📋 Twitter Text
+        </button>
+        <button onclick="selectRandomWinners()" class="flex-1 py-4 bg-purple-600 rounded-2xl font-medium hover:brightness-110 transition">
+          🎲 Random Select
+        </button>
+      </div>
+
+      <div class="mb-8">
+        <label class="block text-gray-400 text-sm mb-3">Winner Addresses <span class="text-xs">(one per line)</span></label>
+        <textarea id="winnersList" rows="8" class="w-full rounded-2xl px-6 py-5 font-mono text-sm outline-none" placeholder="0x123...&#10;0x456..."></textarea>
       </div>
 
       <button id="sendBtn" onclick="sendGiveawaySplit()" 
-              class="w-full bg-gradient-to-r from-pink-500 to-rose-500 py-7 rounded-3xl text-xl font-bold">
-        Send Split to Winners
+              class="w-full bg-gradient-to-r from-pink-500 to-rose-500 py-7 rounded-3xl text-xl font-bold hover:brightness-110 transition-all">
+        Send Equal Split to Winners
       </button>
     </div>
   </div>
 
+  <!-- Toast -->
+  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 border border-white/20 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 z-50">
+    <span id="toastText"></span>
+  </div>
+
 <script>
 const CONTRACT_ADDRESS = "0x73Da94F0D960Ef8FD49Ed28a94f667aF3C062cB2";
+const ARC_CHAIN_ID = 5042002;
 
 let signer = null;
+let userAddress = null;
 let isProcessing = false;
 
 const splitterAbi = [
   {
     "inputs": [
-      { "name": "token", "type": "address" },
-      { "name": "recipients", "type": "address[]" },
-      { "name": "percentages", "type": "uint256[]" },
-      { "name": "totalAmount", "type": "uint256" }
+      {"name": "token", "type": "address"},
+      {"name": "recipients", "type": "address[]"},
+      {"name": "percentages", "type": "uint256[]"},
+      {"name": "totalAmount", "type": "uint256"}
     ],
     "name": "splitPayment",
     "outputs": [],
@@ -99,6 +131,13 @@ const splitterAbi = [
     "type": "function"
   }
 ];
+
+function showToast(msg, duration = 5000) {
+  const toast = document.getElementById("toast");
+  document.getElementById("toastText").innerHTML = msg;
+  toast.classList.remove("hidden");
+  setTimeout(() => toast.classList.add("hidden"), duration);
+}
 
 function toggleTheme() {
   document.documentElement.classList.toggle('light');
@@ -108,39 +147,78 @@ function toggleTheme() {
 }
 
 async function connectWallet() {
-  if (!window.ethereum) return alert("MetaMask not found!");
+  if (!window.ethereum) return showToast("MetaMask not found!", 4000);
+
   try {
     const provider = new ethers.BrowserProvider(window.ethereum);
+    const network = await provider.getNetwork();
+    
+    if (network.chainId !== BigInt(ARC_CHAIN_ID)) {
+      return showToast("Please switch to <b>Arc Testnet</b> (Chain ID: 5042002)", 6000);
+    }
+
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    userAddress = accounts[0];
     signer = await provider.getSigner();
-    document.getElementById("connectText").textContent = (await signer.getAddress()).slice(0,6) + "...";
+
+    document.getElementById("connectText").textContent = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
+    showToast("Wallet connected successfully");
   } catch (e) {
-    alert("Connection failed");
+    showToast("Connection failed");
   }
 }
 
+function generateTweetText() {
+  const amount = document.getElementById("totalAmount").value;
+  const token = document.getElementById("tokenSelect").selectedOptions[0].text;
+  const count = document.getElementById("winnerCount").value;
+  const text = `🎁 GIVEAWAY!\n\n${amount} ${token} to ${count} lucky winners!\n\nComment your wallet 👇`;
+  
+  navigator.clipboard.writeText(text);
+  showToast("✅ Twitter text copied to clipboard!");
+}
+
+function selectRandomWinners() {
+  const text = document.getElementById("winnersList").value.trim();
+  if (!text) return showToast("Enter addresses first!");
+  
+  let addresses = text.split("\n").map(a => a.trim()).filter(a => a);
+  const count = parseInt(document.getElementById("winnerCount").value) || 10;
+  
+  if (addresses.length < count) return showToast("Not enough addresses!");
+  
+  const shuffled = addresses.sort(() => 0.5 - Math.random());
+  document.getElementById("winnersList").value = shuffled.slice(0, count).join("\n");
+  
+  showToast(`Selected ${count} random winners`);
+}
+
 async function sendGiveawaySplit() {
-  if (!signer) return alert("Please connect your wallet first!");
+  if (!signer) return showToast("Please connect your wallet first!");
   if (isProcessing) return;
 
-  document.getElementById("errorBox").classList.add('hidden');
-  document.getElementById("successMessage").classList.add('hidden');
-
   const listText = document.getElementById("winnersList").value.trim();
-  if (!listText) return alert("Please enter winner addresses!");
+  if (!listText) return showToast("No addresses entered!");
 
-  const addresses = listText.split("\n").map(a => a.trim()).filter(a => ethers.isAddress(a));
-  if (addresses.length === 0) return alert("No valid addresses!");
+  let addresses = listText.split("\n")
+    .map(a => a.trim())
+    .filter(a => ethers.isAddress(a));
+
+  if (addresses.length === 0) return showToast("No valid addresses!");
+  if (addresses.length > 300) return showToast("Maximum 300 winners allowed");
 
   const totalAmount = parseFloat(document.getElementById("totalAmount").value);
-  const tokenAddr = document.getElementById("tokenSelect").value;
+  if (!totalAmount || totalAmount <= 0) return showToast("Enter a valid total amount!");
 
-  if (!confirm(`Send ${totalAmount} to ${addresses.length} winners?`)) return;
+  const tokenAddr = document.getElementById("tokenSelect").value;
+  const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
+
+  if (!confirm(`Send ${totalAmount} ${symbol} equally to ${addresses.length} winners?`)) return;
 
   isProcessing = true;
   const btn = document.getElementById("sendBtn");
   btn.disabled = true;
-  btn.textContent = "Processing Transaction...";
+  btn.textContent = "Processing...";
 
   try {
     const tokenContract = new ethers.Contract(tokenAddr, [
@@ -151,41 +229,57 @@ async function sendGiveawaySplit() {
     const decimals = await tokenContract.decimals();
     const totalWei = ethers.parseUnits(totalAmount.toString(), decimals);
 
-    await (await tokenContract.approve(CONTRACT_ADDRESS, totalWei)).wait();
+    // Approve
+    const txApprove = await tokenContract.approve(CONTRACT_ADDRESS, totalWei);
+    await txApprove.wait();
 
     const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
+    
+    // تقسیم مساوی درست
+    const count = addresses.length;
+    let basisPoints = new Array(count).fill(Math.floor(10000 / count));
+    const sum = basisPoints.reduce((a, b) => a + b, 0);
+    basisPoints[basisPoints.length - 1] += (10000 - sum);
 
-    // درست کردن درصد (هر نفر مساوی)
-    const num = addresses.length;
-    const base = Math.floor(10000 / num);
-    let percentages = new Array(num).fill(base);
-    percentages[num-1] = 10000 - (base * (num - 1));   // آخرین نفر مابقی
-
-    const tx = await contract.splitPayment(tokenAddr, addresses, percentages, totalWei, { gasLimit: 1500000 });
+    const tx = await contract.splitPayment(
+      tokenAddr, 
+      addresses, 
+      basisPoints, 
+      totalWei, 
+      { gasLimit: 800000 }
+    );
+    
     await tx.wait();
 
     document.getElementById("successMessage").innerHTML = `
-      ✅ Transaction Successful!<br>
-      <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline">
-        View on Explorer → ${tx.hash.substring(0,12)}...
+      ✅ Giveaway Sent Successfully!<br>
+      <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline font-medium">
+        View Transaction → ${tx.hash.substring(0,12)}...
       </a>`;
     document.getElementById("successMessage").classList.remove('hidden');
 
+    showToast("🎉 Giveaway transaction completed!");
+
   } catch (error) {
     console.error(error);
-    let msg = error.reason || error.message || "Unknown error";
-    document.getElementById("errorBox").innerHTML = `
-      <p class="text-red-400 font-bold mb-2">Transaction Failed</p>
-      <pre class="bg-black/40 p-4 rounded-2xl text-xs overflow-auto">${msg}</pre>
-      <button onclick="navigator.clipboard.writeText('${msg}'); alert('Copied!')" class="mt-4 px-5 py-2 bg-red-600 rounded-xl text-sm">Copy Error</button>
-    `;
-    document.getElementById("errorBox").classList.remove('hidden');
+    showToast(error.reason || error.message || "Transaction failed", 6000);
   } finally {
     isProcessing = false;
     btn.disabled = false;
-    btn.textContent = "Send Split to Winners";
+    btn.textContent = "Send Equal Split to Winners";
   }
 }
+
+// Auto load
+window.addEventListener('load', () => {
+  // Add initial example addresses if empty
+  setTimeout(() => {
+    const winnersList = document.getElementById("winnersList");
+    if (!winnersList.value.trim()) {
+      winnersList.value = "0x742d35Cc6634C0532925a3b844Bc454e4438f44e\n0x8c5f8c2e5c2b5f5e5f5e5f5e5f5e5f5e5f5e5f5e";
+    }
+  }, 800);
+});
 </script>
 </body>
 </html>
