@@ -34,7 +34,6 @@
       border: 1px solid #e2e8f0;
     }
 
-    /* رفع مشکل dropdown در دارک مود */
     select option {
       background-color: #1a1a2e;
       color: white;
@@ -88,6 +87,15 @@
       <div class="mb-8">
         <label class="block text-gray-400 text-sm mb-2">Number of Winners</label>
         <input type="number" id="winnerCount" value="10" min="1" max="300" class="w-full rounded-2xl px-6 py-5 text-2xl outline-none">
+      </div>
+
+      <div class="flex gap-3 mb-8">
+        <button onclick="generateTweetText()" class="flex-1 py-4 bg-[#1DA1F2] rounded-2xl font-medium hover:brightness-110 transition">
+          📋 Twitter Text
+        </button>
+        <button onclick="selectRandomWinners()" class="flex-1 py-4 bg-purple-600 rounded-2xl font-medium hover:brightness-110 transition">
+          🎲 Random Select
+        </button>
       </div>
 
       <div class="mb-8">
@@ -183,7 +191,7 @@ function toggleTheme() {
   icon.classList.toggle("fa-sun");
 }
 
-// ====================== Wallet ======================
+// Wallet
 function showConnectModal() {
   document.getElementById("connectModal").classList.remove("hidden");
 }
@@ -240,7 +248,7 @@ function disconnectWallet() {
   }
 }
 
-// ====================== Balance ======================
+// Balance
 async function updateBalance(retry = 0) {
   if (!signer || !userAddress) return;
   
@@ -272,7 +280,7 @@ async function updateBalance(retry = 0) {
   }
 }
 
-// ====================== Import ======================
+// Import
 function showImportModal() {
   document.getElementById("importModal").classList.remove("hidden");
 }
@@ -299,7 +307,7 @@ function importAddresses() {
   showToast(`${addresses.length} addresses imported successfully`);
 }
 
-// ====================== Giveaway Send ======================
+// Send Giveaway
 async function sendGiveawaySplit() {
   if (!signer) return showToast("Please connect your wallet first!");
   if (isProcessing) return;
@@ -378,15 +386,18 @@ function generateTweetText() {
 function selectRandomWinners() {
   const text = document.getElementById("winnersList").value.trim();
   if (!text) return showToast("Enter addresses first!");
+  
   let addresses = text.split(/[\s,;\n]+/).map(a => a.trim()).filter(a => a);
   const count = parseInt(document.getElementById("winnerCount").value) || 10;
+  
   if (addresses.length < count) return showToast("Not enough addresses!");
+  
   const shuffled = addresses.sort(() => 0.5 - Math.random());
   document.getElementById("winnersList").value = shuffled.slice(0, count).join("\n");
   showToast(`${count} random winners selected`);
 }
 
-// Load
+// Load on start
 window.addEventListener('load', () => {
   const savedAddress = localStorage.getItem('giveawayUserAddress');
   if (savedAddress) {
