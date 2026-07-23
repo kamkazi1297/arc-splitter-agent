@@ -6,6 +6,7 @@
   <title>ArcSplit Giveaway - Ultra</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 
   <style>
@@ -16,13 +17,23 @@
     .light body, .light h1, .light label { color: #1f2937; }
 
     select, input, textarea {
-      background-color: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.25);
+      background-color: rgba(255,255,255,0.05); 
+      color: white; 
+      border: 1px solid rgba(255,255,255,0.25);
     }
     .light select, .light input, .light textarea {
-      background-color: #f8fafc; color: #1f2937; border: 1px solid #e2e8f0;
+      background-color: #f8fafc; 
+      color: #1f2937; 
+      border: 1px solid #e2e8f0;
     }
-    select option { background-color: #1a1a2e; color: white; }
-    .light select option { background-color: #f8fafc; color: #1f2937; }
+    select option {
+      background-color: #1a1a2e;
+      color: white;
+    }
+    .light select option {
+      background-color: #f8fafc;
+      color: #1f2937;
+    }
   </style>
 </head>
 <body class="bg-gradient-to-br from-[#0b0b1f] to-[#1a1a2e] text-white min-h-screen">
@@ -69,11 +80,13 @@
       </div>
 
       <div class="flex gap-3">
-        <button onclick="generateTweetText()" class="flex-1 py-4 bg-[#1DA1F2] rounded-2xl font-medium hover:brightness-110 transition">📋 Twitter Text</button>
         <button onclick="selectRandomWinners()" class="flex-1 py-4 bg-purple-600 rounded-2xl font-medium hover:brightness-110 transition">🎲 Random Select</button>
       </div>
 
-      <div class="border border-violet-500/30 rounded-3xl p-6">
+      <div class="border border-violet-500/30 rounded-3xl p-6 bg-gradient-to-br from-violet-500/5 to-transparent">
+        <h3 class="font-bold text-lg mb-4 flex items-center gap-2 text-violet-400">
+          <i class="fas fa-brain"></i> AI-Powered Wallet Extractor
+        </h3>
         <button onclick="showExtractModal()" class="w-full py-5 bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-2xl font-semibold text-lg hover:brightness-110 transition">
           Extract Wallets from Comments / Text
         </button>
@@ -82,6 +95,12 @@
       <div>
         <label class="block text-gray-400 text-sm mb-3">All Participant Addresses</label>
         <textarea id="winnersList" rows="8" class="w-full rounded-2xl px-6 py-5 font-mono text-sm outline-none" placeholder="Paste all addresses here..."></textarea>
+        
+        <div class="flex gap-3 mt-3">
+          <button onclick="exportWallets()" class="flex-1 py-3 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">📤 Export JSON</button>
+          <button onclick="importWallets()" class="flex-1 py-3 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">📥 Import JSON</button>
+          <button onclick="copyShareableLink()" class="flex-1 py-3 bg-violet-600 hover:bg-violet-700 rounded-2xl text-sm">🔗 Share Link</button>
+        </div>
       </div>
 
       <button id="sendBtn" onclick="sendGiveawaySplit()" class="w-full bg-gradient-to-r from-pink-500 to-rose-500 py-7 rounded-3xl text-xl font-bold">
@@ -90,17 +109,17 @@
     </div>
   </div>
 
-  <!-- Result Modal -->
-  <div id="resultModal" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-50">
-    <div class="text-center">
-      <div id="countdown" class="text-8xl font-bold text-white mb-10">3</div>
-      <div id="winnerAnnouncement" class="hidden">
-        <h2 class="text-4xl font-bold text-emerald-400 mb-8">🎉 WINNERS ANNOUNCED! 🎉</h2>
-        <div id="winnersListResult" class="max-w-md mx-auto space-y-4 mb-10"></div>
-        <div class="flex gap-4 justify-center">
-          <button onclick="hideResultModal()" class="px-8 py-4 bg-white/10 hover:bg-white/20 rounded-2xl">Close</button>
-          <button onclick="copyWinnersResult()" class="px-8 py-4 bg-emerald-500 hover:bg-emerald-600 rounded-2xl">Copy Winners</button>
-        </div>
+  <!-- Random Result Modal -->
+  <div id="resultModal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-50">
+    <div class="glass rounded-3xl p-8 max-w-lg w-full mx-4">
+      <div class="text-center mb-6">
+        <h2 class="text-3xl font-bold text-emerald-400 mb-2">🎉 Winners Selected!</h2>
+        <p id="resultSubtitle" class="text-gray-400"></p>
+      </div>
+      <div id="winnersPreview" class="max-h-96 overflow-auto space-y-3 mb-8"></div>
+      <div class="flex gap-3">
+        <button onclick="hideResultModal()" class="flex-1 py-4 rounded-2xl border border-white/20 hover:bg-white/10">Close</button>
+        <button onclick="copyWinners()" class="flex-1 py-4 bg-emerald-500 hover:bg-emerald-600 rounded-2xl">Copy Winners</button>
       </div>
     </div>
   </div>
@@ -144,19 +163,23 @@
     </div>
   </div>
 
+  <!-- Toast -->
   <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 border border-white/20 text-white px-6 py-4 rounded-2xl shadow-2xl z-50">
     <span id="toastText"></span>
   </div>
 
 <script>
+// ==================== CONFIG ====================
 const CONTRACT_ADDRESS = "0x73Da94F0D960Ef8FD49Ed28a94f667aF3C062cB2";
 const ARC_CHAIN_ID = 5042002;
 
+// ==================== STATE ====================
 let signer = null;
 let userAddress = null;
 let isProcessing = false;
 let extractedWallets = [];
 
+// ==================== ABI ====================
 const splitterAbi = [
   {
     "inputs": [
@@ -172,27 +195,23 @@ const splitterAbi = [
   }
 ];
 
+// ==================== UTILS ====================
 function showToast(msg, duration = 4000) {
-  let toast = document.getElementById("toast");
-  if (!toast) {
-    toast = document.createElement("div");
-    toast.id = "toast";
-    toast.className = "fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 border border-white/20 text-white px-6 py-4 rounded-2xl z-50 hidden";
-    toast.innerHTML = `<span id="toastText"></span>`;
-    document.body.appendChild(toast);
-  }
+  const toast = document.getElementById("toast");
   document.getElementById("toastText").innerHTML = msg;
   toast.classList.remove("hidden");
   setTimeout(() => toast.classList.add("hidden"), duration);
 }
 
 function toggleTheme() {
-  document.documentElement.classList.toggle('light');
+  const isLight = document.documentElement.classList.toggle('light');
+  localStorage.setItem('theme', isLight ? 'light' : 'dark');
   const icon = document.getElementById("themeBtn").querySelector("i");
-  icon.classList.toggle("fa-moon");
-  icon.classList.toggle("fa-sun");
+  icon.classList.toggle("fa-moon", !isLight);
+  icon.classList.toggle("fa-sun", isLight);
 }
 
+// ==================== WALLET ====================
 function showConnectModal() {
   document.getElementById("connectModal").classList.remove("hidden");
 }
@@ -204,10 +223,13 @@ function hideConnectModal() {
 async function connectMetaMask() {
   hideConnectModal();
   if (!window.ethereum) return showToast("MetaMask not found!");
+
   try {
     const provider = new ethers.BrowserProvider(window.ethereum);
     const network = await provider.getNetwork();
-    if (network.chainId !== BigInt(ARC_CHAIN_ID)) return showToast("Please switch to Arc Testnet (5042002)", 6000);
+    if (network.chainId !== BigInt(ARC_CHAIN_ID)) {
+      return showToast("Please switch to Arc Testnet (Chain ID: 5042002)", 6000);
+    }
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     userAddress = accounts[0];
     signer = await provider.getSigner();
@@ -243,7 +265,7 @@ function disconnectWallet() {
   }
 }
 
-async function updateBalance(retry = 0) {
+async function updateBalance() {
   if (!signer || !userAddress) return;
   const statusEl = document.getElementById("status");
   statusEl.innerHTML = `Connected • Loading balance...`;
@@ -255,76 +277,214 @@ async function updateBalance(retry = 0) {
       "function decimals() view returns (uint8)"
     ], signer);
     const [balance, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
-    const formatted = parseFloat(ethers.formatUnits(balance, Number(decimals))).toFixed(4);
+    const formatted = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4);
     statusEl.innerHTML = `Connected • Balance: <span class="text-emerald-400 font-semibold">${formatted} ${symbol}</span>`;
   } catch (e) {
-    if (retry < 2) setTimeout(() => updateBalance(retry + 1), 1200);
-    else statusEl.innerHTML = `Connected • <span class="text-amber-400">Balance unavailable</span>`;
+    statusEl.innerHTML = `Connected • <span class="text-amber-400">Balance unavailable</span>`;
   }
 }
 
+// ==================== EXTRACTOR ====================
+function showExtractModal() {
+  document.getElementById("extractModal").classList.remove("hidden");
+}
+
+function hideExtractModal() {
+  document.getElementById("extractModal").classList.add("hidden");
+}
+
+function extractWallets() {
+  const text = document.getElementById("commentsText").value;
+  const regex = /\b0x[a-fA-F0-9]{40}\b/g;
+  const matches = text.match(regex) || [];
+  extractedWallets = [];
+  matches.forEach(addr => {
+    const lowerAddr = addr.toLowerCase();
+    const isValid = ethers.isAddress(lowerAddr);
+    let score = isValid ? 100 : 30;
+    if (lowerAddr === "0x0000000000000000000000000000000000000000") score = 10;
+    extractedWallets.push({ address: lowerAddr, score: score, valid: isValid });
+  });
+  const uniqueMap = new Map();
+  extractedWallets.forEach(item => {
+    if (!uniqueMap.has(item.address) || item.valid) uniqueMap.set(item.address, item);
+  });
+  extractedWallets = Array.from(uniqueMap.values());
+  renderResult();
+}
+
+function renderResult() {
+  const validCount = extractedWallets.filter(a => a.valid).length;
+  const suspicious = extractedWallets.length - validCount;
+  document.getElementById("statsBar").innerHTML = `
+    <span class="text-emerald-400">${validCount} Valid</span>
+    <span class="text-amber-400">${suspicious} Suspicious</span>
+    <span class="text-white">${extractedWallets.length} Total</span>
+  `;
+  const html = extractedWallets.map(item => `
+    <div class="flex items-center justify-between py-3 px-4 bg-white/5 rounded-xl border ${item.valid ? 'border-emerald-500/30' : 'border-amber-500/30'}">
+      <div class="font-mono flex-1">${item.address}</div>
+      <div class="flex items-center gap-3">
+        <span class="text-xs px-3 py-1 rounded-full ${item.valid ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}">${item.score}%</span>
+        <button onclick="copySingle('${item.address}')" class="text-sky-400 hover:text-white text-xs">Copy</button>
+      </div>
+    </div>
+  `).join('');
+  document.getElementById("previewList").innerHTML = html || '<p class="text-center text-gray-400 py-10">No addresses found</p>';
+}
+
+function copySingle(addr) {
+  navigator.clipboard.writeText(addr);
+  showToast("Copied!");
+}
+
+function clearAll() {
+  extractedWallets = [];
+  document.getElementById("previewList").innerHTML = "";
+  document.getElementById("statsBar").innerHTML = "";
+  showToast("All cleared");
+}
+
+function applyExtracted(mode) {
+  if (extractedWallets.length === 0) return showToast("Nothing to add");
+  const onlyValid = extractedWallets.filter(a => a.valid).map(a => a.address);
+  let current = document.getElementById("winnersList").value.trim();
+  let list = current ? current.split("\n").map(a => a.trim().toLowerCase()) : [];
+  if (mode === 'replace') list = onlyValid;
+  else list = [...list, ...onlyValid];
+  list = [...new Set(list.filter(a => ethers.isAddress(a)))];
+  document.getElementById("winnersList").value = list.join("\n");
+  hideExtractModal();
+  showToast(`${onlyValid.length} valid addresses ${mode === 'replace' ? 'replaced' : 'added'}`);
+}
+
+// ==================== RANDOM SELECT + COUNTDOWN ====================
 function selectRandomWinners() {
   const text = document.getElementById("winnersList").value.trim();
-  if (!text) return showToast("Enter addresses first!");
-  let addresses = text.split(/[\s,;\n]+/).map(a => a.trim()).filter(a => ethers.isAddress(a));
-  const count = parseInt(document.getElementById("winnerCount").value) || 10;
-  if (addresses.length < count) return showToast(`Not enough addresses! You have ${addresses.length}`);
-  const shuffled = addresses.sort(() => 0.5 - Math.random());
-  const winners = shuffled.slice(0, count);
-  document.getElementById("winnersList").value = winners.join("\n");
-  showResultModal(winners, addresses.length);
+  if (!text) return showToast("First enter participant addresses!");
+
+  let allAddresses = text.split(/[\s,;\n]+/).map(a => a.trim()).filter(a => ethers.isAddress(a));
+  const winnerCount = parseInt(document.getElementById("winnerCount").value) || 10;
+
+  if (allAddresses.length < winnerCount) {
+    return showToast(`Not enough addresses! You have ${allAddresses.length}, need at least ${winnerCount}`);
+  }
+
+  const shuffled = [...allAddresses].sort(() => 0.5 - Math.random());
+  const winners = shuffled.slice(0, winnerCount);
+
+  // Add winners to main list
+  let currentList = document.getElementById("winnersList").value.trim();
+  let finalList = currentList ? currentList.split(/[\s,;\n]+/).map(a => a.trim()) : [];
+  winners.forEach(w => {
+    if (!finalList.includes(w)) finalList.unshift(w);
+  });
+  document.getElementById("winnersList").value = [...new Set(finalList)].join("\n");
+
+  startCountdownAndShowWinners(winners, allAddresses.length);
 }
 
-function showResultModal(winners, total) {
-  const modal = document.getElementById("resultModal");
-  modal.classList.remove("hidden");
-  let time = 3;
-  const countdownEl = document.getElementById("countdown");
-  const announcement = document.getElementById("winnerAnnouncement");
-  countdownEl.classList.remove("hidden");
-  announcement.classList.add("hidden");
-  countdownEl.textContent = time;
+function startCountdownAndShowWinners(winners, totalParticipants) {
+  const countdownModal = document.createElement("div");
+  countdownModal.id = "countdownModal";
+  countdownModal.className = "fixed inset-0 bg-black/95 flex items-center justify-center z-[100]";
+  countdownModal.innerHTML = `
+    <div class="text-center">
+      <h2 class="text-5xl font-bold mb-8 text-white">🎉 Selecting Winners</h2>
+      <div id="countdownNumber" class="text-[180px] font-bold text-emerald-400 mb-6">3</div>
+      <p class="text-gray-400 text-xl">Please wait...</p>
+    </div>
+  `;
+  document.body.appendChild(countdownModal);
+
+  let count = 3;
   const interval = setInterval(() => {
-    time--;
-    countdownEl.textContent = time;
-    if (time <= 0) {
+    count--;
+    document.getElementById("countdownNumber").textContent = count;
+    if (count <= 0) {
       clearInterval(interval);
-      countdownEl.classList.add("hidden");
-      announcement.classList.remove("hidden");
-      renderWinners(winners, total);
+      setTimeout(() => {
+        countdownModal.remove();
+        showResultModalWithConfetti(winners, totalParticipants);
+      }, 400);
     }
-  }, 800);
+  }, 900);
 }
 
-function renderWinners(winners, total) {
-  const container = document.getElementById("winnersListResult");
-  container.innerHTML = winners.map((addr, i) => `
-    <div class="bg-white/5 border border-emerald-400/30 rounded-2xl p-4 flex items-center gap-4">
-      <div class="w-8 h-8 bg-emerald-500/20 text-emerald-400 rounded-xl flex items-center justify-center font-bold">${i+1}</div>
+function showResultModalWithConfetti(winners, totalParticipants) {
+  confetti({ particleCount: 250, spread: 80, origin: { y: 0.6 } });
+  setTimeout(() => confetti({ particleCount: 180, spread: 100, origin: { y: 0.7 } }), 300);
+
+  const modal = document.getElementById("resultModal");
+  document.getElementById("resultSubtitle").textContent = `${winners.length} winners selected from ${totalParticipants} participants`;
+  
+  const container = document.getElementById("winnersPreview");
+  container.innerHTML = winners.map((addr, index) => `
+    <div class="bg-white/5 border border-emerald-500/30 rounded-2xl p-4 flex items-center gap-4">
+      <div class="w-8 h-8 bg-emerald-500/20 text-emerald-400 rounded-xl flex items-center justify-center font-bold">${index + 1}</div>
       <div class="font-mono text-sm break-all">${addr}</div>
     </div>
   `).join('');
+  modal.classList.remove("hidden");
 }
 
 function hideResultModal() {
   document.getElementById("resultModal").classList.add("hidden");
 }
 
-function copyWinnersResult() {
-  const text = Array.from(document.querySelectorAll("#winnersListResult .font-mono")).map(el => el.textContent).join("\n");
-  navigator.clipboard.writeText(text);
-  showToast("Winners copied!");
+function copyWinners() {
+  const winnersText = Array.from(document.querySelectorAll("#winnersPreview .font-mono")).map(el => el.textContent).join("\n");
+  navigator.clipboard.writeText(winnersText);
+  showToast("Winners copied to clipboard!");
 }
 
-function generateTweetText() {
-  const amount = document.getElementById("totalAmount").value;
-  const token = document.getElementById("tokenSelect").selectedOptions[0].text;
-  const count = document.getElementById("winnerCount").value;
-  const text = `🎁 GIVEAWAY!\n\n${amount} ${token} to ${count} lucky winners!\n\nComment your wallet 👇`;
-  navigator.clipboard.writeText(text);
-  showToast("Twitter text copied!");
+// ==================== EXPORT / IMPORT / SHARE ====================
+function exportWallets() {
+  const text = document.getElementById("winnersList").value.trim();
+  if (!text) return showToast("List is empty");
+  const data = { wallets: text.split(/[\s,;\n]+/).map(a => a.trim()).filter(Boolean) };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "arc-giveaway-wallets.json";
+  a.click();
 }
 
+function importWallets() {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".json";
+  input.onchange = e => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        if (data.wallets && Array.isArray(data.wallets)) {
+          document.getElementById("winnersList").value = data.wallets.join("\n");
+          showToast(`${data.wallets.length} addresses imported`);
+        }
+      } catch (err) {
+        showToast("Invalid JSON file");
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
+
+function copyShareableLink() {
+  const text = document.getElementById("winnersList").value.trim();
+  if (!text) return showToast("List is empty");
+  const addresses = text.split(/[\s,;\n]+/).map(a => a.trim()).filter(Boolean);
+  const encoded = btoa(JSON.stringify(addresses));
+  const url = `${window.location.origin}${window.location.pathname}?wallets=${encoded}`;
+  navigator.clipboard.writeText(url);
+  showToast("Shareable link copied!");
+}
+
+// ==================== SEND GIVEAWAY ====================
 async function sendGiveawaySplit() {
   if (!signer) return showToast("Please connect your wallet first!");
   if (isProcessing) return;
@@ -338,7 +498,7 @@ async function sendGiveawaySplit() {
   if (addresses.length > 300) return showToast("Maximum 300 winners allowed");
 
   const totalAmount = parseFloat(document.getElementById("totalAmount").value);
-  if (!totalAmount || totalAmount <= 0) return showToast("Enter valid amount!");
+  if (!totalAmount || totalAmount <= 0) return showToast("Enter valid amount");
 
   const tokenAddr = document.getElementById("tokenSelect").value;
   const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
@@ -357,7 +517,7 @@ async function sendGiveawaySplit() {
     ], signer);
 
     const decimals = await tokenContract.decimals();
-    const totalWei = ethers.parseUnits(totalAmount.toString(), Number(decimals));
+    const totalWei = ethers.parseUnits(totalAmount.toString(), decimals);
 
     await (await tokenContract.approve(CONTRACT_ADDRESS, totalWei)).wait();
 
@@ -371,10 +531,10 @@ async function sendGiveawaySplit() {
     const tx = await contract.splitPayment(tokenAddr, addresses, basisPoints, totalWei, { gasLimit: 800000 });
     await tx.wait();
 
-    document.getElementById("successMessage").innerHTML = `✅ Transaction Successful!<br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline">View on Explorer</a>`;
+    document.getElementById("successMessage").innerHTML = `✅ Success! <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline">View Transaction</a>`;
     document.getElementById("successMessage").classList.remove('hidden');
     await updateBalance();
-    showToast("Transaction sent successfully!");
+    showToast("🎉 Giveaway sent successfully!");
   } catch (error) {
     console.error(error);
     showToast(error.reason || error.message || "Transaction failed", 6000);
@@ -385,66 +545,17 @@ async function sendGiveawaySplit() {
   }
 }
 
-function showExtractModal() {
-  document.getElementById("extractModal").classList.remove("hidden");
-}
-
-function hideExtractModal() {
-  document.getElementById("extractModal").classList.add("hidden");
-}
-
-function extractWallets() {
-  const text = document.getElementById("commentsText").value;
-  const regex = /\b0x[a-fA-F0-9]{40}\b/g;
-  const matches = text.match(regex) || [];
-  extractedWallets = [];
-  matches.forEach(addr => {
-    const lower = addr.toLowerCase();
-    const valid = ethers.isAddress(lower);
-    extractedWallets.push({address: lower, score: valid ? 100 : 30, valid});
-  });
-  const map = new Map();
-  extractedWallets.forEach(item => {
-    if (!map.has(item.address) || item.valid) map.set(item.address, item);
-  });
-  extractedWallets = Array.from(map.values());
-  renderExtractResult();
-}
-
-function renderExtractResult() {
-  const valid = extractedWallets.filter(a => a.valid).length;
-  document.getElementById("statsBar").innerHTML = `<span class="text-emerald-400">${valid} Valid</span><span class="text-white">${extractedWallets.length} Total</span>`;
-  const html = extractedWallets.map(item => `
-    <div class="flex justify-between items-center py-3 px-4 bg-white/5 rounded-xl border ${item.valid ? 'border-emerald-500/30' : 'border-amber-500/30'}">
-      <div class="font-mono flex-1">${item.address}</div>
-      <div class="flex items-center gap-3">
-        <span class="text-xs px-3 py-1 rounded-full ${item.valid ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}">${item.score}%</span>
-      </div>
-    </div>
-  `).join('');
-  document.getElementById("previewList").innerHTML = html || '<p class="text-center text-gray-400 py-10">No addresses found</p>';
-}
-
-function applyExtracted(mode) {
-  const validAddrs = extractedWallets.filter(a => a.valid).map(a => a.address);
-  let current = document.getElementById("winnersList").value.trim();
-  let list = current ? current.split("\n").map(a => a.trim().toLowerCase()) : [];
-  if (mode === 'replace') list = validAddrs;
-  else list = [...list, ...validAddrs];
-  list = [...new Set(list.filter(a => ethers.isAddress(a)))];
-  document.getElementById("winnersList").value = list.join("\n");
-  hideExtractModal();
-  showToast(`${validAddrs.length} valid addresses ${mode === 'replace' ? 'replaced' : 'added'}`);
-}
-
-function clearAll() {
-  extractedWallets = [];
-  document.getElementById("previewList").innerHTML = "";
-  document.getElementById("statsBar").innerHTML = "";
-  showToast("All cleared");
-}
-
+// ==================== LOAD ====================
 window.addEventListener('load', () => {
+  // Theme
+  if (localStorage.getItem('theme') === 'light') {
+    document.documentElement.classList.add('light');
+    const icon = document.getElementById("themeBtn").querySelector("i");
+    icon.classList.remove("fa-moon");
+    icon.classList.add("fa-sun");
+  }
+
+  // Wallet
   const savedAddress = localStorage.getItem('giveawayUserAddress');
   if (savedAddress) {
     userAddress = savedAddress;
@@ -456,6 +567,16 @@ window.addEventListener('load', () => {
         updateBalance();
       });
     }
+  }
+
+  // Load from shareable link
+  const params = new URLSearchParams(window.location.search);
+  if (params.has('wallets')) {
+    try {
+      const decoded = JSON.parse(atob(params.get('wallets')));
+      document.getElementById("winnersList").value = decoded.join("\n");
+      showToast("Wallet list loaded from link");
+    } catch (e) {}
   }
 });
 </script>
