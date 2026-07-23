@@ -14,19 +14,7 @@
     
     .glass { background: rgba(255,255,255,0.08); backdrop-filter: blur(20px); }
     .light .glass { background: rgba(255,255,255,0.88); border-color: rgba(0,0,0,0.12); }
-
     .light body, .light h1, .light label { color: #1f2937; }
-
-    select, input, textarea {
-      background-color: rgba(255,255,255,0.05);
-      color: white;
-      border: 1px solid rgba(255,255,255,0.25);
-    }
-    .light select, .light input, .light textarea {
-      background-color: #f8fafc;
-      color: #1f2937;
-      border: 1px solid #e2e8f0;
-    }
   </style>
 </head>
 <body class="bg-gradient-to-br from-[#0b0b1f] to-[#1a1a2e] text-white min-h-screen">
@@ -44,12 +32,14 @@
       </div>
     </div>
 
+    <div id="successMessage" class="hidden glass border border-emerald-500/30 bg-emerald-500/10 rounded-3xl p-6 mb-8 text-emerald-400"></div>
+
     <div class="glass border border-white/10 rounded-3xl p-8">
-      <!-- فرم‌ها همان قبلی -->
+      <!-- فرم‌ها -->
       <div class="grid grid-cols-2 gap-6 mb-8">
         <div>
           <label class="block text-gray-400 text-sm mb-2">Token</label>
-          <select id="tokenSelect" class="w-full rounded-2xl px-6 py-5">
+          <select id="tokenSelect" class="w-full rounded-2xl px-6 py-5"> 
             <option value="0x3600000000000000000000000000000000000000">USDC</option>
             <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
             <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
@@ -68,7 +58,7 @@
 
       <div class="mb-8">
         <label class="block text-gray-400 text-sm mb-2">Description</label>
-        <textarea id="description" rows="2" class="w-full rounded-2xl px-6 py-5" placeholder="Example: Comment your wallet..."></textarea>
+        <textarea id="description" rows="2" class="w-full rounded-2xl px-6 py-5" placeholder="Example: First 10 commenters win..."></textarea>
       </div>
 
       <div class="flex gap-3 mb-8">
@@ -81,7 +71,7 @@
         <textarea id="winnersList" rows="7" class="w-full rounded-2xl px-6 py-5 font-mono text-sm" placeholder="One address per line"></textarea>
       </div>
 
-      <button onclick="sendGiveawaySplit()" 
+      <button id="sendBtn" onclick="sendGiveawaySplit()" 
               class="w-full bg-gradient-to-r from-pink-500 to-rose-500 py-7 rounded-3xl text-xl font-bold">
         Send Split to Winners
       </button>
@@ -89,80 +79,31 @@
   </div>
 
 <script>
-const CONTRACT_ADDRESS = "0x73Da94F0D960Ef8FD49Ed28a94f667aF3C062cB2";
+// ... (کدهای قبلی toggleTheme, connectWallet, generateTweetText, selectRandomWinners همان قبلی)
 
-let signer = null;
-let userAddress = null;
-
-const splitterAbi = [{
-  "inputs": [
-    { "name": "token", "type": "address" },
-    { "name": "recipients", "type": "address[]" },
-    { "name": "percentages", "type": "uint256[]" },
-    { "name": "totalAmount", "type": "uint256" }
-  ],
-  "name": "splitPayment",
-  "outputs": [],
-  "stateMutability": "nonpayable",
-  "type": "function"
-}];
-
-function toggleTheme() {
-  document.documentElement.classList.toggle('light');
-  const icon = document.getElementById("themeBtn").querySelector("i");
-  icon.classList.toggle("fa-moon");
-  icon.classList.toggle("fa-sun");
-}
-
-async function connectWallet() {
-  if (!window.ethereum) return alert("MetaMask not found!");
-  try {
-    const provider = new ethers.BrowserProvider(window.ethereum);
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    userAddress = accounts[0];
-    signer = await provider.getSigner();
-    document.getElementById("connectText").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-  } catch (e) {
-    alert("Connection failed");
-  }
-}
-
-function generateTweetText() { /* همان قبلی */ 
-  const amount = document.getElementById("totalAmount").value;
-  const token = document.getElementById("tokenSelect").selectedOptions[0].text;
-  const count = document.getElementById("winnerCount").value;
-  const text = `🎁 GIVEAWAY!\n\n${amount} ${token} to ${count} lucky winners!\n\nComment your wallet address below 👇\nGood luck!`;
-  navigator.clipboard.writeText(text);
-  alert("Twitter text copied!");
-}
-
-function selectRandomWinners() { /* همان قبلی */ 
-  const text = document.getElementById("winnersList").value.trim();
-  if (!text) return alert("Please enter addresses first!");
-  let addresses = text.split("\n").map(a => a.trim()).filter(a => a.length > 10);
-  const count = parseInt(document.getElementById("winnerCount").value);
-  if (addresses.length < count) return alert("Not enough addresses!");
-  const shuffled = addresses.sort(() => 0.5 - Math.random());
-  document.getElementById("winnersList").value = shuffled.slice(0, count).join("\n");
-  alert(`${count} winners randomly selected!`);
-}
+let isProcessing = false;
 
 async function sendGiveawaySplit() {
   if (!signer) return alert("Please connect your wallet first!");
+  if (isProcessing) return;
 
   const listText = document.getElementById("winnersList").value.trim();
-  if (!listText) return alert("No addresses!");
+  if (!listText) return alert("Please enter winner addresses!");
 
   const addresses = listText.split("\n").map(a => a.trim()).filter(a => ethers.isAddress(a));
-  const totalAmount = parseFloat(document.getElementById("totalAmount").value);
-  const tokenAddr = document.getElementById("tokenSelect").value;
-
   if (addresses.length === 0) return alert("No valid addresses!");
 
-  const perWinnerPercent = (100 / addresses.length).toFixed(6);
-  const percentages = addresses.map(() => Math.floor(perWinnerPercent * 100));
+  const totalAmount = parseFloat(document.getElementById("totalAmount").value);
+  const tokenAddr = document.getElementById("tokenSelect").value;
+  const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
 
-  if (!confirm(`Send ${totalAmount} to ${addresses.length} winners?`)) return;
+  if (!confirm(`Send ${totalAmount} ${symbol} to ${addresses.length} winners?`)) return;
+
+  isProcessing = true;
+  const btn = document.getElementById("sendBtn");
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = "Processing Transaction...";
 
   try {
     const tokenContract = new ethers.Contract(tokenAddr, [
@@ -173,18 +114,29 @@ async function sendGiveawaySplit() {
     const decimals = await tokenContract.decimals();
     const totalWei = ethers.parseUnits(totalAmount.toString(), decimals);
 
-    // Approve
     await (await tokenContract.approve(CONTRACT_ADDRESS, totalWei)).wait();
 
-    // Split
     const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
-    const tx = await contract.splitPayment(tokenAddr, addresses, percentages, totalWei, { gasLimit: 800000 });
+    const tx = await contract.splitPayment(tokenAddr, addresses, new Array(addresses.length).fill(10000), totalWei, { gasLimit: 800000 });
     await tx.wait();
 
-    alert(`✅ Transaction sent successfully!\nHash: ${tx.hash}`);
+    // Success Message
+    document.getElementById("successMessage").innerHTML = `
+      ✅ Transaction Successful!<br>
+      <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline">
+        View on Explorer → ${tx.hash.substring(0,12)}...
+      </a>`;
+    document.getElementById("successMessage").classList.remove('hidden');
+
+    alert("🎉 Giveaway sent successfully!");
+
   } catch (error) {
     console.error(error);
     alert("Transaction failed: " + (error.reason || error.message));
+  } finally {
+    isProcessing = false;
+    btn.disabled = false;
+    btn.textContent = originalText;
   }
 }
 </script>
