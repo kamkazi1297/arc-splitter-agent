@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ArcSplit Giveaway - Ultra</title>
+  <title>ArcSplit Giveaway</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
@@ -13,6 +13,7 @@
     body { font-family: 'Inter', system-ui, sans-serif; }
     .glass { background: rgba(255,255,255,0.08); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); }
     .light .glass { background: rgba(255,255,255,0.88); border-color: rgba(0,0,0,0.12); }
+    .light body, .light h1, .light label { color: #1f2937; }
 
     select, input, textarea {
       background-color: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.25);
@@ -20,12 +21,9 @@
     .light select, .light input, .light textarea {
       background-color: #f8fafc; color: #1f2937; border: 1px solid #e2e8f0;
     }
-
-    /* رفع مشکل dropdown در دارک مود */
     select option {
       background-color: #1a1a2e;
       color: white;
-      padding: 12px 16px;
     }
     .light select option {
       background-color: #f8fafc;
@@ -81,12 +79,6 @@
         <button onclick="selectRandomWinners()" class="flex-1 py-4 bg-purple-600 rounded-2xl font-medium hover:brightness-110 transition">🎲 Random Select</button>
       </div>
 
-      <div class="border border-violet-500/30 rounded-3xl p-6">
-        <button onclick="showExtractModal()" class="w-full py-5 bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-2xl font-semibold text-lg hover:brightness-110 transition">
-          Extract Wallets from Comments
-        </button>
-      </div>
-
       <div>
         <label class="block text-gray-400 text-sm mb-3">All Participant Addresses</label>
         <textarea id="winnersList" rows="8" class="w-full rounded-2xl px-6 py-5 font-mono text-sm outline-none" placeholder="Paste all addresses here..."></textarea>
@@ -98,12 +90,12 @@
     </div>
   </div>
 
-  <!-- Result Modal with Countdown + Animation -->
+  <!-- Result Modal -->
   <div id="resultModal" class="hidden fixed inset-0 bg-black/95 flex items-center justify-center z-50">
     <div class="text-center">
       <div id="countdown" class="text-8xl font-bold text-white mb-10">3</div>
       <div id="winnerAnnouncement" class="hidden">
-        <h2 class="text-4xl font-bold text-emerald-400 mb-8 animate-pulse">🎉 WINNERS ANNOUNCED! 🎉</h2>
+        <h2 class="text-4xl font-bold text-emerald-400 mb-8">🎉 WINNERS ANNOUNCED! 🎉</h2>
         <div id="winnersListResult" class="max-w-md mx-auto space-y-4 mb-10"></div>
         <div class="flex gap-4 justify-center">
           <button onclick="hideResultModal()" class="px-8 py-4 bg-white/10 hover:bg-white/20 rounded-2xl">Close</button>
@@ -113,34 +105,12 @@
     </div>
   </div>
 
-  <!-- Extract Modal -->
-  <div id="extractModal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-50">
-    <div class="glass rounded-3xl p-8 w-full max-w-3xl mx-4 max-h-[94vh] flex flex-col">
-      <h3 class="text-2xl font-bold mb-1">AI-Powered Wallet Extractor</h3>
-      <p class="text-gray-400 mb-6">Paste comments • Smart detection + scoring</p>
-      <textarea id="commentsText" rows="7" class="w-full flex-1 bg-white/5 border border-white/20 rounded-2xl p-5 font-mono text-sm mb-4" placeholder="Paste all comments here..."></textarea>
-      <div class="flex gap-3 mb-4">
-        <button onclick="extractWallets()" class="flex-1 py-4 bg-violet-600 hover:bg-violet-700 rounded-2xl font-semibold">Analyze & Extract</button>
-        <button onclick="clearAll()" class="px-8 py-4 border border-white/30 hover:bg-white/10 rounded-2xl">Clear</button>
-      </div>
-      <div class="bg-black/40 rounded-2xl p-5 flex-1 overflow-auto" id="resultPanel">
-        <div id="statsBar" class="flex justify-between text-sm mb-4"></div>
-        <div id="previewList" class="font-mono text-sm space-y-2"></div>
-      </div>
-      <div class="flex gap-3 mt-6">
-        <button onclick="hideExtractModal()" class="flex-1 py-4 rounded-2xl border border-white/20 hover:bg-white/10">Cancel</button>
-        <button onclick="applyExtracted('append')" class="flex-1 py-4 bg-emerald-500 hover:bg-emerald-600 rounded-2xl">Append</button>
-        <button onclick="applyExtracted('replace')" class="flex-1 py-4 bg-fuchsia-500 hover:bg-fuchsia-600 rounded-2xl">Replace</button>
-      </div>
-    </div>
-  </div>
-
   <!-- Connect Modal -->
   <div id="connectModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
     <div class="glass border border-white/10 rounded-3xl p-8 max-w-lg w-full mx-4">
       <div class="flex justify-between items-center mb-6">
         <h3 class="text-2xl font-bold">Connect Wallet</h3>
-        <button onclick="hideConnectModal()" class="text-gray-400 hover:text-white text-3xl leading-none">×</button>
+        <button onclick="hideConnectModal()" class="text-gray-400 hover:text-white text-3xl">×</button>
       </div>
       <button onclick="connectMetaMask()" class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all border border-white/10 hover:border-emerald-500">
         <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" width="48" height="48" alt="MetaMask">
@@ -163,7 +133,6 @@ const ARC_CHAIN_ID = 5042002;
 let signer = null;
 let userAddress = null;
 let isProcessing = false;
-let extractedWallets = [];
 
 const splitterAbi = [
   {
@@ -181,7 +150,14 @@ const splitterAbi = [
 ];
 
 function showToast(msg, duration = 4000) {
-  const toast = document.getElementById("toast");
+  let toast = document.getElementById("toast");
+  if (!toast) {
+    toast = document.createElement("div");
+    toast.id = "toast";
+    toast.className = "fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 border border-white/20 text-white px-6 py-4 rounded-2xl z-50 hidden";
+    toast.innerHTML = `<span id="toastText"></span>`;
+    document.body.appendChild(toast);
+  }
   document.getElementById("toastText").innerHTML = msg;
   toast.classList.remove("hidden");
   setTimeout(() => toast.classList.add("hidden"), duration);
@@ -194,7 +170,6 @@ function toggleTheme() {
   icon.classList.toggle("fa-sun");
 }
 
-// Wallet
 function showConnectModal() {
   document.getElementById("connectModal").classList.remove("hidden");
 }
@@ -209,13 +184,13 @@ async function connectMetaMask() {
   try {
     const provider = new ethers.BrowserProvider(window.ethereum);
     const network = await provider.getNetwork();
-    if (network.chainId !== BigInt(ARC_CHAIN_ID)) return showToast("Please switch to Arc Testnet", 6000);
+    if (network.chainId !== BigInt(ARC_CHAIN_ID)) return showToast("Please switch to Arc Testnet (5042002)", 6000);
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     userAddress = accounts[0];
     signer = await provider.getSigner();
     localStorage.setItem('giveawayUserAddress', userAddress);
     updateConnectButton();
-    showToast("Wallet connected");
+    showToast("Wallet connected successfully");
     await updateBalance();
   } catch (e) {
     showToast("Connection failed");
@@ -236,7 +211,8 @@ function updateConnectButton() {
 
 function disconnectWallet() {
   if (confirm("Disconnect wallet?")) {
-    signer = null; userAddress = null;
+    signer = null;
+    userAddress = null;
     localStorage.removeItem('giveawayUserAddress');
     updateConnectButton();
     document.getElementById("status").innerHTML = "Ready for Giveaway on Arc Testnet";
@@ -246,106 +222,45 @@ function disconnectWallet() {
 
 async function updateBalance(retry = 0) {
   if (!signer || !userAddress) return;
-  const el = document.getElementById("status");
-  el.innerHTML = `Connected • Loading balance...`;
+  const statusEl = document.getElementById("status");
+  statusEl.innerHTML = `Connected • Loading balance...`;
   try {
     const tokenAddr = document.getElementById("tokenSelect").value;
     const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
-    const contract = new ethers.Contract(tokenAddr, ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"], signer);
+    const contract = new ethers.Contract(tokenAddr, [
+      "function balanceOf(address) view returns (uint256)",
+      "function decimals() view returns (uint8)"
+    ], signer);
     const [balance, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
-    const formatted = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4);
-    el.innerHTML = `Connected • Balance: <span class="text-emerald-400 font-semibold">${formatted} ${symbol}</span>`;
+    const formatted = parseFloat(ethers.formatUnits(balance, Number(decimals))).toFixed(4);
+    statusEl.innerHTML = `Connected • Balance: <span class="text-emerald-400 font-semibold">${formatted} ${symbol}</span>`;
   } catch (e) {
-    if (retry < 2) setTimeout(() => updateBalance(retry+1), 1000);
-    else el.innerHTML = `Connected • <span class="text-amber-400">Balance unavailable</span>`;
+    if (retry < 2) setTimeout(() => updateBalance(retry + 1), 1200);
+    else statusEl.innerHTML = `Connected • <span class="text-amber-400">Balance unavailable</span>`;
   }
 }
 
-// Extract
-function showExtractModal() {
-  document.getElementById("extractModal").classList.remove("hidden");
-}
-
-function hideExtractModal() {
-  document.getElementById("extractModal").classList.add("hidden");
-}
-
-function extractWallets() {
-  const text = document.getElementById("commentsText").value;
-  const regex = /\b0x[a-fA-F0-9]{40}\b/g;
-  const matches = text.match(regex) || [];
-  extractedWallets = [];
-  matches.forEach(addr => {
-    const lower = addr.toLowerCase();
-    const valid = ethers.isAddress(lower);
-    extractedWallets.push({address: lower, score: valid ? 100 : 30, valid});
-  });
-  const map = new Map();
-  extractedWallets.forEach(item => {
-    if (!map.has(item.address) || item.valid) map.set(item.address, item);
-  });
-  extractedWallets = Array.from(map.values());
-  renderExtractResult();
-}
-
-function renderExtractResult() {
-  const valid = extractedWallets.filter(a => a.valid).length;
-  document.getElementById("statsBar").innerHTML = `<span class="text-emerald-400">${valid} Valid</span><span class="text-white">${extractedWallets.length} Total</span>`;
-  const html = extractedWallets.map(item => `
-    <div class="flex justify-between items-center p-3 bg-white/5 rounded-xl">
-      <span class="font-mono">${item.address}</span>
-      <span class="${item.valid ? 'text-emerald-400' : 'text-amber-400'} text-xs">${item.score}%</span>
-    </div>
-  `).join('');
-  document.getElementById("previewList").innerHTML = html;
-}
-
-function applyExtracted(mode) {
-  const validAddrs = extractedWallets.filter(a => a.valid).map(a => a.address);
-  let list = document.getElementById("winnersList").value.trim() ? document.getElementById("winnersList").value.split("\n") : [];
-  if (mode === 'replace') list = validAddrs;
-  else list = [...list, ...validAddrs];
-  list = [...new Set(list.filter(a => ethers.isAddress(a.trim())))];
-  document.getElementById("winnersList").value = list.join("\n");
-  hideExtractModal();
-  showToast(`${validAddrs.length} addresses added`);
-}
-
-function clearAll() {
-  extractedWallets = [];
-  document.getElementById("previewList").innerHTML = "";
-  document.getElementById("statsBar").innerHTML = "";
-}
-
-// Random Select with Countdown + Animation
 function selectRandomWinners() {
   const text = document.getElementById("winnersList").value.trim();
   if (!text) return showToast("Enter addresses first!");
-
   let addresses = text.split(/[\s,;\n]+/).map(a => a.trim()).filter(a => ethers.isAddress(a));
   const count = parseInt(document.getElementById("winnerCount").value) || 10;
-
-  if (addresses.length < count) return showToast(`Not enough addresses! (${addresses.length})`);
-
-  const shuffled = addresses.sort(() => Math.random() - 0.5);
+  if (addresses.length < count) return showToast(`Not enough addresses! You have ${addresses.length}`);
+  const shuffled = addresses.sort(() => 0.5 - Math.random());
   const winners = shuffled.slice(0, count);
-
-  // Put winners back into the main textarea
   document.getElementById("winnersList").value = winners.join("\n");
-
-  showCountdownModal(winners, addresses.length);
+  showResultModal(winners, addresses.length);
 }
 
-function showCountdownModal(winners, total) {
+function showResultModal(winners, total) {
   const modal = document.getElementById("resultModal");
   modal.classList.remove("hidden");
-
   let time = 3;
   const countdownEl = document.getElementById("countdown");
   const announcement = document.getElementById("winnerAnnouncement");
   countdownEl.classList.remove("hidden");
   announcement.classList.add("hidden");
-
+  countdownEl.textContent = time;
   const interval = setInterval(() => {
     time--;
     countdownEl.textContent = time;
@@ -355,15 +270,15 @@ function showCountdownModal(winners, total) {
       announcement.classList.remove("hidden");
       renderWinners(winners, total);
     }
-  }, 1000);
+  }, 800);
 }
 
 function renderWinners(winners, total) {
   const container = document.getElementById("winnersListResult");
   container.innerHTML = winners.map((addr, i) => `
-    <div class="bg-white/10 border border-emerald-400/30 rounded-2xl p-4 flex gap-4 items-center">
-      <span class="text-2xl font-bold text-emerald-400 w-10">${i+1}</span>
-      <span class="font-mono break-all">${addr}</span>
+    <div class="bg-white/5 border border-emerald-400/30 rounded-2xl p-4 flex items-center gap-4">
+      <div class="w-8 h-8 bg-emerald-500/20 text-emerald-400 rounded-xl flex items-center justify-center font-bold">${i+1}</div>
+      <div class="font-mono text-sm break-all">${addr}</div>
     </div>
   `).join('');
 }
@@ -378,31 +293,34 @@ function copyWinnersResult() {
   showToast("Winners copied!");
 }
 
-// Other functions
 function generateTweetText() {
   const amount = document.getElementById("totalAmount").value;
   const token = document.getElementById("tokenSelect").selectedOptions[0].text;
   const count = document.getElementById("winnerCount").value;
-  navigator.clipboard.writeText(`🎁 GIVEAWAY!\n\n${amount} ${token} to ${count} lucky winners!\n\nComment your wallet 👇`);
-  showToast("Text copied!");
+  const text = `🎁 GIVEAWAY!\n\n${amount} ${token} to ${count} lucky winners!\n\nComment your wallet 👇`;
+  navigator.clipboard.writeText(text);
+  showToast("Twitter text copied!");
 }
 
 async function sendGiveawaySplit() {
-  if (!signer) return showToast("Connect wallet first!");
+  if (!signer) return showToast("Please connect your wallet first!");
   if (isProcessing) return;
 
-  let addresses = document.getElementById("winnersList").value.trim().split(/[\s,;\n]+/).map(a => a.trim()).filter(a => ethers.isAddress(a));
+  let rawText = document.getElementById("winnersList").value.trim();
+  if (!rawText) return showToast("No addresses entered!");
 
-  if (addresses.length === 0) return showToast("No valid addresses!");
-  if (addresses.length > 300) return showToast("Max 300 winners");
+  let addresses = rawText.split(/[\s,;\n]+/).map(a => a.trim()).filter(a => ethers.isAddress(a));
+
+  if (addresses.length === 0) return showToast("No valid addresses found!");
+  if (addresses.length > 300) return showToast("Maximum 300 winners allowed");
 
   const totalAmount = parseFloat(document.getElementById("totalAmount").value);
-  if (!totalAmount) return showToast("Enter amount");
+  if (!totalAmount || totalAmount <= 0) return showToast("Enter valid amount!");
 
   const tokenAddr = document.getElementById("tokenSelect").value;
   const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
 
-  if (!confirm(`Send ${totalAmount} ${symbol} to ${addresses.length} winners?`)) return;
+  if (!confirm(`Send ${totalAmount} ${symbol} equally to ${addresses.length} winners?`)) return;
 
   isProcessing = true;
   const btn = document.getElementById("sendBtn");
@@ -410,24 +328,33 @@ async function sendGiveawaySplit() {
   btn.textContent = "Sending...";
 
   try {
-    const tokenContract = new ethers.Contract(tokenAddr, ["function approve(address,uint256)", "function decimals()"], signer);
+    const tokenContract = new ethers.Contract(tokenAddr, [
+      "function approve(address,uint256) returns (bool)",
+      "function decimals() view returns (uint8)"
+    ], signer);
+
     const decimals = await tokenContract.decimals();
-    const totalWei = ethers.parseUnits(totalAmount.toString(), decimals);
+    const totalWei = ethers.parseUnits(totalAmount.toString(), Number(decimals));
+
     await (await tokenContract.approve(CONTRACT_ADDRESS, totalWei)).wait();
 
     const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
-    let bp = new Array(addresses.length).fill(Math.floor(10000 / addresses.length));
-    bp[bp.length-1] += 10000 - bp.reduce((a,b)=>a+b,0);
+    
+    const count = addresses.length;
+    let basisPoints = new Array(count).fill(Math.floor(10000 / count));
+    const sum = basisPoints.reduce((a, b) => a + b, 0);
+    basisPoints[basisPoints.length - 1] += (10000 - sum);
 
-    const tx = await contract.splitPayment(tokenAddr, addresses, bp, totalWei);
+    const tx = await contract.splitPayment(tokenAddr, addresses, basisPoints, totalWei, { gasLimit: 800000 });
     await tx.wait();
 
-    document.getElementById("successMessage").innerHTML = `✅ Done! <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View Tx</a>`;
-    document.getElementById("successMessage").classList.remove("hidden");
+    document.getElementById("successMessage").innerHTML = `✅ Transaction Successful!<br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline">View on Explorer</a>`;
+    document.getElementById("successMessage").classList.remove('hidden');
     await updateBalance();
-    showToast("Transaction successful!");
-  } catch (e) {
-    showToast(e.reason || e.message || "Failed");
+    showToast("Transaction sent successfully!");
+  } catch (error) {
+    console.error(error);
+    showToast(error.reason || error.message || "Transaction failed", 6000);
   } finally {
     isProcessing = false;
     btn.disabled = false;
@@ -436,13 +363,16 @@ async function sendGiveawaySplit() {
 }
 
 window.addEventListener('load', () => {
-  const saved = localStorage.getItem('giveawayUserAddress');
-  if (saved) {
-    userAddress = saved;
+  const savedAddress = localStorage.getItem('giveawayUserAddress');
+  if (savedAddress) {
+    userAddress = savedAddress;
     updateConnectButton();
     if (window.ethereum) {
-      const p = new ethers.BrowserProvider(window.ethereum);
-      p.getSigner().then(s => { signer = s; updateBalance(); });
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      provider.getSigner().then(s => {
+        signer = s;
+        updateBalance();
+      }).catch(() => {});
     }
   }
 });
