@@ -12,15 +12,29 @@
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     body { font-family: 'Inter', system-ui, sans-serif; }
     
-    .glass { background: rgba(255,255,255,0.08); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); }
-    .light .glass { background: rgba(255,255,255,0.88); border-color: rgba(0,0,0,0.12); }
-    .light body, .light h1, .light label { color: #1f2937; }
+    .glass {
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+    .light .glass {
+      background: rgba(255,255,255,0.88);
+      border-color: rgba(0,0,0,0.12);
+    }
+
+    .light body, .light h1, .light label, .light .text-gray-400 {
+      color: #1f2937;
+    }
 
     select, input, textarea {
-      background-color: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.25);
+      background-color: rgba(255,255,255,0.05);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.25);
     }
     .light select, .light input, .light textarea {
-      background-color: #f8fafc; color: #1f2937; border: 1px solid #e2e8f0;
+      background-color: #f8fafc;
+      color: #1f2937;
+      border: 1px solid #e2e8f0;
     }
   </style>
 </head>
@@ -30,11 +44,12 @@
     <div class="flex justify-between items-center mb-10">
       <h1 class="text-4xl font-bold">Giveaway Tool</h1>
       <div class="flex gap-3">
-        <button onclick="toggleTheme()" id="themeBtn" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl">
+        <button onclick="toggleTheme()" id="themeBtn" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all">
           <i class="fas fa-moon text-xl"></i>
         </button>
-        <button onclick="connectWallet()" id="connectBtn" class="px-6 py-3 bg-white text-black font-semibold rounded-2xl flex items-center gap-2">
-          <i class="fas fa-wallet"></i> <span id="connectText">Connect Wallet</span>
+        <button onclick="connectWallet()" id="connectBtn" class="px-6 py-3 bg-white text-black font-semibold rounded-2xl flex items-center gap-2 hover:bg-gray-100 transition-all">
+          <i class="fas fa-wallet"></i> 
+          <span id="connectText">Connect Wallet</span>
         </button>
       </div>
     </div>
@@ -64,12 +79,12 @@
 
       <div class="mb-8">
         <label class="block text-gray-400 text-sm mb-2">Description</label>
-        <textarea id="description" rows="2" class="w-full rounded-2xl px-6 py-5 outline-none" placeholder="Giveaway description..."></textarea>
+        <textarea id="description" rows="2" class="w-full rounded-2xl px-6 py-5 outline-none" placeholder="Example: First 10 commenters win..."></textarea>
       </div>
 
       <div class="flex gap-3 mb-8">
-        <button onclick="generateTweetText()" class="flex-1 py-4 bg-[#1DA1F2] rounded-2xl font-medium">Twitter Text</button>
-        <button onclick="selectRandomWinners()" class="flex-1 py-4 bg-purple-600 rounded-2xl font-medium">🎲 Random Select</button>
+        <button onclick="generateTweetText()" class="flex-1 py-4 bg-[#1DA1F2] hover:bg-[#1a8cd8] rounded-2xl font-medium transition">Twitter Text</button>
+        <button onclick="selectRandomWinners()" class="flex-1 py-4 bg-purple-600 hover:bg-purple-700 rounded-2xl font-medium transition">🎲 Random Select</button>
       </div>
 
       <div class="mb-8">
@@ -85,7 +100,7 @@
   </div>
 
 <script>
-const CONTRACT_ADDRESS = "0x73Da94F0D960Ef8FD49Ed28a94f667aF3C062cB2"; // آدرس contract جدیدت
+const CONTRACT_ADDRESS = "0x73Da94F0D960Ef8FD49Ed28a94f667aF3C062cB2";
 
 let signer = null;
 let userAddress = null;
@@ -94,10 +109,10 @@ let isProcessing = false;
 const splitterAbi = [
   {
     "inputs": [
-      {"name": "token", "type": "address"},
-      {"name": "recipients", "type": "address[]"},
-      {"name": "percentages", "type": "uint256[]"},
-      {"name": "totalAmount", "type": "uint256"}
+      { "name": "token", "type": "address" },
+      { "name": "recipients", "type": "address[]" },
+      { "name": "percentages", "type": "uint256[]" },
+      { "name": "totalAmount", "type": "uint256" }
     ],
     "name": "splitPayment",
     "outputs": [],
@@ -130,19 +145,20 @@ function generateTweetText() {
   const amount = document.getElementById("totalAmount").value;
   const token = document.getElementById("tokenSelect").selectedOptions[0].text;
   const count = document.getElementById("winnerCount").value;
-  const text = `🎁 GIVEAWAY!\n\n${amount} ${token} to ${count} lucky winners!\n\nComment your wallet 👇`;
+  const text = `🎁 GIVEAWAY!\n\n${amount} ${token} to ${count} lucky winners!\n\nComment your wallet address below 👇\nGood luck!`;
   navigator.clipboard.writeText(text);
-  alert("✅ Twitter text copied!");
+  alert("✅ Twitter text copied to clipboard!");
 }
 
 function selectRandomWinners() {
   const text = document.getElementById("winnersList").value.trim();
-  if (!text) return alert("Enter addresses first!");
-  let addresses = text.split("\n").map(a => a.trim()).filter(a => a);
+  if (!text) return alert("Please enter some addresses first!");
+  let addresses = text.split("\n").map(a => a.trim()).filter(a => a.length > 10);
   const count = parseInt(document.getElementById("winnerCount").value);
   if (addresses.length < count) return alert("Not enough addresses!");
   const shuffled = addresses.sort(() => 0.5 - Math.random());
   document.getElementById("winnersList").value = shuffled.slice(0, count).join("\n");
+  alert(`${count} winners randomly selected!`);
 }
 
 async function sendGiveawaySplit() {
@@ -150,7 +166,7 @@ async function sendGiveawaySplit() {
   if (isProcessing) return;
 
   const listText = document.getElementById("winnersList").value.trim();
-  if (!listText) return alert("No addresses entered!");
+  if (!listText) return alert("Please enter winner addresses!");
 
   const addresses = listText.split("\n").map(a => a.trim()).filter(a => ethers.isAddress(a));
   if (addresses.length === 0) return alert("No valid addresses!");
@@ -164,7 +180,7 @@ async function sendGiveawaySplit() {
   isProcessing = true;
   const btn = document.getElementById("sendBtn");
   btn.disabled = true;
-  btn.textContent = "Sending Transaction...";
+  btn.textContent = "Processing Transaction...";
 
   try {
     const tokenContract = new ethers.Contract(tokenAddr, [
@@ -178,23 +194,22 @@ async function sendGiveawaySplit() {
     await (await tokenContract.approve(CONTRACT_ADDRESS, totalWei)).wait();
 
     const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
-    
-    // percentages به basis points (10000)
     const percentages = new Array(addresses.length).fill(10000);
 
-    const tx = await contract.splitPayment(tokenAddr, addresses, percentages, totalWei, { gasLimit: 800000 });
+    const tx = await contract.splitPayment(tokenAddr, addresses, percentages, totalWei, { gasLimit: 1200000 });
     await tx.wait();
 
     document.getElementById("successMessage").innerHTML = `
       ✅ Transaction Successful!<br>
-      <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline">
+      <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline font-medium">
         View on Explorer → ${tx.hash.substring(0,12)}...
       </a>`;
     document.getElementById("successMessage").classList.remove('hidden');
 
   } catch (error) {
-    console.error(error);
-    alert("Transaction failed: " + (error.reason || error.message || error));
+    console.error("Full Error:", error);
+    let msg = error.reason || error.message || "Transaction failed";
+    alert("❌ Transaction Failed:\n\n" + msg);
   } finally {
     isProcessing = false;
     btn.disabled = false;
