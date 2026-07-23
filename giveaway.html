@@ -22,19 +22,8 @@
       border-color: rgba(0,0,0,0.12);
     }
 
-    .light body, .light h1, .light label, .light .text-gray-400 {
+    .light body, .light h1, .light label {
       color: #1f2937;
-    }
-
-    select, input, textarea {
-      background-color: rgba(255,255,255,0.05);
-      color: white;
-      border: 1px solid rgba(255,255,255,0.25);
-    }
-    .light select, .light input, .light textarea {
-      background-color: #f8fafc;
-      color: #1f2937;
-      border: 1px solid #e2e8f0;
     }
   </style>
 </head>
@@ -44,10 +33,10 @@
     <div class="flex justify-between items-center mb-10">
       <h1 class="text-4xl font-bold">Giveaway Tool</h1>
       <div class="flex gap-3">
-        <button onclick="toggleTheme()" id="themeBtn" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all">
+        <button onclick="toggleTheme()" id="themeBtn" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl">
           <i class="fas fa-moon text-xl"></i>
         </button>
-        <button onclick="connectWallet()" id="connectBtn" class="px-6 py-3 bg-white text-black font-semibold rounded-2xl flex items-center gap-2 hover:bg-gray-100 transition-all">
+        <button onclick="connectWallet()" id="connectBtn" class="px-6 py-3 bg-white text-black font-semibold rounded-2xl flex items-center gap-2">
           <i class="fas fa-wallet"></i> 
           <span id="connectText">Connect Wallet</span>
         </button>
@@ -94,7 +83,6 @@
 const CONTRACT_ADDRESS = "0x73Da94F0D960Ef8FD49Ed28a94f667aF3C062cB2";
 
 let signer = null;
-let userAddress = null;
 let isProcessing = false;
 
 const splitterAbi = [
@@ -124,31 +112,11 @@ async function connectWallet() {
   try {
     const provider = new ethers.BrowserProvider(window.ethereum);
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    userAddress = accounts[0];
     signer = await provider.getSigner();
-    document.getElementById("connectText").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+    document.getElementById("connectText").textContent = (await signer.getAddress()).slice(0,6) + "...";
   } catch (e) {
     alert("Connection failed");
   }
-}
-
-function generateTweetText() {
-  const amount = document.getElementById("totalAmount").value;
-  const token = document.getElementById("tokenSelect").selectedOptions[0].text;
-  const count = document.getElementById("winnerCount").value;
-  const text = `🎁 GIVEAWAY!\n\n${amount} ${token} to ${count} lucky winners!\n\nComment your wallet address 👇\nGood luck!`;
-  navigator.clipboard.writeText(text);
-  alert("✅ Twitter text copied!");
-}
-
-function selectRandomWinners() {
-  const text = document.getElementById("winnersList").value.trim();
-  if (!text) return alert("Please enter addresses first!");
-  let addresses = text.split("\n").map(a => a.trim()).filter(a => a.length > 10);
-  const count = parseInt(document.getElementById("winnerCount").value);
-  if (addresses.length < count) return alert("Not enough addresses!");
-  const shuffled = addresses.sort(() => 0.5 - Math.random());
-  document.getElementById("winnersList").value = shuffled.slice(0, count).join("\n");
 }
 
 async function sendGiveawaySplit() {
@@ -166,9 +134,8 @@ async function sendGiveawaySplit() {
 
   const totalAmount = parseFloat(document.getElementById("totalAmount").value);
   const tokenAddr = document.getElementById("tokenSelect").value;
-  const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
 
-  if (!confirm(`Send ${totalAmount} ${symbol} to ${addresses.length} winners?`)) return;
+  if (!confirm(`Send ${totalAmount} to ${addresses.length} winners?`)) return;
 
   isProcessing = true;
   const btn = document.getElementById("sendBtn");
@@ -187,11 +154,12 @@ async function sendGiveawaySplit() {
     await (await tokenContract.approve(CONTRACT_ADDRESS, totalWei)).wait();
 
     const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
-    
-    // اصلاح درصد (مهم)
-    let percentages = new Array(addresses.length).fill(10000);
-    let sum = percentages.reduce((a, b) => a + b, 0);
-    percentages[percentages.length - 1] += (10000 - sum);
+
+    // درست کردن درصد (هر نفر مساوی)
+    const num = addresses.length;
+    const base = Math.floor(10000 / num);
+    let percentages = new Array(num).fill(base);
+    percentages[num-1] = 10000 - (base * (num - 1));   // آخرین نفر مابقی
 
     const tx = await contract.splitPayment(tokenAddr, addresses, percentages, totalWei, { gasLimit: 1500000 });
     await tx.wait();
@@ -205,12 +173,11 @@ async function sendGiveawaySplit() {
 
   } catch (error) {
     console.error(error);
-    let errorMsg = error.reason || error.message || "Unknown error";
+    let msg = error.reason || error.message || "Unknown error";
     document.getElementById("errorBox").innerHTML = `
-      <p class="text-red-400 font-bold mb-2">❌ Transaction Failed</p>
-      <pre class="bg-black/40 p-4 rounded-2xl text-xs overflow-auto">${errorMsg}</pre>
-      <button onclick="navigator.clipboard.writeText('${errorMsg.replace(/'/g, "\\'")}'); alert('Copied!')" 
-              class="mt-3 px-5 py-2 bg-red-600 hover:bg-red-700 rounded-xl text-sm">Copy Error</button>
+      <p class="text-red-400 font-bold mb-2">Transaction Failed</p>
+      <pre class="bg-black/40 p-4 rounded-2xl text-xs overflow-auto">${msg}</pre>
+      <button onclick="navigator.clipboard.writeText('${msg}'); alert('Copied!')" class="mt-4 px-5 py-2 bg-red-600 rounded-xl text-sm">Copy Error</button>
     `;
     document.getElementById("errorBox").classList.remove('hidden');
   } finally {
