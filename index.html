@@ -11,22 +11,49 @@
     
     body { 
       font-family: 'Inter', sans-serif; 
-      background: radial-gradient(circle at 50% 30%, rgba(16, 185, 129, 0.08), transparent 50%);
+      transition: background 0.6s ease;
     }
-
+    
     .glass {
       background: rgba(255,255,255,0.08);
       backdrop-filter: blur(20px);
       border: 1px solid rgba(255,255,255,0.1);
     }
     
+    /* Light Mode - بهبود یافته */
     .light .glass {
       background: rgba(255,255,255,0.95);
       border-color: rgba(0,0,0,0.08);
+      box-shadow: 0 10px 30px -10px rgba(0,0,0,0.1);
     }
 
     .light body {
-      background: radial-gradient(circle at 50% 30%, rgba(16, 185, 129, 0.12), transparent 60%);
+      background: linear-gradient(to bottom right, #f8fafc, #e0f2fe);
+      color: #0f172a;
+    }
+
+    .light h1, .light h2, .light h3 {
+      color: #0f172a;
+    }
+
+    .light p {
+      color: #334155;
+    }
+
+    /* Animated subtle background glow */
+    .bg-glow {
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(circle at 30% 20%, rgba(16, 185, 129, 0.12), transparent 50%),
+                  radial-gradient(circle at 70% 80%, rgba(236, 72, 153, 0.10), transparent 50%);
+      animation: slowDrift 25s ease infinite alternate;
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    @keyframes slowDrift {
+      0% { transform: scale(1) rotate(0deg); }
+      100% { transform: scale(1.08) rotate(8deg); }
     }
 
     .card {
@@ -35,55 +62,37 @@
     
     .card:hover {
       transform: translateY(-12px) scale(1.03);
-      box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.4);
+      box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
     }
 
     .glow {
-      animation: glow 4s ease-in-out infinite alternate;
+      animation: textGlow 4s ease-in-out infinite alternate;
     }
 
-    @keyframes glow {
+    @keyframes textGlow {
       from { text-shadow: 0 0 20px rgb(16 185 129); }
       to { text-shadow: 0 0 35px rgb(16 185 129); }
     }
-
-    /* Animated Background */
-    .bg-animation {
-      position: fixed;
-      inset: 0;
-      background: 
-        radial-gradient(circle at 20% 30%, rgba(16, 185, 129, 0.12) 0%, transparent 50%),
-        radial-gradient(circle at 80% 70%, rgba(236, 72, 153, 0.10) 0%, transparent 50%),
-        radial-gradient(circle at 40% 80%, rgba(59, 130, 246, 0.08) 0%, transparent 50%);
-      z-index: -1;
-      animation: moveGradient 25s ease infinite;
-      pointer-events: none;
-    }
-
-    @keyframes moveGradient {
-      0% { transform: translate(0, 0); }
-      50% { transform: translate(30px, 40px); }
-      100% { transform: translate(0, 0); }
-    }
   </style>
 </head>
-<body class="text-white min-h-screen relative overflow-hidden">
+<body class="min-h-screen relative">
 
-  <div class="bg-animation"></div>
+  <!-- Animated Background -->
+  <div class="bg-glow"></div>
 
   <div class="max-w-5xl mx-auto px-6 py-16 relative z-10">
     <!-- Header -->
     <div class="flex justify-between items-center mb-16">
       <div class="flex items-center gap-4">
-        <div class="w-12 h-12 bg-gradient-to-br from-emerald-400 to-cyan-400 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-lg">A</div>
+        <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-cyan-500 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-inner">A</div>
         <div>
           <h1 class="text-4xl font-bold tracking-tight">ArcSplit</h1>
-          <p class="text-gray-400 text-sm">Programmable Money Tools</p>
+          <p class="text-gray-500 text-sm">Programmable Money Tools</p>
         </div>
       </div>
 
       <button onclick="toggleTheme()" id="themeBtn"
-              class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all">
+              class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all dark-mode-btn">
         <i class="fas fa-moon text-xl"></i>
       </button>
     </div>
@@ -111,7 +120,7 @@
             quick templates, and advanced distribution controls.
           </p>
           
-          <div class="space-y-3 text-sm text-gray-300">
+          <div class="space-y-3 text-sm">
             <div class="flex items-center gap-3">
               <i class="fas fa-check text-emerald-400"></i>
               <span>Custom percentage splits</span>
@@ -126,7 +135,7 @@
             </div>
           </div>
 
-          <div class="mt-10 flex items-center justify-between text-emerald-400 font-medium">
+          <div class="mt-10 flex items-center justify-between text-emerald-500 font-medium">
             <span>Launch Token Splitter</span>
             <i class="fas fa-arrow-right text-xl group-hover:translate-x-2 transition"></i>
           </div>
@@ -148,7 +157,7 @@
             AI-powered wallet extractor, and instant equal distribution.
           </p>
           
-          <div class="space-y-3 text-sm text-gray-300">
+          <div class="space-y-3 text-sm">
             <div class="flex items-center gap-3">
               <i class="fas fa-check text-pink-400"></i>
               <span>Random winner selection</span>
@@ -163,7 +172,7 @@
             </div>
           </div>
 
-          <div class="mt-10 flex items-center justify-between text-pink-400 font-medium">
+          <div class="mt-10 flex items-center justify-between text-pink-500 font-medium">
             <span>Launch Giveaway Tool</span>
             <i class="fas fa-arrow-right text-xl group-hover:translate-x-2 transition"></i>
           </div>
@@ -178,11 +187,9 @@
 
   <script>
     function toggleTheme() {
-      const isLight = document.documentElement.classList.toggle('light');
-      localStorage.setItem('theme', isLight ? 'light' : 'dark');
-      
+      document.documentElement.classList.toggle('light');
       const icon = document.getElementById("themeBtn").querySelector("i");
-      if (isLight) {
+      if (icon.classList.contains("fa-moon")) {
         icon.classList.remove("fa-moon");
         icon.classList.add("fa-sun");
       } else {
