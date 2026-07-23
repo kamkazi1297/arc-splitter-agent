@@ -12,30 +12,9 @@
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     body { font-family: 'Inter', system-ui, sans-serif; }
     
-    .glass {
-      background: rgba(255,255,255,0.08);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(255,255,255,0.1);
-    }
-    .light .glass {
-      background: rgba(255,255,255,0.88);
-      border-color: rgba(0,0,0,0.12);
-    }
-
-    .light body, .light h1, .light label, .light .text-gray-400 {
-      color: #1f2937;
-    }
-
-    select, input, textarea {
-      background-color: rgba(255,255,255,0.05);
-      color: white;
-      border: 1px solid rgba(255,255,255,0.25);
-    }
-    .light select, .light input, .light textarea {
-      background-color: #f8fafc;
-      color: #1f2937;
-      border: 1px solid #e2e8f0;
-    }
+    .glass { background: rgba(255,255,255,0.08); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); }
+    .light .glass { background: rgba(255,255,255,0.88); border-color: rgba(0,0,0,0.12); }
+    .light body, .light h1, .light label { color: #1f2937; }
   </style>
 </head>
 <body class="bg-gradient-to-br from-[#0b0b1f] to-[#1a1a2e] text-white min-h-screen">
@@ -44,17 +23,17 @@
     <div class="flex justify-between items-center mb-10">
       <h1 class="text-4xl font-bold">Giveaway Tool</h1>
       <div class="flex gap-3">
-        <button onclick="toggleTheme()" id="themeBtn" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all">
+        <button onclick="toggleTheme()" id="themeBtn" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl">
           <i class="fas fa-moon text-xl"></i>
         </button>
-        <button onclick="connectWallet()" id="connectBtn" class="px-6 py-3 bg-white text-black font-semibold rounded-2xl flex items-center gap-2 hover:bg-gray-100 transition-all">
-          <i class="fas fa-wallet"></i> 
-          <span id="connectText">Connect Wallet</span>
+        <button onclick="connectWallet()" id="connectBtn" class="px-6 py-3 bg-white text-black font-semibold rounded-2xl flex items-center gap-2">
+          <i class="fas fa-wallet"></i> <span id="connectText">Connect Wallet</span>
         </button>
       </div>
     </div>
 
     <div id="successMessage" class="hidden glass border border-emerald-500/30 bg-emerald-500/10 rounded-3xl p-6 mb-8 text-emerald-400"></div>
+    <div id="errorBox" class="hidden glass border border-red-500/30 bg-red-500/10 rounded-3xl p-6 mb-8"></div>
 
     <div class="glass border border-white/10 rounded-3xl p-8">
       <div class="grid grid-cols-2 gap-6 mb-8">
@@ -145,25 +124,26 @@ function generateTweetText() {
   const amount = document.getElementById("totalAmount").value;
   const token = document.getElementById("tokenSelect").selectedOptions[0].text;
   const count = document.getElementById("winnerCount").value;
-  const text = `🎁 GIVEAWAY!\n\n${amount} ${token} to ${count} lucky winners!\n\nComment your wallet address below 👇\nGood luck!`;
+  const text = `🎁 GIVEAWAY!\n\n${amount} ${token} to ${count} lucky winners!\n\nComment your wallet address below 👇`;
   navigator.clipboard.writeText(text);
-  alert("✅ Twitter text copied to clipboard!");
+  alert("✅ Twitter text copied!");
 }
 
 function selectRandomWinners() {
   const text = document.getElementById("winnersList").value.trim();
-  if (!text) return alert("Please enter some addresses first!");
+  if (!text) return alert("Please enter addresses first!");
   let addresses = text.split("\n").map(a => a.trim()).filter(a => a.length > 10);
   const count = parseInt(document.getElementById("winnerCount").value);
   if (addresses.length < count) return alert("Not enough addresses!");
   const shuffled = addresses.sort(() => 0.5 - Math.random());
   document.getElementById("winnersList").value = shuffled.slice(0, count).join("\n");
-  alert(`${count} winners randomly selected!`);
 }
 
 async function sendGiveawaySplit() {
   if (!signer) return alert("Please connect your wallet first!");
   if (isProcessing) return;
+
+  document.getElementById("errorBox").classList.add('hidden');
 
   const listText = document.getElementById("winnersList").value.trim();
   if (!listText) return alert("Please enter winner addresses!");
@@ -173,9 +153,8 @@ async function sendGiveawaySplit() {
 
   const totalAmount = parseFloat(document.getElementById("totalAmount").value);
   const tokenAddr = document.getElementById("tokenSelect").value;
-  const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
 
-  if (!confirm(`Send ${totalAmount} ${symbol} to ${addresses.length} winners?`)) return;
+  if (!confirm(`Send ${totalAmount} to ${addresses.length} winners?`)) return;
 
   isProcessing = true;
   const btn = document.getElementById("sendBtn");
@@ -199,22 +178,32 @@ async function sendGiveawaySplit() {
     const tx = await contract.splitPayment(tokenAddr, addresses, percentages, totalWei, { gasLimit: 1200000 });
     await tx.wait();
 
-    document.getElementById("successMessage").innerHTML = `
-      ✅ Transaction Successful!<br>
-      <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline font-medium">
-        View on Explorer → ${tx.hash.substring(0,12)}...
-      </a>`;
+    document.getElementById("successMessage").innerHTML = `✅ Transaction Successful!<br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline">View Tx → ${tx.hash.substring(0,12)}...</a>`;
     document.getElementById("successMessage").classList.remove('hidden');
 
   } catch (error) {
     console.error("Full Error:", error);
-    let msg = error.reason || error.message || "Transaction failed";
-    alert("❌ Transaction Failed:\n\n" + msg);
+    
+    let errorText = error.reason || error.message || JSON.stringify(error, null, 2);
+    
+    document.getElementById("errorBox").innerHTML = `
+      <div class="text-red-400 font-bold mb-2">❌ Transaction Failed</div>
+      <pre class="bg-black/30 p-4 rounded-2xl text-xs overflow-auto max-h-48 text-gray-300 whitespace-pre-wrap">${errorText}</pre>
+      <button onclick="copyError()" class="mt-3 text-sm px-4 py-2 bg-red-600 hover:bg-red-700 rounded-xl">Copy Error</button>
+    `;
+    document.getElementById("errorBox").classList.remove('hidden');
   } finally {
     isProcessing = false;
     btn.disabled = false;
     btn.textContent = "Send Split to Winners";
   }
+}
+
+function copyError() {
+  const errorText = document.querySelector("#errorBox pre").textContent;
+  navigator.clipboard.writeText(errorText).then(() => {
+    alert("Error copied to clipboard!");
+  });
 }
 </script>
 </body>
