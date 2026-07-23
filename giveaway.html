@@ -368,7 +368,7 @@ function applyExtracted(mode) {
   showToast(`${onlyValid.length} valid addresses ${mode === 'replace' ? 'replaced' : 'added'}`);
 }
 
-// ==================== RANDOM SELECT + COUNTDOWN ====================
+// ==================== RANDOM SELECT (جدید - فقط برنده‌ها بمانند) ====================
 function selectRandomWinners() {
   const text = document.getElementById("winnersList").value.trim();
   if (!text) return showToast("First enter participant addresses!");
@@ -383,15 +383,8 @@ function selectRandomWinners() {
   const shuffled = [...allAddresses].sort(() => 0.5 - Math.random());
   const winners = shuffled.slice(0, winnerCount);
 
-  // اضافه کردن برنده‌ها به لیست اصلی (درخواست شما)
-  let currentList = document.getElementById("winnersList").value.trim();
-  let finalList = currentList ? currentList.split(/[\s,;\n]+/).map(a => a.trim()) : [];
-  
-  winners.forEach(w => {
-    if (!finalList.includes(w)) finalList.unshift(w);
-  });
-  
-  document.getElementById("winnersList").value = [...new Set(finalList)].join("\n");
+  // فقط برنده‌ها بمانند - بقیه پاک شوند
+  document.getElementById("winnersList").value = winners.join("\n");
 
   startCountdownAndShowWinners(winners, allAddresses.length);
 }
@@ -559,7 +552,6 @@ async function sendGiveawaySplit() {
 
 // ==================== LOAD ====================
 window.addEventListener('load', () => {
-  // Theme
   if (localStorage.getItem('theme') === 'light') {
     document.documentElement.classList.add('light');
     const icon = document.getElementById("themeBtn").querySelector("i");
@@ -567,7 +559,6 @@ window.addEventListener('load', () => {
     icon.classList.add("fa-sun");
   }
 
-  // Wallet
   const savedAddress = localStorage.getItem('giveawayUserAddress');
   if (savedAddress) {
     userAddress = savedAddress;
@@ -581,7 +572,6 @@ window.addEventListener('load', () => {
     }
   }
 
-  // Load from shareable link
   const params = new URLSearchParams(window.location.search);
   if (params.has('wallets')) {
     try {
