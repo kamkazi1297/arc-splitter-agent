@@ -265,10 +265,11 @@ function disconnectWallet() {
   }
 }
 
-async function updateBalance() {
+async function updateBalance(retry = 0) {
   if (!signer || !userAddress) return;
   const statusEl = document.getElementById("status");
   statusEl.innerHTML = `Connected • Loading balance...`;
+  
   try {
     const tokenAddr = document.getElementById("tokenSelect").value;
     const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
@@ -276,11 +277,20 @@ async function updateBalance() {
       "function balanceOf(address) view returns (uint256)",
       "function decimals() view returns (uint8)"
     ], signer);
-    const [balance, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
+    
+    const [balance, decimals] = await Promise.all([
+      contract.balanceOf(userAddress), 
+      contract.decimals()
+    ]);
+    
     const formatted = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4);
     statusEl.innerHTML = `Connected • Balance: <span class="text-emerald-400 font-semibold">${formatted} ${symbol}</span>`;
   } catch (e) {
-    statusEl.innerHTML = `Connected • <span class="text-amber-400">Balance unavailable</span>`;
+    if (retry < 3) {
+      setTimeout(() => updateBalance(retry + 1), 1200);
+    } else {
+      statusEl.innerHTML = `Connected • <span class="text-amber-400">Balance unavailable</span>`;
+    }
   }
 }
 
@@ -373,12 +383,14 @@ function selectRandomWinners() {
   const shuffled = [...allAddresses].sort(() => 0.5 - Math.random());
   const winners = shuffled.slice(0, winnerCount);
 
-  // Add winners to main list
+  // اضافه کردن برنده‌ها به لیست اصلی (درخواست شما)
   let currentList = document.getElementById("winnersList").value.trim();
   let finalList = currentList ? currentList.split(/[\s,;\n]+/).map(a => a.trim()) : [];
+  
   winners.forEach(w => {
     if (!finalList.includes(w)) finalList.unshift(w);
   });
+  
   document.getElementById("winnersList").value = [...new Set(finalList)].join("\n");
 
   startCountdownAndShowWinners(winners, allAddresses.length);
