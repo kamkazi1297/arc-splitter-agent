@@ -12,15 +12,37 @@
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     body { font-family: 'Inter', system-ui, sans-serif; }
     
-    .glass { background: rgba(255,255,255,0.08); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); }
-    .light .glass { background: rgba(255,255,255,0.88); border-color: rgba(0,0,0,0.12); }
+    .glass { 
+      background: rgba(255,255,255,0.08); 
+      backdrop-filter: blur(20px); 
+      border: 1px solid rgba(255,255,255,0.1); 
+    }
+    .light .glass { 
+      background: rgba(255,255,255,0.88); 
+      border-color: rgba(0,0,0,0.12); 
+    }
     .light body, .light h1, .light label { color: #1f2937; }
 
     select, input, textarea {
-      background-color: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.25);
+      background-color: rgba(255,255,255,0.05); 
+      color: white; 
+      border: 1px solid rgba(255,255,255,0.25);
     }
     .light select, .light input, .light textarea {
-      background-color: #f8fafc; color: #1f2937; border: 1px solid #e2e8f0;
+      background-color: #f8fafc; 
+      color: #1f2937; 
+      border: 1px solid #e2e8f0;
+    }
+
+    /* رفع مشکل dropdown در دارک مود */
+    select option {
+      background-color: #1a1a2e;
+      color: white;
+      padding: 12px 16px;
+    }
+    .light select option {
+      background-color: #f8fafc;
+      color: #1f2937;
     }
   </style>
 </head>
@@ -48,7 +70,6 @@
     <div id="successMessage" class="hidden glass border border-emerald-500/30 bg-emerald-500/10 rounded-3xl p-6 mb-8 text-emerald-400"></div>
 
     <div class="glass border border-white/10 rounded-3xl p-8">
-      <!-- فرم‌ها همان قبلی -->
       <div class="grid grid-cols-2 gap-6 mb-8">
         <div>
           <label class="block text-gray-400 text-sm mb-2">Select Token</label>
@@ -70,18 +91,14 @@
       </div>
 
       <div class="mb-8">
-        <label class="block text-gray-400 text-sm mb-2">Description (Optional)</label>
-        <textarea id="description" rows="2" class="w-full rounded-2xl px-6 py-5 outline-none" placeholder="Giveaway description..."></textarea>
-      </div>
-
-      <div class="flex gap-3 mb-8">
-        <button onclick="generateTweetText()" class="flex-1 py-4 bg-[#1DA1F2] rounded-2xl font-medium hover:brightness-110">📋 Twitter Text</button>
-        <button onclick="selectRandomWinners()" class="flex-1 py-4 bg-purple-600 rounded-2xl font-medium hover:brightness-110">🎲 Random Select</button>
-      </div>
-
-      <div class="mb-8">
-        <label class="block text-gray-400 text-sm mb-3">Winner Addresses</label>
-        <textarea id="winnersList" rows="8" class="w-full rounded-2xl px-6 py-5 font-mono text-sm outline-none" placeholder="One address per line..."></textarea>
+        <div class="flex justify-between items-center mb-2">
+          <label class="block text-gray-400 text-sm">Winner Addresses</label>
+          <button onclick="showImportModal()" class="text-sky-400 hover:text-sky-300 text-sm flex items-center gap-1">
+            <i class="fas fa-upload"></i> Import
+          </button>
+        </div>
+        <textarea id="winnersList" rows="8" class="w-full rounded-2xl px-6 py-5 font-mono text-sm outline-none" 
+                  placeholder="One address per line..."></textarea>
       </div>
 
       <button id="sendBtn" onclick="sendGiveawaySplit()" 
@@ -91,23 +108,36 @@
     </div>
   </div>
 
+  <!-- Import Modal -->
+  <div id="importModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+    <div class="glass rounded-3xl p-8 max-w-md w-full mx-4">
+      <h3 class="text-xl font-bold mb-4">Import Addresses</h3>
+      <textarea id="importText" rows="10" class="w-full bg-white/5 border border-white/20 rounded-2xl p-5 text-sm font-mono" 
+                placeholder="Paste addresses here (one per line or separated by space/comma)"></textarea>
+      <p class="text-xs text-gray-400 mt-2">Supports: new lines, spaces, commas</p>
+      <div class="flex gap-3 mt-6">
+        <button onclick="hideImportModal()" class="flex-1 py-4 rounded-2xl border border-white/20 hover:bg-white/10">Cancel</button>
+        <button onclick="importAddresses()" class="flex-1 py-4 bg-emerald-500 hover:bg-emerald-600 rounded-2xl">Import</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Connect Modal -->
   <div id="connectModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
     <div class="glass border border-white/10 rounded-3xl p-8 max-w-lg w-full mx-4">
       <div class="flex justify-between items-center mb-6">
         <h3 class="text-2xl font-bold">Connect Wallet</h3>
-        <button onclick="hideConnectModal()" class="text-gray-400 hover:text-white text-3xl">×</button>
+        <button onclick="hideConnectModal()" class="text-gray-400 hover:text-white text-3xl leading-none">×</button>
       </div>
       
-      <div class="space-y-3">
-        <button onclick="connectMetaMask()" class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all border border-white/10 hover:border-emerald-500">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" width="48" height="48" alt="MetaMask">
-          <div class="text-left flex-1">
-            <div class="font-semibold text-lg">MetaMask</div>
-            <div class="text-sm text-gray-400">Browser Extension</div>
-          </div>
-        </button>
-      </div>
+      <button onclick="connectMetaMask()" 
+              class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all border border-white/10 hover:border-emerald-500">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" width="48" height="48" alt="MetaMask">
+        <div class="text-left flex-1">
+          <div class="font-semibold text-lg">MetaMask</div>
+          <div class="text-sm text-gray-400">Popular browser extension</div>
+        </div>
+      </button>
     </div>
   </div>
 
@@ -124,9 +154,18 @@ let signer = null;
 let userAddress = null;
 let isProcessing = false;
 
-const splitterAbi = [ /* همان ABI قبلی */ {
-    "inputs": [{"name": "token","type": "address"},{"name": "recipients","type": "address[]"},{"name": "percentages","type": "uint256[]"},{"name": "totalAmount","type": "uint256"}],
-    "name": "splitPayment","outputs": [],"stateMutability": "nonpayable","type": "function"
+const splitterAbi = [
+  {
+    "inputs": [
+      { "name": "token", "type": "address" },
+      { "name": "recipients", "type": "address[]" },
+      { "name": "percentages", "type": "uint256[]" },
+      { "name": "totalAmount", "type": "uint256" }
+    ],
+    "name": "splitPayment",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
   }
 ];
 
@@ -144,7 +183,7 @@ function toggleTheme() {
   icon.classList.toggle("fa-sun");
 }
 
-// ====================== Wallet Connect ======================
+// ====================== Wallet ======================
 function showConnectModal() {
   document.getElementById("connectModal").classList.remove("hidden");
 }
@@ -162,7 +201,7 @@ async function connectMetaMask() {
     const network = await provider.getNetwork();
     
     if (network.chainId !== BigInt(ARC_CHAIN_ID)) {
-      return showToast("Please switch to Arc Testnet (5042002)", 6000);
+      return showToast("Please switch to Arc Testnet (Chain ID: 5042002)", 6000);
     }
 
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -233,17 +272,47 @@ async function updateBalance(retry = 0) {
   }
 }
 
-// ====================== Giveaway Functions ======================
+// ====================== Import ======================
+function showImportModal() {
+  document.getElementById("importModal").classList.remove("hidden");
+}
+
+function hideImportModal() {
+  document.getElementById("importModal").classList.add("hidden");
+}
+
+function importAddresses() {
+  const text = document.getElementById("importText").value.trim();
+  if (!text) return hideImportModal();
+
+  const addresses = text
+    .split(/[\s,;\n]+/)
+    .map(addr => addr.trim())
+    .filter(addr => ethers.isAddress(addr));
+
+  if (addresses.length === 0) {
+    return showToast("No valid addresses found");
+  }
+
+  document.getElementById("winnersList").value = addresses.join("\n");
+  hideImportModal();
+  showToast(`${addresses.length} addresses imported successfully`);
+}
+
+// ====================== Giveaway Send ======================
 async function sendGiveawaySplit() {
   if (!signer) return showToast("Please connect your wallet first!");
   if (isProcessing) return;
 
-  // ... (همان کد قبلی که قبلاً برات درست کردم)
-  const listText = document.getElementById("winnersList").value.trim();
-  if (!listText) return showToast("No addresses entered!");
+  let rawText = document.getElementById("winnersList").value.trim();
+  if (!rawText) return showToast("No addresses entered!");
 
-  let addresses = listText.split("\n").map(a => a.trim()).filter(a => ethers.isAddress(a));
-  if (addresses.length === 0) return showToast("No valid addresses!");
+  let addresses = rawText
+    .split(/[\s,;\n]+/)
+    .map(a => a.trim())
+    .filter(a => ethers.isAddress(a));
+
+  if (addresses.length === 0) return showToast("No valid addresses found!");
   if (addresses.length > 300) return showToast("Maximum 300 winners allowed");
 
   const totalAmount = parseFloat(document.getElementById("totalAmount").value);
@@ -252,7 +321,7 @@ async function sendGiveawaySplit() {
   const tokenAddr = document.getElementById("tokenSelect").value;
   const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
 
-  if (!confirm(`Send ${totalAmount} ${symbol} to ${addresses.length} winners?`)) return;
+  if (!confirm(`Send ${totalAmount} ${symbol} equally to ${addresses.length} winners?`)) return;
 
   isProcessing = true;
   const btn = document.getElementById("sendBtn");
@@ -260,7 +329,11 @@ async function sendGiveawaySplit() {
   btn.textContent = "Sending...";
 
   try {
-    const tokenContract = new ethers.Contract(tokenAddr, ["function approve(address,uint256) returns (bool)", "function decimals() view returns (uint8)"], signer);
+    const tokenContract = new ethers.Contract(tokenAddr, [
+      "function approve(address,uint256) returns (bool)",
+      "function decimals() view returns (uint8)"
+    ], signer);
+
     const decimals = await tokenContract.decimals();
     const totalWei = ethers.parseUnits(totalAmount.toString(), decimals);
 
@@ -276,12 +349,13 @@ async function sendGiveawaySplit() {
     const tx = await contract.splitPayment(tokenAddr, addresses, basisPoints, totalWei, { gasLimit: 800000 });
     await tx.wait();
 
-    document.getElementById("successMessage").innerHTML = `✅ Success! <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline">View Tx</a>`;
+    document.getElementById("successMessage").innerHTML = `
+      ✅ Transaction Successful!<br>
+      <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline">View on Explorer</a>`;
     document.getElementById("successMessage").classList.remove('hidden');
 
     await updateBalance();
-    showToast("Giveaway sent successfully!");
-
+    showToast("🎉 Giveaway sent successfully!");
   } catch (error) {
     console.error(error);
     showToast(error.reason || error.message || "Transaction failed", 6000);
@@ -292,8 +366,7 @@ async function sendGiveawaySplit() {
   }
 }
 
-// بقیه توابع (generateTweetText, selectRandomWinners, etc.)
-function generateTweetText() { /* همان قبلی */ 
+function generateTweetText() {
   const amount = document.getElementById("totalAmount").value;
   const token = document.getElementById("tokenSelect").selectedOptions[0].text;
   const count = document.getElementById("winnerCount").value;
@@ -302,24 +375,23 @@ function generateTweetText() { /* همان قبلی */
   showToast("Twitter text copied!");
 }
 
-function selectRandomWinners() { /* همان قبلی */ 
+function selectRandomWinners() {
   const text = document.getElementById("winnersList").value.trim();
   if (!text) return showToast("Enter addresses first!");
-  let addresses = text.split("\n").map(a => a.trim()).filter(a => a);
+  let addresses = text.split(/[\s,;\n]+/).map(a => a.trim()).filter(a => a);
   const count = parseInt(document.getElementById("winnerCount").value) || 10;
   if (addresses.length < count) return showToast("Not enough addresses!");
   const shuffled = addresses.sort(() => 0.5 - Math.random());
   document.getElementById("winnersList").value = shuffled.slice(0, count).join("\n");
-  showToast(`${count} winners selected`);
+  showToast(`${count} random winners selected`);
 }
 
-// Load on start
+// Load
 window.addEventListener('load', () => {
   const savedAddress = localStorage.getItem('giveawayUserAddress');
   if (savedAddress) {
     userAddress = savedAddress;
     updateConnectButton();
-    // سعی برای восстанов signer
     if (window.ethereum) {
       const provider = new ethers.BrowserProvider(window.ethereum);
       provider.getSigner().then(s => {
@@ -328,7 +400,6 @@ window.addEventListener('load', () => {
       }).catch(() => {});
     }
   }
-  updateBalance();
 });
 </script>
 </body>
