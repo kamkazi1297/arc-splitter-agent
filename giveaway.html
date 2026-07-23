@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ArcSplit Giveaway</title>
+  <title>ArcSplit Giveaway - Ultra</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
@@ -21,14 +21,8 @@
     .light select, .light input, .light textarea {
       background-color: #f8fafc; color: #1f2937; border: 1px solid #e2e8f0;
     }
-    select option {
-      background-color: #1a1a2e;
-      color: white;
-    }
-    .light select option {
-      background-color: #f8fafc;
-      color: #1f2937;
-    }
+    select option { background-color: #1a1a2e; color: white; }
+    .light select option { background-color: #f8fafc; color: #1f2937; }
   </style>
 </head>
 <body class="bg-gradient-to-br from-[#0b0b1f] to-[#1a1a2e] text-white min-h-screen">
@@ -79,6 +73,12 @@
         <button onclick="selectRandomWinners()" class="flex-1 py-4 bg-purple-600 rounded-2xl font-medium hover:brightness-110 transition">🎲 Random Select</button>
       </div>
 
+      <div class="border border-violet-500/30 rounded-3xl p-6">
+        <button onclick="showExtractModal()" class="w-full py-5 bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-2xl font-semibold text-lg hover:brightness-110 transition">
+          Extract Wallets from Comments / Text
+        </button>
+      </div>
+
       <div>
         <label class="block text-gray-400 text-sm mb-3">All Participant Addresses</label>
         <textarea id="winnersList" rows="8" class="w-full rounded-2xl px-6 py-5 font-mono text-sm outline-none" placeholder="Paste all addresses here..."></textarea>
@@ -105,12 +105,34 @@
     </div>
   </div>
 
+  <!-- Extract Modal -->
+  <div id="extractModal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-50">
+    <div class="glass rounded-3xl p-8 w-full max-w-3xl mx-4 max-h-[94vh] flex flex-col">
+      <h3 class="text-2xl font-bold mb-1">AI-Powered Wallet Extractor</h3>
+      <p class="text-gray-400 mb-6">Paste comments • Smart detection + scoring</p>
+      <textarea id="commentsText" rows="7" class="w-full flex-1 bg-white/5 border border-white/20 rounded-2xl p-5 font-mono text-sm mb-4" placeholder="Paste all comments here..."></textarea>
+      <div class="flex gap-3 mb-4">
+        <button onclick="extractWallets()" class="flex-1 py-4 bg-violet-600 hover:bg-violet-700 rounded-2xl font-semibold">Analyze & Extract</button>
+        <button onclick="clearAll()" class="px-8 py-4 border border-white/30 hover:bg-white/10 rounded-2xl">Clear</button>
+      </div>
+      <div class="bg-black/40 rounded-2xl p-5 flex-1 overflow-auto" id="resultPanel">
+        <div id="statsBar" class="flex justify-between text-sm mb-4"></div>
+        <div id="previewList" class="font-mono text-sm space-y-2"></div>
+      </div>
+      <div class="flex gap-3 mt-6">
+        <button onclick="hideExtractModal()" class="flex-1 py-4 rounded-2xl border border-white/20 hover:bg-white/10">Cancel</button>
+        <button onclick="applyExtracted('append')" class="flex-1 py-4 bg-emerald-500 hover:bg-emerald-600 rounded-2xl">Append</button>
+        <button onclick="applyExtracted('replace')" class="flex-1 py-4 bg-fuchsia-500 hover:bg-fuchsia-600 rounded-2xl">Replace</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Connect Modal -->
   <div id="connectModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
     <div class="glass border border-white/10 rounded-3xl p-8 max-w-lg w-full mx-4">
       <div class="flex justify-between items-center mb-6">
         <h3 class="text-2xl font-bold">Connect Wallet</h3>
-        <button onclick="hideConnectModal()" class="text-gray-400 hover:text-white text-3xl">×</button>
+        <button onclick="hideConnectModal()" class="text-gray-400 hover:text-white text-3xl leading-none">×</button>
       </div>
       <button onclick="connectMetaMask()" class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all border border-white/10 hover:border-emerald-500">
         <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" width="48" height="48" alt="MetaMask">
@@ -133,6 +155,7 @@ const ARC_CHAIN_ID = 5042002;
 let signer = null;
 let userAddress = null;
 let isProcessing = false;
+let extractedWallets = [];
 
 const splitterAbi = [
   {
@@ -362,6 +385,65 @@ async function sendGiveawaySplit() {
   }
 }
 
+function showExtractModal() {
+  document.getElementById("extractModal").classList.remove("hidden");
+}
+
+function hideExtractModal() {
+  document.getElementById("extractModal").classList.add("hidden");
+}
+
+function extractWallets() {
+  const text = document.getElementById("commentsText").value;
+  const regex = /\b0x[a-fA-F0-9]{40}\b/g;
+  const matches = text.match(regex) || [];
+  extractedWallets = [];
+  matches.forEach(addr => {
+    const lower = addr.toLowerCase();
+    const valid = ethers.isAddress(lower);
+    extractedWallets.push({address: lower, score: valid ? 100 : 30, valid});
+  });
+  const map = new Map();
+  extractedWallets.forEach(item => {
+    if (!map.has(item.address) || item.valid) map.set(item.address, item);
+  });
+  extractedWallets = Array.from(map.values());
+  renderExtractResult();
+}
+
+function renderExtractResult() {
+  const valid = extractedWallets.filter(a => a.valid).length;
+  document.getElementById("statsBar").innerHTML = `<span class="text-emerald-400">${valid} Valid</span><span class="text-white">${extractedWallets.length} Total</span>`;
+  const html = extractedWallets.map(item => `
+    <div class="flex justify-between items-center py-3 px-4 bg-white/5 rounded-xl border ${item.valid ? 'border-emerald-500/30' : 'border-amber-500/30'}">
+      <div class="font-mono flex-1">${item.address}</div>
+      <div class="flex items-center gap-3">
+        <span class="text-xs px-3 py-1 rounded-full ${item.valid ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}">${item.score}%</span>
+      </div>
+    </div>
+  `).join('');
+  document.getElementById("previewList").innerHTML = html || '<p class="text-center text-gray-400 py-10">No addresses found</p>';
+}
+
+function applyExtracted(mode) {
+  const validAddrs = extractedWallets.filter(a => a.valid).map(a => a.address);
+  let current = document.getElementById("winnersList").value.trim();
+  let list = current ? current.split("\n").map(a => a.trim().toLowerCase()) : [];
+  if (mode === 'replace') list = validAddrs;
+  else list = [...list, ...validAddrs];
+  list = [...new Set(list.filter(a => ethers.isAddress(a)))];
+  document.getElementById("winnersList").value = list.join("\n");
+  hideExtractModal();
+  showToast(`${validAddrs.length} valid addresses ${mode === 'replace' ? 'replaced' : 'added'}`);
+}
+
+function clearAll() {
+  extractedWallets = [];
+  document.getElementById("previewList").innerHTML = "";
+  document.getElementById("statsBar").innerHTML = "";
+  showToast("All cleared");
+}
+
 window.addEventListener('load', () => {
   const savedAddress = localStorage.getItem('giveawayUserAddress');
   if (savedAddress) {
@@ -372,7 +454,7 @@ window.addEventListener('load', () => {
       provider.getSigner().then(s => {
         signer = s;
         updateBalance();
-      }).catch(() => {});
+      });
     }
   }
 });
