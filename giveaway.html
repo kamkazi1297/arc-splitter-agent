@@ -11,7 +11,6 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     body { font-family: 'Inter', system-ui, sans-serif; }
-    
     .glass { background: rgba(255,255,255,0.08); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); }
     .light .glass { background: rgba(255,255,255,0.88); border-color: rgba(0,0,0,0.12); }
     .light body, .light h1, .light label { color: #1f2937; }
@@ -36,6 +35,7 @@
     <div id="errorBox" class="hidden glass border border-red-500/30 bg-red-500/10 rounded-3xl p-6 mb-8"></div>
 
     <div class="glass border border-white/10 rounded-3xl p-8">
+      <!-- فرم‌ها -->
       <div class="grid grid-cols-2 gap-6 mb-8">
         <div>
           <label class="block text-gray-400 text-sm mb-2">Select Token</label>
@@ -53,22 +53,12 @@
 
       <div class="mb-8">
         <label class="block text-gray-400 text-sm mb-2">Number of Winners</label>
-        <input type="number" id="winnerCount" value="10" min="1" class="w-full rounded-2xl px-6 py-5 text-2xl outline-none">
-      </div>
-
-      <div class="mb-8">
-        <label class="block text-gray-400 text-sm mb-2">Description</label>
-        <textarea id="description" rows="2" class="w-full rounded-2xl px-6 py-5 outline-none" placeholder="Example: First 10 commenters win..."></textarea>
-      </div>
-
-      <div class="flex gap-3 mb-8">
-        <button onclick="generateTweetText()" class="flex-1 py-4 bg-[#1DA1F2] hover:bg-[#1a8cd8] rounded-2xl font-medium transition">Twitter Text</button>
-        <button onclick="selectRandomWinners()" class="flex-1 py-4 bg-purple-600 hover:bg-purple-700 rounded-2xl font-medium transition">🎲 Random Select</button>
+        <input type="number" id="winnerCount" value="5" min="1" class="w-full rounded-2xl px-6 py-5 text-2xl outline-none">
       </div>
 
       <div class="mb-8">
         <label class="block text-gray-400 text-sm mb-3">Winner Addresses</label>
-        <textarea id="winnersList" rows="7" class="w-full rounded-2xl px-6 py-5 font-mono text-sm outline-none" placeholder="One address per line..."></textarea>
+        <textarea id="winnersList" rows="6" class="w-full rounded-2xl px-6 py-5 font-mono text-sm outline-none" placeholder="One address per line..."></textarea>
       </div>
 
       <button id="sendBtn" onclick="sendGiveawaySplit()" 
@@ -100,13 +90,6 @@ const splitterAbi = [
   }
 ];
 
-function toggleTheme() {
-  document.documentElement.classList.toggle('light');
-  const icon = document.getElementById("themeBtn").querySelector("i");
-  icon.classList.toggle("fa-moon");
-  icon.classList.toggle("fa-sun");
-}
-
 async function connectWallet() {
   if (!window.ethereum) return alert("MetaMask not found!");
   try {
@@ -115,28 +98,7 @@ async function connectWallet() {
     userAddress = accounts[0];
     signer = await provider.getSigner();
     document.getElementById("connectText").textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-  } catch (e) {
-    alert("Connection failed");
-  }
-}
-
-function generateTweetText() {
-  const amount = document.getElementById("totalAmount").value;
-  const token = document.getElementById("tokenSelect").selectedOptions[0].text;
-  const count = document.getElementById("winnerCount").value;
-  const text = `🎁 GIVEAWAY!\n\n${amount} ${token} to ${count} lucky winners!\n\nComment your wallet address below 👇`;
-  navigator.clipboard.writeText(text);
-  alert("✅ Twitter text copied!");
-}
-
-function selectRandomWinners() {
-  const text = document.getElementById("winnersList").value.trim();
-  if (!text) return alert("Please enter addresses first!");
-  let addresses = text.split("\n").map(a => a.trim()).filter(a => a.length > 10);
-  const count = parseInt(document.getElementById("winnerCount").value);
-  if (addresses.length < count) return alert("Not enough addresses!");
-  const shuffled = addresses.sort(() => 0.5 - Math.random());
-  document.getElementById("winnersList").value = shuffled.slice(0, count).join("\n");
+  } catch (e) { alert("Connection failed"); }
 }
 
 async function sendGiveawaySplit() {
@@ -144,6 +106,7 @@ async function sendGiveawaySplit() {
   if (isProcessing) return;
 
   document.getElementById("errorBox").classList.add('hidden');
+  document.getElementById("successMessage").classList.add('hidden');
 
   const listText = document.getElementById("winnersList").value.trim();
   if (!listText) return alert("Please enter winner addresses!");
@@ -159,7 +122,7 @@ async function sendGiveawaySplit() {
   isProcessing = true;
   const btn = document.getElementById("sendBtn");
   btn.disabled = true;
-  btn.textContent = "Processing Transaction...";
+  btn.textContent = "Processing...";
 
   try {
     const tokenContract = new ethers.Contract(tokenAddr, [
@@ -170,26 +133,31 @@ async function sendGiveawaySplit() {
     const decimals = await tokenContract.decimals();
     const totalWei = ethers.parseUnits(totalAmount.toString(), decimals);
 
+    console.log("Approving...");
     await (await tokenContract.approve(CONTRACT_ADDRESS, totalWei)).wait();
 
     const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
     const percentages = new Array(addresses.length).fill(10000);
 
-    const tx = await contract.splitPayment(tokenAddr, addresses, percentages, totalWei, { gasLimit: 1200000 });
+    console.log("Calling splitPayment...");
+    const tx = await contract.splitPayment(tokenAddr, addresses, percentages, totalWei, { gasLimit: 1500000 });
+    console.log("Tx Hash:", tx.hash);
+
     await tx.wait();
 
-    document.getElementById("successMessage").innerHTML = `✅ Transaction Successful!<br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline">View Tx → ${tx.hash.substring(0,12)}...</a>`;
+    document.getElementById("successMessage").innerHTML = `✅ Success!<br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank">View Transaction</a>`;
     document.getElementById("successMessage").classList.remove('hidden');
 
   } catch (error) {
-    console.error("Full Error:", error);
+    console.error("Full Error Object:", error);
     
-    let errorText = error.reason || error.message || JSON.stringify(error, null, 2);
-    
+    let errorMsg = error.reason || error.message || "Unknown error";
+    if (error.transaction) errorMsg += "\n\nTx Data: " + JSON.stringify(error.transaction, null, 2);
+
     document.getElementById("errorBox").innerHTML = `
-      <div class="text-red-400 font-bold mb-2">❌ Transaction Failed</div>
-      <pre class="bg-black/30 p-4 rounded-2xl text-xs overflow-auto max-h-48 text-gray-300 whitespace-pre-wrap">${errorText}</pre>
-      <button onclick="copyError()" class="mt-3 text-sm px-4 py-2 bg-red-600 hover:bg-red-700 rounded-xl">Copy Error</button>
+      <p class="text-red-400 font-bold mb-3">Transaction Reverted</p>
+      <pre class="bg-black/40 p-4 rounded-2xl text-xs overflow-auto text-gray-300">${errorMsg}</pre>
+      <button onclick="copyError()" class="mt-4 px-5 py-2 bg-red-600 hover:bg-red-700 rounded-xl text-sm">Copy Full Error</button>
     `;
     document.getElementById("errorBox").classList.remove('hidden');
   } finally {
@@ -200,10 +168,9 @@ async function sendGiveawaySplit() {
 }
 
 function copyError() {
-  const errorText = document.querySelector("#errorBox pre").textContent;
-  navigator.clipboard.writeText(errorText).then(() => {
-    alert("Error copied to clipboard!");
-  });
+  const text = document.querySelector("#errorBox pre").textContent;
+  navigator.clipboard.writeText(text);
+  alert("Error copied!");
 }
 </script>
 </body>
