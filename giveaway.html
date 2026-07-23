@@ -10,43 +10,17 @@
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    body { font-family: 'Inter', system-ui, sans-serif; }
     
-    body { 
-      font-family: 'Inter', system-ui, sans-serif; 
-    }
-    
-    .glass {
-      background: rgba(255,255,255,0.08);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(255,255,255,0.1);
-    }
-    .light .glass {
-      background: rgba(255,255,255,0.88);
-      border-color: rgba(0,0,0,0.12);
-    }
-
-    .light body, .light h1, .light label, .light .text-gray-400 {
-      color: #1f2937;
-    }
+    .glass { background: rgba(255,255,255,0.08); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); }
+    .light .glass { background: rgba(255,255,255,0.88); border-color: rgba(0,0,0,0.12); }
+    .light body, .light h1, .light label { color: #1f2937; }
 
     select, input, textarea {
-      background-color: rgba(255,255,255,0.05);
-      color: white;
-      border: 1px solid rgba(255,255,255,0.25);
+      background-color: rgba(255,255,255,0.05); color: white; border: 1px solid rgba(255,255,255,0.25);
     }
     .light select, .light input, .light textarea {
-      background-color: #f8fafc;
-      color: #1f2937;
-      border: 1px solid #e2e8f0;
-    }
-
-    select option {
-      background-color: #1a1a2e;
-      color: white;
-    }
-    .light select option {
-      background-color: #f8fafc;
-      color: #1f2937;
+      background-color: #f8fafc; color: #1f2937; border: 1px solid #e2e8f0;
     }
   </style>
 </head>
@@ -56,18 +30,16 @@
     <div class="flex justify-between items-center mb-10">
       <h1 class="text-4xl font-bold">Giveaway Tool</h1>
       <div class="flex gap-3">
-        <button onclick="toggleTheme()" id="themeBtn" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all">
+        <button onclick="toggleTheme()" id="themeBtn" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl">
           <i class="fas fa-moon text-xl"></i>
         </button>
-        <button onclick="connectWallet()" id="connectBtn" 
-                class="px-6 py-3 bg-white text-black font-semibold rounded-2xl flex items-center gap-2 hover:bg-gray-100 transition-all">
-          <i class="fas fa-wallet"></i> 
-          <span id="connectText">Connect Wallet</span>
+        <button onclick="connectWallet()" id="connectBtn" class="px-6 py-3 bg-white text-black font-semibold rounded-2xl flex items-center gap-2">
+          <i class="fas fa-wallet"></i> <span id="connectText">Connect Wallet</span>
         </button>
       </div>
     </div>
 
-    <div id="successMessage" class="hidden glass border border-emerald-500/30 bg-emerald-500/10 rounded-3xl p-6 mb-8 text-emerald-400 font-medium"></div>
+    <div id="successMessage" class="hidden glass border border-emerald-500/30 bg-emerald-500/10 rounded-3xl p-6 mb-8 text-emerald-400"></div>
 
     <div class="glass border border-white/10 rounded-3xl p-8">
       <div class="grid grid-cols-2 gap-6 mb-8">
@@ -81,8 +53,7 @@
         </div>
         <div>
           <label class="block text-gray-400 text-sm mb-2">Total Amount</label>
-          <input type="number" id="totalAmount" value="100" step="0.000001" 
-                 class="w-full rounded-2xl px-6 py-5 text-2xl outline-none">
+          <input type="number" id="totalAmount" value="100" step="0.000001" class="w-full rounded-2xl px-6 py-5 text-2xl outline-none">
         </div>
       </div>
 
@@ -93,12 +64,12 @@
 
       <div class="mb-8">
         <label class="block text-gray-400 text-sm mb-2">Description</label>
-        <textarea id="description" rows="2" class="w-full rounded-2xl px-6 py-5 outline-none" placeholder="Example: Comment your wallet..."></textarea>
+        <textarea id="description" rows="2" class="w-full rounded-2xl px-6 py-5 outline-none" placeholder="Giveaway description..."></textarea>
       </div>
 
       <div class="flex gap-3 mb-8">
-        <button onclick="generateTweetText()" class="flex-1 py-4 bg-[#1DA1F2] hover:bg-[#1a8cd8] rounded-2xl font-medium transition">Twitter Text</button>
-        <button onclick="selectRandomWinners()" class="flex-1 py-4 bg-purple-600 hover:bg-purple-700 rounded-2xl font-medium transition">🎲 Random Select</button>
+        <button onclick="generateTweetText()" class="flex-1 py-4 bg-[#1DA1F2] rounded-2xl font-medium">Twitter Text</button>
+        <button onclick="selectRandomWinners()" class="flex-1 py-4 bg-purple-600 rounded-2xl font-medium">🎲 Random Select</button>
       </div>
 
       <div class="mb-8">
@@ -107,30 +78,39 @@
       </div>
 
       <button id="sendBtn" onclick="sendGiveawaySplit()" 
-              class="w-full bg-gradient-to-r from-pink-500 to-rose-500 py-7 rounded-3xl text-xl font-bold transition-all">
+              class="w-full bg-gradient-to-r from-pink-500 to-rose-500 py-7 rounded-3xl text-xl font-bold">
         Send Split to Winners
       </button>
     </div>
   </div>
 
 <script>
-const CONTRACT_ADDRESS = "0x73Da94F0D960Ef8FD49Ed28a94f667aF3C062cB2";
+const CONTRACT_ADDRESS = "0x73Da94F0D960Ef8FD49Ed28a94f667aF3C062cB2"; // آدرس contract جدیدت
+
 let signer = null;
 let userAddress = null;
 let isProcessing = false;
 
-const splitterAbi = [{ "inputs": [{ "name": "token", "type": "address" }, { "name": "recipients", "type": "address[]" }, { "name": "percentages", "type": "uint256[]" }, { "name": "totalAmount", "type": "uint256" }], "name": "splitPayment", "outputs": [], "stateMutability": "nonpayable", "type": "function" }];
+const splitterAbi = [
+  {
+    "inputs": [
+      {"name": "token", "type": "address"},
+      {"name": "recipients", "type": "address[]"},
+      {"name": "percentages", "type": "uint256[]"},
+      {"name": "totalAmount", "type": "uint256"}
+    ],
+    "name": "splitPayment",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+];
 
 function toggleTheme() {
   document.documentElement.classList.toggle('light');
   const icon = document.getElementById("themeBtn").querySelector("i");
-  if (icon.classList.contains("fa-moon")) {
-    icon.classList.remove("fa-moon");
-    icon.classList.add("fa-sun");
-  } else {
-    icon.classList.remove("fa-sun");
-    icon.classList.add("fa-moon");
-  }
+  icon.classList.toggle("fa-moon");
+  icon.classList.toggle("fa-sun");
 }
 
 async function connectWallet() {
@@ -150,15 +130,15 @@ function generateTweetText() {
   const amount = document.getElementById("totalAmount").value;
   const token = document.getElementById("tokenSelect").selectedOptions[0].text;
   const count = document.getElementById("winnerCount").value;
-  const text = `🎁 GIVEAWAY!\n\n${amount} ${token} to ${count} lucky winners!\n\nComment your wallet address 👇\nGood luck!`;
+  const text = `🎁 GIVEAWAY!\n\n${amount} ${token} to ${count} lucky winners!\n\nComment your wallet 👇`;
   navigator.clipboard.writeText(text);
   alert("✅ Twitter text copied!");
 }
 
 function selectRandomWinners() {
   const text = document.getElementById("winnersList").value.trim();
-  if (!text) return alert("Please enter some addresses first!");
-  let addresses = text.split("\n").map(a => a.trim()).filter(a => a.length > 10);
+  if (!text) return alert("Enter addresses first!");
+  let addresses = text.split("\n").map(a => a.trim()).filter(a => a);
   const count = parseInt(document.getElementById("winnerCount").value);
   if (addresses.length < count) return alert("Not enough addresses!");
   const shuffled = addresses.sort(() => 0.5 - Math.random());
@@ -170,10 +150,10 @@ async function sendGiveawaySplit() {
   if (isProcessing) return;
 
   const listText = document.getElementById("winnersList").value.trim();
-  if (!listText) return alert("Please enter winner addresses!");
+  if (!listText) return alert("No addresses entered!");
 
   const addresses = listText.split("\n").map(a => a.trim()).filter(a => ethers.isAddress(a));
-  if (addresses.length === 0) return alert("No valid addresses found!");
+  if (addresses.length === 0) return alert("No valid addresses!");
 
   const totalAmount = parseFloat(document.getElementById("totalAmount").value);
   const tokenAddr = document.getElementById("tokenSelect").value;
@@ -184,25 +164,37 @@ async function sendGiveawaySplit() {
   isProcessing = true;
   const btn = document.getElementById("sendBtn");
   btn.disabled = true;
-  btn.textContent = "Processing...";
+  btn.textContent = "Sending Transaction...";
 
   try {
-    const tokenContract = new ethers.Contract(tokenAddr, ["function approve(address,uint256) returns (bool)", "function decimals() view returns (uint8)"], signer);
+    const tokenContract = new ethers.Contract(tokenAddr, [
+      "function approve(address,uint256) returns (bool)",
+      "function decimals() view returns (uint8)"
+    ], signer);
+
     const decimals = await tokenContract.decimals();
     const totalWei = ethers.parseUnits(totalAmount.toString(), decimals);
 
     await (await tokenContract.approve(CONTRACT_ADDRESS, totalWei)).wait();
 
     const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
-    const tx = await contract.splitPayment(tokenAddr, addresses, new Array(addresses.length).fill(10000), totalWei, { gasLimit: 800000 });
+    
+    // percentages به basis points (10000)
+    const percentages = new Array(addresses.length).fill(10000);
+
+    const tx = await contract.splitPayment(tokenAddr, addresses, percentages, totalWei, { gasLimit: 800000 });
     await tx.wait();
 
-    document.getElementById("successMessage").innerHTML = `✅ Transaction Successful!<br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline">View Tx: ${tx.hash.slice(0,12)}...</a>`;
+    document.getElementById("successMessage").innerHTML = `
+      ✅ Transaction Successful!<br>
+      <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline">
+        View on Explorer → ${tx.hash.substring(0,12)}...
+      </a>`;
     document.getElementById("successMessage").classList.remove('hidden');
 
   } catch (error) {
     console.error(error);
-    alert("Error: " + (error.reason || error.message));
+    alert("Transaction failed: " + (error.reason || error.message || error));
   } finally {
     isProcessing = false;
     btn.disabled = false;
