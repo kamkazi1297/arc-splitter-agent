@@ -13,31 +13,47 @@
     
     body { 
       font-family: 'Inter', system-ui, sans-serif; 
+      transition: background 0.3s ease, color 0.3s ease;
     }
     
     .glass {
-      background: rgba(255,255,255,0.08);
-      backdrop-filter: blur(20px);
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+    }
+    
+    /* بهبود عالی Light Mode */
+    .light body {
+      background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%) !important;
+      color: #0f172a !important;
     }
     .light .glass {
-      background: rgba(255,255,255,0.88);
-      border-color: rgba(0,0,0,0.12);
+      background: rgba(255, 255, 255, 0.75);
+      border-color: rgba(0, 0, 0, 0.08) !important;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
     }
-
-    .light body, .light h1, .light h3, .light label, .light .text-white {
-      color: #1f2937;
+    .light h1, .light h3, .light h4, .light label, .light .text-white {
+      color: #0f172a !important;
     }
-    .light .text-gray-400 { color: #64748b; }
+    .light .text-gray-400 { color: #64748b !important; }
+    .light tr { border-color: rgba(0, 0, 0, 0.08) !important; }
+    .light sticky { background-color: #f8fafc !important; }
 
     select, input {
-      background-color: rgba(255,255,255,0.05);
+      background-color: rgba(255, 255, 255, 0.05);
       color: white;
-      border: 1px solid rgba(255,255,255,0.25);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      transition: all 0.2s ease-in-out;
     }
+    select:focus, input:focus {
+      border-color: #10b981 !important;
+      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+    }
+    
     .light select, .light input {
-      background-color: #f8fafc;
-      color: #1f2937;
-      border: 1px solid #e2e8f0;
+      background-color: rgba(255, 255, 255, 0.9);
+      color: #0f172a !important;
+      border: 1px solid #cbd5e1;
     }
 
     select option {
@@ -46,8 +62,8 @@
       padding: 12px 16px;
     }
     .light select option {
-      background-color: #f8fafc;
-      color: #1f2937;
+      background-color: #ffffff;
+      color: #0f172a;
     }
 
     .invalid {
@@ -61,7 +77,7 @@
     .percent-container::after {
       content: "%";
       position: absolute;
-      right: 16px;
+      right: 14px;
       top: 50%;
       transform: translateY(-50%);
       color: #9ca3af;
@@ -81,6 +97,14 @@
     .preview-scroll {
       max-height: 320px;
       overflow-y: auto;
+    }
+    /* اسکرول‌بار شیک */
+    .preview-scroll::-webkit-scrollbar {
+      width: 6px;
+    }
+    .preview-scroll::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
     }
 
     #logoContainer {
@@ -113,19 +137,21 @@
 
     @media (max-width: 640px) {
       .max-w-2xl { max-width: 100% !important; padding-left: 8px; padding-right: 8px; }
-      .recipient-row { flex-direction: column; gap: 14px; padding: 18px !important; }
+      .recipient-row { flex-direction: column; gap: 12px; padding: 18px !important; }
+      .recipient-row .percent-container, .recipient-row .amount-container { width: 100% !important; }
       input[type="text"], input[type="number"] {
         font-size: 1.05rem !important;
-        padding: 16px 14px !important;
+        padding: 14px 14px !important;
       }
     }
   </style>
 </head>
-<body class="bg-gradient-to-br from-[#0b0b1f] to-[#1a1a2e] text-white min-h-screen">
+<body class="bg-gradient-to-br from-[#0b0b1f] to-[#1a1a2e] text-white min-h-screen antialiased">
 
   <div class="max-w-2xl mx-auto px-4 py-10">
+    <!-- Header -->
     <div class="flex justify-between items-center mb-10">
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-4">
         <div id="logoContainer" class="relative">
           <div id="glowRing"></div>
           <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg" class="relative z-10 drop-shadow-2xl">
@@ -147,41 +173,47 @@
         </div>
 
         <div>
-          <h1 class="text-4xl font-bold">ArcSplit Pro</h1>
-          <p class="text-gray-400">Professional Token Splitter</p>
+          <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight">ArcSplit Pro</h1>
+          <p class="text-gray-400 text-sm font-medium">Professional Token Splitter</p>
         </div>
       </div>
     </div>
 
-    <div class="flex flex-col sm:flex-row gap-3 mb-8">
-      <button onclick="toggleTheme()" id="themeBtn" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all flex-shrink-0">
+    <!-- Action Buttons Bar (ارتقا یافته برای تقارن کامل) -->
+    <div class="flex flex-col sm:flex-row gap-3 mb-8 items-stretch">
+      <button onclick="toggleTheme()" id="themeBtn" class="h-14 px-5 bg-white/10 hover:bg-white/20 active:scale-95 rounded-2xl transition-all flex items-center justify-center flex-shrink-0">
         <i class="fas fa-moon text-xl"></i>
       </button>
 
       <div class="flex flex-1 gap-3">
-        <button onclick="showConnectModal()" id="connectBtn" class="flex-1 px-6 py-3.5 bg-white text-black font-semibold rounded-2xl flex items-center justify-center gap-2 hover:bg-gray-100 transition-all">
+        <button onclick="showConnectModal()" id="connectBtn" class="flex-1 h-14 px-6 bg-white text-black font-semibold rounded-2xl flex items-center justify-center gap-2 hover:bg-gray-100 active:scale-95 transition-all shadow-lg shadow-black/10">
           <i class="fas fa-wallet"></i> 
           <span id="connectText">Connect Wallet</span>
         </button>
 
         <button onclick="connectTelegram()" id="telegramBtn" 
-        class="flex-1 px-6 py-3.5 bg-gradient-to-r from-[#229ED9] to-[#1a8ac4] hover:brightness-110 text-white font-semibold rounded-2xl flex items-center justify-center gap-3 transition-all group">
-  <i class="fab fa-telegram-plane text-2xl"></i> 
-  <div class="text-left flex-1">
-    <div id="telegramMainText" class="font-semibold">Connect Telegram</div>
-    <div id="telegramSubText" class="text-xs opacity-75 -mt-0.5">Receive notifications & fast split</div>
-  </div>
-</button>
+          class="flex-1 h-14 px-5 bg-gradient-to-r from-[#229ED9] to-[#1a8ac4] hover:brightness-110 active:scale-95 text-white font-semibold rounded-2xl flex items-center justify-center gap-3 transition-all shadow-lg shadow-sky-500/10 group">
+          <i class="fab fa-telegram-plane text-2xl"></i> 
+          <div class="text-left flex-1 leading-tight">
+            <div id="telegramMainText" class="font-semibold text-sm">Connect Telegram</div>
+            <div id="telegramSubText" class="text-[11px] opacity-80 font-normal">Notifications & fast split</div>
+          </div>
+        </button>
       </div>
     </div>
 
-    <div id="status" class="glass border border-white/10 rounded-3xl p-6 mb-8 text-base font-medium">Ready to split tokens on Arc Testnet.</div>
-    <div id="successMessage" class="hidden glass border border-emerald-500/30 bg-emerald-500/10 rounded-3xl p-6 mb-8 text-emerald-400"></div>
+    <!-- Status Boxes -->
+    <div id="status" class="glass border border-white/10 rounded-3xl p-5 mb-8 text-sm sm:text-base font-medium flex items-center gap-3">
+      <i class="fas fa-circle-info text-sky-400"></i>
+      <span>Ready to split tokens on Arc Testnet.</span>
+    </div>
+    <div id="successMessage" class="hidden glass border border-emerald-500/30 bg-emerald-500/10 rounded-3xl p-6 mb-8 text-emerald-400 font-medium"></div>
 
-    <div class="glass border border-white/10 rounded-3xl p-8 mb-8">
-      <div class="mb-8">
-        <label class="block text-gray-400 text-sm mb-2">Select Token</label>
-        <select id="tokenSelect" onchange="handleTokenChange()" class="w-full rounded-2xl px-6 py-5 focus:border-emerald-500 outline-none text-base">
+    <!-- Main Card -->
+    <div class="glass border border-white/10 rounded-3xl p-6 sm:p-8 mb-8 shadow-2xl">
+      <div class="mb-6">
+        <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Select Token</label>
+        <select id="tokenSelect" onchange="handleTokenChange()" class="w-full rounded-2xl px-5 py-4 focus:outline-none text-base font-medium cursor-pointer">
           <option value="0x3600000000000000000000000000000000000000">USDC</option>
           <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
           <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
@@ -189,145 +221,142 @@
         </select>
       </div>
 
-      <div class="mb-8">
-        <label class="block text-gray-400 text-sm mb-2">Total Amount</label>
+      <div class="mb-6">
+        <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Total Amount</label>
         <div class="flex gap-3">
-          <input type="number" id="totalAmount" value="100" step="0.000001" class="flex-1 bg-white/5 border border-white/20 rounded-2xl px-6 py-5 text-3xl outline-none" oninput="updateAll()">
-          <button onclick="setMaxAmount()" class="px-10 bg-white/10 hover:bg-white/20 rounded-2xl font-medium">MAX</button>
+          <input type="number" id="totalAmount" value="100" step="0.000001" class="flex-1 bg-white/5 border border-white/20 rounded-2xl px-5 py-4 text-2xl font-bold outline-none" oninput="updateAll()">
+          <button onclick="setMaxAmount()" class="px-8 bg-white/10 hover:bg-white/20 active:scale-95 rounded-2xl font-bold text-sm tracking-wide transition-all">MAX</button>
         </div>
       </div>
 
       <div class="mb-8">
-        <label class="block text-gray-400 text-sm mb-3">Quick Templates</label>
-        <div class="grid grid-cols-4 gap-3">
-          <button onclick="loadTemplate(1)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">50-50</button>
-          <button onclick="loadTemplate(2)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">33-33-34</button>
-          <button onclick="loadTemplate(3)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">40-60</button>
-          <button onclick="equalSplit()" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">Equal Split</button>
+        <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-3">Quick Templates</label>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <button onclick="loadTemplate(1)" class="py-3 bg-white/5 hover:bg-white/15 active:scale-95 rounded-2xl text-sm font-semibold transition-all border border-white/5">50 - 50</button>
+          <button onclick="loadTemplate(2)" class="py-3 bg-white/5 hover:bg-white/15 active:scale-95 rounded-2xl text-sm font-semibold transition-all border border-white/5">33 - 33 - 34</button>
+          <button onclick="loadTemplate(3)" class="py-3 bg-white/5 hover:bg-white/15 active:scale-95 rounded-2xl text-sm font-semibold transition-all border border-white/5">40 - 60</button>
+          <button onclick="equalSplit()" class="py-3 bg-white/5 hover:bg-white/15 active:scale-95 rounded-2xl text-sm font-semibold transition-all border border-white/5">Equal Split</button>
         </div>
       </div>
 
       <div class="mb-6">
-        <div class="flex justify-between mb-4">
-          <h3 class="font-semibold">Recipients</h3>
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="font-bold text-lg">Recipients</h3>
           <div class="flex gap-3 items-center">
-            <div class="flex bg-white/10 rounded-2xl p-1 text-sm">
-              <button onclick="setMode('manual')" id="manualBtn" class="mode-btn px-5 py-2 rounded-xl font-medium transition-all">Manual</button>
-              <button onclick="setMode('auto')" id="autoBtn" class="mode-btn px-5 py-2 rounded-xl font-medium transition-all">Auto</button>
+            <div class="flex bg-white/10 rounded-2xl p-1 text-xs font-medium">
+              <button onclick="setMode('manual')" id="manualBtn" class="mode-btn px-4 py-1.5 rounded-xl transition-all">Manual</button>
+              <button onclick="setMode('auto')" id="autoBtn" class="mode-btn px-4 py-1.5 rounded-xl transition-all">Auto</button>
             </div>
-            <button onclick="showImportModal()" class="text-sky-400 hover:text-sky-300 flex items-center gap-1 text-sm">
-              <i class="fas fa-upload"></i> Import
+            <button onclick="showImportModal()" class="text-sky-400 hover:text-sky-300 transition-colors flex items-center gap-1.5 text-xs font-semibold">
+              <i class="fas fa-file-import"></i> Import
             </button>
-            <button onclick="addRecipient()" class="text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
+            <button onclick="addRecipient()" class="text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1.5 text-xs font-semibold">
               <i class="fas fa-plus"></i> Add
             </button>
           </div>
         </div>
-        <div id="recipients-list" class="space-y-4"></div>
+        <div id="recipients-list" class="space-y-3"></div>
       </div>
 
-      <div class="mb-8">
-        <h4 class="text-gray-400 text-sm mb-3">Split Preview</h4>
-        <div class="glass rounded-2xl overflow-hidden">
+      <div class="mb-6">
+        <h4 class="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-3">Split Preview</h4>
+        <div class="glass rounded-2xl overflow-hidden border border-white/10">
           <div class="preview-scroll">
             <table class="w-full">
               <thead>
-                <tr class="border-b border-white/10 sticky top-0 bg-[#1a1a2e]">
-                  <th class="text-left p-4 text-gray-400">Recipient</th>
-                  <th class="text-right p-4 text-gray-400">Percent</th>
-                  <th class="text-right p-4 text-gray-400">Amount</th>
+                <tr class="border-b border-white/10 sticky top-0 bg-[#1a1a2e]/90 backdrop-blur-md text-xs font-semibold">
+                  <th class="text-left p-3.5 text-gray-400">Recipient</th>
+                  <th class="text-right p-3.5 text-gray-400">Percent</th>
+                  <th class="text-right p-3.5 text-gray-400">Amount</th>
                 </tr>
               </thead>
-              <tbody id="preview-body" class="text-sm"></tbody>
+              <tbody id="preview-body" class="text-sm divide-y divide-white/5"></tbody>
             </table>
           </div>
         </div>
       </div>
 
-      <div class="flex justify-between mb-8">
-        <span id="percent-total" class="font-bold text-lg">Total: 0%</span>
-        <button onclick="distributeRemaining()" class="text-amber-400 hover:text-amber-300">Distribute Remaining</button>
+      <div class="flex justify-between items-center mb-8 bg-white/5 p-4 rounded-2xl border border-white/5">
+        <span id="percent-total" class="font-bold text-base">Total: 0%</span>
+        <button onclick="distributeRemaining()" class="text-amber-400 hover:text-amber-300 text-xs font-semibold flex items-center gap-1 transition-colors">
+          <i class="fas fa-wand-magic-sparkles"></i> Distribute Remaining
+        </button>
       </div>
 
-      <button id="sendBtn" onclick="sendSplit()" class="w-full bg-gradient-to-r from-pink-500 to-rose-500 py-7 rounded-3xl text-xl font-bold">
+      <button id="sendBtn" onclick="sendSplit()" class="w-full bg-gradient-to-r from-pink-500 hover:from-pink-600 to-rose-500 hover:to-rose-600 active:scale-[0.99] transition-all py-5 rounded-2xl text-lg font-bold shadow-lg shadow-rose-500/25">
         Send Split Transaction
       </button>
     </div>
 
-    <div class="glass border border-white/10 rounded-3xl p-8">
-      <h3 class="font-semibold mb-4">Recent Transactions</h3>
+    <!-- History Card -->
+    <div class="glass border border-white/10 rounded-3xl p-6 sm:p-8">
+      <h3 class="font-bold text-lg mb-4">Recent Transactions</h3>
       <div id="history" class="space-y-3 max-h-80 overflow-auto"></div>
     </div>
   </div>
 
   <!-- Import Modal -->
-  <div id="importModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-    <div class="glass rounded-3xl p-8 max-w-md w-full mx-4">
+  <div id="importModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 transition-opacity">
+    <div class="glass rounded-3xl p-6 sm:p-8 max-w-md w-full mx-4 border border-white/10 shadow-2xl">
       <h3 class="text-xl font-bold mb-4">Import Recipients</h3>
-      <textarea id="importText" rows="8" class="w-full bg-white/5 border border-white/20 rounded-2xl p-5 text-sm font-mono" placeholder="0x1234567890abcdef1234567890abcdef12345678,50"></textarea>
-      <p class="text-xs text-gray-400 mt-2">Format: address,percent (one per line)</p>
+      <textarea id="importText" rows="6" class="w-full bg-white/5 border border-white/20 rounded-2xl p-4 text-xs font-mono focus:outline-none" placeholder="0x1234567890abcdef1234567890abcdef12345678,50"></textarea>
+      <p class="text-[11px] text-gray-400 mt-2">Format: address,percent (one per line)</p>
       <div class="flex gap-3 mt-6">
-        <button onclick="hideImportModal()" class="flex-1 py-4 rounded-2xl border border-white/20 hover:bg-white/10">Cancel</button>
-        <button onclick="importRecipients()" class="flex-1 py-4 bg-emerald-500 hover:bg-emerald-600 rounded-2xl">Import</button>
+        <button onclick="hideImportModal()" class="flex-1 py-3.5 rounded-2xl border border-white/20 hover:bg-white/10 text-sm font-semibold transition-all">Cancel</button>
+        <button onclick="importRecipients()" class="flex-1 py-3.5 bg-emerald-500 hover:bg-emerald-600 rounded-2xl text-sm font-semibold transition-all shadow-lg shadow-emerald-500/20">Import</button>
       </div>
     </div>
   </div>
   
+  <!-- Wallet Connect Modal -->
+  <div id="connectModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+    <div class="glass border border-white/10 rounded-3xl p-6 sm:p-8 max-w-lg w-full mx-4 shadow-2xl">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-2xl font-bold">Connect a Wallet</h3>
+        <button onclick="hideConnectModal()" class="text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
+      </div>
+      
+      <div class="space-y-3">
+        <!-- MetaMask -->
+        <button onclick="connectMetaMask()" class="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-white/10 transition-all border border-white/10 hover:border-emerald-500/50 group">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" width="40" height="40" alt="MetaMask">
+          <div class="text-left flex-1">
+            <div class="font-semibold text-base">MetaMask</div>
+            <div class="text-xs text-gray-400">Popular browser extension</div>
+          </div>
+          <span class="text-emerald-400 text-xs font-semibold bg-emerald-500/10 px-3 py-1 rounded-full">Recommended</span>
+        </button>
 
- <!-- Wallet Connect Modal - نسخه بهبود یافته -->
-<div id="connectModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-  <div class="glass border border-white/10 rounded-3xl p-8 max-w-lg w-full mx-4">
-    <div class="flex justify-between items-center mb-6">
-      <h3 class="text-2xl font-bold">Connect a Wallet</h3>
-      <button onclick="hideConnectModal()" class="text-gray-400 hover:text-white text-3xl leading-none">×</button>
+        <!-- WalletConnect -->
+        <button onclick="connectWalletConnect()" class="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-white/10 transition-all border border-white/10 hover:border-sky-500/50 group">
+          <img src="https://walletconnect.com/_next/static/media/walletconnect.2f8f1b5a.svg" width="40" height="40" alt="WalletConnect">
+          <div class="text-left flex-1">
+            <div class="font-semibold text-base">WalletConnect</div>
+            <div class="text-xs text-gray-400">Connect with mobile & other wallets</div>
+          </div>
+        </button>
+
+        <!-- Trust Wallet  -->
+        <button onclick="showToast('Trust Wallet soon...', 3000)" class="w-full flex items-center gap-4 p-4 rounded-2xl hover:bg-white/10 transition-all border border-white/10 opacity-60">
+          <img src="https://trustwallet.com/assets/images/logo.png" width="40" height="40" alt="Trust">
+          <div class="text-left flex-1">
+            <div class="font-semibold text-base">Trust Wallet</div>
+            <div class="text-xs text-gray-400">Coming soon</div>
+          </div>
+        </button>
+      </div>
+
+      <p class="text-center text-xs text-gray-500 mt-6">More wallets will be added soon</p>
     </div>
-    
-    <div class="space-y-3">
-      <!-- MetaMask -->
-      <button onclick="connectMetaMask()" 
-              class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group border border-white/10 hover:border-emerald-500">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" width="48" height="48" alt="MetaMask">
-        <div class="text-left flex-1">
-          <div class="font-semibold text-lg">MetaMask</div>
-          <div class="text-sm text-gray-400">Popular browser extension</div>
-        </div>
-        <span class="text-emerald-400 text-sm font-medium">Recommended</span>
-      </button>
-
-      <!-- WalletConnect -->
-      <button onclick="connectWalletConnect()" 
-              class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group border border-white/10 hover:border-sky-500">
-        <img src="https://walletconnect.com/_next/static/media/walletconnect.2f8f1b5a.svg" width="48" height="48" alt="WalletConnect">
-        <div class="text-left flex-1">
-          <div class="font-semibold text-lg">WalletConnect</div>
-          <div class="text-sm text-gray-400">Connect with mobile & other wallets</div>
-        </div>
-      </button>
-
-      <!-- Trust Wallet  -->
-      <button onclick="showToast('Trust Wallet soon...', 3000)" 
-              class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group border border-white/10 opacity-75">
-        <img src="https://trustwallet.com/assets/images/logo.png" width="48" height="48" alt="Trust">
-        <div class="text-left flex-1">
-          <div class="font-semibold text-lg">Trust Wallet</div>
-          <div class="text-sm text-gray-400">Coming soon</div>
-        </div>
-      </button>
-    </div>
-
-    <p class="text-center text-xs text-gray-500 mt-6">
-      More wallets will be added soon
-    </p>
   </div>
-</div>
   
-  <!-- Toast -->
-  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 border border-white/20 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 z-50">
+  <!-- Toast Notification -->
+  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900/90 backdrop-blur-md border border-white/20 text-white px-6 py-3.5 rounded-2xl shadow-2xl flex items-center gap-3 z-50 text-sm font-medium">
     <span id="toastText"></span>
   </div>
 
 <script>
- let signer = null;
+let signer = null;
 let userAddress = null;
 let provider = null;
 let transactions = JSON.parse(localStorage.getItem('arcTxHistory') || '[]');
@@ -337,7 +366,7 @@ let splitMode = 'manual';
 let telegramLinked = false;
 let telegramUsername = "";
 
-  const CONTRACT_ADDRESS = "0xE0c0024E9F756A1E8eE30fBa5942feD06BB56b13";
+  const CONTRACT_ADDRESS = "0x73Da94F0D960Ef8FD49Ed28a94f667aF3C062cB2";
   const ARC_CHAIN_ID = 5042002;
 
   const splitterAbi = [
@@ -377,7 +406,6 @@ let telegramUsername = "";
     if (userAddress) btn.classList.add("!bg-emerald-500", "!text-white");
   }
 
-  
 function updateTelegramButton() {
   const btn = document.getElementById("telegramBtn");
   if (!btn) return;
@@ -386,20 +414,20 @@ function updateTelegramButton() {
     btn.innerHTML = `
       <i class="fab fa-telegram-plane text-2xl"></i> 
       <div class="text-left flex-1">
-        <div class="font-semibold text-emerald-300">${telegramUsername}</div>
-        <div class="text-xs opacity-75">Connected • Notifications ON</div>
+        <div class="font-semibold text-emerald-300 text-sm">${telegramUsername}</div>
+        <div class="text-[11px] opacity-80">Connected • Notifications ON</div>
       </div>
       <i onclick="event.stopImmediatePropagation(); disconnectTelegram();" 
-         class="fas fa-times text-lg opacity-60 hover:opacity-100 ml-2"></i>
+         class="fas fa-xmark text-base opacity-60 hover:opacity-100 ml-2 p-1"></i>
     `;
     btn.style.background = "linear-gradient(90deg, #10b981, #34d399)";
-    btn.onclick = null; // جلوگیری از باز شدن دوباره
+    btn.onclick = null;
   } else {
     btn.innerHTML = `
       <i class="fab fa-telegram-plane text-2xl"></i> 
-      <div class="text-left flex-1">
-        <div id="telegramMainText" class="font-semibold">Connect Telegram</div>
-        <div id="telegramSubText" class="text-xs opacity-75 -mt-0.5">Receive notifications & fast split</div>
+      <div class="text-left flex-1 leading-tight">
+        <div id="telegramMainText" class="font-semibold text-sm">Connect Telegram</div>
+        <div id="telegramSubText" class="text-[11px] opacity-80 font-normal">Notifications & fast split</div>
       </div>
     `;
     btn.style.background = "linear-gradient(90deg, #229ED9, #1a8ac4)";
@@ -408,29 +436,19 @@ function updateTelegramButton() {
 }
 
   async function saveWalletToBot(chatId) {
-  if (!userAddress || !chatId) {
-    console.log("Missing userAddress or chatId");
-    return;
-  }
+  if (!userAddress || !chatId) return;
   
   try {
     const response = await fetch('https://arcsplit-bot.kamkazi-1297.workers.dev/save-connection', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chatId: chatId,
-        walletAddress: userAddress
-      })
+      body: JSON.stringify({ chatId: chatId, walletAddress: userAddress })
     });
-    
-    console.log("Save response:", await response.text());
-    console.log("✅ Wallet address sent to bot KV");
   } catch (e) {
     console.error("Failed to save wallet to bot:", e);
   }
 }
 
-  
   function disconnectTelegram() {
   if (confirm("Disconnect Telegram account?")) {
     telegramLinked = false;
@@ -453,14 +471,12 @@ function updateTelegramButton() {
     provider = new ethers.BrowserProvider(window.ethereum);
     signer = await provider.getSigner();
     
-    // چک کردن اینکه آدرس درست است
     const currentAddress = await signer.getAddress();
     if (currentAddress.toLowerCase() === userAddress.toLowerCase()) {
-      console.log("Wallet restored successfully");
-      await updateBalance();   // بالانس رو لود کن
+      await updateBalance();
     }
   } catch (e) {
-    console.log("Could not auto-restore signer, user needs to reconnect manually");
+    console.log("Could not auto-restore signer");
   }
 }
 
@@ -469,10 +485,8 @@ function updateTelegramButton() {
     return showToast("Please connect your wallet first!", 4000);
   }
 
-  const botUsername = "ArcSplitPro_bot"; // نام بات خودت
+  const botUsername = "ArcSplitPro_bot";
   const timestamp = Date.now();
-  
-  // مهم: حالا مستقیم دستور /connect را باز می‌کند
   const link = `https://t.me/${botUsername}?start=connect_${userAddress}_${timestamp}`;
   
   window.open(link, "_blank");
@@ -523,7 +537,6 @@ function updateTelegramButton() {
       userAddress = accounts[0];
 
       localStorage.setItem('userAddress', userAddress);
-
       signer = await provider.getSigner();
 
       document.getElementById("logoContainer").classList.add("connected");
@@ -581,19 +594,22 @@ function updateTelegramButton() {
     if (mode === 'auto') autoDistributePercentages();
   }
 
+  /* جایگزینی آیکون سطل زباله جذاب به‌جای X */
   function addRecipient(address = "", percent = "") {
     const list = document.getElementById("recipients-list");
     const row = document.createElement("div");
-    row.className = "recipient-row glass border border-white/10 rounded-2xl p-5 flex items-center gap-4";
+    row.className = "recipient-row glass border border-white/10 rounded-2xl p-4 flex items-center gap-3 transition-all";
     row.innerHTML = `
-      <input type="text" class="address flex-1 bg-transparent border border-white/20 rounded-xl px-5 py-4 text-white placeholder-gray-400" placeholder="0x..." value="${address}" oninput="validateAddress(this); updateAll()">
+      <input type="text" class="address flex-1 bg-transparent border border-white/20 rounded-xl px-4 py-3 text-sm text-white placeholder-gray-500 outline-none" placeholder="Recipient address (0x...)" value="${address}" oninput="validateAddress(this); updateAll()">
       <div class="percent-container w-28">
-        <input type="text" class="percent w-full bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" value="${percent}" oninput="handlePercentChange(this); updateAll()">
+        <input type="text" class="percent w-full bg-transparent border border-white/20 rounded-xl px-4 py-3 text-center text-sm font-semibold text-white outline-none" value="${percent}" oninput="handlePercentChange(this); updateAll()">
       </div>
       <div class="amount-container w-36">
-        <input type="text" class="amount w-full bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" oninput="handleAmountChange(this); updateAll()">
+        <input type="text" class="amount w-full bg-transparent border border-white/20 rounded-xl px-4 py-3 text-center text-sm font-semibold text-white outline-none" oninput="handleAmountChange(this); updateAll()">
       </div>
-      <button onclick="this.parentElement.remove(); updateAll(); if(splitMode==='auto') autoDistributePercentages();" class="text-rose-400 text-3xl px-3">×</button>
+      <button onclick="this.parentElement.remove(); updateAll(); if(splitMode==='auto') autoDistributePercentages();" class="text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl p-3 transition-all">
+        <i class="far fa-trash-can text-base"></i>
+      </button>
     `;
     list.appendChild(row);
     if (splitMode === 'auto') autoDistributePercentages();
@@ -660,7 +676,7 @@ function updateTelegramButton() {
     const total = percents.reduce((a, b) => a + b, 0);
     const el = document.getElementById("percent-total");
     el.textContent = `Total: ${total.toFixed(6)}%`;
-    el.style.color = total > 99.99 ? '#00ffaa' : (total > 100 ? '#ff3366' : 'white');
+    el.style.color = total > 99.99 ? '#10b981' : (total > 100 ? '#f43f5e' : 'white');
   }
 
   function updatePreview() {
@@ -673,11 +689,11 @@ function updateTelegramButton() {
       const amount = parseFloat(row.querySelector('.amount').value) || 0;
       if (addr) {
         const tr = document.createElement("tr");
-        tr.className = "border-b border-white/10 last:border-none";
+        tr.className = "hover:bg-white/5 transition-colors";
         tr.innerHTML = `
-          <td class="p-4 font-mono text-xs">${addr.substring(0,12)}...</td>
-          <td class="text-right p-4">${perc.toFixed(6)}%</td>
-          <td class="text-right p-4 font-medium">${amount.toFixed(6)}</td>
+          <td class="p-3.5 font-mono text-xs text-gray-300">${addr.substring(0,12)}...${addr.substring(addr.length-4)}</td>
+          <td class="text-right p-3.5 font-semibold">${perc.toFixed(6)}%</td>
+          <td class="text-right p-3.5 font-semibold text-emerald-400">${amount.toFixed(6)}</td>
         `;
         tbody.appendChild(tr);
       }
@@ -738,7 +754,7 @@ function updateTelegramButton() {
   async function updateBalance(retry = 0) {
     if (!signer || !userAddress) return;
     const statusEl = document.getElementById("status");
-    statusEl.innerHTML = `Connected • Loading balance...`;
+    statusEl.innerHTML = `<i class="fas fa-spinner fa-spin text-sky-400"></i> Loading balance...`;
     try {
       const tokenAddr = document.getElementById("tokenSelect").value;
       if (tokenAddr === "custom") return;
@@ -749,10 +765,10 @@ function updateTelegramButton() {
       ], signer);
       const [balance, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
       const formatted = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4);
-      statusEl.innerHTML = `Connected • Balance: <span class="text-emerald-400 font-semibold text-lg">${formatted} ${symbol}</span>`;
+      statusEl.innerHTML = `<i class="fas fa-circle-check text-emerald-400"></i> Balance: <span class="text-emerald-400 font-bold ml-1">${formatted} ${symbol}</span>`;
     } catch (e) {
       if (retry < 2) setTimeout(() => updateBalance(retry + 1), 1000);
-      else statusEl.innerHTML = `Connected • <span class="text-amber-400">Balance unavailable</span>`;
+      else statusEl.innerHTML = `<i class="fas fa-triangle-exclamation text-amber-400"></i> <span class="text-amber-400">Balance unavailable</span>`;
     }
   }
 
@@ -822,7 +838,6 @@ function updateTelegramButton() {
 
     const tolerance = 0.000001;
 
-    // ==================== Validation Logic ====================
     if (splitMode === 'manual') {
       if (totalPerc > 100 + tolerance) {
         return showToast("⚠️ Total percentage is more than 100%! Transaction blocked.", 5000);
@@ -833,7 +848,6 @@ function updateTelegramButton() {
         }
       }
     } else {
-      // Auto Mode - Always show warning if last field has any difference
       const lastPerc = percentages[percentages.length - 1];
       const ideal = 100 / rows.length;
       const difference = (lastPerc - ideal).toFixed(6);
@@ -844,7 +858,6 @@ function updateTelegramButton() {
         }
       }
     }
-    // =========================================================
 
     if (!confirm(`Send ${totalAmount} tokens to ${addresses.length} recipients?`)) return;
 
@@ -878,34 +891,27 @@ function updateTelegramButton() {
       const tx = await contract.splitPayment(tokenAddr, addresses, basisPoints, totalWei, { gasLimit: 800000 });
       await tx.wait();
 
-                          // === Debugging Telegram Notification ===
-console.log("🔍 Sending notification to Telegram...");
-console.log("Chat ID:", window.telegramChatId || localStorage.getItem('telegramChatId'));
+      if (!window.telegramChatId) {
+        window.telegramChatId = localStorage.getItem('telegramChatId');
+      }
 
-if (!window.telegramChatId) {
-  window.telegramChatId = localStorage.getItem('telegramChatId');
-}
-
-if (window.telegramChatId) {
-  fetch('https://arcsplit-bot.kamkazi-1297.workers.dev/send-tx', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chatId: window.telegramChatId,
-      txHash: tx.hash,
-      amount: totalAmount,
-      token: symbol,
-      recipientsCount: addresses.length
-    })
-  })
-  .then(r => console.log("Notification sent:", r.status))
-  .catch(err => console.error("Notification failed:", err));
-} else {
-  console.warn("⚠️ No Telegram Chat ID found. Notification skipped.");
-}
-// =====================================
+      if (window.telegramChatId) {
+        fetch('https://arcsplit-bot.kamkazi-1297.workers.dev/send-tx', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chatId: window.telegramChatId,
+            txHash: tx.hash,
+            amount: totalAmount,
+            token: symbol,
+            recipientsCount: addresses.length
+          })
+        })
+        .then(r => console.log("Notification sent:", r.status))
+        .catch(err => console.error("Notification failed:", err));
+      }
       
-      successDiv.innerHTML = ` Transaction Successful!<br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline font-medium">View on Explorer: ${tx.hash.substring(0,12)}...</a>`;
+      successDiv.innerHTML = `<i class="fas fa-circle-check"></i> Transaction Successful!<br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline font-medium text-xs">View on Explorer: ${tx.hash.substring(0,16)}...</a>`;
       successDiv.classList.remove('hidden');
 
       transactions.unshift({
@@ -921,7 +927,7 @@ if (window.telegramChatId) {
     } catch (error) {
       console.error(error);
       showToast(error.reason || error.message || "Transaction failed");
-    } finally {
+    } fontally {
       isProcessing = false;
       btn.disabled = false;
       btn.textContent = "Send Split Transaction";
@@ -930,22 +936,23 @@ if (window.telegramChatId) {
 
   function renderHistory() {
     const container = document.getElementById("history");
-    container.innerHTML = transactions.length ? "" : "<p class='text-gray-400 text-center py-8'>No transactions yet.</p>";
+    container.innerHTML = transactions.length ? "" : "<p class='text-gray-400 text-center py-6 text-sm'>No transactions yet.</p>";
     transactions.slice(0, 5).forEach(tx => {
       const div = document.createElement("div");
-      div.className = "glass border border-white/10 rounded-2xl p-4 text-sm";
+      div.className = "glass border border-white/10 rounded-2xl p-4 text-sm flex justify-between items-center";
       div.innerHTML = `
-        <div class="text-gray-400 text-xs">${tx.time}</div>
-        <div>${tx.intent}</div>
-        <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="text-emerald-400 text-xs hover:underline">View Tx →</a>
+        <div>
+          <div class="text-gray-400 text-[11px] font-medium mb-0.5">${tx.time}</div>
+          <div class="font-semibold text-xs">${tx.intent}</div>
+        </div>
+        <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="text-emerald-400 text-xs font-semibold hover:underline flex items-center gap-1">
+          View <i class="fas fa-arrow-up-right-from-square text-[10px]"></i>
+        </a>
       `;
       container.appendChild(div);
     });
   }
 
-  
-
-// Auto Fill when returning from Telegram
 function autoFillFromURL() {
   try {
     const urlParams = new URLSearchParams(window.location.search);
@@ -958,7 +965,6 @@ function autoFillFromURL() {
     const telegramConnect = urlParams.get('telegram_connect');
     const usernameParam = urlParams.get('username');
 
-    // ==================== اتصال تلگرام ====================
     if (telegramConnect === 'true' || window.location.search.includes('connect_')) {
       telegramLinked = true;
       
@@ -966,8 +972,8 @@ function autoFillFromURL() {
         telegramUsername = decodeURIComponent(usernameParam);
       } else {
         telegramUsername = usernameParam 
-  ? decodeURIComponent(usernameParam) 
-  : (localStorage.getItem('telegramUsername') || "Telegram User");
+          ? decodeURIComponent(usernameParam) 
+          : (localStorage.getItem('telegramUsername') || "Telegram User");
       }
       
       localStorage.setItem('telegramLinked', 'true');
@@ -979,17 +985,12 @@ function autoFillFromURL() {
       if (userAddress && chatIdParam) {
         saveWalletToBot(chatIdParam);
       }
-      
-      console.log("✅ Telegram successfully linked");
     }
 
-    // ==================== پر کردن فرم ارسال ====================
     if (action === 'send' && amount) {
-      // مقدار کل
       const totalInput = document.getElementById('totalAmount');
       if (totalInput) totalInput.value = amount;
 
-      // انتخاب توکن
       const tokenSelect = document.getElementById('tokenSelect');
       if (tokenSymbol && tokenSelect) {
         const upper = tokenSymbol.toUpperCase();
@@ -998,7 +999,6 @@ function autoFillFromURL() {
         else if (upper === 'CIRBTC') tokenSelect.value = "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF";
       }
 
-      // recipients
       const list = document.getElementById('recipients-list');
       if (list) list.innerHTML = '';
 
@@ -1009,13 +1009,11 @@ function autoFillFromURL() {
         }
       });
 
-      // ذخیره chatId برای نوتیفیکیشن
       if (chatIdParam) {
         window.telegramChatId = chatIdParam;
         localStorage.setItem('telegramChatId', chatIdParam);
       }
 
-      // اعمال نهایی
       setTimeout(() => {
         if (typeof updateAll === 'function') updateAll();
         if (addresses.length > 1 && typeof setMode === 'function') setMode('auto');
@@ -1030,18 +1028,14 @@ function autoFillFromURL() {
 }
   
 window.addEventListener('load', () => {
-  // Restore Wallet Connection
   const savedAddress = localStorage.getItem('userAddress');
   if (savedAddress) {
     userAddress = savedAddress;
     updateConnectButton();
     document.getElementById("logoContainer").classList.add("connected");
-
-    // تلاش برای بازیابی کامل اتصال (signer + provider)
     restoreWalletConnection();
   }
 
-  // Restore Telegram
   telegramUsername = localStorage.getItem('telegramUsername') || "";
   telegramLinked = localStorage.getItem('telegramLinked') === 'true';
   if (telegramLinked) {
