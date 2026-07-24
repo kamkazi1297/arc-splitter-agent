@@ -1,885 +1,641 @@
 <!DOCTYPE html>
-<html lang="en" dir="ltr">
+<html lang="fa" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-  <title>ArcSplit Pro - Token Splitter</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
-
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ArcSplit Pro | پلتفرم توزیع هوشمند توکن و ایردراپ</title>
     
-    body { font-family: 'Inter', system-ui, sans-serif; }
-    .glass { background: rgba(255,255,255,0.08); backdrop-filter: blur(20px); }
-    .light .glass { background: rgba(255,255,255,0.88); border-color: rgba(0,0,0,0.12); }
-    .light body, .light h1, .light h3, .light label, .light .text-white { color: #1f2937; }
-    .light .text-gray-400 { color: #64748b; }
+    <!-- Google Fonts & FontAwesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Ethers.js & Web3Libs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
-    select, input {
-      background-color: rgba(255,255,255,0.05);
-      color: white;
-      border: 1px solid rgba(255,255,255,0.25);
-    }
-    .light select, .light input {
-      background-color: #f8fafc;
-      color: #1f2937;
-      border: 1px solid #e2e8f0;
-    }
+    <style>
+        :root {
+            --bg-dark: #090d16;
+            --bg-card: rgba(18, 26, 43, 0.75);
+            --bg-card-hover: rgba(26, 38, 63, 0.85);
+            --accent-blue: #00f2fe;
+            --accent-purple: #4facfe;
+            --accent-glow: rgba(0, 242, 254, 0.35);
+            --accent-gradient: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --border-glow: rgba(0, 242, 254, 0.3);
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --radius-xl: 24px;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --font-family: 'Vazirmatn', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
 
-    select option { background-color: #1a1a2e; color: white; padding: 12px 16px; }
-    .light select option { background-color: #f8fafc; color: #1f2937; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: var(--font-family);
+            -webkit-tap-highlight-color: transparent;
+        }
 
-    .invalid { border-color: #ef4444 !important; animation: shake 0.3s; }
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+            background-image: 
+                radial-gradient(circle at 15% 15%, rgba(0, 242, 254, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 85% 85%, rgba(79, 172, 254, 0.08) 0%, transparent 40%);
+            background-attachment: fixed;
+        }
 
-    .percent-container, .amount-container { position: relative; }
-    .percent-container::after {
-      content: "%";
-      position: absolute;
-      right: 16px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: #9ca3af;
-      font-weight: 600;
-      pointer-events: none;
-    }
-    .light .percent-container::after { color: #64748b; }
+        /* Subtle animated grid background */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -1;
+            pointer-events: none;
+        }
 
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-4px); }
-      75% { transform: translateX(4px); }
-    }
+        /* Glassmorphism Navigation Header */
+        .header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            background: rgba(9, 13, 22, 0.8);
+            border-bottom: 1px solid var(--border-color);
+            padding: 16px 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-    .preview-scroll { max-height: 320px; overflow-y: auto; }
-    #logoContainer { position: relative; }
+        .brand-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
 
-    #glowRing {
-      position: absolute;
-      inset: -10px;
-      background: linear-gradient(45deg, #10b981, #22d3ee, #10b981);
-      border-radius: 2rem;
-      opacity: 0.25;
-      filter: blur(8px);
-      z-index: -1;
-      animation: rotateGlow 10s linear infinite;
-      transition: all 0.8s ease;
-    }
+        .brand-logo i {
+            font-size: 28px;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            filter: drop-shadow(0 0 10px var(--accent-glow));
+        }
 
-    @keyframes rotateGlow {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
+        .brand-logo h1 {
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            background: linear-gradient(180deg, #ffffff 0%, #cbd5e1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
 
-    #logoContainer.connected #glowRing {
-      animation: none;
-      opacity: 0.45;
-      filter: blur(10px);
-      box-shadow: 0 0 25px -2px rgb(16 185 129 / 0.6);
-    }
+        .nav-actions {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
 
-    @media (max-width: 640px) {
-      .max-w-2xl { max-width: 100% !important; padding-left: 8px; padding-right: 8px; }
-      .recipient-row { flex-direction: column; gap: 14px; padding: 18px !important; }
-      input[type="text"], input[type="number"] { font-size: 1.05rem !important; padding: 16px 14px !important; }
-    }
-  </style>
+        .btn-wallet {
+            background: var(--accent-gradient);
+            color: #040810;
+            border: none;
+            padding: 10px 22px;
+            border-radius: var(--radius-md);
+            font-weight: 700;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 20px var(--accent-glow);
+        }
+
+        .btn-wallet:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 28px rgba(0, 242, 254, 0.5);
+        }
+
+        .btn-wallet:active {
+            transform: translateY(0);
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        /* Hero / Stats Header */
+        .hero-banner {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .hero-banner h2 {
+            font-size: 36px;
+            font-weight: 900;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, #ffffff 0%, #94a3b8 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-banner p {
+            color: var(--text-muted);
+            font-size: 16px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Main Grid Layout */
+        .grid-layout {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 28px;
+        }
+
+        @media (max-width: 992px) {
+            .grid-layout {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Glass Cards */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-xl);
+            padding: 28px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            transition: border-color 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .card-title {
+            font-size: 18px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--text-main);
+        }
+
+        .card-title i {
+            color: var(--accent-blue);
+        }
+
+        /* Mode Selector Tabs */
+        .mode-tabs {
+            display: flex;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border-color);
+            padding: 4px;
+            border-radius: var(--radius-md);
+            gap: 4px;
+            margin-bottom: 24px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px 16px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .tab-btn.active {
+            background: var(--accent-gradient);
+            color: #040810;
+            font-weight: 700;
+            box-shadow: 0 2px 10px var(--accent-glow);
+        }
+
+        /* Form Inputs */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-main);
+        }
+
+        .form-label span.sub {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-control {
+            width: 100%;
+            background: rgba(10, 16, 28, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 12px 16px;
+            color: #ffffff;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .input-control:focus {
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+            background: rgba(15, 23, 42, 0.8);
+        }
+
+        textarea.input-control {
+            resize: vertical;
+            min-height: 140px;
+            line-height: 1.6;
+            font-family: monospace, var(--font-family);
+        }
+
+        /* Action Buttons */
+        .btn-primary {
+            width: 100%;
+            background: var(--accent-gradient);
+            color: #040810;
+            border: none;
+            padding: 16px;
+            border-radius: var(--radius-md);
+            font-size: 16px;
+            font-weight: 800;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 20px var(--accent-glow);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 242, 254, 0.5);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Sidebar Info Widgets */
+        .info-widget {
+            background: rgba(10, 16, 28, 0.4);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            font-size: 14px;
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: var(--text-muted);
+        }
+
+        .info-value {
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        /* Toast Alerts */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            background: rgba(18, 26, 43, 0.95);
+            border: 1px solid var(--border-color);
+            border-right: 4px solid var(--accent-blue);
+            padding: 16px 20px;
+            border-radius: var(--radius-md);
+            color: var(--text-main);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 300px;
+            backdrop-filter: blur(10px);
+            animation: slideIn 0.3s ease forwards;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(-100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
 </head>
-<body class="bg-gradient-to-br from-[#0b0b1f] to-[#1a1a2e] text-white min-h-screen">
+<body>
 
-  <div class="max-w-2xl mx-auto px-4 py-10">
-    <div class="flex justify-between items-center mb-10">
-      <div class="flex items-center gap-3">
-        <div id="logoContainer" class="relative">
-          <div id="glowRing"></div>
-          <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg" class="relative z-10 drop-shadow-2xl">
-            <circle cx="26" cy="26" r="23" stroke="url(#grad1)" stroke-width="3" stroke-opacity="0.6"/>
-            <circle cx="26" cy="26" r="20" fill="#0f172a"/>
-            <text x="26" y="37" font-family="Inter, sans-serif" font-size="32" font-weight="700" fill="url(#grad2)" text-anchor="middle" dominant-baseline="middle">A</text>
-            <line x1="18" y1="32" x2="34" y2="32" stroke="#67e8f9" stroke-width="2.5" stroke-opacity="0.9"/>
-            <defs>
-              <linearGradient id="grad1" x1="10" y1="10" x2="42" y2="42" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stop-color="#10b981"/>
-                <stop offset="100%" stop-color="#22d3ee"/>
-              </linearGradient>
-              <linearGradient id="grad2" x1="15" y1="15" x2="38" y2="38" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stop-color="#67e8f9"/>
-                <stop offset="100%" stop-color="#34d399"/>
-              </linearGradient>
-            </defs>
-          </svg>
+    <!-- Header Navigation -->
+    <header class="header">
+        <a href="#" class="brand-logo">
+            <i class="fa-solid fa-bolt-lightning"></i>
+            <h1>ArcSplit <span style="color: var(--accent-blue);">PRO</span></h1>
+        </a>
+        <div class="nav-actions">
+            <button id="btnConnect" class="btn-wallet" onclick="connectWallet()">
+                <i class="fa-solid fa-wallet"></i>
+                <span id="walletText">اتصال به ولت</span>
+            </button>
         </div>
+    </header>
 
-        <div>
-          <h1 class="text-4xl font-bold">ArcSplit Pro</h1>
-          <p class="text-gray-400">Professional Token Splitter</p>
-        </div>
-      </div>
-    </div>
+    <!-- Main Content Container -->
+    <main class="container">
+        
+        <section class="hero-banner">
+            <h2>توزیع آنی و انبوه توکن در شبکه L2</h2>
+            <p>ارسال همزمان توکن‌های ERC-20 یا کوین نیتیو به صدها آدرس با کمترین کارمزد شبکه و بالاترین امنیت قرارداد هوشمند</p>
+        </section>
 
-    <div class="flex flex-col sm:flex-row gap-3 mb-8">
-      <button onclick="toggleTheme()" id="themeBtn" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all flex-shrink-0">
-        <i class="fas fa-moon text-xl"></i>
-      </button>
+        <div class="grid-layout">
+            
+            <!-- Main Form Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fa-solid fa-paper-plane"></i>
+                        <span>تنظیمات ارسال انبوه (Multi-Send)</span>
+                    </div>
+                    <span class="status-badge" id="netStatus">
+                        <i class="fa-solid fa-circle" style="font-size: 8px;"></i>
+                        شبکه آماده است
+                    </span>
+                </div>
 
-      <div class="flex flex-1 gap-3">
-        <button onclick="showConnectModal()" id="connectBtn" class="flex-1 px-6 py-3.5 bg-white text-black font-semibold rounded-2xl flex items-center justify-center gap-2 hover:bg-gray-100 transition-all">
-          <i class="fas fa-wallet"></i> 
-          <span id="connectText">Connect Wallet</span>
-        </button>
+                <!-- Mode Tabs -->
+                <div class="mode-tabs">
+                    <button class="tab-btn active" id="tabNative" onclick="setMode('NATIVE')">
+                        <i class="fa-solid fa-coins"></i>
+                        کوین نیتیو (ETH/ARC)
+                    </button>
+                    <button class="tab-btn" id="tabERC20" onclick="setMode('ERC20')">
+                        <i class="fa-solid fa-layer-group"></i>
+                        توکن ERC-20
+                    </button>
+                </div>
 
-        <button onclick="connectTelegram()" id="telegramBtn" 
-          class="flex-1 px-6 py-3.5 bg-gradient-to-r from-[#229ED9] to-[#1a8ac4] hover:brightness-110 text-white font-semibold rounded-2xl flex items-center justify-center gap-3 transition-all group">
-          <i class="fab fa-telegram-plane text-2xl"></i> 
-          <div class="text-left flex-1">
-            <div id="telegramMainText" class="font-semibold">Connect Telegram</div>
-            <div id="telegramSubText" class="text-xs opacity-75 -mt-0.5">Receive notifications & fast split</div>
-          </div>
-        </button>
-      </div>
-    </div>
+                <!-- ERC20 Address Input -->
+                <div class="form-group" id="erc20Group" style="display: none;">
+                    <div class="form-label">
+                        <span>آدرس قرارداد توکن (Token Contract)</span>
+                        <span class="sub" id="tokenSymbolLabel">تایید نشده</span>
+                    </div>
+                    <div class="input-wrapper">
+                        <input type="text" id="tokenAddressInput" class="input-control" placeholder="0x..." oninput="verifyTokenContract()">
+                    </div>
+                </div>
 
-    <div id="status" class="glass border border-white/10 rounded-3xl p-6 mb-8 text-base font-medium">Ready to split tokens on Arc Testnet.</div>
-    <div id="successMessage" class="hidden glass border border-emerald-500/30 bg-emerald-500/10 rounded-3xl p-6 mb-8 text-emerald-400"></div>
+                <!-- Recipient List Input -->
+                <div class="form-group">
+                    <div class="form-label">
+                        <span>لیست گیرندگان و مقادیر</span>
+                        <span class="sub">فرمت: address,amount (هر سطر یک نفر)</span>
+                    </div>
+                    <div class="input-wrapper">
+                        <textarea id="recipientsInput" class="input-control" placeholder="0x1234...5678, 10.5&#10;0x8765...4321, 5.0" oninput="parseRecipients()"></textarea>
+                    </div>
+                </div>
 
-    <div class="glass border border-white/10 rounded-3xl p-8 mb-8">
-      <div class="mb-8">
-        <label class="block text-gray-400 text-sm mb-2">Select Token</label>
-        <select id="tokenSelect" onchange="handleTokenChange()" class="w-full rounded-2xl px-6 py-5 focus:border-emerald-500 outline-none text-base">
-          <option value="0x3600000000000000000000000000000000000000">USDC</option>
-          <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
-          <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
-          <option value="custom">Add Custom Token...</option>
-        </select>
-      </div>
+                <!-- Summary Preview -->
+                <div class="info-widget">
+                    <div class="info-row">
+                        <span class="info-label">تعداد کل آدرس‌ها:</span>
+                        <span class="info-value" id="totalRecipientsCount">0 نفر</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">مجموع توکن قابل توزیع:</span>
+                        <span class="info-value" id="totalAmountSum">0.00</span>
+                    </div>
+                </div>
 
-      <div class="mb-8">
-        <label class="block text-gray-400 text-sm mb-2">Total Amount</label>
-        <div class="flex gap-3">
-          <input type="number" id="totalAmount" value="100" step="0.000001" class="flex-1 bg-white/5 border border-white/20 rounded-2xl px-6 py-5 text-3xl outline-none" oninput="updateAll()">
-          <button onclick="setMaxAmount()" class="px-10 bg-white/10 hover:bg-white/20 rounded-2xl font-medium">MAX</button>
-        </div>
-      </div>
-
-      <div class="mb-8">
-        <label class="block text-gray-400 text-sm mb-3">Quick Templates</label>
-        <div class="grid grid-cols-4 gap-3">
-          <button onclick="loadTemplate(1)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">50-50</button>
-          <button onclick="loadTemplate(2)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">33-33-34</button>
-          <button onclick="loadTemplate(3)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">40-60</button>
-          <button onclick="equalSplit()" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">Equal Split</button>
-        </div>
-      </div>
-
-      <div class="mb-6">
-        <div class="flex justify-between mb-4">
-          <h3 class="font-semibold">Recipients</h3>
-          <div class="flex gap-3 items-center">
-            <div class="flex bg-white/10 rounded-2xl p-1 text-sm">
-              <button onclick="setMode('manual')" id="manualBtn" class="mode-btn px-5 py-2 rounded-xl font-medium transition-all">Manual</button>
-              <button onclick="setMode('auto')" id="autoBtn" class="mode-btn px-5 py-2 rounded-xl font-medium transition-all">Auto</button>
+                <!-- Action Button -->
+                <button id="btnExecute" class="btn-primary" onclick="executeSplit()">
+                    <i class="fa-solid fa-rocket"></i>
+                    <span>تایید و ارسال تراکنش</span>
+                </button>
             </div>
-            <button onclick="showImportModal()" class="text-sky-400 hover:text-sky-300 flex items-center gap-1 text-sm">
-              <i class="fas fa-upload"></i> Import
-            </button>
-            <button onclick="addRecipient()" class="text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
-              <i class="fas fa-plus"></i> Add
-            </button>
-          </div>
+
+            <!-- Sidebar Info & Contract Status -->
+            <aside>
+                <div class="card">
+                    <div class="card-header">
+                        <div class="card-title">
+                            <i class="fa-solid fa-shield-halved"></i>
+                            <span>اطلاعات قرارداد ArcSplit</span>
+                        </div>
+                    </div>
+
+                    <div class="info-widget">
+                        <div class="info-row">
+                            <span class="info-label">وضعیت قرارداد:</span>
+                            <span class="info-value" style="color: var(--success);">فعال (V2.5)</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">شبکه پشتیبانی:</span>
+                            <span class="info-value">Arbitrum / EVM</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">آدرس اسمارت کانترکت:</span>
+                            <span class="info-value" style="font-size: 11px; font-family: monospace;">0x712...93B</span>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 20px; font-size: 13px; color: var(--text-muted); line-height: 1.7;">
+                        <i class="fa-solid fa-circle-info" style="color: var(--accent-blue); margin-left: 6px;"></i>
+                        قبل از تایید نهایی، حتما از صحت آدرس‌های وارد شده و داشتن موجودی کافی در ولت خود برای پوشش کارمزد گس (Gas Fee) اطمینان حاصل کنید.
+                    </div>
+                </div>
+            </aside>
+
         </div>
-        <div id="recipients-list" class="space-y-4"></div>
-      </div>
-
-      <div class="mb-8">
-        <h4 class="text-gray-400 text-sm mb-3">Split Preview</h4>
-        <div class="glass rounded-2xl overflow-hidden">
-          <div class="preview-scroll">
-            <table class="w-full">
-              <thead>
-                <tr class="border-b border-white/10 sticky top-0 bg-[#1a1a2e]">
-                  <th class="text-left p-4 text-gray-400">Recipient</th>
-                  <th class="text-right p-4 text-gray-400">Percent</th>
-                  <th class="text-right p-4 text-gray-400">Amount</th>
-                </tr>
-              </thead>
-              <tbody id="preview-body" class="text-sm"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-
-      <div class="flex justify-between mb-8">
-        <span id="percent-total" class="font-bold text-lg">Total: 0%</span>
-        <button onclick="distributeRemaining()" class="text-amber-400 hover:text-amber-300">Distribute Remaining</button>
-      </div>
-
-      <button id="sendBtn" onclick="sendSplit()" class="w-full bg-gradient-to-r from-pink-500 to-rose-500 py-7 rounded-3xl text-xl font-bold transition-all hover:opacity-95">
-        Send Split Transaction
-      </button>
-    </div>
-
-    <div class="glass border border-white/10 rounded-3xl p-8">
-      <h3 class="font-semibold mb-4">Recent Transactions</h3>
-      <div id="history" class="space-y-3 max-h-80 overflow-auto"></div>
-    </div>
-  </div>
-
-  <!-- Import Modal -->
-  <div id="importModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-    <div class="glass rounded-3xl p-8 max-w-md w-full mx-4">
-      <h3 class="text-xl font-bold mb-4">Import Recipients</h3>
-      <textarea id="importText" rows="8" class="w-full bg-white/5 border border-white/20 rounded-2xl p-5 text-sm font-mono" placeholder="0x1234567890abcdef1234567890abcdef12345678,50"></textarea>
-      <p class="text-xs text-gray-400 mt-2">Format: address,percent (one per line)</p>
-      <div class="flex gap-3 mt-6">
-        <button onclick="hideImportModal()" class="flex-1 py-4 rounded-2xl border border-white/20 hover:bg-white/10">Cancel</button>
-        <button onclick="importRecipients()" class="flex-1 py-4 bg-emerald-500 hover:bg-emerald-600 rounded-2xl">Import</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Wallet Connect Modal -->
-  <div id="connectModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-    <div class="glass border border-white/10 rounded-3xl p-8 max-w-lg w-full mx-4">
-      <div class="flex justify-between items-center mb-6">
-        <h3 class="text-2xl font-bold">Connect a Wallet</h3>
-        <button onclick="hideConnectModal()" class="text-gray-400 hover:text-white text-3xl leading-none">&times;</button>
-      </div>
-      
-      <div class="space-y-3">
-        <button onclick="connectMetaMask()" 
-                class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group border border-white/10 hover:border-emerald-500">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" width="48" height="48" alt="MetaMask">
-          <div class="text-left flex-1">
-            <div class="font-semibold text-lg">MetaMask</div>
-            <div class="text-sm text-gray-400">Popular browser extension</div>
-          </div>
-          <span class="text-emerald-400 text-sm font-medium">Recommended</span>
-        </button>
-
-        <button onclick="showToast('WalletConnect integration is ready via EVM Injector.', 4000)" 
-                class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group border border-white/10 hover:border-sky-500">
-          <img src="https://walletconnect.com/_next/static/media/walletconnect.2f8f1b5a.svg" width="48" height="48" alt="WalletConnect">
-          <div class="text-left flex-1">
-            <div class="font-semibold text-lg">WalletConnect</div>
-            <div class="text-sm text-gray-400">Connect with mobile & other wallets</div>
-          </div>
-        </button>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Toast Notification -->
-  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 border border-white/20 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 z-50">
-    <span id="toastText"></span>
-  </div>
-
-<script>
-  let signer = null;
-  let userAddress = null;
-  let provider = null;
-  let transactions = JSON.parse(localStorage.getItem('arcTxHistory') || '[]');
-  let isProcessing = false;
-  let splitMode = 'manual';
-
-  let telegramLinked = false;
-  let telegramUsername = "";
-
-  const CONTRACT_ADDRESS = "0x73Da94F0D960Ef8FD49Ed28a94f667aF3C062cB2";
-  const ARC_CHAIN_ID = 5042002;
-
-  const splitterAbi = [
-    {
-      "inputs": [
-        { "name": "token", "type": "address" },
-        { "name": "recipients", "type": "address[]" },
-        { "name": "percentages", "type": "uint256[]" },
-        { "name": "totalAmount", "type": "uint256" }
-      ],
-      "name": "splitPayment",
-      "outputs": [],
-      "stateMutability": "payable",
-      "type": "function"
-    }
-  ];
-
-  function updateConnectButton() {
-    const btn = document.getElementById("connectBtn");
-    const short = userAddress ? `${userAddress.slice(0,6)}...${userAddress.slice(-4)}` : "Connect Wallet";
-    btn.innerHTML = `<i class="fas fa-wallet"></i> <span>${short}</span>`;
-    btn.onclick = userAddress ? disconnectWallet : showConnectModal;
-    if (userAddress) btn.classList.add("!bg-emerald-500", "!text-white");
-    else btn.classList.remove("!bg-emerald-500", "!text-white");
-  }
-
-  function updateTelegramButton() {
-    const btn = document.getElementById("telegramBtn");
-    if (!btn) return;
-
-    if (telegramLinked && telegramUsername) {
-      btn.innerHTML = `
-        <i class="fab fa-telegram-plane text-2xl"></i> 
-        <div class="text-left flex-1">
-          <div class="font-semibold text-emerald-300">${telegramUsername}</div>
-          <div class="text-xs opacity-75">Connected • Notifications ON</div>
-        </div>
-        <i onclick="event.stopImmediatePropagation(); disconnectTelegram();" 
-           class="fas fa-times text-lg opacity-60 hover:opacity-100 ml-2"></i>
-      `;
-      btn.style.background = "linear-gradient(90deg, #10b981, #34d399)";
-      btn.onclick = null;
-    } else {
-      btn.innerHTML = `
-        <i class="fab fa-telegram-plane text-2xl"></i> 
-        <div class="text-left flex-1">
-          <div id="telegramMainText" class="font-semibold">Connect Telegram</div>
-          <div id="telegramSubText" class="text-xs opacity-75 -mt-0.5">Receive notifications & fast split</div>
-        </div>
-      `;
-      btn.style.background = "linear-gradient(90deg, #229ED9, #1a8ac4)";
-      btn.onclick = connectTelegram;
-    }
-  }
-
-  async function saveWalletToBot(chatId) {
-    if (!userAddress || !chatId) return;
-    try {
-      await fetch('https://arcsplit-bot.kamkazi-1297.workers.dev/save-connection', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ chatId: chatId, walletAddress: userAddress })
-      });
-    } catch (e) {
-      console.error("Failed to save wallet to bot:", e);
-    }
-  }
-
-  function disconnectTelegram() {
-    if (confirm("Disconnect Telegram account?")) {
-      telegramLinked = false;
-      telegramUsername = "";
-      window.telegramChatId = null;
-      localStorage.removeItem('telegramLinked');
-      localStorage.removeItem('telegramUsername');
-      localStorage.removeItem('telegramChatId');
-      updateTelegramButton();
-      showToast("Telegram disconnected");
-    }
-  }
-
-  async function restoreWalletConnection() {
-    if (!window.ethereum || !userAddress) return;
-    try {
-      provider = new ethers.BrowserProvider(window.ethereum);
-      signer = await provider.getSigner();
-      const currentAddress = await signer.getAddress();
-      if (currentAddress.toLowerCase() === userAddress.toLowerCase()) {
-        await updateBalance();
-      }
-    } catch (e) {
-      console.log("Auto restore connection error", e);
-    }
-  }
-
-  function connectTelegram() {
-    if (!userAddress) return showToast("Please connect your wallet first!", 4000);
-    const botUsername = "ArcSplitPro_bot"; 
-    const timestamp = Date.now();
-    const link = `https://t.me/${botUsername}?start=connect_${userAddress}_${timestamp}`;
-    window.open(link, "_blank");
-    showToast("Opening Telegram...");
-  }
-  
-  function showToast(msg, duration = 5000) {
-    const toast = document.getElementById("toast");
-    document.getElementById("toastText").innerHTML = msg;
-    toast.classList.remove("hidden");
-    setTimeout(() => toast.classList.add("hidden"), duration);
-  }
-
-  function toggleTheme() {
-    document.documentElement.classList.toggle('light');
-    const icon = document.getElementById("themeBtn").querySelector("i");
-    icon.classList.toggle("fa-moon");
-    icon.classList.toggle("fa-sun");
-  }
-
-  function showConnectModal() { document.getElementById("connectModal").classList.remove("hidden"); }
-  function hideConnectModal() { document.getElementById("connectModal").classList.add("hidden"); }
-
-  async function connectMetaMask() {
-    hideConnectModal();
-    if (!window.ethereum) return showToast("MetaMask not found!");
-
-    try {
-      provider = new ethers.BrowserProvider(window.ethereum);
-      const network = await provider.getNetwork();
-      
-      if (network.chainId !== BigInt(ARC_CHAIN_ID)) {
-        showToast("Please switch to <b>Arc Testnet</b> (Chain ID: 5042002)", 6000);
-        return;
-      }
-
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      userAddress = accounts[0];
-      localStorage.setItem('userAddress', userAddress);
-      signer = await provider.getSigner();
-
-      document.getElementById("logoContainer").classList.add("connected");
-      updateConnectButton();
-      showToast("Wallet connected successfully");
-      await updateBalance();
-    } catch (e) {
-      showToast("Failed to connect wallet");
-    }
-  }
-
-  function disconnectWallet() {
-    signer = null; userAddress = null; provider = null;
-    document.getElementById("logoContainer").classList.remove("connected");
-    updateConnectButton();
-    localStorage.removeItem('userAddress');
-    showToast("Wallet disconnected");
-  }
-
-  function getTotalAmount() { return parseFloat(document.getElementById("totalAmount").value) || 0; }
-
-  function formatAmount(num) {
-    if (num === 0 || isNaN(num)) return "";
-    let str = num.toFixed(6);
-    return str.replace(/\.?0+$/, "");
-  }
-
-  function updateAll() {
-    updateRecipientsAmounts();
-    updatePercentTotal();
-    updatePreview();
-  }
-
-  function updateRecipientsAmounts() {
-    const total = getTotalAmount();
-    document.querySelectorAll('.recipient-row').forEach(row => {
-      const perc = parseFloat(row.querySelector('.percent').value) || 0;
-      const amount = total * perc / 100;
-      row.querySelector('.amount').value = formatAmount(amount);
-    });
-  }
-
-  function setMode(mode) {
-    splitMode = mode;
-    document.getElementById('manualBtn').classList.toggle('bg-white/20', mode === 'manual');
-    document.getElementById('autoBtn').classList.toggle('bg-white/20', mode === 'auto');
-    if (mode === 'auto') autoDistributePercentages();
-  }
-
-  function addRecipient(address = "", percent = "") {
-    const list = document.getElementById("recipients-list");
-    const row = document.createElement("div");
-    row.className = "recipient-row glass border border-white/10 rounded-2xl p-5 flex items-center gap-4";
-    row.innerHTML = `
-      <input type="text" class="address flex-1 bg-transparent border border-white/20 rounded-xl px-5 py-4 text-white placeholder-gray-400 outline-none" placeholder="0x..." value="${address}" oninput="validateAddress(this); updateAll()">
-      <div class="percent-container w-28">
-        <input type="text" class="percent w-full bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white outline-none" value="${percent}" oninput="handlePercentChange(this); updateAll()">
-      </div>
-      <div class="amount-container w-36">
-        <input type="text" class="amount w-full bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white outline-none" oninput="handleAmountChange(this); updateAll()">
-      </div>
-      <button onclick="this.parentElement.remove(); updateAll(); if(splitMode==='auto') autoDistributePercentages();" class="text-rose-400 text-3xl px-3">&times;</button>
-    `;
-    list.appendChild(row);
-    if (splitMode === 'auto') autoDistributePercentages();
-    else updateAll();
-  }
-
-  function autoDistributePercentages() {
-    const rows = document.querySelectorAll('.recipient-row');
-    if (rows.length === 0) return;
-    const totalBasis = 10000;
-    const base = Math.floor(totalBasis / rows.length);
-    let total = 0;
-    rows.forEach((row, index) => {
-      const percentInput = row.querySelector('.percent');
-      let value = base;
-      if (index === rows.length - 1) value = totalBasis - total;
-      percentInput.value = (value / 100).toFixed(6);
-      total += value;
-    });
-    updateAll();
-  }
-
-  function handlePercentChange(input) {
-    if (splitMode === 'auto') autoDistributePercentages();
-    else {
-      let val = input.value.trim();
-      if (val === "") { input.value = ""; updateAll(); return; }
-      let num = parseFloat(val);
-      if (isNaN(num)) input.value = "";
-      else {
-        if (num < 0) num = 0;
-        if (num > 100) num = 100;
-        input.value = num;
-      }
-      updateAll();
-    }
-  }
-
-  function handleAmountChange(input) {
-    const row = input.closest('.recipient-row');
-    const total = getTotalAmount();
-    if (total <= 0) return;
-    let val = input.value.trim();
-    if (val === "") {
-      input.value = "";
-      row.querySelector('.percent').value = "";
-      updateAll();
-      return;
-    }
-    let currentAmount = parseFloat(val) || 0;
-    let currentPerc = (currentAmount / total) * 100;
-    if (currentPerc > 100) currentPerc = 100;
-    row.querySelector('.percent').value = currentPerc.toFixed(6);
-    updateAll();
-  }
-
-  function validateAddress(input) {
-    const isValid = !input.value || ethers.isAddress(input.value.trim());
-    input.classList.toggle("invalid", !isValid);
-  }
-
-  function updatePercentTotal() {
-    const percents = Array.from(document.querySelectorAll('.percent')).map(el => parseFloat(el.value) || 0);
-    const total = percents.reduce((a, b) => a + b, 0);
-    const el = document.getElementById("percent-total");
-    el.textContent = `Total: ${total.toFixed(6)}%`;
-    el.style.color = total > 99.99 ? '#00ffaa' : (total > 100 ? '#ff3366' : 'white');
-  }
-
-  function updatePreview() {
-    const tbody = document.getElementById("preview-body");
-    tbody.innerHTML = "";
-    document.querySelectorAll('.recipient-row').forEach(row => {
-      const addr = row.querySelector('.address').value.trim();
-      const perc = parseFloat(row.querySelector('.percent').value) || 0;
-      const amount = parseFloat(row.querySelector('.amount').value) || 0;
-      if (addr) {
-        const tr = document.createElement("tr");
-        tr.className = "border-b border-white/10 last:border-none";
-        tr.innerHTML = `
-          <td class="p-4 font-mono text-xs">${addr.substring(0,12)}...</td>
-          <td class="text-right p-4">${perc.toFixed(6)}%</td>
-          <td class="text-right p-4 font-medium">${amount.toFixed(6)}</td>
-        `;
-        tbody.appendChild(tr);
-      }
-    });
-  }
-
-  function distributeRemaining() {
-    const percents = Array.from(document.querySelectorAll('.percent'));
-    if (percents.length === 0) return;
-    let total = percents.reduce((sum, el) => sum + (parseFloat(el.value) || 0), 0);
-    let remaining = 100 - total;
-    if (remaining <= 0.000001) return showToast("Percentage is already 100%");
-    percents[percents.length - 1].value = remaining.toFixed(6);
-    updateAll();
-  }
-
-  function loadTemplate(type) {
-    const list = document.getElementById("recipients-list");
-    list.innerHTML = "";
-    if (type === 1) { addRecipient("", 50); addRecipient("", 50); }
-    else if (type === 2) { addRecipient("", ""); addRecipient("", ""); addRecipient("", ""); }
-    else if (type === 3) { addRecipient("", 40); addRecipient("", 60); }
-    setMode('manual');
-  }
-
-  function equalSplit() {
-    const count = parseInt(prompt("Number of recipients (2-10):", "4")) || 4;
-    if (count < 2 || count > 10) return showToast("Number must be between 2 and 10");
-    const list = document.getElementById("recipients-list");
-    list.innerHTML = "";
-    for (let i = 0; i < count; i++) addRecipient("", "");
-    setMode('auto');
-  }
-
-  function showImportModal() { document.getElementById("importModal").classList.remove("hidden"); }
-  function hideImportModal() { document.getElementById("importModal").classList.add("hidden"); }
-
-  function importRecipients() {
-    const text = document.getElementById("importText").value.trim();
-    if (!text) return hideImportModal();
-    const lines = text.split("\n");
-    const list = document.getElementById("recipients-list");
-    list.innerHTML = "";
-    lines.forEach(line => {
-      const [addr, perc] = line.split(",").map(s => s.trim());
-      if (addr && ethers.isAddress(addr)) addRecipient(addr, perc || "");
-    });
-    hideImportModal();
-    showToast("Recipients imported successfully");
-    setMode('manual');
-  }
-
-  async function updateBalance(retry = 0) {
-    if (!signer || !userAddress) return;
-    const statusEl = document.getElementById("status");
-    statusEl.innerHTML = `Connected • Loading balance...`;
-    try {
-      const tokenAddr = document.getElementById("tokenSelect").value;
-      if (tokenAddr === "custom") return;
-      const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
-      const contract = new ethers.Contract(tokenAddr, [
-        "function balanceOf(address) view returns (uint256)",
-        "function decimals() view returns (uint8)"
-      ], signer);
-      const [balance, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
-      const formatted = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4);
-      statusEl.innerHTML = `Connected • Balance: <span class="text-emerald-400 font-semibold text-lg">${formatted} ${symbol}</span>`;
-    } catch (e) {
-      if (retry < 2) setTimeout(() => updateBalance(retry + 1), 1000);
-      else statusEl.innerHTML = `Connected • <span class="text-amber-400">Balance unavailable</span>`;
-    }
-  }
-
-  async function handleTokenChange() {
-    const select = document.getElementById("tokenSelect");
-    if (select.value === "custom") {
-      const addr = prompt("Enter Custom Token Address (0x...):");
-      if (addr && ethers.isAddress(addr)) {
-        const option = document.createElement("option");
-        option.value = addr;
-        option.text = addr.substring(0, 10) + "...";
-        select.appendChild(option);
-        select.value = addr;
-        await updateBalance();
-      } else {
-        select.value = "0x3600000000000000000000000000000000000000";
-      }
-    } else {
-      await updateBalance();
-    }
-  }
-
-  async function setMaxAmount() {
-    if (!signer) return showToast("Connect wallet first!");
-    try {
-      const tokenAddr = document.getElementById("tokenSelect").value;
-      const contract = new ethers.Contract(tokenAddr, [
-        "function balanceOf(address) view returns (uint256)",
-        "function decimals() view returns (uint8)"
-      ], signer);
-      const [balance, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
-      document.getElementById("totalAmount").value = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(6);
-      updateAll();
-    } catch (e) {
-      showToast("Could not fetch balance");
-    }
-  }
-
-  async function sendSplit() {
-    if (!signer) return showToast("Please connect your wallet first!");
-    if (isProcessing) return;
-
-    const rows = document.querySelectorAll('.recipient-row');
-    if (rows.length < 1) return showToast("At least 1 recipient is required");
-
-    const addresses = [];
-    const percentages = [];
-    let totalPerc = 0;
-
-    for (let row of rows) {
-      const addr = row.querySelector('.address').value.trim();
-      let perc = parseFloat(row.querySelector('.percent').value) || 0;
-      let amount = parseFloat(row.querySelector('.amount').value) || 0;
-
-      if (!addr || !ethers.isAddress(addr)) return showToast("Invalid address detected");
-      if (perc <= 0 && amount <= 0) return showToast("Please enter amount or percentage for all recipients");
-
-      addresses.push(addr);
-      percentages.push(perc);
-      totalPerc += perc;
-    }
-
-    if (addresses.length < 2) return showToast("At least 2 valid recipients needed");
-
-    const totalAmount = parseFloat(document.getElementById("totalAmount").value);
-    if (!totalAmount || totalAmount <= 0) return showToast("Enter a valid total amount!");
-
-    const tolerance = 0.000001;
-
-    if (splitMode === 'manual') {
-      if (totalPerc > 100 + tolerance) {
-        return showToast("⚠️ Total percentage is more than 100%! Transaction blocked.", 5000);
-      }
-      if (Math.abs(totalPerc - 100) > tolerance) {
-        if (!confirm(`⚠️ Total percentage is not 100% (${totalPerc.toFixed(6)}%)\n\nDo you want to proceed anyway?`)) return;
-      }
-    }
-
-    if (!confirm(`Send ${totalAmount} tokens to ${addresses.length} recipients?`)) return;
-
-    isProcessing = true;
-    const btn = document.getElementById("sendBtn");
-    btn.disabled = true;
-    btn.textContent = "Processing...";
-
-    const successDiv = document.getElementById("successMessage");
-
-    try {
-      const tokenAddr = document.getElementById("tokenSelect").value;
-      const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
-
-      const tokenContract = new ethers.Contract(tokenAddr, [
-        "function approve(address,uint256) returns (bool)",
-        "function decimals() view returns (uint8)"
-      ], signer);
-
-      const decimals = await tokenContract.decimals();
-      const totalWei = ethers.parseUnits(totalAmount.toString(), decimals);
-
-      await (await tokenContract.approve(CONTRACT_ADDRESS, totalWei)).wait();
-
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
-      
-      let basisPoints = percentages.map(p => Math.round(p * 100));
-      let sum = basisPoints.reduce((a, b) => a + b, 0);
-      basisPoints[basisPoints.length - 1] += (10000 - sum);
-
-      const tx = await contract.splitPayment(tokenAddr, addresses, basisPoints, totalWei, { gasLimit: 800000 });
-      await tx.wait();
-
-      const activeChatId = window.telegramChatId || localStorage.getItem('telegramChatId');
-      if (activeChatId) {
-        fetch('https://arcsplit-bot.kamkazi-1297.workers.dev/send-tx', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chatId: activeChatId,
-            txHash: tx.hash,
-            amount: totalAmount,
-            token: symbol,
-            recipientsCount: addresses.length
-          })
-        }).catch(err => console.error("Notification error:", err));
-      }
-      
-      successDiv.innerHTML = `Transaction Successful!<br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline font-medium">View on Explorer: ${tx.hash.substring(0,12)}...</a>`;
-      successDiv.classList.remove('hidden');
-
-      transactions.unshift({
-        hash: tx.hash,
-        intent: `${totalAmount} ${symbol} → ${addresses.length} recipients`,
-        time: new Date().toLocaleString()
-      });
-      localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
-      renderHistory();
-      await updateBalance();
-      showToast("Transaction sent successfully!");
-    } catch (error) {
-      showToast(error.reason || error.message || "Transaction failed");
-    } finally {
-      isProcessing = false;
-      btn.disabled = false;
-      btn.textContent = "Send Split Transaction";
-    }
-  }
-
-  function renderHistory() {
-    const container = document.getElementById("history");
-    container.innerHTML = transactions.length ? "" : "<p class='text-gray-400 text-center py-8'>No transactions yet.</p>";
-    transactions.slice(0, 5).forEach(tx => {
-      const div = document.createElement("div");
-      div.className = "glass border border-white/10 rounded-2xl p-4 text-sm";
-      div.innerHTML = `
-        <div class="text-gray-400 text-xs">${tx.time}</div>
-        <div>${tx.intent}</div>
-        <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="text-emerald-400 text-xs hover:underline">View Tx →</a>
-      `;
-      container.appendChild(div);
-    });
-  }
-
-  function autoFillFromURL() {
-    try {
-      const urlParams = new URLSearchParams(window.location.search);
-      const action = urlParams.get('action');
-      const amount = urlParams.get('amount');
-      const tokenSymbol = urlParams.get('token');
-      const addressesStr = urlParams.get('addresses');
-      const chatIdParam = urlParams.get('chatId');
-      const telegramConnect = urlParams.get('telegram_connect');
-      const usernameParam = urlParams.get('username');
-
-      if (telegramConnect === 'true' || window.location.search.includes('connect_')) {
-        telegramLinked = true;
-        telegramUsername = usernameParam ? decodeURIComponent(usernameParam) : (localStorage.getItem('telegramUsername') || "Telegram User");
-        localStorage.setItem('telegramLinked', 'true');
-        localStorage.setItem('telegramUsername', telegramUsername);
-        updateTelegramButton();
-        showToast("✅ Telegram connected successfully!", 4000);
-
-        if (userAddress && chatIdParam) {
-          saveWalletToBot(chatIdParam);
-        }
-      }
-
-      if (action === 'send' && amount) {
-        const totalInput = document.getElementById('totalAmount');
-        if (totalInput) totalInput.value = amount;
-
-        const tokenSelect = document.getElementById('tokenSelect');
-        if (tokenSymbol && tokenSelect) {
-          const upper = tokenSymbol.toUpperCase();
-          if (upper === 'USDC') tokenSelect.value = "0x3600000000000000000000000000000000000000";
-          else if (upper === 'EURC') tokenSelect.value = "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a";
-          else if (upper === 'CIRBTC') tokenSelect.value = "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF";
+    </main>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        // App State
+        let currentMode = 'NATIVE';
+        let provider, signer, userAddress;
+        let recipientsData = [];
+
+        function showToast(message) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `<i class="fa-solid fa-info-circle" style="color:var(--accent-blue)"></i> <span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.remove(), 4000);
         }
 
-        const list = document.getElementById('recipients-list');
-        if (list) list.innerHTML = '';
-
-        let addresses = addressesStr ? addressesStr.split(',') : [];
-        addresses.forEach(addr => {
-          if (addr && addr.trim()) addRecipient(addr.trim(), "");
-        });
-
-        if (chatIdParam) {
-          window.telegramChatId = chatIdParam;
-          localStorage.setItem('telegramChatId', chatIdParam);
+        function setMode(mode) {
+            currentMode = mode;
+            document.getElementById('tabNative').classList.toggle('active', mode === 'NATIVE');
+            document.getElementById('tabERC20').classList.toggle('active', mode === 'ERC20');
+            document.getElementById('erc20Group').style.display = mode === 'ERC20' ? 'block' : 'none';
         }
 
-        setTimeout(() => {
-          if (typeof updateAll === 'function') updateAll();
-          if (addresses.length > 1 && typeof setMode === 'function') setMode('auto');
-          const sendBtn = document.getElementById('sendBtn');
-          if (sendBtn) sendBtn.scrollIntoView({ behavior: "smooth" });
-        }, 800);
-      }
-    } catch (e) {
-      console.error("AutoFill Error:", e);
-    }
-  }
-    
-  window.addEventListener('load', () => {
-    const savedAddress = localStorage.getItem('userAddress');
-    if (savedAddress) {
-      userAddress = savedAddress;
-      updateConnectButton();
-      document.getElementById("logoContainer").classList.add("connected");
-      restoreWalletConnection();
-    }
+        async function connectWallet() {
+            if (window.ethereum) {
+                try {
+                    provider = new ethers.providers.Web3Provider(window.ethereum);
+                    await provider.send("eth_requestAccounts", []);
+                    signer = provider.getSigner();
+                    userAddress = await signer.getAddress();
+                    document.getElementById('walletText').innerText = userAddress.substring(0, 6) + '...' + userAddress.substring(38);
+                    showToast('ولت با موفقیت متصل شد');
+                } catch (err) {
+                    showToast('خطا در اتصال به ولت');
+                }
+            } else {
+                showToast('لطفا متامسک یا یک ولت معتبر نصب کنید');
+            }
+        }
 
-    telegramUsername = localStorage.getItem('telegramUsername') || "";
-    telegramLinked = localStorage.getItem('telegramLinked') === 'true';
-    if (telegramLinked) updateTelegramButton();
+        function parseRecipients() {
+            const text = document.getElementById('recipientsInput').value;
+            const lines = text.split('\n');
+            let count = 0;
+            let sum = 0;
+            recipientsData = [];
 
-    addRecipient("", "");
-    addRecipient("", "");
-    setMode('manual');
-    renderHistory();
-    setTimeout(updateAll, 200);
-    autoFillFromURL();
-  });
-</script>
+            lines.forEach(line => {
+                const parts = line.split(',');
+                if (parts.length === 2) {
+                    const addr = parts[0].trim();
+                    const amt = parseFloat(parts[1].trim());
+                    if (ethers.utils.isAddress(addr) && !isNaN(amt) && amt > 0) {
+                        count++;
+                        sum += amt;
+                        recipientsData.push({ address: addr, amount: amt });
+                    }
+                }
+            });
+
+            document.getElementById('totalRecipientsCount').innerText = `${count} نفر`;
+            document.getElementById('totalAmountSum').innerText = `${sum.toFixed(4)}`;
+        }
+
+        async function verifyTokenContract() {
+            const addr = document.getElementById('tokenAddressInput').value.trim();
+            if (ethers.utils.isAddress(addr) && provider) {
+                try {
+                    const tokenContract = new ethers.Contract(addr, ["function symbol() view returns (string)"], provider);
+                    const sym = await tokenContract.symbol();
+                    document.getElementById('tokenSymbolLabel').innerText = `توکن: ${sym}`;
+                    document.getElementById('tokenSymbolLabel').style.color = 'var(--success)';
+                } catch (e) {
+                    document.getElementById('tokenSymbolLabel').innerText = 'توکن نامعتبر';
+                    document.getElementById('tokenSymbolLabel').style.color = 'var(--danger)';
+                }
+            }
+        }
+
+        async function executeSplit() {
+            if (!signer) {
+                showToast('ابتدا ولت خود را متصل کنید');
+                return;
+            }
+            if (recipientsData.length === 0) {
+                showToast('لطفاً حداقل یک آدرس و مقدار معتبر وارد کنید');
+                return;
+            }
+
+            try {
+                showToast('در حال ثبت تراکنش...');
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            } catch (err) {
+                showToast('خطا در انجام تراکنش');
+            }
+        }
+    </script>
 </body>
 </html>
