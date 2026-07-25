@@ -1,56 +1,114 @@
 <!DOCTYPE html>
-<html lang="fa">
+<html lang="fa" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <title>تست نهایی</title>
+  <title>تست نهایی قرارداد ArcPaymentLinks</title>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+  <style>
+    body { background: #111; color: #fff; font-family: Tahoma, sans-serif; padding: 30px; }
+    button { background: #2563eb; color: white; border: none; padding: 12px 20px; font-size: 16px; border-radius: 8px; cursor: pointer; margin-bottom: 10px; }
+    button:hover { background: #1d4ed8; }
+    pre { background: #1e1e1e; padding: 15px; border-radius: 8px; border: 1px solid #333; height: 300px; overflow-y: auto; direction: ltr; text-align: left; }
+  </style>
 </head>
-<body style="background:#111;color:white;padding:30px">
+<body>
 
-  <button onclick="connect()">اتصال والت</button><br><br>
-  <button onclick="simpleTest()">تست خیلی ساده</button>
+  <h2>تست ساخت لینک پرداخت روی شبکه Arc (با توکن USDC)</h2>
+  <button onclick="connectWallet()">اتصال والت</button><br>
+  <button onclick="testPaymentLink()">تست تایید و ساخت لینک پرداخت (USDC)</button>
 
+  <h3>گزارش‌ها (Logs):</h3>
   <pre id="log"></pre>
 
 <script>
-  const ADDR = "0xca96eBfD87065B90Ca9a07b8383669787c3218aE";
-  let signer = null;
+  // آدرس قرارداد شما
+  const CONTRACT_ADDR = "0xca96eBfD87065B90Ca9a07b8383669787c3218aE";
+  
+  // آدرس توکن USDC در شبکه Arc (حتماً اگر آدرس دقیق‌تری دارید جایگزین کنید)
+  // به عنوان نمونه استاندارد از USDC استفاده شده است
+  const USDC_ADDR = "0x3600000000000000000000000000000000000000"; 
 
-  async function connect() {
-    const p = new ethers.BrowserProvider(window.ethereum);
-    signer = await p.getSigner();
-    log("✅ والت متصل شد");
-  }
+  let provider = null;
+  let signer = null;
+  let userAddress = null;
 
   function log(text) {
-    document.getElementById("log").textContent += text + "\n";
+    const logElem = document.getElementById("log");
+    logElem.textContent += text + "\n";
+    logElem.scrollTop = logElem.scrollHeight;
   }
 
-  async function simpleTest() {
-    if (!signer) return log("اول والت را وصل کن");
+  async function connectWallet() {
+    try {
+      if (!window.ethereum) {
+        return alert("لطفاً یک والت سازگار مثل متامسک نصب کنید!");
+      }
+      provider = new ethers.BrowserProvider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      signer = await provider.getSigner();
+      userAddress = await signer.getAddress();
+      log("✅ والت متصل شد: " + userAddress);
+    } catch (err) {
+      log("❌ خطا در اتصال والت: " + (err.reason || err.message));
+    }
+  }
+
+  async function testPaymentLink() {
+    if (!signer) {
+      return alert("لطفاً اول والت را وصل کنید!");
+    }
 
     try {
-      log("در حال ارسال...");
+      log("--- شروع فرآیند تست ---");
 
-      const abi = ["function createPaymentLink(tuple(bytes32,address,uint256,uint256,bytes32,address,string,uint256) params) external payable"];
+      // مقدار مبلغ مورد نظر (مثلاً 5 USDC با 6 اعشار)
+      const amountToPay = ethers.parseUnits("5", 6);
 
-      const contract = new ethers.Contract(ADDR, abi, signer);
+      // ۱. ابتدا باید به قرارداد USDC اجازه (Approve) بدهیم که توکن‌ها را برداشت کند
+      log("1. در حال تایید (Approve) توکن USDC برای قرارداد...");
+      
+      const erc20Abi = [
+        "function approve(address spender, uint256 amount) external returns (bool)",
+        "function allowance(address owner, address spender) external view returns (uint256)"
+      ];
+      const usdcContract = new ethers.Contract(USDC_ADDR, erc20Abi, signer);
+
+      // بررسی میزان allowance قبلی
+      const currentAllowance = await usdcContract.allowance(userAddress, CONTRACT_ADDR);
+      if (currentAllowance < amountToPay) {
+        const approveTx = await usdcContract.approve(CONTRACT_ADDR, amountToPay);
+        log("Tx Approve Hash: " + approveTx.hash);
+        await approveTx.wait();
+        log("✅ تایید (Approve) با موفقیت انجام شد.");
+      } else {
+        log("ℹ️ میزان Allowance از قبل کافی است.");
+      }
+
+      // ۲. ساخت ساختار داده پارامترها برای تابع createPaymentLink
+      log("2. در حال ارسال تراکنش createPaymentLink...");
+
+      const contractAbi = [
+        "function createPaymentLink(tuple(bytes32 linkId, address token, uint256 amount, uint256 expiration, bytes32 claimHash, address restrictedTo, string qrMetaData, uint256 salt) params) external payable"
+      ];
+      const paymentContract = new ethers.Contract(CONTRACT_ADDR, contractAbi, signer);
 
       const params = [
-        ethers.ZeroHash,
-        "0x3600000000000000000000000000000000000000",
-        ethers.parseUnits("5", 6),
-        Math.floor(Date.now()/1000) + 86400 * 5, // 5 روز
-        ethers.ZeroHash,
-        ethers.ZeroAddress,
-        "Simple Test",
-        Date.now()
+        ethers.ZeroHash,                                // linkId (صفر برای تولید اتوماتیک)
+        USDC_ADDR,                                      // آدرس توکن USDC
+        amountToPay,                                    // مقدار (5 USDC)
+        Math.floor(Date.now() / 1000) + 86400 * 5,      // انقضا (5 روز آینده)
+        ethers.ZeroHash,                                // claimHash
+        ethers.ZeroAddress,                             // restrictedTo (بدون محدودیت آدرس)
+        "Arc USDC Payment Test",                        // متدایتا QR
+        Date.now()                                      // salt تصادفی
       ];
 
-      const tx = await contract.createPaymentLink(params, { gasLimit: 1500000 });
-      log("Tx: " + tx.hash);
-      await tx.wait();
-      log("✅ SUCCESS!");
+      // ارسال تراکنش با تعیین gasLimit مناسب
+      const tx = await paymentContract.createPaymentLink(params, { gasLimit: 1500000 });
+      log("Tx Create Link Hash: " + tx.hash);
+      
+      const receipt = await tx.wait();
+      log("✅ SUCCESS! لینک پرداخت با موفقیت ساخته شد. Block: " + receipt.blockNumber);
 
     } catch (e) {
       log("❌ ERROR: " + (e.reason || e.message));
@@ -58,5 +116,6 @@
     }
   }
 </script>
+
 </body>
 </html>
