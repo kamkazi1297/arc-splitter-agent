@@ -2,20 +2,18 @@
 <html lang="fa">
 <head>
   <meta charset="UTF-8">
-  <title>تست نهایی Payment Link</title>
+  <title>تست نهایی</title>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
 </head>
-<body style="background:#111; color:white; padding:30px; font-family:Arial">
+<body style="background:#111;color:white;padding:30px">
 
-  <h2>تست نهایی Payment Link</h2>
-  
-  <button onclick="connect()" style="padding:15px 30px; margin:10px; background:blue">اتصال والت</button>
-  <button onclick="createLink()" style="padding:15px 30px; margin:10px; background:purple">ایجاد لینک</button>
+  <button onclick="connect()">اتصال والت</button><br><br>
+  <button onclick="simpleTest()">تست خیلی ساده</button>
 
-  <p id="log" style="margin-top:20px; white-space:pre-wrap"></p>
+  <pre id="log"></pre>
 
 <script>
-  const ADDR = "0x54E38FBE858a2C547B7cF21876bA63eaB0D95F7a";
+  const ADDR = "0xca96eBfD87065B90Ca9a07b8383669787c3218aE";
   let signer = null;
 
   async function connect() {
@@ -24,12 +22,12 @@
     log("✅ والت متصل شد");
   }
 
-  function log(msg) {
-    document.getElementById("log").innerHTML += msg + "\n";
+  function log(text) {
+    document.getElementById("log").textContent += text + "\n";
   }
 
-  async function createLink() {
-    if (!signer) return log("❌ اول والت را وصل کن");
+  async function simpleTest() {
+    if (!signer) return log("اول والت را وصل کن");
 
     try {
       log("در حال ارسال...");
@@ -41,22 +39,22 @@
       const params = [
         ethers.ZeroHash,
         "0x3600000000000000000000000000000000000000",
-        ethers.parseUnits("5", 6),           // 5 USDC
-        Math.floor(Date.now()/1000) + 86400*3, // 3 روز
+        ethers.parseUnits("5", 6),
+        Math.floor(Date.now()/1000) + 86400 * 5, // 5 روز
         ethers.ZeroHash,
         ethers.ZeroAddress,
-        "تست ساده",
+        "Simple Test",
         Date.now()
       ];
 
-      const tx = await contract.createPaymentLink(params, { gasLimit: 1200000 });
-      log("Tx Hash: " + tx.hash);
+      const tx = await contract.createPaymentLink(params, { gasLimit: 1500000 });
+      log("Tx: " + tx.hash);
       await tx.wait();
-      log("✅ موفقیت‌آمیز!");
+      log("✅ SUCCESS!");
 
     } catch (e) {
+      log("❌ ERROR: " + (e.reason || e.message));
       console.error(e);
-      log("❌ خطا: " + (e.reason || e.message || e));
     }
   }
 </script>
