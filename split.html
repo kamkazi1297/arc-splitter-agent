@@ -349,19 +349,13 @@ let splitMode = 'manual';
 let telegramLinked = false;
 let telegramUsername = "";
 
-  const CONTRACT_ADDRESS = "0x73Da94F0D960Ef8FD49Ed28a94f667aF3C062cB2";
+  const PAYMENT_LINK_ADDRESS = "0xca96eBfD87065B90Ca9a07b8383669787c3218aE";
   const ROUTER_ADDRESS = "0x68A0b9D73c386d3a1382F6baAdB4BA0Aa7ce39BD";
 
-const routerABI = [
-    "function executePaymentLink(bytes calldata data) external payable returns (bytes memory)",
-    "function executeVesting(bytes calldata data) external payable returns (bytes memory)",
-    "function executeConditional(bytes calldata data) external payable returns (bytes memory)",
-    "function executeRole(bytes calldata data) external payable returns (bytes memory)",
-    "function executeAgentic(bytes calldata data) external payable returns (bytes memory)",
-    "function executeSplitPro(bytes calldata data) external payable returns (bytes memory)",
-    "function getModules() external view returns (tuple(address conditionalSplitter, address vestingSplitter, address paymentLink, address roleSplitter, address agenticStream, address splitPro))",
-    "function pause() external",
-    "function unpause() external"
+const PAYMENT_LINK_ADDRESS = "0xca96eBfD87065B90Ca9a07b8383669787c3218aE";
+
+const paymentLinkABI = [
+    "function createPaymentLink(tuple(bytes32 linkId, address token, uint256 amount, uint256 expiration, bytes32 claimHash, address restrictedTo, string qrMetaData, uint256 salt) params) external payable"
 ];
   const ARC_CHAIN_ID = 5042002;
 
@@ -504,36 +498,28 @@ function updateTelegramButton() {
     try {
         showToast("در حال ایجاد Payment Link...");
 
-        const router = new ethers.Contract(ROUTER_ADDRESS, routerABI, signer);
+        const contract = new ethers.Contract(PAYMENT_LINK_ADDRESS, paymentLinkABI, signer);
 
         const params = {
             linkId: ethers.ZeroHash,
-            token: "0x3600000000000000000000000000000000000000", // USDC
-            amount: ethers.parseUnits("10", 6),   // 10 USDC
-            expiration: Math.floor(Date.now() / 1000) + (7 * 86400), 
+            token: "0x3600000000000000000000000000000000000000", 
+            amount: ethers.parseUnits("10", 6),
+            expiration: Math.floor(Date.now() / 1000) + 7*24*3600,
             claimHash: ethers.ZeroHash,
             restrictedTo: ethers.ZeroAddress,
-            qrMetaData: "Test Payment Link - ArcSplit Pro",
+            qrMetaData: "Test Payment Link",
             salt: Date.now()
         };
 
-        const createInterface = new ethers.Interface([
-            "function createPaymentLink(tuple(bytes32 linkId,address token,uint256 amount,uint256 expiration,bytes32 claimHash,address restrictedTo,string qrMetaData,uint256 salt) params) external payable"
-        ]);
-
-        const encodedData = createInterface.encodeFunctionData("createPaymentLink", [params]);
-
-        const tx = await router.executePaymentLink(encodedData, { gasLimit: 1000000 });
-        
-        showToast("⏳ تراکنش ارسال شد...", 4000);
+        const tx = await contract.createPaymentLink(params, { gasLimit: 800000 });
         await tx.wait();
 
-        showToast("✅ Payment Link با موفقیت ایجاد شد!", 6000);
-        console.log("🔗 Tx Hash:", tx.hash);
+        showToast("✅ Payment Link ایجاد شد!", 6000);
+        console.log("Tx:", tx.hash);
 
-    } catch (error) {
-        console.error(error);
-        showToast("خطا: " + (error.reason || error.message || "Unknown error"), 7000);
+    } catch (e) {
+        console.error(e);
+        showToast("خطا: " + (e.reason || e.message));
     }
 }
   
