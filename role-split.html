@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arc Protocol | Role-Based Split</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #0b0f19; color: #f3f4f6; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+
+    <!-- Navbar -->
+    <header class="border-b border-gray-800 bg-gray-900/50 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <a href="index.html" class="bg-indigo-600 p-2 rounded-xl text-white font-bold text-xl"><i class="fa-solid fa-arrow-left"></i></a>
+                <span class="text-xl font-bold tracking-wide">Role-Based Splitter</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="text-xs text-gray-400 font-mono bg-gray-800 px-3 py-1.5 rounded-lg">Contract: 0x2eC8...856E</span>
+                <button id="connectWalletBtn" onclick="connectWallet()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl font-medium transition flex items-center gap-2 text-sm">
+                    <i class="fa-solid fa-wallet"></i> Connect Wallet
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto px-4 py-10 w-full space-y-8">
+        
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-6">
+            <div>
+                <h3 class="text-lg font-bold flex items-center gap-2"><i class="fa-solid fa-users-gear text-indigo-400"></i> Manage Role Percentages (Basis Points)</h3>
+                <p class="text-gray-400 text-sm">Configure revenue distribution based on organizational roles (e.g., Development, Marketing, Advisors). Total shares must equal 10,000 (100%).</p>
+            </div>
+
+            <!-- Roles Table / List -->
+            <div id="rolesContainer" class="space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-950 p-4 rounded-xl border border-gray-800 items-center">
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Role Name</label>
+                        <input type="text" value="Development" class="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Wallet Address</label>
+                        <input type="text" placeholder="0x..." class="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm font-mono text-gray-200 focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Share (Basis Points)</label>
+                        <input type="number" value="5000" class="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-indigo-500">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-950 p-4 rounded-xl border border-gray-800 items-center">
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Role Name</label>
+                        <input type="text" value="Marketing" class="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Wallet Address</label>
+                        <input type="text" placeholder="0x..." class="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm font-mono text-gray-200 focus:outline-none focus:border-indigo-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Share (Basis Points)</label>
+                        <input type="number" value="5000" class="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-indigo-500">
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center pt-2">
+                <button onclick="addRoleField()" class="bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-xl text-sm transition"><i class="fa-solid fa-plus"></i> Add Role</button>
+                <button onclick="saveRolesConfig()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-medium transition text-sm">Save Role Configuration</button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-gray-800 py-6 text-center text-gray-500 text-sm">
+        Arc Protocol © 2026
+    </footer>
+
+    <script>
+        const contractAddress = "0x2eC83898bDd1062539a6bea39f61457Df809856E";
+        let provider, signer, userAddress;
+
+        async function connectWallet() {
+            if (window.ethereum) {
+                provider = new ethers.BrowserProvider(window.ethereum);
+                signer = await provider.getSigner();
+                userAddress = await signer.getAddress();
+                document.getElementById('connectWalletBtn').innerText = userAddress.substring(0, 6) + '...' + userAddress.substring(38);
+            } else {
+                alert('Please install MetaMask!');
+            }
+        }
+
+        function addRoleField() {
+            const container = document.getElementById('rolesContainer');
+            const newRow = document.createElement('div');
+            newRow.className = "grid grid-cols-1 md:grid-cols-3 gap-4 bg-gray-950 p-4 rounded-xl border border-gray-800 items-center";
+            newRow.innerHTML = `
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Role Name</label>
+                    <input type="text" placeholder="Advisor" class="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Wallet Address</label>
+                    <input type="text" placeholder="0x..." class="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm font-mono text-gray-200 focus:outline-none focus:border-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Share (Basis Points)</label>
+                    <input type="number" placeholder="0" class="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-gray-200 focus:outline-none focus:border-indigo-500">
+                </div>
+            `;
+            container.appendChild(newRow);
+        }
+
+        async function saveRolesConfig() {
+            if (!signer) {
+                alert('Please connect your wallet first!');
+                return;
+            }
+            alert('Saving role configuration to contract: ' + contractAddress);
+        }
+    </script>
+</body>
+</html>
