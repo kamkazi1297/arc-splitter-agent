@@ -21,60 +21,47 @@
         radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.05) 0%, transparent 50%);
       color: #f8fafc;
       min-height: 100vh;
-      overflow-x: hidden;
     }
     
     .glass {
       background: rgba(18, 18, 38, 0.65);
       backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
       border: 1px solid rgba(255, 255, 255, 0.07);
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
     
-    .light {
-      background: #f1f5f9 !important;
-      background-image: 
-        radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.05) 0%, transparent 40%),
-        radial-gradient(circle at 90% 80%, rgba(34, 211, 238, 0.05) 0%, transparent 40%) !important;
-      color: #0f172a !important;
-    }
-
     .light .glass {
       background: rgba(255, 255, 255, 0.85);
       border-color: rgba(0, 0, 0, 0.08);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1);
     }
 
-    .light body, .light h1, .light h3, .light label, .light .text-white {
-      color: #0f172a;
-    }
-    .light .text-gray-400 { color: #475569 !important; }
-    .light .text-gray-300 { color: #334155 !important; }
-
-    select, input, textarea {
+    /* Fix for Select Dropdown in Dark Mode */
+    select {
       background-color: rgba(255, 255, 255, 0.03);
       color: white;
       border: 1px solid rgba(255, 255, 255, 0.1);
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    select:hover, input:hover, textarea:hover {
-      border-color: rgba(255, 255, 255, 0.2);
-    }
-    select:focus, input:focus, textarea:focus {
-      border-color: #10b981;
-      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
-      outline: none;
-    }
-
-    .light select, .light input, .light textarea {
+    .light select {
       background-color: #ffffff;
       color: #0f172a;
       border: 1px solid #cbd5e1;
     }
 
-    .invalid-field {
-      border-color: #ef4444 !important;
+    select option {
+      background-color: #0f172a;
+      color: #f1f5f9;
+      padding: 12px 16px;
+    }
+    .light select option {
+      background-color: #ffffff;
+      color: #0f172a;
+    }
+
+    /* Hover effect for options */
+    select option:hover {
+      background-color: #1e2937;
+    }
+    .light select option:hover {
+      background-color: #f1f5f9;
     }
 
     .error-msg {
@@ -83,20 +70,12 @@
       margin-top: 4px;
       display: block;
     }
-
-    .app-button {
-      transition: all 0.25s ease;
-    }
-    .app-button:active {
-      transform: scale(0.98);
-    }
   </style>
 </head>
-<body class="text-white min-h-screen selection:bg-emerald-500 selection:text-black">
+<body class="text-white min-h-screen">
 
   <div class="max-w-6xl mx-auto px-4 py-6 sm:py-8">
     
-    <!-- Header -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-6 rounded-3xl backdrop-blur-xl">
       <div>
         <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Arc <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Pay Link</span></h1>
@@ -104,16 +83,11 @@
       </div>
       
       <div class="flex items-center gap-3">
-        <div class="flex bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 rounded-2xl p-1 text-xs">
-          <button onclick="switchTab('create')" id="tabCreate" class="px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400">Create Link</button>
-          <button onclick="switchTab('history')" id="tabHistory" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-600">History</button>
-        </div>
-
-        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/10 light:hover:bg-black/10 border border-white/10 light:border-black/10 rounded-2xl transition-all shadow-lg">
+        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/10 light:hover:bg-black/10 border border-white/10 light:border-black/10 rounded-2xl">
           <i class="fas fa-moon text-lg text-emerald-400"></i>
         </button>
 
-        <button onclick="connectWallet()" id="connectHeaderBtn" class="app-button px-4 py-2.5 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl text-xs flex items-center gap-2">
+        <button onclick="connectWallet()" id="connectHeaderBtn" class="px-4 py-2.5 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl text-xs flex items-center gap-2">
           <i class="fas fa-wallet text-emerald-600"></i>
           <span id="headerWalletText">Connect Wallet</span>
         </button>
@@ -121,64 +95,33 @@
     </div>
 
     <!-- Toast -->
-    <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#121228] light:bg-slate-900 border border-white/15 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 z-50 text-xs sm:text-sm backdrop-blur-xl">
+    <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#121228] light:bg-slate-900 border border-white/15 text-white px-5 py-3 rounded-2xl shadow-2xl z-50">
       <span id="toastText"></span>
     </div>
 
-    <!-- TAB 1: CREATE -->
+    <!-- Create Tab -->
     <div id="viewCreate" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
       <div class="lg:col-span-7 space-y-6">
         
-        <!-- Receiver -->
-        <div class="glass rounded-3xl p-6">
-          <h3 class="font-bold text-sm text-gray-400 uppercase tracking-wider mb-3">Receiver</h3>
-          <div class="flex items-center justify-between bg-white/[0.02] border border-white/10 p-4 rounded-2xl">
-            <div>
-              <div class="text-xs text-gray-400">Connected Wallet</div>
-              <div id="displayWallet" class="font-mono font-bold text-sm mt-0.5">Not Connected</div>
-            </div>
-            <button onclick="connectWallet()" class="text-xs font-semibold text-emerald-400 hover:underline">Change</button>
-          </div>
-        </div>
-
-        <!-- Token -->
+        <!-- Token Selection -->
         <div class="glass rounded-3xl p-6">
           <h3 class="font-bold text-sm text-gray-400 uppercase tracking-wider mb-3">Token</h3>
-          <div class="space-y-3">
-            <select id="tokenSelect" onchange="loadUserBalance(); updatePreview()" class="w-full rounded-2xl px-4 py-3.5 text-sm font-medium cursor-pointer">
-              <option value="USDC">🟦 USDC</option>
-              <option value="EURC">🟣 EURC</option>
-              <option value="CIRBTC">🟠 CIRBTC</option>
-            </select>
-            <div id="tokenBalanceDisplay" class="text-xs text-gray-400">Balance: —</div>
-          </div>
+          <select id="tokenSelect" onchange="handleTokenChange()" class="w-full rounded-2xl px-4 py-3.5 text-sm font-medium cursor-pointer">
+            <option value="USDC">🟦 USDC</option>
+            <option value="EURC">🟣 EURC</option>
+            <option value="CIRBTC">🟠 cirBTC</option>
+            <option value="custom">➕ Add Custom Token</option>
+          </select>
+          <div id="tokenBalanceDisplay" class="text-xs text-gray-400 mt-2">Balance: —</div>
         </div>
 
         <!-- Amount -->
         <div class="glass rounded-3xl p-6">
           <div class="flex justify-between items-center mb-3">
             <h3 class="font-bold text-sm text-gray-400 uppercase tracking-wider">Amount</h3>
-            <div class="flex bg-white/5 rounded-xl p-1 text-xs">
-              <button onclick="setAmountMode('fixed')" id="modeFixed" class="px-3 py-1 rounded-lg font-semibold bg-emerald-500/20 text-emerald-400">Fixed</button>
-              <button onclick="setAmountMode('flexible')" id="modeFlexible" class="px-3 py-1 rounded-lg font-semibold text-gray-400">Flexible</button>
-            </div>
           </div>
-
-          <div id="fixedAmountContainer">
-            <input type="number" id="fixedAmountInput" oninput="updatePreview()" class="w-full rounded-2xl px-4 py-3.5 text-base font-bold" placeholder="100">
-            <span id="errAmount" class="error-msg hidden"></span>
-          </div>
-
-          <div id="flexibleAmountContainer" class="hidden grid grid-cols-2 gap-3">
-            <div>
-              <label class="text-[11px] text-gray-400 block mb-1">Minimum</label>
-              <input type="number" id="flexMinInput" class="w-full rounded-2xl px-4 py-3 text-sm" placeholder="10">
-            </div>
-            <div>
-              <label class="text-[11px] text-gray-400 block mb-1">Maximum (Optional)</label>
-              <input type="number" id="flexMaxInput" class="w-full rounded-2xl px-4 py-3 text-sm" placeholder="1000">
-            </div>
-          </div>
+          <input type="number" id="fixedAmountInput" oninput="updatePreview()" class="w-full rounded-2xl px-4 py-3.5 text-base font-bold" placeholder="100" value="100">
+          <span id="errAmount" class="error-msg hidden"></span>
         </div>
 
         <!-- Title -->
@@ -197,109 +140,53 @@
         <!-- Expiration -->
         <div class="glass rounded-3xl p-6">
           <h3 class="font-bold text-sm text-gray-400 uppercase tracking-wider mb-3">Expiration</h3>
-          <select id="expirationSelect" onchange="handleExpirationChange()" class="w-full rounded-2xl px-4 py-3.5 text-sm">
+          <select id="expirationSelect" onchange="updatePreview()" class="w-full rounded-2xl px-4 py-3.5 text-sm">
             <option value="never">Never</option>
-            <option value="1h">1 Hour</option>
             <option value="24h">24 Hours</option>
             <option value="7d">7 Days</option>
             <option value="30d">30 Days</option>
-            <option value="custom">Custom Date</option>
           </select>
-          <div id="customDateContainer" class="hidden mt-3">
-            <input type="datetime-local" id="customDateInput" class="w-full rounded-2xl px-4 py-3 text-sm">
-          </div>
         </div>
 
-        <!-- Generate Button -->
-        <button onclick="generateLink()" class="app-button w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:brightness-110 py-5 rounded-2xl text-base font-bold shadow-xl shadow-emerald-500/20 text-gray-950">
+        <button onclick="generateLink()" class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:brightness-110 py-5 rounded-2xl text-base font-bold text-gray-950">
           Generate Arc Pay Link
         </button>
       </div>
 
-      <!-- Live Preview -->
+      <!-- Preview -->
       <div class="lg:col-span-5">
-        <div class="glass rounded-3xl p-6 sm:p-8 sticky top-24 space-y-6">
+        <div class="glass rounded-3xl p-8 sticky top-24">
           <h3 class="font-bold text-base mb-4 flex items-center gap-2">
             <i class="fas fa-eye text-emerald-400"></i> Live Preview
           </h3>
-
-          <div id="previewCardContent" class="bg-black/30 border border-white/10 rounded-2xl p-6 space-y-4 backdrop-blur-md">
-            <div class="text-xs uppercase text-emerald-400 font-bold tracking-wider">Arc Pay</div>
-            <div id="prevTitle" class="text-xl font-extrabold text-white">Payment Request</div>
-            <div id="prevAmount" class="text-2xl font-black text-emerald-400">100 USDC</div>
-
-            <div class="space-y-2 pt-2 border-t border-white/10 text-xs">
-              <div class="flex justify-between text-gray-400">
-                <span>Receiver</span>
-                <span id="prevReceiver" class="font-mono text-white">Not Connected</span>
-              </div>
-              <div class="flex justify-between text-gray-400">
-                <span>Description</span>
-                <span id="prevDesc" class="text-white text-right max-w-[180px] truncate">—</span>
-              </div>
-              <div class="flex justify-between text-gray-400">
-                <span>Expires</span>
-                <span id="prevExpires" class="text-white">Never</span>
-              </div>
-            </div>
-
-            <div class="pt-4 flex flex-col items-center justify-center">
-              <div id="qrcode" class="bg-white p-2 rounded-xl mb-4"></div>
-              <button class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold rounded-xl text-sm shadow-lg">Pay with Wallet</button>
-            </div>
-          </div>
-
-          <div class="space-y-3">
-            <div>
-              <label class="text-[11px] text-gray-400 uppercase tracking-wider block mb-1">Link</label>
-              <input type="text" id="generatedLinkOutput" readonly class="w-full rounded-xl px-4 py-3 text-xs font-mono bg-black/40">
-            </div>
-            <div class="grid grid-cols-2 gap-2">
-              <button onclick="copyGeneratedLink()" class="py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-semibold flex items-center justify-center gap-2">
-                <i class="fas fa-copy"></i> Copy Link
-              </button>
-              <button onclick="downloadQR()" class="py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-semibold flex items-center justify-center gap-2">
-                <i class="fas fa-download"></i> Download QR
-              </button>
-            </div>
+          <div class="bg-black/30 border border-white/10 rounded-2xl p-6">
+            <div class="text-xs uppercase text-emerald-400 font-bold">Arc Pay</div>
+            <div id="prevTitle" class="text-xl font-extrabold">Payment Request</div>
+            <div id="prevAmount" class="text-3xl font-black text-emerald-400 mt-1">100 USDC</div>
+            <div id="qrcode" class="bg-white p-3 rounded-2xl my-6 mx-auto w-fit"></div>
           </div>
         </div>
-      </div>
-    </div>
-
-    <!-- TAB 2: HISTORY -->
-    <div id="viewHistory" class="hidden space-y-6">
-      <div class="glass rounded-3xl p-6 sm:p-8 space-y-6">
-        <h3 class="font-bold text-lg flex items-center gap-2"><i class="fas fa-history text-emerald-400"></i> Payment Links History</h3>
-        <div id="historyTableBody" class="space-y-3"></div>
       </div>
     </div>
   </div>
 
   <!-- Success Modal -->
-  <div id="successModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
-    <div class="glass border border-white/15 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-6 text-center">
-      <div class="w-12 h-12 bg-emerald-500/20 border border-emerald-500 text-emerald-400 rounded-full flex items-center justify-center mx-auto text-2xl">✓</div>
-      <h3 class="text-xl font-bold">Payment Link Created Successfully!</h3>
-      <div id="modalQRContainer" class="bg-white p-3 rounded-2xl inline-block"></div>
-      <input type="text" id="modalLinkInput" readonly class="w-full rounded-xl px-4 py-3 text-xs font-mono bg-black/40 text-center">
-      <div class="grid grid-cols-2 gap-3">
-        <button onclick="copyModalLink()" class="py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm font-semibold">Copy Link</button>
-        <button onclick="closeSuccessModal()" class="py-3 bg-emerald-500 text-gray-950 font-bold rounded-xl text-sm">Done</button>
-      </div>
+  <div id="successModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50">
+    <div class="glass rounded-3xl p-8 max-w-md w-full text-center">
+      <h3 class="text-2xl font-bold mb-2">Payment Link Created!</h3>
+      <div id="modalQRContainer" class="bg-white p-4 rounded-2xl inline-block my-6"></div>
+      <input type="text" id="modalLinkInput" readonly class="w-full bg-black/50 text-center p-3 rounded-xl text-sm font-mono">
+      <button onclick="copyModalLink()" class="mt-4 w-full py-3 bg-emerald-500 text-black font-bold rounded-2xl">Copy Link</button>
     </div>
   </div>
 
 <script>
-  // ====================== CONFIG ======================
   const CONTRACT_ADDRESS = "0xca96eBfD87065B90Ca9a07b8383669787c3218aE";
   const ARC_CHAIN_ID = 5042002;
 
   let signer = null;
   let userAddress = null;
   let provider = null;
-  let amountMode = 'fixed';
-  let currentLinks = JSON.parse(localStorage.getItem('arcPaymentLinks') || '[]');
 
   const tokens = {
     USDC:   { address: "0x3600000000000000000000000000000000000000", decimals: 6, symbol: "USDC" },
@@ -309,43 +196,36 @@
 
   const ArcPaymentLinksABI = [
     "function createPaymentLink(tuple(bytes32 linkId, address token, uint256 amount, uint256 expiration, bytes32 claimHash, address restrictedTo, string qrMetaData, uint256 salt) params) external payable",
-    "function generateLinkId(address restrictedTo, uint256 salt) external view returns (bytes32)",
-    "event PaymentLinkCreated(bytes32 indexed linkId, address indexed creator, address indexed token, uint256 amount, uint256 expiration, address restrictedTo, string qrMetaData)"
+    "function generateLinkId(address restrictedTo, uint256 salt) external view returns (bytes32)"
   ];
 
-  // ====================== WALLET ======================
   async function connectWallet() {
-    if (!window.ethereum) return showToast("MetaMask not found!", 4000);
+    if (!window.ethereum) return showToast("MetaMask not found");
 
     try {
       provider = new ethers.BrowserProvider(window.ethereum);
       const network = await provider.getNetwork();
-
       if (network.chainId !== BigInt(ARC_CHAIN_ID)) {
-        return showToast("Please switch to Arc Testnet (Chain ID: 5042002)", 6000);
+        return showToast("Please switch to Arc Testnet", 5000);
       }
 
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       userAddress = accounts[0];
       signer = await provider.getSigner();
 
-      document.getElementById("displayWallet").textContent = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
       document.getElementById("headerWalletText").textContent = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
-      document.getElementById("prevReceiver").textContent = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
-
-      showToast("Wallet Connected Successfully");
-      await loadUserBalance();
-      updatePreview();
+      showToast("Wallet Connected");
+      loadUserBalance();
     } catch (e) {
-      console.error(e);
-      showToast("Failed to connect wallet");
+      showToast("Connection failed");
     }
   }
 
   async function loadUserBalance() {
     const tokenKey = document.getElementById('tokenSelect').value;
+    if (tokenKey === "custom") return;
     const token = tokens[tokenKey];
-    if (!signer || !userAddress) return;
+    if (!signer) return;
 
     try {
       const contract = new ethers.Contract(token.address, ["function balanceOf(address) view returns (uint256)"], signer);
@@ -357,105 +237,80 @@
     }
   }
 
-  // ====================== CREATE LINK ======================
+  async function handleTokenChange() {
+    const select = document.getElementById('tokenSelect');
+    if (select.value === "custom") {
+      const addr = prompt("Enter Custom Token Address (0x...):");
+      if (addr && ethers.isAddress(addr)) {
+        const option = document.createElement("option");
+        option.value = addr;
+        option.text = addr.substring(0, 8) + "... (Custom)";
+        select.appendChild(option);
+        select.value = addr;
+      } else {
+        select.value = "USDC";
+      }
+    }
+    loadUserBalance();
+    updatePreview();
+  }
+
   async function generateLink() {
-    if (!signer || !userAddress) return showToast("Please connect your wallet first", 4000);
+    if (!signer) return showToast("Please connect wallet first");
 
     const title = document.getElementById('linkTitle').value.trim();
+    const amount = parseFloat(document.getElementById('fixedAmountInput').value);
     const tokenKey = document.getElementById('tokenSelect').value;
-    const tokenInfo = tokens[tokenKey];
-    const amountInput = parseFloat(document.getElementById('fixedAmountInput').value);
-
+    
     if (!title) return showError('errTitle', "Title is required");
-    if (amountMode === 'fixed' && (!amountInput || amountInput <= 0)) {
-      return showError('errAmount', "Please enter a valid amount");
-    }
+    if (!amount || amount <= 0) return showError('errAmount', "Enter valid amount");
 
-    showToast("Creating payment link...");
+    showToast("Creating link...");
 
     try {
       const contract = new ethers.Contract(CONTRACT_ADDRESS, ArcPaymentLinksABI, signer);
-      const amountWei = ethers.parseUnits(amountInput.toString(), tokenInfo.decimals);
-
-      let expiration = 0;
-      const expOption = document.getElementById('expirationSelect').value;
-      if (expOption !== 'never') {
-        const seconds = getExpirationSeconds(expOption);
-        expiration = Math.floor(Date.now() / 1000) + seconds;
-      }
+      const tokenInfo = tokens[tokenKey] || { address: tokenKey, decimals: 18, symbol: "CUSTOM" };
+      const amountWei = ethers.parseUnits(amount.toString(), tokenInfo.decimals);
 
       const salt = Date.now();
       const linkId = await contract.generateLinkId(ethers.ZeroAddress, salt);
 
       const params = {
-        linkId: linkId,
+        linkId,
         token: tokenInfo.address,
         amount: amountWei,
-        expiration: expiration,
+        expiration: 0,
         claimHash: ethers.ZeroHash,
         restrictedTo: ethers.ZeroAddress,
         qrMetaData: title,
-        salt: salt
+        salt
       };
 
-      const tx = await contract.createPaymentLink(params, {
-        value: tokenInfo.address === ethers.ZeroAddress ? amountWei : 0
-      });
-
+      const tx = await contract.createPaymentLink(params);
       await tx.wait();
 
-      const newLink = {
-        id: linkId,
-        txHash: tx.hash,
-        title: title,
-        token: tokenInfo.symbol,
-        amount: amountInput,
-        expiration: expiration,
-        status: "Active",
-        createdAt: Date.now(),
-        url: `https://arcsplit.kamkazi-1297.workers.dev/pay/${linkId.toString().slice(0,16)}`,
-        creator: userAddress
-      };
-
-      currentLinks.unshift(newLink);
-      localStorage.setItem('arcPaymentLinks', JSON.stringify(currentLinks));
-
-      showSuccessModal(newLink);
       showToast("Payment Link Created Successfully!", 5000);
+      showSuccessModal(`https://arcsplit.kamkazi-1297.workers.dev/pay/${linkId}`);
 
-    } catch (error) {
-      console.error(error);
-      showToast(error.reason || error.message || "Transaction failed", 6000);
+    } catch (e) {
+      console.error(e);
+      showToast("Transaction failed");
     }
   }
 
-  function getExpirationSeconds(option) {
-    const map = { '1h': 3600, '24h': 86400, '7d': 604800, '30d': 2592000 };
-    return map[option] || 0;
+  function showSuccessModal(url) {
+    document.getElementById('modalLinkInput').value = url;
+    const qrDiv = document.getElementById('modalQRContainer');
+    qrDiv.innerHTML = '';
+    QRCode.toCanvas(url, { width: 180 }, (err, canvas) => {
+      if (!err) qrDiv.appendChild(canvas);
+    });
+    document.getElementById('successModal').classList.remove('hidden');
   }
 
-  // ====================== UI FUNCTIONS ======================
-  function setAmountMode(mode) {
-    amountMode = mode;
-    document.getElementById('modeFixed').classList.toggle('bg-emerald-500/20', mode === 'fixed');
-    document.getElementById('modeFlexible').classList.toggle('bg-emerald-500/20', mode === 'flexible');
-    document.getElementById('fixedAmountContainer').classList.toggle('hidden', mode === 'flexible');
-    document.getElementById('flexibleAmountContainer').classList.toggle('hidden', mode === 'fixed');
-    updatePreview();
-  }
-
-  function handleExpirationChange() {
-    const val = document.getElementById('expirationSelect').value;
-    document.getElementById('customDateContainer').classList.toggle('hidden', val !== 'custom');
-    updatePreview();
-  }
-
-  function showError(id, msg) {
-    const el = document.getElementById(id);
-    if (el) {
-      el.textContent = msg;
-      el.classList.remove('hidden');
-    }
+  function copyModalLink() {
+    navigator.clipboard.writeText(document.getElementById('modalLinkInput').value);
+    showToast("Link copied!");
   }
 
   function showToast(msg, duration = 4000) {
@@ -465,65 +320,19 @@
     setTimeout(() => toast.classList.add("hidden"), duration);
   }
 
+  function showError(id, msg) {
+    const el = document.getElementById(id);
+    el.textContent = msg;
+    el.classList.remove('hidden');
+  }
+
   function updatePreview() {
-    const title = document.getElementById('linkTitle').value || 'Payment Request';
-    const token = document.getElementById('tokenSelect').value;
-    const amount = document.getElementById('fixedAmountInput').value || '100';
+    const title = document.getElementById('linkTitle').value || "Payment Request";
+    const amount = document.getElementById('fixedAmountInput').value || "100";
+    const token = document.getElementById('tokenSelect').options[document.getElementById('tokenSelect').selectedIndex].text.split(' ')[0];
 
     document.getElementById('prevTitle').textContent = title;
     document.getElementById('prevAmount').textContent = `${amount} ${token}`;
-    document.getElementById('prevDesc').textContent = document.getElementById('linkDesc').value || '—';
-
-    const mockUrl = `https://arcsplit.kamkazi-1297.workers.dev/pay/example`;
-    document.getElementById('generatedLinkOutput').value = mockUrl;
-
-    const qrContainer = document.getElementById('qrcode');
-    qrContainer.innerHTML = '';
-    QRCode.toCanvas(mockUrl, { width: 140, margin: 1 }, (err, canvas) => {
-      if (!err) qrContainer.appendChild(canvas);
-    });
-  }
-
-  function showSuccessModal(link) {
-    document.getElementById('modalLinkInput').value = link.url;
-    const qrContainer = document.getElementById('modalQRContainer');
-    qrContainer.innerHTML = '';
-    QRCode.toCanvas(link.url, { width: 160, margin: 2 }, (err, canvas) => {
-      if (!err) qrContainer.appendChild(canvas);
-    });
-    document.getElementById('successModal').classList.remove('hidden');
-  }
-
-  function copyModalLink() {
-    navigator.clipboard.writeText(document.getElementById('modalLinkInput').value);
-    showToast("Link copied to clipboard!");
-  }
-
-  function copyGeneratedLink() {
-    navigator.clipboard.writeText(document.getElementById('generatedLinkOutput').value);
-    showToast("Link copied!");
-  }
-
-  function downloadQR() {
-    showToast("QR Code downloaded (demo)");
-  }
-
-  function closeSuccessModal() {
-    document.getElementById('successModal').classList.add('hidden');
-    switchTab('history');
-  }
-
-  function switchTab(tab) {
-    document.getElementById('viewCreate').classList.toggle('hidden', tab !== 'create');
-    document.getElementById('viewHistory').classList.toggle('hidden', tab !== 'history');
-    
-    document.getElementById('tabCreate').className = tab === 'create' 
-      ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" 
-      : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400";
-    
-    document.getElementById('tabHistory').className = tab === 'history' 
-      ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" 
-      : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400";
   }
 
   function toggleTheme() {
@@ -533,7 +342,6 @@
     icon.classList.toggle("fa-sun");
   }
 
-  // ====================== INIT ======================
   window.addEventListener('load', () => {
     updatePreview();
   });
