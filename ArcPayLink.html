@@ -328,6 +328,14 @@
     CIRBTC: { address: "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF", decimals: 8, symbol: "cirBTC" }
   };
 
+    // Auto reconnect if already connected
+  window.addEventListener('load', async () => {
+    if (window.ethereum && window.ethereum.selectedAddress) {
+      setTimeout(connectWallet, 800); // تلاش خودکار برای اتصال
+    }
+    updatePreview();
+  });
+
     const ArcPaymentLinksABI = [
     "function createPaymentLink(tuple(bytes32 linkId, address token, uint256 amount, uint256 expiration, bytes32 claimHash, address restrictedTo, string qrMetaData, uint256 salt) params) external payable",
     "function generateLinkId(address restrictedTo, uint256 salt) external view returns (bytes32)",
@@ -336,34 +344,59 @@
   ];
 
   // ====================== WALLET ======================
+    // ====================== WALLET ======================
   async function connectWallet() {
-    if (!window.ethereum) return showToast("MetaMask not found!", 4000);
+    if (!window.ethereum) {
+      return showToast("MetaMask not found! Please install MetaMask.", 5000);
+    }
 
     try {
-      provider = new ethers.BrowserProvider(window.ethereum);
-      const network = await provider.getNetwork();
+      // درخواست حساب‌ها
+      const accounts = await window.ethereum.request({ 
+        method: 'eth_requestAccounts' 
+      });
 
+      userAddress = accounts[0];
+
+      // ایجاد Provider
+      provider = new ethers.BrowserProvider(window.ethereum);
+      
+      // چک شبکه
+      const network = await provider.getNetwork();
+      
       if (network.chainId !== BigInt(ARC_CHAIN_ID)) {
-        return showToast("Please switch to Arc Testnet (Chain ID: 5042002)", 6000);
+        showToast("Switching to Arc Testnet...", 3000);
+        
+        try {
+          await window.ethereum.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x4D0002' }]   // 5042002 در hex
+          });
+        } catch (switchError) {
+          return showToast("Please manually switch to Arc Testnet (Chain ID: 5042002)", 6000);
+        }
       }
 
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      userAddress = accounts[0];
+      // گرفتن Signer
       signer = await provider.getSigner();
 
-      document.getElementById("displayWallet").textContent = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
-      document.getElementById("headerWalletText").textContent = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
-      document.getElementById("prevReceiver").textContent = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
+      // بروزرسانی UI
+      const shortAddress = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
+      
+      document.getElementById("displayWallet").textContent = shortAddress;
+      document.getElementById("headerWalletText").textContent = shortAddress;
+      document.getElementById("prevReceiver").textContent = shortAddress;
 
-      showToast("Wallet Connected Successfully");
+      showToast("✅ Wallet Connected Successfully", 3000);
+      
       await loadUserBalance();
       updatePreview();
+
     } catch (e) {
-      console.error(e);
-      showToast("Failed to connect wallet");
+      console.error("Wallet Connection Error:", e);
+      showToast("Failed to connect wallet. Please try again.", 5000);
     }
   }
-
 
   async function handleTokenChange() {
   const select = document.getElementById('tokenSelect');
