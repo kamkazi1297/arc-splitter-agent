@@ -9,49 +9,91 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
     
+    :root {
+      --bg-gradient: linear-gradient(135hr, #080816 0%, #12122c 50%, #0a0a18 100%);
+      --glass-bg: rgba(255, 255, 255, 0.03);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --glass-glow: rgba(99, 102, 241, 0.1);
+    }
+
     body { 
-      font-family: 'Inter', system-ui, sans-serif; 
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif; 
+      background: #070711;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(34, 211, 238, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.05) 0%, transparent 50%);
+      color: #f8fafc;
+      min-height: 100vh;
+      overflow-x: hidden;
     }
     
     .glass {
-      background: rgba(255,255,255,0.08);
-      backdrop-filter: blur(20px);
+      background: rgba(18, 18, 38, 0.65);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
+    
+    .light {
+      background: #f1f5f9 !important;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(34, 211, 238, 0.05) 0%, transparent 40%) !important;
+      color: #0f172a !important;
+    }
+
     .light .glass {
-      background: rgba(255,255,255,0.88);
-      border-color: rgba(0,0,0,0.12);
+      background: rgba(255, 255, 255, 0.85);
+      border-color: rgba(0, 0, 0, 0.08);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1);
     }
 
     .light body, .light h1, .light h3, .light label, .light .text-white {
-      color: #1f2937;
+      color: #0f172a;
     }
     .light .text-gray-400 { color: #64748b; }
 
     select, input {
-      background-color: rgba(255,255,255,0.05);
+      background-color: rgba(255, 255, 255, 0.03);
       color: white;
-      border: 1px solid rgba(255,255,255,0.25);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
+    select:hover, input:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+    select:focus, input:focus {
+      border-color: #10b981;
+      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
+    }
+
     .light select, .light input {
-      background-color: #f8fafc;
-      color: #1f2937;
+      background-color: #ffffff;
+      color: #0f172a;
       border: 1px solid #e2e8f0;
+    }
+    .light select:focus, .light input:focus {
+      border-color: #10b981;
+      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
     }
 
     select option {
-      background-color: #1a1a2e;
+      background-color: #0f172a;
       color: white;
-      padding: 12px 16px;
+      padding: 14px 18px;
     }
     .light select option {
-      background-color: #f8fafc;
-      color: #1f2937;
+      background-color: #ffffff;
+      color: #0f172a;
     }
 
     .invalid {
       border-color: #ef4444 !important;
+      background-color: rgba(239, 68, 68, 0.05) !important;
       animation: shake 0.3s;
     }
 
@@ -64,12 +106,10 @@
       right: 16px;
       top: 50%;
       transform: translateY(-50%);
-      color: #9ca3af;
+      color: #64748b;
       font-weight: 600;
       pointer-events: none;
-    }
-    .light .percent-container::after {
-      color: #64748b;
+      font-size: 0.875rem;
     }
 
     @keyframes shake {
@@ -79,8 +119,17 @@
     }
 
     .preview-scroll {
-      max-height: 320px;
+      max-height: 280px;
       overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.2) transparent;
+    }
+    .preview-scroll::-webkit-scrollbar {
+      width: 5px;
+    }
+    .preview-scroll::-webkit-scrollbar-thumb {
+      background-color: rgba(255,255,255,0.2);
+      border-radius: 10px;
     }
 
     #logoContainer {
@@ -89,13 +138,13 @@
 
     #glowRing {
       position: absolute;
-      inset: -10px;
-      background: linear-gradient(45deg, #10b981, #22d3ee, #10b981);
-      border-radius: 2rem;
-      opacity: 0.25;
-      filter: blur(8px);
+      inset: -6px;
+      background: linear-gradient(135deg, #10b981, #22d3ee, #6366f1);
+      border-radius: 1.25rem;
+      opacity: 0.4;
+      filter: blur(10px);
       z-index: -1;
-      animation: rotateGlow 10s linear infinite;
+      animation: rotateGlow 8s linear infinite;
       transition: all 0.8s ease;
     }
 
@@ -106,32 +155,56 @@
 
     #logoContainer.connected #glowRing {
       animation: none;
-      opacity: 0.45;
-      filter: blur(10px);
-      box-shadow: 0 0 25px -2px rgb(16 185 129 / 0.6);
+      opacity: 0.8;
+      filter: blur(14px);
+      background: linear-gradient(135deg, #10b981, #34d399);
+      box-shadow: 0 0 30px rgba(16, 185, 129, 0.5);
     }
 
+    /* Modern interactive buttons styling */
+    .app-button {
+      position: relative;
+      overflow: hidden;
+      transition: all 0.25s ease;
+    }
+    .app-button:active {
+      transform: scale(0.98);
+    }
+
+    /* Custom responsive adjustments */
     @media (max-width: 640px) {
-      .max-w-2xl { max-width: 100% !important; padding-left: 8px; padding-right: 8px; }
-      .recipient-row { flex-direction: column; gap: 14px; padding: 18px !important; }
+      .max-w-2xl { max-width: 100% !important; padding-left: 12px; padding-right: 12px; }
+      .recipient-row { 
+        flex-direction: column; 
+        gap: 12px; 
+        padding: 16px !important; 
+        align-items: stretch !important;
+      }
+      .recipient-row > div, .recipient-row > input {
+        width: 100% !important;
+      }
+      .percent-container, .amount-container {
+        width: 100% !important;
+      }
       input[type="text"], input[type="number"] {
-        font-size: 1.05rem !important;
-        padding: 16px 14px !important;
+        font-size: 1rem !important;
+        padding: 14px 16px !important;
       }
     }
   </style>
 </head>
-<body class="bg-gradient-to-br from-[#0b0b1f] to-[#1a1a2e] text-white min-h-screen">
+<body class="text-white min-h-screen selection:bg-emerald-500 selection:text-black">
 
-  <div class="max-w-2xl mx-auto px-4 py-10">
-    <div class="flex justify-between items-center mb-10">
-      <div class="flex items-center gap-3">
+  <div class="max-w-2xl mx-auto px-4 py-8 sm:py-12">
+    <!-- Header Section -->
+    <div class="flex justify-between items-center mb-8 bg-white/[0.02] border border-white/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
+      <div class="flex items-center gap-3.5">
         <div id="logoContainer" class="relative">
           <div id="glowRing"></div>
-          <svg width="52" height="52" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg" class="relative z-10 drop-shadow-2xl">
-            <circle cx="26" cy="26" r="23" stroke="url(#grad1)" stroke-width="3" stroke-opacity="0.6"/>
-            <circle cx="26" cy="26" r="20" fill="#0f172a"/>
-            <text x="26" y="37" font-family="Inter, sans-serif" font-size="32" font-weight="700" fill="url(#grad2)" text-anchor="middle" dominant-baseline="middle">A</text>
+          <svg width="48" height="48" viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg" class="relative z-10 drop-shadow-xl">
+            <circle cx="26" cy="26" r="23" stroke="url(#grad1)" stroke-width="3" stroke-opacity="0.8"/>
+            <circle cx="26" cy="26" r="20" fill="#0b0f19"/>
+            <text x="26" y="37" font-family="Plus Jakarta Sans, sans-serif" font-size="30" font-weight="800" fill="url(#grad2)" text-anchor="middle" dominant-baseline="middle">A</text>
             <line x1="18" y1="32" x2="34" y2="32" stroke="#67e8f9" stroke-width="2.5" stroke-opacity="0.9"/>
             <defs>
               <linearGradient id="grad1" x1="10" y1="10" x2="42" y2="42" gradientUnits="userSpaceOnUse">
@@ -147,182 +220,204 @@
         </div>
 
         <div>
-          <h1 class="text-4xl font-bold">ArcSplit Pro</h1>
-          <p class="text-gray-400">Professional Token Splitter</p>
+          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Pro</span></h1>
+          <p class="text-gray-400 text-xs sm:text-sm font-medium">Professional Decentralized Token Splitter</p>
         </div>
       </div>
+      
+      <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl transition-all shadow-lg">
+        <i class="fas fa-moon text-lg text-emerald-400"></i>
+      </button>
     </div>
 
-    <div class="flex flex-col sm:flex-row gap-3 mb-8">
-      <button onclick="toggleTheme()" id="themeBtn" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all flex-shrink-0">
-        <i class="fas fa-moon text-xl"></i>
+    <!-- Action Connect Hub -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mb-8">
+      <button onclick="showConnectModal()" id="connectBtn" class="app-button px-6 py-4 bg-white text-gray-950 font-bold rounded-2xl flex items-center justify-center gap-2.5 hover:bg-emerald-50 hover:shadow-[0_0_25px_rgba(255,255,255,0.2)] transition-all">
+        <i class="fas fa-wallet text-emerald-600"></i> 
+        <span id="connectText">Connect Wallet</span>
       </button>
 
-      <div class="flex flex-1 gap-3">
-        <button onclick="showConnectModal()" id="connectBtn" class="flex-1 px-6 py-3.5 bg-white text-black font-semibold rounded-2xl flex items-center justify-center gap-2 hover:bg-gray-100 transition-all">
-          <i class="fas fa-wallet"></i> 
-          <span id="connectText">Connect Wallet</span>
-        </button>
-
-        <button onclick="connectTelegram()" id="telegramBtn" 
-        class="flex-1 px-6 py-3.5 bg-gradient-to-r from-[#229ED9] to-[#1a8ac4] hover:brightness-110 text-white font-semibold rounded-2xl flex items-center justify-center gap-3 transition-all group">
-  <i class="fab fa-telegram-plane text-2xl"></i> 
-  <div class="text-left flex-1">
-    <div id="telegramMainText" class="font-semibold">Connect Telegram</div>
-    <div id="telegramSubText" class="text-xs opacity-75 -mt-0.5">Receive notifications & fast split</div>
-  </div>
-</button>
-      </div>
+      <button onclick="connectTelegram()" id="telegramBtn" 
+        class="app-button px-6 py-4 bg-gradient-to-r from-[#229ED9] to-[#1a8ac4] hover:brightness-110 text-white font-semibold rounded-2xl flex items-center justify-center gap-3 transition-all shadow-lg shadow-sky-500/10 group">
+        <i class="fab fa-telegram-plane text-2xl group-hover:scale-110 transition-transform"></i> 
+        <div class="text-left flex-1">
+          <div id="telegramMainText" class="font-bold text-sm leading-tight">Connect Telegram</div>
+          <div id="telegramSubText" class="text-[11px] text-sky-100 opacity-80 -mt-0.5">Fast split & notifications</div>
+        </div>
+      </button>
     </div>
 
-    <div id="status" class="glass border border-white/10 rounded-3xl p-6 mb-8 text-base font-medium">Ready to split tokens on Arc Testnet.</div>
-    <div id="successMessage" class="hidden glass border border-emerald-500/30 bg-emerald-500/10 rounded-3xl p-6 mb-8 text-emerald-400"></div>
+    <!-- Status Boxes -->
+    <div id="status" class="glass rounded-2xl p-5 mb-4 text-sm font-medium flex items-center gap-3 border-l-4 border-l-emerald-500">
+      <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+      Ready to split tokens on Arc Testnet.
+    </div>
+    <div id="successMessage" class="hidden glass border border-emerald-500/30 bg-emerald-500/10 rounded-2xl p-5 mb-6 text-emerald-400 text-sm"></div>
 
-    <div class="glass border border-white/10 rounded-3xl p-8 mb-8">
-      <div class="mb-8">
-        <label class="block text-gray-400 text-sm mb-2">Select Token</label>
-        <select id="tokenSelect" onchange="handleTokenChange()" class="w-full rounded-2xl px-6 py-5 focus:border-emerald-500 outline-none text-base">
-          <option value="0x3600000000000000000000000000000000000000">USDC</option>
-          <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
-          <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
-          <option value="custom">Add Custom Token...</option>
-        </select>
-      </div>
-
-      <div class="mb-8">
-        <label class="block text-gray-400 text-sm mb-2">Total Amount</label>
-        <div class="flex gap-3">
-          <input type="number" id="totalAmount" value="100" step="0.000001" class="flex-1 bg-white/5 border border-white/20 rounded-2xl px-6 py-5 text-3xl outline-none" oninput="updateAll()">
-          <button onclick="setMaxAmount()" class="px-10 bg-white/10 hover:bg-white/20 rounded-2xl font-medium">MAX</button>
-        </div>
-      </div>
-
-      <div class="mb-8">
-        <label class="block text-gray-400 text-sm mb-3">Quick Templates</label>
-        <div class="grid grid-cols-4 gap-3">
-          <button onclick="loadTemplate(1)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">50-50</button>
-          <button onclick="loadTemplate(2)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">33-33-34</button>
-          <button onclick="loadTemplate(3)" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">40-60</button>
-          <button onclick="equalSplit()" class="py-4 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">Equal Split</button>
-        </div>
-      </div>
-
+    <!-- Main Card Panel -->
+    <div class="glass rounded-3xl p-6 sm:p-8 mb-8">
+      
+      <!-- Token Selection -->
       <div class="mb-6">
-        <div class="flex justify-between mb-4">
-          <h3 class="font-semibold">Recipients</h3>
-          <div class="flex gap-3 items-center">
-            <div class="flex bg-white/10 rounded-2xl p-1 text-sm">
-              <button onclick="setMode('manual')" id="manualBtn" class="mode-btn px-5 py-2 rounded-xl font-medium transition-all">Manual</button>
-              <button onclick="setMode('auto')" id="autoBtn" class="mode-btn px-5 py-2 rounded-xl font-medium transition-all">Auto</button>
+        <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Select Token</label>
+        <div class="relative">
+          <select id="tokenSelect" onchange="handleTokenChange()" class="w-full rounded-2xl px-5 py-4 appearance-none focus:outline-none text-sm sm:text-base font-medium cursor-pointer">
+            <option value="0x3600000000000000000000000000000000000000">USDC</option>
+            <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
+            <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
+            <option value="custom">Add Custom Token...</option>
+          </select>
+          <div class="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+            <i class="fas fa-chevron-down text-xs"></i>
+          </div>
+        </div>
+      </div>
+
+      <!-- Total Amount Input -->
+      <div class="mb-6">
+        <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Total Amount</label>
+        <div class="flex gap-2.5">
+          <input type="number" id="totalAmount" value="100" step="0.000001" class="flex-1 rounded-2xl px-5 py-4 text-2xl sm:text-3xl font-bold outline-none" oninput="updateAll()">
+          <button onclick="setMaxAmount()" class="app-button px-6 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl font-bold text-sm text-emerald-400 hover:border-emerald-500/50 transition-all">MAX</button>
+        </div>
+      </div>
+
+      <!-- Quick Templates -->
+      <div class="mb-6">
+        <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2.5">Quick Templates</label>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+          <button onclick="loadTemplate(1)" class="app-button py-3 px-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-semibold transition-all">50-50</button>
+          <button onclick="loadTemplate(2)" class="app-button py-3 px-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-semibold transition-all">33-33-34</button>
+          <button onclick="loadTemplate(3)" class="app-button py-3 px-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-semibold transition-all">40-60</button>
+          <button onclick="equalSplit()" class="app-button py-3 px-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-semibold transition-all">Equal Split</button>
+        </div>
+      </div>
+
+      <div class="h-px bg-white/5 my-6"></div>
+
+      <!-- Recipients Section -->
+      <div class="mb-6">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+          <h3 class="font-bold text-base">Recipients</h3>
+          <div class="flex flex-wrap items-center gap-2">
+            <div class="flex bg-white/5 border border-white/10 rounded-xl p-1 text-xs">
+              <button onclick="setMode('manual')" id="manualBtn" class="mode-btn px-4 py-1.5 rounded-lg font-semibold transition-all">Manual</button>
+              <button onclick="setMode('auto')" id="autoBtn" class="mode-btn px-4 py-1.5 rounded-lg font-semibold transition-all">Auto</button>
             </div>
-            <button onclick="showImportModal()" class="text-sky-400 hover:text-sky-300 flex items-center gap-1 text-sm">
+            <button onclick="showImportModal()" class="px-3.5 py-2 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/20 rounded-xl flex items-center gap-1.5 text-xs font-semibold transition-all">
               <i class="fas fa-upload"></i> Import
             </button>
-            <button onclick="addRecipient()" class="text-emerald-400 hover:text-emerald-300 flex items-center gap-1">
+            <button onclick="addRecipient()" class="px-3.5 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-xl flex items-center gap-1.5 text-xs font-semibold transition-all">
               <i class="fas fa-plus"></i> Add
             </button>
           </div>
         </div>
-        <div id="recipients-list" class="space-y-4"></div>
+        <div id="recipients-list" class="space-y-3"></div>
       </div>
 
-      <div class="mb-8">
-        <h4 class="text-gray-400 text-sm mb-3">Split Preview</h4>
-        <div class="glass rounded-2xl overflow-hidden">
+      <!-- Split Preview Box -->
+      <div class="mb-6">
+        <h4 class="text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2.5">Split Preview</h4>
+        <div class="bg-black/20 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-md">
           <div class="preview-scroll">
-            <table class="w-full">
+            <table class="w-full text-left border-collapse">
               <thead>
-                <tr class="border-b border-white/10 sticky top-0 bg-[#1a1a2e]">
-                  <th class="text-left p-4 text-gray-400">Recipient</th>
-                  <th class="text-right p-4 text-gray-400">Percent</th>
-                  <th class="text-right p-4 text-gray-400">Amount</th>
+                <tr class="border-b border-white/10 sticky top-0 bg-[#121224] text-gray-400 text-xs uppercase tracking-wider">
+                  <th class="p-3.5 font-semibold">Recipient</th>
+                  <th class="text-right p-3.5 font-semibold">Percent</th>
+                  <th class="text-right p-3.5 font-semibold">Amount</th>
                 </tr>
               </thead>
-              <tbody id="preview-body" class="text-sm"></tbody>
+              <tbody id="preview-body" class="text-xs sm:text-sm divide-y divide-white/5"></tbody>
             </table>
           </div>
         </div>
       </div>
 
-      <div class="flex justify-between mb-8">
-        <span id="percent-total" class="font-bold text-lg">Total: 0%</span>
-        <button onclick="distributeRemaining()" class="text-amber-400 hover:text-amber-300">Distribute Remaining</button>
+      <!-- Total & Action controls -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-3 mb-6 bg-white/[0.02] border border-white/5 p-4 rounded-2xl">
+        <span id="percent-total" class="font-bold text-sm sm:text-base">Total: 0%</span>
+        <button onclick="distributeRemaining()" class="text-amber-400 hover:text-amber-300 text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition-colors">
+          <i class="fas fa-sliders"></i> Distribute Remaining
+        </button>
       </div>
 
-      <button id="sendBtn" onclick="sendSplit()" class="w-full bg-gradient-to-r from-pink-500 to-rose-500 py-7 rounded-3xl text-xl font-bold">
+      <button id="sendBtn" onclick="sendSplit()" class="app-button w-full bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 hover:brightness-110 py-5 rounded-2xl text-base sm:text-lg font-bold shadow-xl shadow-rose-500/25 transition-all">
         Send Split Transaction
       </button>
     </div>
 
-    <div class="glass border border-white/10 rounded-3xl p-8">
-      <h3 class="font-semibold mb-4">Recent Transactions</h3>
-      <div id="history" class="space-y-3 max-h-80 overflow-auto"></div>
+    <!-- Recent Transactions Box -->
+    <div class="glass rounded-3xl p-6 sm:p-8">
+      <h3 class="font-bold text-base mb-4 flex items-center gap-2">
+        <i class="fas fa-history text-gray-400 text-sm"></i> Recent Transactions
+      </h3>
+      <div id="history" class="space-y-2.5 max-h-60 overflow-auto pr-1"></div>
     </div>
   </div>
 
   <!-- Import Modal -->
-  <div id="importModal" class="hidden fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-    <div class="glass rounded-3xl p-8 max-w-md w-full mx-4">
-      <h3 class="text-xl font-bold mb-4">Import Recipients</h3>
-      <textarea id="importText" rows="8" class="w-full bg-white/5 border border-white/20 rounded-2xl p-5 text-sm font-mono" placeholder="0x1234567890abcdef1234567890abcdef12345678,50"></textarea>
-      <p class="text-xs text-gray-400 mt-2">Format: address,percent (one per line)</p>
-      <div class="flex gap-3 mt-6">
-        <button onclick="hideImportModal()" class="flex-1 py-4 rounded-2xl border border-white/20 hover:bg-white/10">Cancel</button>
-        <button onclick="importRecipients()" class="flex-1 py-4 bg-emerald-500 hover:bg-emerald-600 rounded-2xl">Import</button>
+  <div id="importModal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center z-50 p-4">
+    <div class="glass rounded-3xl p-6 sm:p-8 max-w-md w-full border border-white/15 shadow-2xl animate-in fade-in zoom-in duration-200">
+      <h3 class="text-xl font-bold mb-2">Import Recipients</h3>
+      <p class="text-xs text-gray-400 mb-4">Format: address,percent (one per line)</p>
+      <textarea id="importText" rows="6" class="w-full bg-black/30 border border-white/15 rounded-2xl p-4 text-xs sm:text-sm font-mono outline-none resize-none mb-4" placeholder="0x1234...5678,50"></textarea>
+      <div class="flex gap-3">
+        <button onclick="hideImportModal()" class="app-button flex-1 py-3.5 rounded-xl border border-white/15 hover:bg-white/5 font-semibold text-sm transition-all">Cancel</button>
+        <button onclick="importRecipients()" class="app-button flex-1 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold rounded-xl text-sm transition-all shadow-lg shadow-emerald-500/20">Import</button>
       </div>
     </div>
   </div>
   
+  <!-- Wallet Connect Modal -->
+  <div id="connectModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+    <div class="glass border border-white/15 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative animate-in fade-in zoom-in duration-200">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-xl font-bold">Connect a Wallet</h3>
+        <button onclick="hideConnectModal()" class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all text-xl leading-none">×</button>
+      </div>
+      
+      <div class="space-y-3">
+        <!-- MetaMask -->
+        <button onclick="connectMetaMask()" 
+                class="app-button w-full flex items-center gap-4 p-4 rounded-2xl bg-white/[0.02] hover:bg-white/[0.07] transition-all group border border-white/10 hover:border-emerald-500/50">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" width="40" height="40" alt="MetaMask" class="group-hover:scale-110 transition-transform">
+          <div class="text-left flex-1">
+            <div class="font-bold text-sm sm:text-base">MetaMask</div>
+            <div class="text-xs text-gray-400">Popular browser extension</div>
+          </div>
+          <span class="text-emerald-400 text-xs font-semibold bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">Popular</span>
+        </button>
 
- <!-- Wallet Connect Modal - نسخه بهبود یافته -->
-<div id="connectModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-  <div class="glass border border-white/10 rounded-3xl p-8 max-w-lg w-full mx-4">
-    <div class="flex justify-between items-center mb-6">
-      <h3 class="text-2xl font-bold">Connect a Wallet</h3>
-      <button onclick="hideConnectModal()" class="text-gray-400 hover:text-white text-3xl leading-none">×</button>
+        <!-- WalletConnect -->
+        <button onclick="connectWalletConnect()" 
+                class="app-button w-full flex items-center gap-4 p-4 rounded-2xl bg-white/[0.02] hover:bg-white/[0.07] transition-all group border border-white/10 hover:border-sky-500/50">
+          <img src="https://walletconnect.com/_next/static/media/walletconnect.2f8f1b5a.svg" width="40" height="40" alt="WalletConnect" class="group-hover:scale-110 transition-transform">
+          <div class="text-left flex-1">
+            <div class="font-bold text-sm sm:text-base">WalletConnect</div>
+            <div class="text-xs text-gray-400">Connect with mobile & other wallets</div>
+          </div>
+        </button>
+
+        <!-- Trust Wallet -->
+        <button onclick="showToast('Trust Wallet soon...', 3000)" 
+                class="app-button w-full flex items-center gap-4 p-4 rounded-2xl bg-white/[0.01] hover:bg-white/[0.04] transition-all group border border-white/5 opacity-70">
+          <img src="https://trustwallet.com/assets/images/logo.png" width="40" height="40" alt="Trust">
+          <div class="text-left flex-1">
+            <div class="font-bold text-sm sm:text-base">Trust Wallet</div>
+            <div class="text-xs text-gray-400">Coming soon</div>
+          </div>
+        </button>
+      </div>
+
+      <p class="text-center text-xs text-gray-500 mt-6">
+        More network providers will be added soon
+      </p>
     </div>
-    
-    <div class="space-y-3">
-      <!-- MetaMask -->
-      <button onclick="connectMetaMask()" 
-              class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group border border-white/10 hover:border-emerald-500">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" width="48" height="48" alt="MetaMask">
-        <div class="text-left flex-1">
-          <div class="font-semibold text-lg">MetaMask</div>
-          <div class="text-sm text-gray-400">Popular browser extension</div>
-        </div>
-        <span class="text-emerald-400 text-sm font-medium">Recommended</span>
-      </button>
-
-      <!-- WalletConnect -->
-      <button onclick="connectWalletConnect()" 
-              class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group border border-white/10 hover:border-sky-500">
-        <img src="https://walletconnect.com/_next/static/media/walletconnect.2f8f1b5a.svg" width="48" height="48" alt="WalletConnect">
-        <div class="text-left flex-1">
-          <div class="font-semibold text-lg">WalletConnect</div>
-          <div class="text-sm text-gray-400">Connect with mobile & other wallets</div>
-        </div>
-      </button>
-
-      <!-- Trust Wallet  -->
-      <button onclick="showToast('Trust Wallet soon...', 3000)" 
-              class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all group border border-white/10 opacity-75">
-        <img src="https://trustwallet.com/assets/images/logo.png" width="48" height="48" alt="Trust">
-        <div class="text-left flex-1">
-          <div class="font-semibold text-lg">Trust Wallet</div>
-          <div class="text-sm text-gray-400">Coming soon</div>
-        </div>
-      </button>
-    </div>
-
-    <p class="text-center text-xs text-gray-500 mt-6">
-      More wallets will be added soon
-    </p>
   </div>
-</div>
   
-  <!-- Toast -->
-  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 border border-white/20 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3 z-50">
+  <!-- Toast Notification -->
+  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#121228] border border-white/15 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 z-50 text-xs sm:text-sm backdrop-blur-xl animate-in fade-in slide-in-from-bottom-4 duration-300">
     <span id="toastText"></span>
   </div>
 
@@ -372,9 +467,11 @@ let telegramUsername = "";
   function updateConnectButton() {
     const btn = document.getElementById("connectBtn");
     const short = userAddress ? `${userAddress.slice(0,6)}...${userAddress.slice(-4)}` : "Connect Wallet";
-    btn.innerHTML = `<i class="fas fa-wallet"></i> <span>${short}</span>`;
+    btn.innerHTML = `<i class="fas fa-wallet text-emerald-400"></i> <span class="font-bold">${short}</span>`;
     btn.onclick = userAddress ? disconnectWallet : showConnectModal;
-    if (userAddress) btn.classList.add("!bg-emerald-500", "!text-white");
+    if (userAddress) {
+      btn.className = "app-button px-6 py-4 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg shadow-emerald-500/10";
+    }
   }
 
   
@@ -384,25 +481,27 @@ function updateTelegramButton() {
 
   if (telegramLinked && telegramUsername) {
     btn.innerHTML = `
-      <i class="fab fa-telegram-plane text-2xl"></i> 
+      <i class="fab fa-telegram-plane text-2xl text-sky-300"></i> 
       <div class="text-left flex-1">
-        <div class="font-semibold text-emerald-300">${telegramUsername}</div>
-        <div class="text-xs opacity-75">Connected • Notifications ON</div>
+        <div class="font-bold text-sky-200 text-sm leading-tight">${telegramUsername}</div>
+        <div class="text-[11px] text-sky-300 opacity-90">Connected • Notifications ON</div>
       </div>
       <i onclick="event.stopImmediatePropagation(); disconnectTelegram();" 
-         class="fas fa-times text-lg opacity-60 hover:opacity-100 ml-2"></i>
+         class="fas fa-times text-sm opacity-60 hover:opacity-100 ml-2 p-1"></i>
     `;
-    btn.style.background = "linear-gradient(90deg, #10b981, #34d399)";
-    btn.onclick = null; // جلوگیری از باز شدن دوباره
+    btn.style.background = "linear-gradient(90deg, rgba(34, 158, 217, 0.2), rgba(26, 138, 196, 0.3))";
+    btn.style.border = "1px solid rgba(34, 158, 217, 0.4)";
+    btn.onclick = null;
   } else {
     btn.innerHTML = `
       <i class="fab fa-telegram-plane text-2xl"></i> 
       <div class="text-left flex-1">
-        <div id="telegramMainText" class="font-semibold">Connect Telegram</div>
-        <div id="telegramSubText" class="text-xs opacity-75 -mt-0.5">Receive notifications & fast split</div>
+        <div id="telegramMainText" class="font-bold text-sm leading-tight">Connect Telegram</div>
+        <div id="telegramSubText" class="text-[11px] text-sky-100 opacity-80 -mt-0.5">Receive notifications & fast split</div>
       </div>
     `;
     btn.style.background = "linear-gradient(90deg, #229ED9, #1a8ac4)";
+    btn.style.border = "none";
     btn.onclick = connectTelegram;
   }
 }
@@ -453,11 +552,10 @@ function updateTelegramButton() {
     provider = new ethers.BrowserProvider(window.ethereum);
     signer = await provider.getSigner();
     
-    // چک کردن اینکه آدرس درست است
     const currentAddress = await signer.getAddress();
     if (currentAddress.toLowerCase() === userAddress.toLowerCase()) {
       console.log("Wallet restored successfully");
-      await updateBalance();   // بالانس رو لود کن
+      await updateBalance();
     }
   } catch (e) {
     console.log("Could not auto-restore signer, user needs to reconnect manually");
@@ -469,10 +567,9 @@ function updateTelegramButton() {
     return showToast("Please connect your wallet first!", 4000);
   }
 
-  const botUsername = "ArcSplitPro_bot"; // نام بات خودت
+  const botUsername = "ArcSplitPro_bot";
   const timestamp = Date.now();
   
-  // مهم: حالا مستقیم دستور /connect را باز می‌کند
   const link = `https://t.me/${botUsername}?start=connect_${userAddress}_${timestamp}`;
   
   window.open(link, "_blank");
@@ -490,11 +587,11 @@ function updateTelegramButton() {
     document.documentElement.classList.toggle('light');
     const icon = document.getElementById("themeBtn").querySelector("i");
     if (icon.classList.contains("fa-moon")) {
-      icon.classList.remove("fa-moon");
-      icon.classList.add("fa-sun");
+      icon.classList.remove("fa-moon", "text-emerald-400");
+      icon.classList.add("fa-sun", "text-amber-400");
     } else {
-      icon.classList.remove("fa-sun");
-      icon.classList.add("fa-moon");
+      icon.classList.remove("fa-sun", "text-amber-400");
+      icon.classList.add("fa-moon", "text-emerald-400");
     }
   }
 
@@ -541,9 +638,9 @@ function updateTelegramButton() {
     signer = null; userAddress = null; provider = null;
     document.getElementById("logoContainer").classList.remove("connected");
     const btn = document.getElementById("connectBtn");
-    btn.innerHTML = `<i class="fas fa-wallet"></i> <span>Connect Wallet</span>`;
+    btn.innerHTML = `<i class="fas fa-wallet text-emerald-400"></i> <span class="font-bold">Connect Wallet</span>`;
+    btn.className = "app-button px-6 py-4 bg-white text-gray-950 font-bold rounded-2xl flex items-center justify-center gap-2.5 hover:bg-emerald-50 hover:shadow-[0_0_25px_rgba(255,255,255,0.2)] transition-all";
     btn.onclick = showConnectModal;
-    btn.classList.remove("!bg-emerald-500", "!text-white");
     localStorage.removeItem('userAddress');
     showToast("Wallet disconnected");
   }
@@ -576,24 +673,26 @@ function updateTelegramButton() {
 
   function setMode(mode) {
     splitMode = mode;
-    document.getElementById('manualBtn').classList.toggle('bg-white/20', mode === 'manual');
-    document.getElementById('autoBtn').classList.toggle('bg-white/20', mode === 'auto');
+    document.getElementById('manualBtn').classList.toggle('bg-emerald-500/20', mode === 'manual');
+    document.getElementById('manualBtn').classList.toggle('text-emerald-400', mode === 'manual');
+    document.getElementById('autoBtn').classList.toggle('bg-emerald-500/20', mode === 'auto');
+    document.getElementById('autoBtn').classList.toggle('text-emerald-400', mode === 'auto');
     if (mode === 'auto') autoDistributePercentages();
   }
 
   function addRecipient(address = "", percent = "") {
     const list = document.getElementById("recipients-list");
     const row = document.createElement("div");
-    row.className = "recipient-row glass border border-white/10 rounded-2xl p-5 flex items-center gap-4";
+    row.className = "recipient-row glass border border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-3.5 transition-all";
     row.innerHTML = `
-      <input type="text" class="address flex-1 bg-transparent border border-white/20 rounded-xl px-5 py-4 text-white placeholder-gray-400" placeholder="0x..." value="${address}" oninput="validateAddress(this); updateAll()">
-      <div class="percent-container w-28">
-        <input type="text" class="percent w-full bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" value="${percent}" oninput="handlePercentChange(this); updateAll()">
+      <input type="text" class="address flex-1 w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3.5 text-xs sm:text-sm font-mono outline-none" placeholder="0x..." value="${address}" oninput="validateAddress(this); updateAll()">
+      <div class="percent-container w-full sm:w-28">
+        <input type="text" class="percent w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3.5 text-center text-xs sm:text-sm font-semibold outline-none" value="${percent}" oninput="handlePercentChange(this); updateAll()">
       </div>
-      <div class="amount-container w-36">
-        <input type="text" class="amount w-full bg-transparent border border-white/20 rounded-xl px-5 py-4 text-center text-white" oninput="handleAmountChange(this); updateAll()">
+      <div class="amount-container w-full sm:w-36">
+        <input type="text" class="amount w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3.5 text-center text-xs sm:text-sm font-semibold outline-none" oninput="handleAmountChange(this); updateAll()">
       </div>
-      <button onclick="this.parentElement.remove(); updateAll(); if(splitMode==='auto') autoDistributePercentages();" class="text-rose-400 text-3xl px-3">×</button>
+      <button onclick="this.parentElement.remove(); updateAll(); if(splitMode==='auto') autoDistributePercentages();" class="w-full sm:w-auto text-gray-400 hover:text-rose-400 text-lg px-2 py-1 transition-colors flex items-center justify-center"><i class="fas fa-trash-can"></i></button>
     `;
     list.appendChild(row);
     if (splitMode === 'auto') autoDistributePercentages();
@@ -660,7 +759,7 @@ function updateTelegramButton() {
     const total = percents.reduce((a, b) => a + b, 0);
     const el = document.getElementById("percent-total");
     el.textContent = `Total: ${total.toFixed(6)}%`;
-    el.style.color = total > 99.99 ? '#00ffaa' : (total > 100 ? '#ff3366' : 'white');
+    el.style.color = Math.abs(total - 100) < 0.000001 ? '#10b981' : (total > 100 ? '#ef4444' : '#f8fafc');
   }
 
   function updatePreview() {
@@ -673,11 +772,11 @@ function updateTelegramButton() {
       const amount = parseFloat(row.querySelector('.amount').value) || 0;
       if (addr) {
         const tr = document.createElement("tr");
-        tr.className = "border-b border-white/10 last:border-none";
+        tr.className = "hover:bg-white/[0.02]";
         tr.innerHTML = `
-          <td class="p-4 font-mono text-xs">${addr.substring(0,12)}...</td>
-          <td class="text-right p-4">${perc.toFixed(6)}%</td>
-          <td class="text-right p-4 font-medium">${amount.toFixed(6)}</td>
+          <td class="p-3.5 font-mono text-xs text-gray-300">${addr.substring(0,8)}...${addr.substring(addr.length - 6)}</td>
+          <td class="text-right p-3.5 font-medium">${perc.toFixed(2)}%</td>
+          <td class="text-right p-3.5 font-semibold text-emerald-400">${amount.toFixed(4)}</td>
         `;
         tbody.appendChild(tr);
       }
@@ -738,7 +837,7 @@ function updateTelegramButton() {
   async function updateBalance(retry = 0) {
     if (!signer || !userAddress) return;
     const statusEl = document.getElementById("status");
-    statusEl.innerHTML = `Connected • Loading balance...`;
+    statusEl.innerHTML = `<div class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></div> Connected • Loading balance...`;
     try {
       const tokenAddr = document.getElementById("tokenSelect").value;
       if (tokenAddr === "custom") return;
@@ -749,10 +848,10 @@ function updateTelegramButton() {
       ], signer);
       const [balance, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
       const formatted = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4);
-      statusEl.innerHTML = `Connected • Balance: <span class="text-emerald-400 font-semibold text-lg">${formatted} ${symbol}</span>`;
+      statusEl.innerHTML = `<div class="w-2 h-2 rounded-full bg-emerald-500"></div> Connected • Balance: <span class="text-emerald-400 font-bold">${formatted} ${symbol}</span>`;
     } catch (e) {
       if (retry < 2) setTimeout(() => updateBalance(retry + 1), 1000);
-      else statusEl.innerHTML = `Connected • <span class="text-amber-400">Balance unavailable</span>`;
+      else statusEl.innerHTML = `<div class="w-2 h-2 rounded-full bg-amber-500"></div> Connected • <span class="text-amber-400">Balance unavailable</span>`;
     }
   }
 
@@ -822,7 +921,6 @@ function updateTelegramButton() {
 
     const tolerance = 0.000001;
 
-    // ==================== Validation Logic ====================
     if (splitMode === 'manual') {
       if (totalPerc > 100 + tolerance) {
         return showToast("⚠️ Total percentage is more than 100%! Transaction blocked.", 5000);
@@ -833,7 +931,6 @@ function updateTelegramButton() {
         }
       }
     } else {
-      // Auto Mode - Always show warning if last field has any difference
       const lastPerc = percentages[percentages.length - 1];
       const ideal = 100 / rows.length;
       const difference = (lastPerc - ideal).toFixed(6);
@@ -844,7 +941,6 @@ function updateTelegramButton() {
         }
       }
     }
-    // =========================================================
 
     if (!confirm(`Send ${totalAmount} tokens to ${addresses.length} recipients?`)) return;
 
@@ -878,34 +974,27 @@ function updateTelegramButton() {
       const tx = await contract.splitPayment(tokenAddr, addresses, basisPoints, totalWei, { gasLimit: 800000 });
       await tx.wait();
 
-                          // === Debugging Telegram Notification ===
-console.log("🔍 Sending notification to Telegram...");
-console.log("Chat ID:", window.telegramChatId || localStorage.getItem('telegramChatId'));
+      if (!window.telegramChatId) {
+        window.telegramChatId = localStorage.getItem('telegramChatId');
+      }
 
-if (!window.telegramChatId) {
-  window.telegramChatId = localStorage.getItem('telegramChatId');
-}
-
-if (window.telegramChatId) {
-  fetch('https://arcsplit-bot.kamkazi-1297.workers.dev/send-tx', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      chatId: window.telegramChatId,
-      txHash: tx.hash,
-      amount: totalAmount,
-      token: symbol,
-      recipientsCount: addresses.length
-    })
-  })
-  .then(r => console.log("Notification sent:", r.status))
-  .catch(err => console.error("Notification failed:", err));
-} else {
-  console.warn("⚠️ No Telegram Chat ID found. Notification skipped.");
-}
-// =====================================
+      if (window.telegramChatId) {
+        fetch('https://arcsplit-bot.kamkazi-1297.workers.dev/send-tx', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chatId: window.telegramChatId,
+            txHash: tx.hash,
+            amount: totalAmount,
+            token: symbol,
+            recipientsCount: addresses.length
+          })
+        })
+        .then(r => console.log("Notification sent:", r.status))
+        .catch(err => console.error("Notification failed:", err));
+      }
       
-      successDiv.innerHTML = ` Transaction Successful!<br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline font-medium">View on Explorer: ${tx.hash.substring(0,12)}...</a>`;
+      successDiv.innerHTML = `Transaction Successful!<br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline font-semibold">View on Explorer: ${tx.hash.substring(0,12)}...</a>`;
       successDiv.classList.remove('hidden');
 
       transactions.unshift({
@@ -930,22 +1019,18 @@ if (window.telegramChatId) {
 
   function renderHistory() {
     const container = document.getElementById("history");
-    container.innerHTML = transactions.length ? "" : "<p class='text-gray-400 text-center py-8'>No transactions yet.</p>";
+    container.innerHTML = transactions.length ? "" : "<p class='text-gray-400 text-center py-6 text-xs'>No transactions yet.</p>";
     transactions.slice(0, 5).forEach(tx => {
       const div = document.createElement("div");
-      div.className = "glass border border-white/10 rounded-2xl p-4 text-sm";
+      div.className = "bg-white/[0.02] border border-white/5 rounded-2xl p-3.5 text-xs flex flex-col gap-1";
       div.innerHTML = `
-        <div class="text-gray-400 text-xs">${tx.time}</div>
-        <div>${tx.intent}</div>
-        <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="text-emerald-400 text-xs hover:underline">View Tx →</a>
+        <div class="flex justify-between items-center"><span class="text-gray-400">${tx.time}</span><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="text-emerald-400 font-semibold hover:underline">View Tx →</a></div>
+        <div class="font-medium text-gray-200">${tx.intent}</div>
       `;
       container.appendChild(div);
     });
   }
 
-  
-
-// Auto Fill when returning from Telegram
 function autoFillFromURL() {
   try {
     const urlParams = new URLSearchParams(window.location.search);
@@ -958,7 +1043,6 @@ function autoFillFromURL() {
     const telegramConnect = urlParams.get('telegram_connect');
     const usernameParam = urlParams.get('username');
 
-    // ==================== اتصال تلگرام ====================
     if (telegramConnect === 'true' || window.location.search.includes('connect_')) {
       telegramLinked = true;
       
@@ -979,17 +1063,12 @@ function autoFillFromURL() {
       if (userAddress && chatIdParam) {
         saveWalletToBot(chatIdParam);
       }
-      
-      console.log("✅ Telegram successfully linked");
     }
 
-    // ==================== پر کردن فرم ارسال ====================
     if (action === 'send' && amount) {
-      // مقدار کل
       const totalInput = document.getElementById('totalAmount');
       if (totalInput) totalInput.value = amount;
 
-      // انتخاب توکن
       const tokenSelect = document.getElementById('tokenSelect');
       if (tokenSymbol && tokenSelect) {
         const upper = tokenSymbol.toUpperCase();
@@ -998,7 +1077,6 @@ function autoFillFromURL() {
         else if (upper === 'CIRBTC') tokenSelect.value = "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF";
       }
 
-      // recipients
       const list = document.getElementById('recipients-list');
       if (list) list.innerHTML = '';
 
@@ -1009,13 +1087,11 @@ function autoFillFromURL() {
         }
       });
 
-      // ذخیره chatId برای نوتیفیکیشن
       if (chatIdParam) {
         window.telegramChatId = chatIdParam;
         localStorage.setItem('telegramChatId', chatIdParam);
       }
 
-      // اعمال نهایی
       setTimeout(() => {
         if (typeof updateAll === 'function') updateAll();
         if (addresses.length > 1 && typeof setMode === 'function') setMode('auto');
@@ -1030,18 +1106,14 @@ function autoFillFromURL() {
 }
   
 window.addEventListener('load', () => {
-  // Restore Wallet Connection
   const savedAddress = localStorage.getItem('userAddress');
   if (savedAddress) {
     userAddress = savedAddress;
     updateConnectButton();
     document.getElementById("logoContainer").classList.add("connected");
-
-    // تلاش برای بازیابی کامل اتصال (signer + provider)
     restoreWalletConnection();
   }
 
-  // Restore Telegram
   telegramUsername = localStorage.getItem('telegramUsername') || "";
   telegramLinked = localStorage.getItem('telegramLinked') === 'true';
   if (telegramLinked) {
