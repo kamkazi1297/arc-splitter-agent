@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-  <title>ArcSplit Pro - Token Splitter</title>
+  <title>ArcSplit - Token Splitter</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
@@ -143,7 +143,6 @@
       background-color: rgba(0,0,0,0.2);
     }
 
-    /* Modern interactive buttons styling */
     .app-button {
       position: relative;
       overflow: hidden;
@@ -153,7 +152,6 @@
       transform: scale(0.98);
     }
 
-    /* Custom responsive adjustments */
     @media (max-width: 640px) {
       .max-w-6xl { max-width: 100% !important; padding-left: 12px; padding-right: 12px; }
       .recipient-row { 
@@ -177,34 +175,12 @@
 </head>
 <body class="text-white min-h-screen selection:bg-emerald-500 selection:text-black">
 
-  <div class="max-w-6xl mx-auto px-4 py-8 sm:py-12">
-    <!-- Step Indicator -->
-    <div class="flex items-center justify-center gap-4 sm:gap-8 mb-6 text-xs sm:text-sm font-semibold text-gray-400 light:text-slate-500">
-      <div class="flex items-center gap-2 text-emerald-400">
-        <span class="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-xs">①</span>
-        <span>Asset</span>
-      </div>
-      <div class="w-8 sm:w-12 h-px bg-white/10 light:bg-black/10"></div>
-      <div class="flex items-center gap-2 text-emerald-400">
-        <span class="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-xs">②</span>
-        <span>Recipients</span>
-      </div>
-      <div class="w-8 sm:w-12 h-px bg-white/10 light:bg-black/10"></div>
-      <div class="flex items-center gap-2 text-gray-400 light:text-slate-400">
-        <span class="w-6 h-6 rounded-full bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 flex items-center justify-center text-xs">③</span>
-        <span>Review</span>
-      </div>
-      <div class="w-8 sm:w-12 h-px bg-white/10 light:bg-black/10"></div>
-      <div class="flex items-center gap-2 text-gray-400 light:text-slate-400">
-        <span class="w-6 h-6 rounded-full bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 flex items-center justify-center text-xs">④</span>
-        <span>Execute</span>
-      </div>
-    </div>
-
-    <!-- Header Section -->
-    <div class="flex justify-between items-center mb-8 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
+  <div class="max-w-6xl mx-auto px-4 py-6 sm:py-8">
+    
+    <!-- Header Section (Simplified & Clean) -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
       <div>
-        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Pro</span></h1>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Token Splitter</span></h1>
         <p class="text-gray-400 light:text-slate-600 text-xs sm:text-sm font-medium">Professional Decentralized Token Splitter</p>
       </div>
       
@@ -218,6 +194,36 @@
         <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/10 light:hover:bg-black/10 border border-white/10 light:border-black/10 rounded-2xl transition-all shadow-lg">
           <i class="fas fa-moon text-lg text-emerald-400"></i>
         </button>
+      </div>
+    </div>
+
+    <!-- Step Indicator (Moved below header, non-clickable status indicators) -->
+    <div class="flex items-center justify-center gap-3 sm:gap-6 mb-8 text-xs sm:text-sm font-semibold text-gray-400 light:text-slate-500 px-4 py-3 bg-white/[0.01] light:bg-black/5 border border-white/5 light:border-black/10 rounded-2xl backdrop-blur-md">
+      <!-- Step 1: Completed (Green) -->
+      <div id="stepIndicator1" class="flex items-center gap-2 text-emerald-400">
+        <span class="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-xs">✓</span>
+        <span>Asset</span>
+      </div>
+      <div class="w-6 sm:w-10 h-px bg-white/10 light:bg-black/10"></div>
+
+      <!-- Step 2: Current (Emerald / Blue) -->
+      <div id="stepIndicator2" class="flex items-center gap-2 text-emerald-400 font-bold">
+        <span class="w-6 h-6 rounded-full bg-emerald-500/30 border border-emerald-500 flex items-center justify-center text-xs">●</span>
+        <span>Recipients</span>
+      </div>
+      <div class="w-6 sm:w-10 h-px bg-white/10 light:bg-black/10"></div>
+
+      <!-- Step 3: Pending (Gray) -->
+      <div id="stepIndicator3" class="flex items-center gap-2 text-gray-400 light:text-slate-400">
+        <span class="w-6 h-6 rounded-full bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 flex items-center justify-center text-xs">○</span>
+        <span>Review</span>
+      </div>
+      <div class="w-6 sm:w-10 h-px bg-white/10 light:bg-black/10"></div>
+
+      <!-- Step 4: Pending (Gray) -->
+      <div id="stepIndicator4" class="flex items-center gap-2 text-gray-400 light:text-slate-400">
+        <span class="w-6 h-6 rounded-full bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 flex items-center justify-center text-xs">○</span>
+        <span>Execute</span>
       </div>
     </div>
 
@@ -735,7 +741,6 @@ function updateTelegramButton() {
     const hasWallet = !!userAddress;
     const isTotal100 = Math.abs(totalPerc - 100) < 0.000001;
     const recipientCount = validRecipients.length;
-    const hasEnoughBalance = true; // Assumed available if wallet connected and balance fetched
 
     const elWallet = document.getElementById("valWallet");
     const elTotal = document.getElementById("valTotal");
@@ -761,6 +766,50 @@ function updateTelegramButton() {
     } else {
       sendBtn.disabled = true;
       sendBtn.classList.add("opacity-50", "cursor-not-allowed");
+    }
+
+    // Dynamic Step Indicators State Update
+    updateStepIndicators(recipientCount, isTotal100);
+  }
+
+  function updateStepIndicators(recipientCount, isTotal100) {
+    const s1 = document.getElementById('stepIndicator1');
+    const s2 = document.getElementById('stepIndicator2');
+    const s3 = document.getElementById('stepIndicator3');
+    const s4 = document.getElementById('stepIndicator4');
+
+    // Step 1 (Asset): Always Completed once loaded
+    s1.className = "flex items-center gap-2 text-emerald-400";
+    s1.innerHTML = `<span class="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-xs">✓</span><span>Asset</span>`;
+
+    // Step 2 (Recipients): Current if editing recipients, completed if valid recipients exist
+    if (recipientCount > 0) {
+      s2.className = "flex items-center gap-2 text-emerald-400";
+      s2.innerHTML = `<span class="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-xs">✓</span><span>Recipients</span>`;
+    } else {
+      s2.className = "flex items-center gap-2 text-emerald-400 font-bold";
+      s2.innerHTML = `<span class="w-6 h-6 rounded-full bg-emerald-500/30 border border-emerald-500 flex items-center justify-center text-xs">●</span><span>Recipients</span>`;
+    }
+
+    // Step 3 (Review): Specific distinct color (Blue / Emerald for Current, Green for Completed, Gray for Pending)
+    if (isTotal100 && recipientCount > 0) {
+      s3.className = "flex items-center gap-2 text-emerald-400";
+      s3.innerHTML = `<span class="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-xs">✓</span><span>Review</span>`;
+    } else if (recipientCount > 0) {
+      s3.className = "flex items-center gap-2 text-cyan-400 font-bold";
+      s3.innerHTML = `<span class="w-6 h-6 rounded-full bg-cyan-500/30 border border-cyan-400 flex items-center justify-center text-xs">●</span><span>Review</span>`;
+    } else {
+      s3.className = "flex items-center gap-2 text-gray-400 light:text-slate-400";
+      s3.innerHTML = `<span class="w-6 h-6 rounded-full bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 flex items-center justify-center text-xs">○</span><span>Review</span>`;
+    }
+
+    // Step 4 (Execute): Ready when 100% and connected
+    if (isTotal100 && !!userAddress) {
+      s4.className = "flex items-center gap-2 text-cyan-400 font-bold";
+      s4.innerHTML = `<span class="w-6 h-6 rounded-full bg-cyan-500/30 border border-cyan-400 flex items-center justify-center text-xs">●</span><span>Execute</span>`;
+    } else {
+      s4.className = "flex items-center gap-2 text-gray-400 light:text-slate-400";
+      s4.innerHTML = `<span class="w-6 h-6 rounded-full bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 flex items-center justify-center text-xs">○</span><span>Execute</span>`;
     }
   }
 
