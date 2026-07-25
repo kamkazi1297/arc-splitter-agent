@@ -2,7 +2,7 @@
 <html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
   <title>ArcSplit Giveaway - Ultra</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
@@ -10,191 +10,292 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    body { font-family: 'Inter', system-ui, sans-serif; }
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
     
-    /* Claymation Aesthetic Styles */
-    .glass { 
-      background: rgba(30, 27, 45, 0.75); 
-      backdrop-filter: blur(20px); 
-      border: 2px solid rgba(255, 255, 255, 0.12);
-      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.45), inset 0 2px 4px rgba(255, 255, 255, 0.15), inset 0 -3px 6px rgba(0, 0, 0, 0.6);
-      border-radius: 2rem;
+    :root {
+      --bg-gradient: linear-gradient(135deg, #080816 0%, #12122c 50%, #0a0a18 100%);
+      --glass-bg: rgba(255, 255, 255, 0.03);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --glass-glow: rgba(99, 102, 241, 0.1);
     }
-    .light .glass { 
-      background: rgba(245, 243, 248, 0.88); 
-      border-color: rgba(75, 55, 95, 0.18);
-      box-shadow: 0 12px 30px rgba(60, 40, 80, 0.12), inset 0 2px 4px rgba(255, 255, 255, 0.8), inset 0 -3px 6px rgba(0, 0, 0, 0.08);
-    }
-    .light body, .light h1, .light label { color: #2b233d; }
 
-    /* Clay Button Effect */
-    .clay-btn {
-      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3), inset 0 2px 3px rgba(255, 255, 255, 0.25), inset 0 -3px 4px rgba(0, 0, 0, 0.4);
-      border: 1px solid rgba(255, 255, 255, 0.15);
+    body { 
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif; 
+      background: #070711;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(34, 211, 238, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.05) 0%, transparent 50%);
+      color: #f8fafc;
+      min-height: 100vh;
+      overflow-x: hidden;
     }
-    .clay-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 9px 20px rgba(0, 0, 0, 0.35), inset 0 2px 4px rgba(255, 255, 255, 0.3), inset 0 -3px 4px rgba(0, 0, 0, 0.4);
+    
+    .glass {
+      background: rgba(18, 18, 38, 0.65);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
-    .clay-btn:active {
-      transform: translateY(1px);
-      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3), inset 0 1px 2px rgba(0, 0, 0, 0.4);
+    
+    .light {
+      background: #f1f5f9 !important;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(34, 211, 238, 0.05) 0%, transparent 40%) !important;
+      color: #0f172a !important;
     }
+
+    .light .glass {
+      background: rgba(255, 255, 255, 0.85);
+      border-color: rgba(0, 0, 0, 0.08);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1);
+    }
+
+    .light body, .light h1, .light h3, .light label, .light .text-white {
+      color: #0f172a;
+    }
+    .light .text-gray-400 { color: #475569 !important; }
+    .light .text-gray-300 { color: #334155 !important; }
+    .light .text-gray-200 { color: #1e293b !important; }
 
     select, input, textarea {
-      background-color: rgba(20, 18, 30, 0.6); 
-      color: white; 
-      border: 2px solid rgba(255, 255, 255, 0.12);
-      box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5);
-      border-radius: 1.25rem;
-    }
-    .light select, .light input, .light textarea {
-      background-color: #f1ecf6; 
-      color: #2b233d; 
-      border: 2px solid rgba(75, 55, 95, 0.15);
-      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
-    }
-    select option {
-      background-color: #1a1528;
+      background-color: rgba(255, 255, 255, 0.03);
       color: white;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    select:hover, input:hover, textarea:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+    select:focus, input:focus, textarea:focus {
+      border-color: #10b981;
+      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
+    }
+
+    .light select, .light input, .light textarea {
+      background-color: #ffffff;
+      color: #0f172a;
+      border: 1px solid #cbd5e1;
+    }
+    .light select:focus, .light input:focus, .light textarea:focus {
+      border-color: #10b981;
+      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+    }
+
+    select option {
+      background-color: #0f172a;
+      color: white;
+      padding: 14px 18px;
     }
     .light select option {
-      background-color: #f1ecf6;
-      color: #2b233d;
+      background-color: #ffffff;
+      color: #0f172a;
+    }
+
+    .app-button {
+      position: relative;
+      overflow: hidden;
+      transition: all 0.25s ease;
+    }
+    .app-button:active {
+      transform: scale(0.98);
+    }
+
+    @media (max-width: 640px) {
+      .max-w-6xl { max-width: 100% !important; padding-left: 12px; padding-right: 12px; }
     }
   </style>
 </head>
-<body class="bg-gradient-to-br from-[#120f24] via-[#1a152e] to-[#251a3a] text-white min-h-screen">
+<body class="text-white min-h-screen selection:bg-emerald-500 selection:text-black">
 
-  <div class="max-w-2xl mx-auto px-4 py-10">
-    <div class="flex justify-between items-center mb-10">
-      <h1 class="text-4xl font-bold tracking-wide drop-shadow-md">ArcSplit Giveaway</h1>
-      <div class="flex gap-3">
-        <button onclick="toggleTheme()" id="themeBtn" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl clay-btn">
-          <i class="fas fa-moon text-xl"></i>
-        </button>
-        <button onclick="showConnectModal()" id="connectBtn" class="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold rounded-2xl flex items-center gap-2 clay-btn">
-          <i class="fas fa-wallet"></i> 
-          <span id="connectText">Connect Wallet</span>
+  <div class="max-w-6xl mx-auto px-4 py-6 sm:py-8">
+    
+    <!-- Header Section -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Giveaway - Ultra</span></h1>
+        <p class="text-gray-400 light:text-slate-600 text-xs sm:text-sm font-medium">Professional Decentralized Giveaway Tool</p>
+      </div>
+      
+      <div class="flex items-center gap-3">
+        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/10 light:hover:bg-black/10 border border-white/10 light:border-black/10 rounded-2xl transition-all shadow-lg">
+          <i class="fas fa-moon text-lg text-emerald-400"></i>
         </button>
       </div>
     </div>
 
-    <div id="status" class="glass p-6 mb-8 text-base font-medium">
-      Ready for Giveaway on Arc Testnet
-    </div>
-
-    <div id="successMessage" class="hidden glass border-emerald-500/40 bg-emerald-500/15 p-6 mb-8 text-emerald-300"></div>
-
-    <div class="glass p-8 space-y-8">
-      <div class="grid grid-cols-2 gap-6">
-        <div>
-          <label class="block text-gray-300 text-sm font-medium mb-2">Select Token</label>
-          <select id="tokenSelect" onchange="updateBalance()" class="w-full px-6 py-5 outline-none font-medium">
-            <option value="0x3600000000000000000000000000000000000000">USDC</option>
-            <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
-            <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-gray-300 text-sm font-medium mb-2">Total Amount</label>
-          <input type="number" id="totalAmount" value="100" step="0.000001" class="w-full px-6 py-5 text-2xl outline-none font-semibold">
-        </div>
-      </div>
-
-      <div>
-        <label class="block text-gray-300 text-sm font-medium mb-2">Number of Winners</label>
-        <input type="number" id="winnerCount" value="10" min="1" max="300" class="w-full px-6 py-5 text-2xl outline-none font-semibold">
-      </div>
-
-      <div class="flex gap-3">
-        <button onclick="selectRandomWinners()" class="flex-1 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl font-semibold text-lg clay-btn">🎲 Random Select</button>
-      </div>
-
-      <div class="border-2 border-violet-500/40 rounded-3xl p-6 bg-gradient-to-br from-violet-600/10 to-transparent shadow-inner">
-        <h3 class="font-bold text-lg mb-4 flex items-center gap-2 text-violet-300">
-          <i class="fas fa-brain"></i> AI-Powered Wallet Extractor
-        </h3>
-        <button onclick="showExtractModal()" class="w-full py-5 bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-2xl font-semibold text-lg clay-btn">
-          Extract Wallets from Comments / Text
-        </button>
-      </div>
-
-      <div>
-        <label class="block text-gray-300 text-sm font-medium mb-3">All Participant Addresses</label>
-        <textarea id="winnersList" rows="8" class="w-full px-6 py-5 font-mono text-sm outline-none" placeholder="Paste all addresses here..."></textarea>
-        
-        <div class="flex gap-3 mt-3">
-          <button onclick="exportWallets()" class="flex-1 py-3 bg-white/10 hover:bg-white/20 rounded-2xl text-sm font-medium clay-btn">📤 Export JSON</button>
-          <button onclick="importWallets()" class="flex-1 py-3 bg-white/10 hover:bg-white/20 rounded-2xl text-sm font-medium clay-btn">📥 Import JSON</button>
-          <button onclick="copyShareableLink()" class="flex-1 py-3 bg-violet-600 hover:bg-violet-700 rounded-2xl text-sm font-medium clay-btn">🔗 Share Link</button>
-        </div>
-      </div>
-
-      <button id="sendBtn" onclick="sendGiveawaySplit()" class="w-full bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 py-7 rounded-3xl text-xl font-bold clay-btn shadow-lg">
-        Send Equal Split to Winners
+    <!-- Action Connect Hub -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mb-8">
+      <button onclick="showConnectModal()" id="connectBtn" class="app-button px-6 py-4 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl flex items-center justify-center gap-2.5 hover:bg-emerald-50 light:hover:bg-slate-800 transition-all">
+        <i class="fas fa-wallet text-emerald-600 light:text-emerald-400"></i> 
+        <span id="connectText">Connect Wallet</span>
       </button>
+
+      <div class="glass px-6 py-4 rounded-2xl flex items-center justify-between border border-white/10 light:border-black/10">
+        <div class="flex items-center gap-2 text-xs font-semibold text-gray-400">
+          <i class="fas fa-network-wired text-emerald-400"></i> Network: Arc Testnet
+        </div>
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+      </div>
     </div>
+
+    <!-- Status Boxes -->
+    <div id="status" class="glass rounded-2xl p-5 mb-4 text-sm font-medium flex items-center gap-3 border-l-4 border-l-emerald-500">
+      <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+      Ready for Giveaway on Arc Testnet.
+    </div>
+    <div id="successMessage" class="hidden glass border border-emerald-500/30 bg-emerald-500/10 rounded-2xl p-5 mb-6 text-emerald-400 text-sm"></div>
+
+    <!-- Main Container Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      
+      <!-- Left Column: Configuration & Inputs (7 Cols) -->
+      <div class="lg:col-span-7 space-y-6">
+        <div class="glass rounded-3xl p-6 sm:p-8 space-y-6">
+          
+          <!-- Token Selection & Total Amount -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-gray-400 light:text-slate-600 text-xs font-semibold uppercase tracking-wider mb-2">Select Token</label>
+              <div class="relative">
+                <select id="tokenSelect" onchange="updateBalance()" class="w-full rounded-2xl px-5 py-4 appearance-none focus:outline-none text-sm sm:text-base font-medium cursor-pointer">
+                  <option value="0x3600000000000000000000000000000000000000">USDC</option>
+                  <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
+                  <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
+                </select>
+                <div class="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 light:text-slate-600">
+                  <i class="fas fa-chevron-down text-xs"></i>
+                </div>
+              </div>
+            </div>
+            <div>
+              <label class="block text-gray-400 light:text-slate-600 text-xs font-semibold uppercase tracking-wider mb-2">Total Amount</label>
+              <input type="number" id="totalAmount" value="100" step="0.000001" class="w-full rounded-2xl px-5 py-4 text-xl sm:text-2xl font-bold outline-none">
+            </div>
+          </div>
+
+          <!-- Number of Winners -->
+          <div>
+            <label class="block text-gray-400 light:text-slate-600 text-xs font-semibold uppercase tracking-wider mb-2">Number of Winners</label>
+            <input type="number" id="winnerCount" value="10" min="1" max="300" class="w-full rounded-2xl px-5 py-4 text-xl sm:text-2xl font-bold outline-none">
+          </div>
+
+          <!-- Random Selection Action -->
+          <div>
+            <button onclick="selectRandomWinners()" class="app-button w-full py-4 bg-purple-600 hover:bg-purple-700 rounded-2xl font-bold text-sm sm:text-base shadow-lg shadow-purple-600/20 transition-all flex items-center justify-center gap-2">
+              <i class="fas fa-dice text-lg"></i> Random Select Winners
+            </button>
+          </div>
+
+          <div class="h-px bg-white/5 light:bg-black/10"></div>
+
+          <!-- AI Extractor Banner Box -->
+          <div class="border border-violet-500/30 rounded-2xl p-5 bg-gradient-to-br from-violet-500/5 to-transparent space-y-3">
+            <h3 class="font-bold text-sm sm:text-base flex items-center gap-2 text-violet-400">
+              <i class="fas fa-brain"></i> AI-Powered Wallet Extractor
+            </h3>
+            <p class="text-xs text-gray-400">Extract participant addresses automatically from comment sections or raw text.</p>
+            <button onclick="showExtractModal()" class="app-button w-full py-3.5 bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-xl font-semibold text-xs sm:text-sm hover:brightness-110 transition-all shadow-md shadow-violet-500/20">
+              Extract Wallets from Comments / Text
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Right Column: Participant List & Execution (5 Cols) -->
+      <div class="lg:col-span-5 space-y-6">
+        <div class="glass rounded-3xl p-6 sm:p-8" style="position: sticky; top: 24px;">
+          
+          <div class="mb-4">
+            <label class="block text-gray-400 light:text-slate-600 text-xs font-semibold uppercase tracking-wider mb-2">All Participant Addresses</label>
+            <textarea id="winnersList" rows="8" class="w-full rounded-2xl p-4 font-mono text-xs sm:text-sm outline-none resize-none" placeholder="Paste all addresses here..."></textarea>
+          </div>
+
+          <!-- Utility Buttons -->
+          <div class="grid grid-cols-3 gap-2 mb-6">
+            <button onclick="exportWallets()" class="app-button py-2.5 px-2 bg-white/5 light:bg-black/5 hover:bg-white/10 border border-white/10 light:border-black/10 rounded-xl text-[11px] font-semibold transition-all">📤 Export</button>
+            <button onclick="importWallets()" class="app-button py-2.5 px-2 bg-white/5 light:bg-black/5 hover:bg-white/10 border border-white/10 light:border-black/10 rounded-xl text-[11px] font-semibold transition-all">📥 Import</button>
+            <button onclick="copyShareableLink()" class="app-button py-2.5 px-2 bg-violet-600/20 hover:bg-violet-600/30 text-violet-400 border border-violet-500/30 rounded-xl text-[11px] font-semibold transition-all">🔗 Share</button>
+          </div>
+
+          <!-- Send Split Button -->
+          <button id="sendBtn" onclick="sendGiveawaySplit()" class="app-button w-full bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 hover:brightness-110 py-4 sm:py-5 rounded-2xl text-base sm:text-lg font-bold shadow-xl shadow-rose-500/25 transition-all">
+            Send Equal Split to Winners
+          </button>
+
+        </div>
+      </div>
+
+    </div>
+
   </div>
 
   <!-- Random Result Modal -->
-  <div id="resultModal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-50">
-    <div class="glass rounded-3xl p-8 max-w-lg w-full mx-4 shadow-2xl">
+  <div id="resultModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+    <div class="glass rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-white/15 shadow-2xl animate-in fade-in zoom-in duration-200">
       <div class="text-center mb-6">
-        <h2 class="text-3xl font-bold text-emerald-400 mb-2">🎉 Winners Selected!</h2>
-        <p id="resultSubtitle" class="text-gray-300"></p>
+        <h2 class="text-2xl sm:text-3xl font-bold text-emerald-400 mb-1">🎉 Winners Selected!</h2>
+        <p id="resultSubtitle" class="text-xs text-gray-400"></p>
       </div>
-      <div id="winnersPreview" class="max-h-96 overflow-auto space-y-3 mb-8 pr-1"></div>
+      <div id="winnersPreview" class="max-h-72 overflow-y-auto space-y-2 mb-6 scrollbar-thin"></div>
       <div class="flex gap-3">
-        <button onclick="hideResultModal()" class="flex-1 py-4 rounded-2xl border-2 border-white/20 hover:bg-white/10 clay-btn font-medium">Close</button>
-        <button onclick="copyWinners()" class="flex-1 py-4 bg-emerald-500 hover:bg-emerald-600 rounded-2xl clay-btn font-semibold">Copy Winners</button>
+        <button onclick="hideResultModal()" class="app-button flex-1 py-3.5 rounded-xl border border-white/15 hover:bg-white/5 font-semibold text-sm transition-all">Close</button>
+        <button onclick="copyWinners()" class="app-button flex-1 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold rounded-xl text-sm transition-all shadow-lg shadow-emerald-500/20">Copy Winners</button>
       </div>
     </div>
   </div>
 
   <!-- Extract Modal -->
-  <div id="extractModal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-50">
-    <div class="glass rounded-3xl p-8 w-full max-w-3xl mx-4 max-h-[94vh] flex flex-col shadow-2xl">
-      <h3 class="text-2xl font-bold mb-1">AI-Powered Wallet Extractor</h3>
-      <p class="text-gray-300 mb-6 text-sm">Paste comments • Smart detection + scoring</p>
-      <textarea id="commentsText" rows="7" class="w-full flex-1 bg-white/5 border-2 border-white/20 rounded-2xl p-5 font-mono text-sm mb-4 outline-none" placeholder="Paste all comments here..."></textarea>
+  <div id="extractModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+    <div class="glass rounded-3xl p-6 sm:p-8 w-full max-w-2xl border border-white/15 shadow-2xl flex flex-col max-h-[90vh]">
+      <h3 class="text-xl font-bold mb-1">AI-Powered Wallet Extractor</h3>
+      <p class="text-xs text-gray-400 mb-4">Paste comments • Smart detection + scoring</p>
+      <textarea id="commentsText" rows="5" class="w-full bg-black/30 light:bg-white border border-white/15 light:border-slate-300 rounded-2xl p-4 font-mono text-xs sm:text-sm outline-none resize-none mb-4" placeholder="Paste all comments here..."></textarea>
+      
       <div class="flex gap-3 mb-4">
-        <button onclick="extractWallets()" class="flex-1 py-4 bg-violet-600 hover:bg-violet-700 rounded-2xl font-semibold clay-btn">Analyze & Extract</button>
-        <button onclick="clearAll()" class="px-8 py-4 border-2 border-white/30 hover:bg-white/10 rounded-2xl clay-btn font-medium">Clear</button>
+        <button onclick="extractWallets()" class="app-button flex-1 py-3 bg-violet-600 hover:bg-violet-700 rounded-xl font-semibold text-xs sm:text-sm transition-all">Analyze & Extract</button>
+        <button onclick="clearAll()" class="app-button px-6 py-3 border border-white/15 hover:bg-white/5 rounded-xl text-xs sm:text-sm transition-all">Clear</button>
       </div>
-      <div class="bg-black/50 border border-white/10 rounded-2xl p-5 flex-1 overflow-auto shadow-inner" id="resultPanel">
-        <div id="statsBar" class="flex justify-between text-sm mb-4 font-semibold"></div>
-        <div id="previewList" class="font-mono text-sm space-y-2"></div>
+
+      <div class="bg-black/30 light:bg-slate-100 border border-white/10 light:border-slate-300 rounded-2xl p-4 flex-1 overflow-y-auto mb-4" id="resultPanel">
+        <div id="statsBar" class="flex justify-between text-xs mb-3 font-semibold"></div>
+        <div id="previewList" class="font-mono text-xs space-y-2"></div>
       </div>
-      <div class="flex gap-3 mt-6">
-        <button onclick="hideExtractModal()" class="flex-1 py-4 rounded-2xl border-2 border-white/20 hover:bg-white/10 clay-btn font-medium">Cancel</button>
-        <button onclick="applyExtracted('append')" class="flex-1 py-4 bg-emerald-500 hover:bg-emerald-600 rounded-2xl clay-btn font-semibold">Append</button>
-        <button onclick="applyExtracted('replace')" class="flex-1 py-4 bg-fuchsia-500 hover:bg-fuchsia-600 rounded-2xl clay-btn font-semibold">Replace</button>
+
+      <div class="flex gap-3">
+        <button onclick="hideExtractModal()" class="app-button flex-1 py-3 rounded-xl border border-white/15 hover:bg-white/5 font-semibold text-xs transition-all">Cancel</button>
+        <button onclick="applyExtracted('append')" class="app-button flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold rounded-xl text-xs transition-all">Append</button>
+        <button onclick="applyExtracted('replace')" class="app-button flex-1 py-3 bg-fuchsia-500 hover:bg-fuchsia-600 text-white font-bold rounded-xl text-xs transition-all">Replace</button>
       </div>
     </div>
   </div>
 
   <!-- Connect Modal -->
-  <div id="connectModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-    <div class="glass rounded-3xl p-8 max-w-lg w-full mx-4 shadow-2xl">
+  <div id="connectModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+    <div class="glass border border-white/15 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative">
       <div class="flex justify-between items-center mb-6">
-        <h3 class="text-2xl font-bold">Connect Wallet</h3>
-        <button onclick="hideConnectModal()" class="text-gray-300 hover:text-white text-3xl leading-none">×</button>
+        <h3 class="text-xl font-bold">Connect a Wallet</h3>
+        <button onclick="hideConnectModal()" class="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all text-xl leading-none">×</button>
       </div>
-      <button onclick="connectMetaMask()" class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all border-2 border-white/15 hover:border-emerald-500 clay-btn">
-        <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" width="48" height="48" alt="MetaMask">
-        <div class="text-left flex-1">
-          <div class="font-semibold text-lg">MetaMask</div>
-          <div class="text-sm text-gray-300">Popular browser extension</div>
-        </div>
-      </button>
+      
+      <div class="space-y-3">
+        <button onclick="connectMetaMask()" class="app-button w-full flex items-center gap-4 p-4 rounded-2xl bg-white/[0.02] light:bg-white hover:bg-white/[0.07] transition-all group border border-white/10 hover:border-emerald-500/50">
+          <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" width="40" height="40" alt="MetaMask" class="group-hover:scale-110 transition-transform">
+          <div class="text-left flex-1">
+            <div class="font-bold text-sm sm:text-base">MetaMask</div>
+            <div class="text-xs text-gray-400">Popular browser extension</div>
+          </div>
+          <span class="text-emerald-400 text-xs font-semibold bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">Popular</span>
+        </button>
+      </div>
     </div>
   </div>
 
-  <!-- Toast -->
-  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 border-2 border-white/20 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 font-medium">
+  <!-- Toast Notification -->
+  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#121228] light:bg-slate-900 border border-white/15 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 z-50 text-xs sm:text-sm backdrop-blur-xl animate-in fade-in slide-in-from-bottom-4 duration-300">
     <span id="toastText"></span>
   </div>
 
@@ -237,8 +338,13 @@ function toggleTheme() {
   const isLight = document.documentElement.classList.toggle('light');
   localStorage.setItem('theme', isLight ? 'light' : 'dark');
   const icon = document.getElementById("themeBtn").querySelector("i");
-  icon.classList.toggle("fa-moon", !isLight);
-  icon.classList.toggle("fa-sun", isLight);
+  if (isLight) {
+    icon.classList.remove("fa-moon", "text-emerald-400");
+    icon.classList.add("fa-sun", "text-amber-400");
+  } else {
+    icon.classList.remove("fa-sun", "text-amber-400");
+    icon.classList.add("fa-moon", "text-emerald-400");
+  }
 }
 
 // ==================== WALLET ====================
@@ -276,11 +382,13 @@ function updateConnectButton() {
   const btn = document.getElementById("connectBtn");
   if (userAddress) {
     const short = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
-    btn.innerHTML = `<i class="fas fa-wallet"></i> <span>${short}</span>`;
+    btn.innerHTML = `<i class="fas fa-wallet text-emerald-400"></i> <span class="font-bold">${short}</span>`;
     btn.onclick = disconnectWallet;
+    btn.className = "app-button px-6 py-4 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg shadow-emerald-500/10";
   } else {
-    btn.innerHTML = `<i class="fas fa-wallet"></i> <span>Connect Wallet</span>`;
+    btn.innerHTML = `<i class="fas fa-wallet text-emerald-600 light:text-emerald-400"></i> <span id="connectText">Connect Wallet</span>`;
     btn.onclick = showConnectModal;
+    btn.className = "app-button px-6 py-4 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl flex items-center justify-center gap-2.5 hover:bg-emerald-50 light:hover:bg-slate-800 transition-all";
   }
 }
 
@@ -290,7 +398,7 @@ function disconnectWallet() {
     userAddress = null;
     localStorage.removeItem('giveawayUserAddress');
     updateConnectButton();
-    document.getElementById("status").innerHTML = "Ready for Giveaway on Arc Testnet";
+    document.getElementById("status").innerHTML = `<div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div> Ready for Giveaway on Arc Testnet.`;
     showToast("Wallet disconnected");
   }
 }
@@ -298,7 +406,7 @@ function disconnectWallet() {
 async function updateBalance(retry = 0) {
   if (!signer || !userAddress) return;
   const statusEl = document.getElementById("status");
-  statusEl.innerHTML = `Connected • Loading balance...`;
+  statusEl.innerHTML = `<div class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></div> Connected • Loading balance...`;
   
   try {
     const tokenAddr = document.getElementById("tokenSelect").value;
@@ -314,12 +422,12 @@ async function updateBalance(retry = 0) {
     ]);
     
     const formatted = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4);
-    statusEl.innerHTML = `Connected • Balance: <span class="text-emerald-400 font-semibold">${formatted} ${symbol}</span>`;
+    statusEl.innerHTML = `<div class="w-2 h-2 rounded-full bg-emerald-500"></div> Connected • Balance: <span class="text-emerald-400 light:text-emerald-600 font-bold">${formatted} ${symbol}</span>`;
   } catch (e) {
     if (retry < 3) {
       setTimeout(() => updateBalance(retry + 1), 1200);
     } else {
-      statusEl.innerHTML = `Connected • <span class="text-amber-400">Balance unavailable</span>`;
+      statusEl.innerHTML = `<div class="w-2 h-2 rounded-full bg-amber-500"></div> Connected • <span class="text-amber-400">Balance unavailable</span>`;
     }
   }
 }
@@ -362,15 +470,15 @@ function renderResult() {
     <span class="text-white">${extractedWallets.length} Total</span>
   `;
   const html = extractedWallets.map(item => `
-    <div class="flex items-center justify-between py-3 px-4 bg-white/5 rounded-xl border ${item.valid ? 'border-emerald-500/30' : 'border-amber-500/30'}">
-      <div class="font-mono flex-1">${item.address}</div>
-      <div class="flex items-center gap-3">
-        <span class="text-xs px-3 py-1 rounded-full ${item.valid ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}">${item.score}%</span>
+    <div class="flex items-center justify-between py-2.5 px-3 bg-white/5 rounded-xl border ${item.valid ? 'border-emerald-500/30' : 'border-amber-500/30'}">
+      <div class="font-mono flex-1 text-xs truncate">${item.address}</div>
+      <div class="flex items-center gap-3 ml-2">
+        <span class="text-[10px] px-2 py-0.5 rounded-full ${item.valid ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}">${item.score}%</span>
         <button onclick="copySingle('${item.address}')" class="text-sky-400 hover:text-white text-xs">Copy</button>
       </div>
     </div>
   `).join('');
-  document.getElementById("previewList").innerHTML = html || '<p class="text-center text-gray-300 py-10">No addresses found</p>';
+  document.getElementById("previewList").innerHTML = html || '<p class="text-center text-gray-400 py-6 text-xs">No addresses found</p>';
 }
 
 function copySingle(addr) {
@@ -421,12 +529,12 @@ function selectRandomWinners() {
 function startCountdownAndShowWinners(winners, totalParticipants) {
   const countdownModal = document.createElement("div");
   countdownModal.id = "countdownModal";
-  countdownModal.className = "fixed inset-0 bg-black/95 flex items-center justify-center z-[100]";
+  countdownModal.className = "fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[100]";
   countdownModal.innerHTML = `
     <div class="text-center">
-      <h2 class="text-5xl font-bold mb-8 text-white">🎉 Selecting Winners</h2>
-      <div id="countdownNumber" class="text-[180px] font-bold text-emerald-400 mb-6">3</div>
-      <p class="text-gray-300 text-xl">Please wait...</p>
+      <h2 class="text-3xl sm:text-4xl font-bold mb-6 text-white">🎉 Selecting Winners</h2>
+      <div id="countdownNumber" class="text-8xl sm:text-9xl font-extrabold text-emerald-400 mb-4">3</div>
+      <p class="text-gray-400 text-sm">Please wait...</p>
     </div>
   `;
   document.body.appendChild(countdownModal);
@@ -454,9 +562,9 @@ function showResultModalWithConfetti(winners, totalParticipants) {
   
   const container = document.getElementById("winnersPreview");
   container.innerHTML = winners.map((addr, index) => `
-    <div class="bg-white/5 border border-emerald-500/30 rounded-2xl p-4 flex items-center gap-4">
-      <div class="w-8 h-8 bg-emerald-500/20 text-emerald-400 rounded-xl flex items-center justify-center font-bold">${index + 1}</div>
-      <div class="font-mono text-sm break-all">${addr}</div>
+    <div class="bg-white/5 border border-emerald-500/30 rounded-xl p-3 flex items-center gap-3">
+      <div class="w-7 h-7 bg-emerald-500/20 text-emerald-400 rounded-lg flex items-center justify-center font-bold text-xs">${index + 1}</div>
+      <div class="font-mono text-xs break-all">${addr}</div>
     </div>
   `).join('');
   modal.classList.remove("hidden");
@@ -542,7 +650,8 @@ async function sendGiveawaySplit() {
   isProcessing = true;
   const btn = document.getElementById("sendBtn");
   btn.disabled = true;
-  btn.textContent = "Sending...";
+  btn.textContent = "Processing...";
+  btn.classList.add("opacity-50", "cursor-not-allowed");
 
   try {
     const tokenContract = new ethers.Contract(tokenAddr, [
@@ -565,8 +674,10 @@ async function sendGiveawaySplit() {
     const tx = await contract.splitPayment(tokenAddr, addresses, basisPoints, totalWei, { gasLimit: 800000 });
     await tx.wait();
 
-    document.getElementById("successMessage").innerHTML = `✅ Success! <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline">View Transaction</a>`;
-    document.getElementById("successMessage").classList.remove('hidden');
+    const successDiv = document.getElementById("successMessage");
+    successDiv.innerHTML = `Transaction Successful!<br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline font-semibold">View on Explorer: ${tx.hash.substring(0,12)}...</a>`;
+    successDiv.classList.remove('hidden');
+
     await updateBalance();
     showToast("🎉 Giveaway sent successfully!");
   } catch (error) {
@@ -576,6 +687,7 @@ async function sendGiveawaySplit() {
     isProcessing = false;
     btn.disabled = false;
     btn.textContent = "Send Equal Split to Winners";
+    btn.classList.remove("opacity-50", "cursor-not-allowed");
   }
 }
 
@@ -584,8 +696,8 @@ window.addEventListener('load', () => {
   if (localStorage.getItem('theme') === 'light') {
     document.documentElement.classList.add('light');
     const icon = document.getElementById("themeBtn").querySelector("i");
-    icon.classList.remove("fa-moon");
-    icon.classList.add("fa-sun");
+    icon.classList.remove("fa-moon", "text-emerald-400");
+    icon.classList.add("fa-sun", "text-amber-400");
   }
 
   const savedAddress = localStorage.getItem('giveawayUserAddress');
