@@ -1,130 +1,150 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arc Protocol | Central Hub</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #0b0f19; color: #f3f4f6; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Arc Protocol | Unified Router Hub</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    body { font-family: 'Inter', sans-serif; background-color: #0b0f19; color: #f3f4f6; }
+    .glass { background: rgba(255, 255, 255, 0.04); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    .glow-effect { position: relative; }
+    .glow-effect::after { content: ''; position: absolute; inset: -1px; background: linear-gradient(90deg, #10b981, #22d3ee); border-radius: inherit; z-index: -1; opacity: 0.3; filter: blur(8px); }
+  </style>
 </head>
 <body class="min-h-screen flex flex-col justify-between">
 
-    <!-- Navbar -->
-    <header class="border-b border-gray-800 bg-gray-900/50 backdrop-blur-md sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-            <div class="flex items-center space-x-3">
-                <div class="bg-indigo-600 p-2 rounded-xl text-white font-bold text-xl"><i class="fa-solid fa-bolt"></i></div>
-                <span class="text-xl font-bold tracking-wide">Arc Protocol Hub</span>
-            </div>
-            <div>
-                <button id="connectWalletBtn" onclick="connectWallet()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-medium transition shadow-lg shadow-indigo-500/25 flex items-center gap-2 text-sm">
-                    <i class="fa-solid fa-wallet"></i> Connect Wallet
-                </button>
-            </div>
+  <!-- Navbar -->
+  <header class="border-b border-gray-800 bg-gray-900/50 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+      <div class="flex items-center space-x-3">
+        <div class="bg-gradient-to-tr from-emerald-500 to-cyan-400 p-2.5 rounded-2xl text-black font-bold text-xl shadow-lg shadow-emerald-500/20">
+          <i class="fa-solid fa-bolt"></i>
         </div>
-    </header>
+        <div>
+          <span class="text-xl font-bold tracking-wide block">Arc Protocol</span>
+          <span class="text-xs text-emerald-400 font-mono">Powered by Unified Router</span>
+        </div>
+      </div>
+      <div class="flex items-center gap-4">
+        <button onclick="switchView('retail')" id="retailTabBtn" class="px-4 py-2 rounded-xl text-sm font-medium bg-white/10 text-white transition">Retail Hub</button>
+        <button onclick="switchView('pro')" id="proTabBtn" class="px-4 py-2 rounded-xl text-sm font-medium text-gray-400 hover:text-white transition">Pro / Teams</button>
+        <button onclick="connectWallet()" id="connectBtn" class="px-6 py-3 bg-white text-black font-semibold rounded-2xl flex items-center gap-2 hover:bg-gray-100 transition shadow-xl">
+          <i class="fas fa-wallet"></i> <span id="connectText">Connect Wallet</span>
+        </button>
+      </div>
+    </div>
+  </header>
 
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto px-4 py-10 w-full">
-        <div class="text-center mb-12 space-y-2">
-            <h1 class="text-3xl font-extrabold tracking-tight">Smart Asset Management & Splitting</h1>
-            <p class="text-gray-400 text-sm">Select a module below to manage your decentralized routing, splits, streams, and tools.</p>
+  <!-- Main App Views Container -->
+  <main class="max-w-7xl mx-auto px-6 py-10 w-full flex-1">
+    
+    <!-- VIEW 1: Retail Hub (کاربر عادی / سریع) -->
+    <div id="retailView" class="space-y-8">
+      <div class="text-center max-w-2xl mx-auto space-y-3">
+        <h1 class="text-4xl font-extrabold tracking-tight">Fast Splitting & Payments</h1>
+        <p class="text-gray-400 text-sm">Execute instant token splits and manage personal routing through the Arc Router.</p>
+      </div>
+
+      <div class="max-w-2xl mx-auto glass rounded-3xl p-8 shadow-2xl">
+        <!-- فرم مشابه ArcSplit Pro که فرستادید اینجا قرار می‌گیرد -->
+        <div class="mb-6">
+          <label class="block text-gray-400 text-sm mb-2">Router Contract Status</label>
+          <div class="p-4 rounded-2xl bg-white/5 border border-white/10 flex justify-between items-center text-sm font-mono">
+            <span class="text-emerald-400">Connected to Router</span>
+            <span class="text-xs text-gray-500">0xRouter...Address</span>
+          </div>
+        </div>
+        <button onclick="executeRouterAction('retail_split')" class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 py-4 rounded-2xl font-bold text-black text-base shadow-lg hover:brightness-110 transition">
+          Execute via Router
+        </button>
+      </div>
+    </div>
+
+    <!-- VIEW 2: Pro / Teams (سازمان‌ها و گروه‌های بزرگ) -->
+    <div id="proView" class="hidden space-y-8">
+      <div class="text-center max-w-2xl mx-auto space-y-3">
+        <h1 class="text-4xl font-extrabold tracking-tight">Enterprise & Protocol Dashboard</h1>
+        <p class="text-gray-400 text-sm">Advanced role-based splitting, vesting schedules, and agentic stream routing.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="glass rounded-3xl p-6 space-y-4 hover:border-emerald-500/50 transition">
+          <div class="text-emerald-400 text-2xl"><i class="fa-solid fa-users-gear"></i></div>
+          <h3 class="font-bold text-lg">Role-Based Split</h3>
+          <p class="text-xs text-gray-400">Route organizational revenues based on basis points and dynamic member roles.</p>
+          <button onclick="loadModule('roles')" class="w-full py-3 bg-white/10 hover:bg-white/20 rounded-xl text-sm font-medium transition">Manage Roles</button>
         </div>
 
-        <!-- Cards Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            
-            <!-- Giveaway & Standard Splitter -->
-            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:border-indigo-500 transition group flex flex-col justify-between">
-                <div>
-                    <div class="text-indigo-400 text-3xl mb-4 group-hover:scale-110 transition transform"><i class="fa-solid fa-gift"></i></div>
-                    <h3 class="text-xl font-bold mb-2">Giveaway & Standard Splitter</h3>
-                    <p class="text-gray-400 text-sm mb-4">Extract wallets from text and distribute tokens equally or split standard transfers.</p>
-                    <span class="text-xs text-gray-500 block mb-4 font-mono">0x73Da...62cB2</span>
-                </div>
-                <a href="giveaway.html" class="block w-full text-center bg-gray-800 hover:bg-indigo-600 py-2.5 rounded-xl transition text-sm font-medium">Open Module</a>
-            </div>
-
-            <!-- Role-Based Split -->
-            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:border-indigo-500 transition group flex flex-col justify-between">
-                <div>
-                    <div class="text-indigo-400 text-3xl mb-4 group-hover:scale-110 transition transform"><i class="fa-solid fa-users-gear"></i></div>
-                    <h3 class="text-xl font-bold mb-2">Role-Based Splitter</h3>
-                    <p class="text-gray-400 text-sm mb-4">Manage revenue distribution based on organization roles and basis points.</p>
-                    <span class="text-xs text-gray-500 block mb-4 font-mono">0x2eC8...856E</span>
-                </div>
-                <a href="role-split.html" class="block w-full text-center bg-gray-800 hover:bg-indigo-600 py-2.5 rounded-xl transition text-sm font-medium">Open Module</a>
-            </div>
-
-            <!-- Conditional Splitter -->
-            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:border-indigo-500 transition group flex flex-col justify-between">
-                <div>
-                    <div class="text-indigo-400 text-3xl mb-4 group-hover:scale-110 transition transform"><i class="fa-solid fa-sliders"></i></div>
-                    <h3 class="text-xl font-bold mb-2">Conditional Splitter</h3>
-                    <p class="text-gray-400 text-sm mb-4">Configure rules, time-locks, and triggers for automated fund releases.</p>
-                    <span class="text-xs text-gray-500 block mb-4 font-mono">0x372E...19B2</span>
-                </div>
-                <a href="conditional.html" class="block w-full text-center bg-gray-800 hover:bg-indigo-600 py-2.5 rounded-xl transition text-sm font-medium">Open Module</a>
-            </div>
-
-            <!-- Vesting Splitter -->
-            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:border-indigo-500 transition group flex flex-col justify-between">
-                <div>
-                    <div class="text-indigo-400 text-3xl mb-4 group-hover:scale-110 transition transform"><i class="fa-solid fa-lock"></i></div>
-                    <h3 class="text-xl font-bold mb-2">Vesting Splitter</h3>
-                    <p class="text-gray-400 text-sm mb-4">Lock tokens and establish linear progressive vesting schedules.</p>
-                    <span class="text-xs text-gray-500 block mb-4 font-mono">0x714A...A5D9</span>
-                </div>
-                <a href="vesting.html" class="block w-full text-center bg-gray-800 hover:bg-indigo-600 py-2.5 rounded-xl transition text-sm font-medium">Open Module</a>
-            </div>
-
-            <!-- Agentic Stream -->
-            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:border-indigo-500 transition group flex flex-col justify-between">
-                <div>
-                    <div class="text-indigo-400 text-3xl mb-4 group-hover:scale-110 transition transform"><i class="fa-solid fa-robot"></i></div>
-                    <h3 class="text-xl font-bold mb-2">Agentic Stream</h3>
-                    <p class="text-gray-400 text-sm mb-4">Set automated periodic budget allowances for AI agents.</p>
-                    <span class="text-xs text-gray-500 block mb-4 font-mono">0xe955...01cA</span>
-                </div>
-                <a href="agent-stream.html" class="block w-full text-center bg-gray-800 hover:bg-indigo-600 py-2.5 rounded-xl transition text-sm font-medium">Open Module</a>
-            </div>
-
-            <!-- Payment Links -->
-            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:border-indigo-500 transition group flex flex-col justify-between">
-                <div>
-                    <div class="text-indigo-400 text-3xl mb-4 group-hover:scale-110 transition transform"><i class="fa-solid fa-link"></i></div>
-                    <h3 class="text-xl font-bold mb-2">Payment Links</h3>
-                    <p class="text-gray-400 text-sm mb-4">Generate shareable smart payment links with automatic splitting.</p>
-                    <span class="text-xs text-gray-500 block mb-4 font-mono">0xca96...18aE</span>
-                </div>
-                <a href="payment-links.html" class="block w-full text-center bg-gray-800 hover:bg-indigo-600 py-2.5 rounded-xl transition text-sm font-medium">Open Module</a>
-            </div>
-
+        <div class="glass rounded-3xl p-6 space-y-4 hover:border-emerald-500/50 transition">
+          <div class="text-cyan-400 text-2xl"><i class="fa-solid fa-lock"></i></div>
+          <h3 class="font-bold text-lg">Vesting Schedules</h3>
+          <p class="text-xs text-gray-400">Lock and stream tokens progressively through router time-locks.</p>
+          <button onclick="loadModule('vesting')" class="w-full py-3 bg-white/10 hover:bg-white/20 rounded-xl text-sm font-medium transition">Configure Vesting</button>
         </div>
-    </main>
 
-    <!-- Footer -->
-    <footer class="border-t border-gray-800 py-6 text-center text-gray-500 text-sm">
-        Arc Protocol © 2026
-    </footer>
+        <div class="glass rounded-3xl p-6 space-y-4 hover:border-emerald-500/50 transition">
+          <div class="text-purple-400 text-2xl"><i class="fa-solid fa-robot"></i></div>
+          <h3 class="font-bold text-lg">Agentic Streams</h3>
+          <p class="text-xs text-gray-400">Automate budget allowances and interval rates for AI agents.</p>
+          <button onclick="loadModule('streams')" class="w-full py-3 bg-white/10 hover:bg-white/20 rounded-xl text-sm font-medium transition">Setup Streams</button>
+        </div>
+      </div>
+    </div>
 
-    <script>
-        let provider, signer, userAddress;
-        async function connectWallet() {
-            if (window.ethereum) {
-                provider = new ethers.BrowserProvider(window.ethereum);
-                signer = await provider.getSigner();
-                userAddress = await signer.getAddress();
-                document.getElementById('connectWalletBtn').innerText = userAddress.substring(0, 6) + '...' + userAddress.substring(38);
-            } else {
-                alert('Please install MetaMask!');
-            }
-        }
-    </script>
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-gray-800 py-6 text-center text-gray-500 text-sm">
+    Arc Protocol Router Engine © 2026
+  </footer>
+
+  <script>
+    // متغیرهای اصلی اتصال و روتر
+    const ROUTER_ADDRESS = "0xYourRouterContractAddressHere";
+    let provider, signer, userAddress;
+
+    function switchView(view) {
+      const retailView = document.getElementById('retailView');
+      const proView = document.getElementById('proView');
+      const retailBtn = document.getElementById('retailTabBtn');
+      const proBtn = document.getElementById('proTabBtn');
+
+      if (view === 'retail') {
+        retailView.classList.remove('hidden');
+        proView.classList.add('hidden');
+        retailBtn.className = "px-4 py-2 rounded-xl text-sm font-medium bg-white/10 text-white transition";
+        proBtn.className = "px-4 py-2 rounded-xl text-sm font-medium text-gray-400 hover:text-white transition";
+      } else {
+        retailView.classList.add('hidden');
+        proView.classList.remove('hidden');
+        proBtn.className = "px-4 py-2 rounded-xl text-sm font-medium bg-white/10 text-white transition";
+        retailBtn.className = "px-4 py-2 rounded-xl text-sm font-medium text-gray-400 hover:text-white transition";
+      }
+    }
+
+    async function connectWallet() {
+      if (!window.ethereum) return alert("Please install MetaMask!");
+      try {
+        provider = new ethers.BrowserProvider(window.ethereum);
+        signer = await provider.getSigner();
+        userAddress = await signer.getAddress();
+        const btn = document.getElementById('connectBtn');
+        btn.innerHTML = `<i class="fas fa-wallet"></i> <span>${userAddress.substring(0,6)}...${userAddress.slice(-4)}</span>`;
+        btn.classList.add("!bg-emerald-500", "!text-black");
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    async function executeRouterAction(actionType) {
+      if (!signer) return alert("Please connect wallet first!");
+      // در اینجا فراخوانی تابع از کانترکت روتر انجام می‌شود
+      alert("Executing " + actionType + " via Arc Router Contract...");
+    }
+  </script>
 </body>
 </html>
