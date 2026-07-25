@@ -1,190 +1,586 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arc Protocol | Giveaway & Standard Splitter</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; background-color: #0b0f19; color: #f3f4f6; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ArcSplit Giveaway - Ultra</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    .glass { background: rgba(255,255,255,0.08); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); }
+    .light .glass { background: rgba(255,255,255,0.88); border-color: rgba(0,0,0,0.12); }
+    .light body, .light h1, .light label { color: #1f2937; }
+
+    select, input, textarea {
+      background-color: rgba(255,255,255,0.05); 
+      color: white; 
+      border: 1px solid rgba(255,255,255,0.25);
+    }
+    .light select, .light input, .light textarea {
+      background-color: #f8fafc; 
+      color: #1f2937; 
+      border: 1px solid #e2e8f0;
+    }
+    select option {
+      background-color: #1a1a2e;
+      color: white;
+    }
+    .light select option {
+      background-color: #f8fafc;
+      color: #1f2937;
+    }
+  </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between">
+<body class="bg-gradient-to-br from-[#0b0b1f] to-[#1a1a2e] text-white min-h-screen">
 
-    <!-- Navbar -->
-    <header class="border-b border-gray-800 bg-gray-900/50 backdrop-blur-md sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-            <div class="flex items-center space-x-3">
-                <a href="index.html" class="bg-indigo-600 p-2 rounded-xl text-white font-bold text-xl"><i class="fa-solid fa-arrow-left"></i></a>
-                <span class="text-xl font-bold tracking-wide">Giveaway & Standard Splitter</span>
-            </div>
-            <div class="flex items-center gap-3">
-                <span class="text-xs text-gray-400 font-mono bg-gray-800 px-3 py-1.5 rounded-lg">Contract: 0x73Da...62cB2</span>
-                <button id="connectWalletBtn" onclick="connectWallet()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl font-medium transition flex items-center gap-2 text-sm">
-                    <i class="fa-solid fa-wallet"></i> Connect Wallet
-                </button>
-            </div>
+  <div class="max-w-2xl mx-auto px-4 py-10">
+    <div class="flex justify-between items-center mb-10">
+      <h1 class="text-4xl font-bold">ArcSplit Giveaway</h1>
+      <div class="flex gap-3">
+        <button onclick="toggleTheme()" id="themeBtn" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl">
+          <i class="fas fa-moon text-xl"></i>
+        </button>
+        <button onclick="showConnectModal()" id="connectBtn" class="px-6 py-3 bg-white text-black font-semibold rounded-2xl flex items-center gap-2">
+          <i class="fas fa-wallet"></i> 
+          <span id="connectText">Connect Wallet</span>
+        </button>
+      </div>
+    </div>
+
+    <div id="status" class="glass border border-white/10 rounded-3xl p-6 mb-8 text-base font-medium">
+      Ready for Giveaway on Arc Testnet
+    </div>
+
+    <div id="successMessage" class="hidden glass border border-emerald-500/30 bg-emerald-500/10 rounded-3xl p-6 mb-8 text-emerald-400"></div>
+
+    <div class="glass border border-white/10 rounded-3xl p-8 space-y-8">
+      <div class="grid grid-cols-2 gap-6">
+        <div>
+          <label class="block text-gray-400 text-sm mb-2">Select Token</label>
+          <select id="tokenSelect" onchange="updateBalance()" class="w-full rounded-2xl px-6 py-5 outline-none">
+            <option value="0x3600000000000000000000000000000000000000">USDC</option>
+            <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
+            <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
+          </select>
         </div>
-    </header>
+        <div>
+          <label class="block text-gray-400 text-sm mb-2">Total Amount</label>
+          <input type="number" id="totalAmount" value="100" step="0.000001" class="w-full rounded-2xl px-6 py-5 text-2xl outline-none">
+        </div>
+      </div>
 
-    <!-- Main Content -->
-    <main class="max-w-4xl mx-auto px-4 py-10 w-full space-y-8">
+      <div>
+        <label class="block text-gray-400 text-sm mb-2">Number of Winners</label>
+        <input type="number" id="winnerCount" value="10" min="1" max="300" class="w-full rounded-2xl px-6 py-5 text-2xl outline-none">
+      </div>
+
+      <div class="flex gap-3">
+        <button onclick="selectRandomWinners()" class="flex-1 py-4 bg-purple-600 rounded-2xl font-medium hover:brightness-110 transition">🎲 Random Select</button>
+      </div>
+
+      <div class="border border-violet-500/30 rounded-3xl p-6 bg-gradient-to-br from-violet-500/5 to-transparent">
+        <h3 class="font-bold text-lg mb-4 flex items-center gap-2 text-violet-400">
+          <i class="fas fa-brain"></i> AI-Powered Wallet Extractor
+        </h3>
+        <button onclick="showExtractModal()" class="w-full py-5 bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-2xl font-semibold text-lg hover:brightness-110 transition">
+          Extract Wallets from Comments / Text
+        </button>
+      </div>
+
+      <div>
+        <label class="block text-gray-400 text-sm mb-3">All Participant Addresses</label>
+        <textarea id="winnersList" rows="8" class="w-full rounded-2xl px-6 py-5 font-mono text-sm outline-none" placeholder="Paste all addresses here..."></textarea>
         
-        <!-- Tab Switcher -->
-        <div class="flex border-b border-gray-800">
-            <button onclick="switchTab('giveaway')" id="tabGiveawayBtn" class="py-3 px-6 font-semibold border-b-2 border-indigo-500 text-indigo-400 transition">Giveaway Extractor</button>
-            <button onclick="switchTab('splitter')" id="tabSplitterBtn" class="py-3 px-6 font-semibold border-b-2 border-transparent text-gray-400 hover:text-white transition">Standard Splitter</button>
+        <div class="flex gap-3 mt-3">
+          <button onclick="exportWallets()" class="flex-1 py-3 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">📤 Export JSON</button>
+          <button onclick="importWallets()" class="flex-1 py-3 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">📥 Import JSON</button>
+          <button onclick="copyShareableLink()" class="flex-1 py-3 bg-violet-600 hover:bg-violet-700 rounded-2xl text-sm">🔗 Share Link</button>
         </div>
+      </div>
 
-        <!-- Giveaway Section -->
-        <div id="giveawaySection" class="space-y-6">
-            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-4">
-                <h3 class="text-lg font-bold flex items-center gap-2"><i class="fa-solid fa-wand-magic-sparkles text-indigo-400"></i> Extract Wallets from Text</h3>
-                <p class="text-gray-400 text-sm">Paste comments, messages, or text containing Ethereum addresses below. The tool will automatically extract, clean, and validate them.</p>
-                <textarea id="rawTextInput" rows="6" class="w-full bg-gray-950 border border-gray-800 rounded-xl p-4 text-sm text-gray-200 focus:outline-none focus:border-indigo-500 font-mono" placeholder="Paste text here... (e.g. Congrats! my wallet is 0x123...)"></textarea>
-                <button onclick="extractAddresses()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-xl font-medium transition text-sm">Extract & Validate Addresses</button>
-            </div>
+      <button id="sendBtn" onclick="sendGiveawaySplit()" class="w-full bg-gradient-to-r from-pink-500 to-rose-500 py-7 rounded-3xl text-xl font-bold">
+        Send Equal Split to Winners
+      </button>
+    </div>
+  </div>
 
-            <!-- Results Box -->
-            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-4">
-                <div class="flex justify-between items-center">
-                    <h3 class="text-lg font-bold">Extracted Valid Addresses (<span id="addressCount">0</span>)</h3>
-                    <button onclick="clearAddresses()" class="text-red-400 text-sm hover:underline">Clear All</button>
-                </div>
-                <div id="addressListContainer" class="bg-gray-950 border border-gray-800 rounded-xl p-4 max-h-48 overflow-y-auto text-sm font-mono text-gray-300 space-y-1">
-                    <span class="text-gray-500">No addresses extracted yet.</span>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                    <div>
-                        <label class="block text-xs text-gray-400 mb-1">Total Token Amount to Distribute</label>
-                        <input type="number" id="distributeAmount" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-2.5 text-sm text-gray-200 focus:outline-none focus:border-indigo-500" placeholder="0.0">
-                    </div>
-                    <div class="flex items-end">
-                        <button onclick="executeGiveawayDistribution()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl font-medium transition text-sm flex items-center justify-center gap-2">
-                            <i class="fa-solid fa-paper-plane"></i> Distribute Equally
-                        </button>
-                    </div>
-                </div>
-            </div>
+  <!-- Random Result Modal -->
+  <div id="resultModal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-50">
+    <div class="glass rounded-3xl p-8 max-w-lg w-full mx-4">
+      <div class="text-center mb-6">
+        <h2 class="text-3xl font-bold text-emerald-400 mb-2">🎉 Winners Selected!</h2>
+        <p id="resultSubtitle" class="text-gray-400"></p>
+      </div>
+      <div id="winnersPreview" class="max-h-96 overflow-auto space-y-3 mb-8"></div>
+      <div class="flex gap-3">
+        <button onclick="hideResultModal()" class="flex-1 py-4 rounded-2xl border border-white/20 hover:bg-white/10">Close</button>
+        <button onclick="copyWinners()" class="flex-1 py-4 bg-emerald-500 hover:bg-emerald-600 rounded-2xl">Copy Winners</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Extract Modal -->
+  <div id="extractModal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-50">
+    <div class="glass rounded-3xl p-8 w-full max-w-3xl mx-4 max-h-[94vh] flex flex-col">
+      <h3 class="text-2xl font-bold mb-1">AI-Powered Wallet Extractor</h3>
+      <p class="text-gray-400 mb-6">Paste comments • Smart detection + scoring</p>
+      <textarea id="commentsText" rows="7" class="w-full flex-1 bg-white/5 border border-white/20 rounded-2xl p-5 font-mono text-sm mb-4" placeholder="Paste all comments here..."></textarea>
+      <div class="flex gap-3 mb-4">
+        <button onclick="extractWallets()" class="flex-1 py-4 bg-violet-600 hover:bg-violet-700 rounded-2xl font-semibold">Analyze & Extract</button>
+        <button onclick="clearAll()" class="px-8 py-4 border border-white/30 hover:bg-white/10 rounded-2xl">Clear</button>
+      </div>
+      <div class="bg-black/40 rounded-2xl p-5 flex-1 overflow-auto" id="resultPanel">
+        <div id="statsBar" class="flex justify-between text-sm mb-4"></div>
+        <div id="previewList" class="font-mono text-sm space-y-2"></div>
+      </div>
+      <div class="flex gap-3 mt-6">
+        <button onclick="hideExtractModal()" class="flex-1 py-4 rounded-2xl border border-white/20 hover:bg-white/10">Cancel</button>
+        <button onclick="applyExtracted('append')" class="flex-1 py-4 bg-emerald-500 hover:bg-emerald-600 rounded-2xl">Append</button>
+        <button onclick="applyExtracted('replace')" class="flex-1 py-4 bg-fuchsia-500 hover:bg-fuchsia-600 rounded-2xl">Replace</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Connect Modal -->
+  <div id="connectModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+    <div class="glass border border-white/10 rounded-3xl p-8 max-w-lg w-full mx-4">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-2xl font-bold">Connect Wallet</h3>
+        <button onclick="hideConnectModal()" class="text-gray-400 hover:text-white text-3xl leading-none">×</button>
+      </div>
+      <button onclick="connectMetaMask()" class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all border border-white/10 hover:border-emerald-500">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" width="48" height="48" alt="MetaMask">
+        <div class="text-left flex-1">
+          <div class="font-semibold text-lg">MetaMask</div>
+          <div class="text-sm text-gray-400">Popular browser extension</div>
         </div>
+      </button>
+    </div>
+  </div>
 
-        <!-- Standard Splitter Section (Hidden by default) -->
-        <div id="splitterSection" class="space-y-6 hidden">
-            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-4">
-                <h3 class="text-lg font-bold flex items-center gap-2"><i class="fa-solid fa- dzielen text-indigo-400"></i> Standard Token Splitter</h3>
-                <p class="text-gray-400 text-sm">Split your tokens or native currency among multiple pre-defined recipients instantly.</p>
-                
-                <div class="space-y-3">
-                    <div>
-                        <label class="block text-xs text-gray-400 mb-1">Token Address (Leave blank or 0x0 for Native ETH)</label>
-                        <input type="text" id="splitTokenAddr" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-2.5 text-sm font-mono text-gray-200 focus:outline-none focus:border-indigo-500" value="0x0000000000000000000000000000000000000000">
-                    </div>
-                    <div>
-                        <label class="block text-xs text-gray-400 mb-1">Total Amount</label>
-                        <input type="number" id="splitTotalAmount" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-2.5 text-sm text-gray-200 focus:outline-none focus:border-indigo-500" placeholder="100">
-                    </div>
-                </div>
-                <button onclick="executeStandardSplit()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl font-medium transition text-sm">Execute Split</button>
-            </div>
-        </div>
+  <!-- Toast -->
+  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 border border-white/20 text-white px-6 py-4 rounded-2xl shadow-2xl z-50">
+    <span id="toastText"></span>
+  </div>
 
-    </main>
+<script>
+// ==================== CONFIG ====================
+const CONTRACT_ADDRESS = "0x73Da94F0D960Ef8FD49Ed28a94f667aF3C062cB2";
+const ARC_CHAIN_ID = 5042002;
 
-    <!-- Footer -->
-    <footer class="border-t border-gray-800 py-6 text-center text-gray-500 text-sm">
-        Arc Protocol © 2026
-    </footer>
+// ==================== STATE ====================
+let signer = null;
+let userAddress = null;
+let isProcessing = false;
+let extractedWallets = [];
 
-    <script>
-        const contractAddress = "0x73Da94F0D960Ef8FD49Ed28a94f667aF3C062cB2";
-        let provider, signer, userAddress;
-        let extractedWallets = [];
+// ==================== ABI ====================
+const splitterAbi = [
+  {
+    "inputs": [
+      { "name": "token", "type": "address" },
+      { "name": "recipients", "type": "address[]" },
+      { "name": "percentages", "type": "uint256[]" },
+      { "name": "totalAmount", "type": "uint256" }
+    ],
+    "name": "splitPayment",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  }
+];
 
-        async function connectWallet() {
-            if (window.ethereum) {
-                provider = new ethers.BrowserProvider(window.ethereum);
-                signer = await provider.getSigner();
-                userAddress = await signer.getAddress();
-                document.getElementById('connectWalletBtn').innerText = userAddress.substring(0, 6) + '...' + userAddress.substring(38);
-            } else {
-                alert('Please install MetaMask!');
-            }
+// ==================== UTILS ====================
+function showToast(msg, duration = 4000) {
+  const toast = document.getElementById("toast");
+  document.getElementById("toastText").innerHTML = msg;
+  toast.classList.remove("hidden");
+  setTimeout(() => toast.classList.add("hidden"), duration);
+}
+
+function toggleTheme() {
+  const isLight = document.documentElement.classList.toggle('light');
+  localStorage.setItem('theme', isLight ? 'light' : 'dark');
+  const icon = document.getElementById("themeBtn").querySelector("i");
+  icon.classList.toggle("fa-moon", !isLight);
+  icon.classList.toggle("fa-sun", isLight);
+}
+
+// ==================== WALLET ====================
+function showConnectModal() {
+  document.getElementById("connectModal").classList.remove("hidden");
+}
+
+function hideConnectModal() {
+  document.getElementById("connectModal").classList.add("hidden");
+}
+
+async function connectMetaMask() {
+  hideConnectModal();
+  if (!window.ethereum) return showToast("MetaMask not found!");
+
+  try {
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const network = await provider.getNetwork();
+    if (network.chainId !== BigInt(ARC_CHAIN_ID)) {
+      return showToast("Please switch to Arc Testnet (Chain ID: 5042002)", 6000);
+    }
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    userAddress = accounts[0];
+    signer = await provider.getSigner();
+    localStorage.setItem('giveawayUserAddress', userAddress);
+    updateConnectButton();
+    showToast("Wallet connected successfully");
+    await updateBalance();
+  } catch (e) {
+    showToast("Connection failed");
+  }
+}
+
+function updateConnectButton() {
+  const btn = document.getElementById("connectBtn");
+  if (userAddress) {
+    const short = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
+    btn.innerHTML = `<i class="fas fa-wallet"></i> <span>${short}</span>`;
+    btn.onclick = disconnectWallet;
+  } else {
+    btn.innerHTML = `<i class="fas fa-wallet"></i> <span>Connect Wallet</span>`;
+    btn.onclick = showConnectModal;
+  }
+}
+
+function disconnectWallet() {
+  if (confirm("Disconnect wallet?")) {
+    signer = null;
+    userAddress = null;
+    localStorage.removeItem('giveawayUserAddress');
+    updateConnectButton();
+    document.getElementById("status").innerHTML = "Ready for Giveaway on Arc Testnet";
+    showToast("Wallet disconnected");
+  }
+}
+
+async function updateBalance(retry = 0) {
+  if (!signer || !userAddress) return;
+  const statusEl = document.getElementById("status");
+  statusEl.innerHTML = `Connected • Loading balance...`;
+  
+  try {
+    const tokenAddr = document.getElementById("tokenSelect").value;
+    const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
+    const contract = new ethers.Contract(tokenAddr, [
+      "function balanceOf(address) view returns (uint256)",
+      "function decimals() view returns (uint8)"
+    ], signer);
+    
+    const [balance, decimals] = await Promise.all([
+      contract.balanceOf(userAddress), 
+      contract.decimals()
+    ]);
+    
+    const formatted = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4);
+    statusEl.innerHTML = `Connected • Balance: <span class="text-emerald-400 font-semibold">${formatted} ${symbol}</span>`;
+  } catch (e) {
+    if (retry < 3) {
+      setTimeout(() => updateBalance(retry + 1), 1200);
+    } else {
+      statusEl.innerHTML = `Connected • <span class="text-amber-400">Balance unavailable</span>`;
+    }
+  }
+}
+
+// ==================== EXTRACTOR ====================
+function showExtractModal() {
+  document.getElementById("extractModal").classList.remove("hidden");
+}
+
+function hideExtractModal() {
+  document.getElementById("extractModal").classList.add("hidden");
+}
+
+function extractWallets() {
+  const text = document.getElementById("commentsText").value;
+  const regex = /\b0x[a-fA-F0-9]{40}\b/g;
+  const matches = text.match(regex) || [];
+  extractedWallets = [];
+  matches.forEach(addr => {
+    const lowerAddr = addr.toLowerCase();
+    const isValid = ethers.isAddress(lowerAddr);
+    let score = isValid ? 100 : 30;
+    if (lowerAddr === "0x0000000000000000000000000000000000000000") score = 10;
+    extractedWallets.push({ address: lowerAddr, score: score, valid: isValid });
+  });
+  const uniqueMap = new Map();
+  extractedWallets.forEach(item => {
+    if (!uniqueMap.has(item.address) || item.valid) uniqueMap.set(item.address, item);
+  });
+  extractedWallets = Array.from(uniqueMap.values());
+  renderResult();
+}
+
+function renderResult() {
+  const validCount = extractedWallets.filter(a => a.valid).length;
+  const suspicious = extractedWallets.length - validCount;
+  document.getElementById("statsBar").innerHTML = `
+    <span class="text-emerald-400">${validCount} Valid</span>
+    <span class="text-amber-400">${suspicious} Suspicious</span>
+    <span class="text-white">${extractedWallets.length} Total</span>
+  `;
+  const html = extractedWallets.map(item => `
+    <div class="flex items-center justify-between py-3 px-4 bg-white/5 rounded-xl border ${item.valid ? 'border-emerald-500/30' : 'border-amber-500/30'}">
+      <div class="font-mono flex-1">${item.address}</div>
+      <div class="flex items-center gap-3">
+        <span class="text-xs px-3 py-1 rounded-full ${item.valid ? 'bg-emerald-500/20 text-emerald-400' : 'bg-amber-500/20 text-amber-400'}">${item.score}%</span>
+        <button onclick="copySingle('${item.address}')" class="text-sky-400 hover:text-white text-xs">Copy</button>
+      </div>
+    </div>
+  `).join('');
+  document.getElementById("previewList").innerHTML = html || '<p class="text-center text-gray-400 py-10">No addresses found</p>';
+}
+
+function copySingle(addr) {
+  navigator.clipboard.writeText(addr);
+  showToast("Copied!");
+}
+
+function clearAll() {
+  extractedWallets = [];
+  document.getElementById("previewList").innerHTML = "";
+  document.getElementById("statsBar").innerHTML = "";
+  showToast("All cleared");
+}
+
+function applyExtracted(mode) {
+  if (extractedWallets.length === 0) return showToast("Nothing to add");
+  const onlyValid = extractedWallets.filter(a => a.valid).map(a => a.address);
+  let current = document.getElementById("winnersList").value.trim();
+  let list = current ? current.split("\n").map(a => a.trim().toLowerCase()) : [];
+  if (mode === 'replace') list = onlyValid;
+  else list = [...list, ...onlyValid];
+  list = [...new Set(list.filter(a => ethers.isAddress(a)))];
+  document.getElementById("winnersList").value = list.join("\n");
+  hideExtractModal();
+  showToast(`${onlyValid.length} valid addresses ${mode === 'replace' ? 'replaced' : 'added'}`);
+}
+
+// ==================== RANDOM SELECT (جدید - فقط برنده‌ها بمانند) ====================
+function selectRandomWinners() {
+  const text = document.getElementById("winnersList").value.trim();
+  if (!text) return showToast("First enter participant addresses!");
+
+  let allAddresses = text.split(/[\s,;\n]+/).map(a => a.trim()).filter(a => ethers.isAddress(a));
+  const winnerCount = parseInt(document.getElementById("winnerCount").value) || 10;
+
+  if (allAddresses.length < winnerCount) {
+    return showToast(`Not enough addresses! You have ${allAddresses.length}, need at least ${winnerCount}`);
+  }
+
+  const shuffled = [...allAddresses].sort(() => 0.5 - Math.random());
+  const winners = shuffled.slice(0, winnerCount);
+
+  // فقط برنده‌ها بمانند - بقیه پاک شوند
+  document.getElementById("winnersList").value = winners.join("\n");
+
+  startCountdownAndShowWinners(winners, allAddresses.length);
+}
+
+function startCountdownAndShowWinners(winners, totalParticipants) {
+  const countdownModal = document.createElement("div");
+  countdownModal.id = "countdownModal";
+  countdownModal.className = "fixed inset-0 bg-black/95 flex items-center justify-center z-[100]";
+  countdownModal.innerHTML = `
+    <div class="text-center">
+      <h2 class="text-5xl font-bold mb-8 text-white">🎉 Selecting Winners</h2>
+      <div id="countdownNumber" class="text-[180px] font-bold text-emerald-400 mb-6">3</div>
+      <p class="text-gray-400 text-xl">Please wait...</p>
+    </div>
+  `;
+  document.body.appendChild(countdownModal);
+
+  let count = 3;
+  const interval = setInterval(() => {
+    count--;
+    document.getElementById("countdownNumber").textContent = count;
+    if (count <= 0) {
+      clearInterval(interval);
+      setTimeout(() => {
+        countdownModal.remove();
+        showResultModalWithConfetti(winners, totalParticipants);
+      }, 400);
+    }
+  }, 900);
+}
+
+function showResultModalWithConfetti(winners, totalParticipants) {
+  confetti({ particleCount: 250, spread: 80, origin: { y: 0.6 } });
+  setTimeout(() => confetti({ particleCount: 180, spread: 100, origin: { y: 0.7 } }), 300);
+
+  const modal = document.getElementById("resultModal");
+  document.getElementById("resultSubtitle").textContent = `${winners.length} winners selected from ${totalParticipants} participants`;
+  
+  const container = document.getElementById("winnersPreview");
+  container.innerHTML = winners.map((addr, index) => `
+    <div class="bg-white/5 border border-emerald-500/30 rounded-2xl p-4 flex items-center gap-4">
+      <div class="w-8 h-8 bg-emerald-500/20 text-emerald-400 rounded-xl flex items-center justify-center font-bold">${index + 1}</div>
+      <div class="font-mono text-sm break-all">${addr}</div>
+    </div>
+  `).join('');
+  modal.classList.remove("hidden");
+}
+
+function hideResultModal() {
+  document.getElementById("resultModal").classList.add("hidden");
+}
+
+function copyWinners() {
+  const winnersText = Array.from(document.querySelectorAll("#winnersPreview .font-mono")).map(el => el.textContent).join("\n");
+  navigator.clipboard.writeText(winnersText);
+  showToast("Winners copied to clipboard!");
+}
+
+// ==================== EXPORT / IMPORT / SHARE ====================
+function exportWallets() {
+  const text = document.getElementById("winnersList").value.trim();
+  if (!text) return showToast("List is empty");
+  const data = { wallets: text.split(/[\s,;\n]+/).map(a => a.trim()).filter(Boolean) };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "arc-giveaway-wallets.json";
+  a.click();
+}
+
+function importWallets() {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = ".json";
+  input.onchange = e => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onload = ev => {
+      try {
+        const data = JSON.parse(ev.target.result);
+        if (data.wallets && Array.isArray(data.wallets)) {
+          document.getElementById("winnersList").value = data.wallets.join("\n");
+          showToast(`${data.wallets.length} addresses imported`);
         }
+      } catch (err) {
+        showToast("Invalid JSON file");
+      }
+    };
+    reader.readAsText(file);
+  };
+  input.click();
+}
 
-        function switchTab(tab) {
-            const giveawaySec = document.getElementById('giveawaySection');
-            const splitterSec = document.getElementById('splitterSection');
-            const gBtn = document.getElementById('tabGiveawayBtn');
-            const sBtn = document.getElementById('tabSplitterBtn');
+function copyShareableLink() {
+  const text = document.getElementById("winnersList").value.trim();
+  if (!text) return showToast("List is empty");
+  const addresses = text.split(/[\s,;\n]+/).map(a => a.trim()).filter(Boolean);
+  const encoded = btoa(JSON.stringify(addresses));
+  const url = `${window.location.origin}${window.location.pathname}?wallets=${encoded}`;
+  navigator.clipboard.writeText(url);
+  showToast("Shareable link copied!");
+}
 
-            if (tab === 'giveaway') {
-                giveawaySec.classList.remove('hidden');
-                splitterSec.classList.add('hidden');
-                gBtn.classList.add('border-indigo-500', 'text-indigo-400');
-                gBtn.classList.remove('border-transparent', 'text-gray-400');
-                sBtn.classList.add('border-transparent', 'text-gray-400');
-                sBtn.classList.remove('border-indigo-500', 'text-indigo-400');
-            } else {
-                giveawaySec.classList.add('hidden');
-                splitterSec.classList.remove('hidden');
-                sBtn.classList.add('border-indigo-500', 'text-indigo-400');
-                sBtn.classList.remove('border-transparent', 'text-gray-400');
-                gBtn.classList.add('border-transparent', 'text-gray-400');
-                gBtn.classList.remove('border-indigo-500', 'text-indigo-400');
-            }
-        }
+// ==================== SEND GIVEAWAY ====================
+async function sendGiveawaySplit() {
+  if (!signer) return showToast("Please connect your wallet first!");
+  if (isProcessing) return;
 
-        function extractAddresses() {
-            const text = document.getElementById('rawTextInput').value;
-            const regex = /0x[a-fA-F0-9]{40}/g;
-            const matches = text.match(regex) || [];
-            
-            // Remove duplicates
-            extractedWallets = [...new Set(matches)];
-            
-            const container = document.getElementById('addressListContainer');
-            document.getElementById('addressCount').innerText = extractedWallets.length;
+  let rawText = document.getElementById("winnersList").value.trim();
+  if (!rawText) return showToast("No addresses entered!");
 
-            if (extractedWallets.length === 0) {
-                container.innerHTML = '<span class="text-gray-500">No valid Ethereum addresses found.</span>';
-                return;
-            }
+  let addresses = rawText.split(/[\s,;\n]+/).map(a => a.trim()).filter(a => ethers.isAddress(a));
 
-            container.innerHTML = '';
-            extractedWallets.forEach((addr, index) => {
-                container.innerHTML += `<div>${index + 1}. ${addr}</div>`;
-            });
-        }
+  if (addresses.length === 0) return showToast("No valid addresses found!");
+  if (addresses.length > 300) return showToast("Maximum 300 winners allowed");
 
-        function clearAddresses() {
-            extractedWallets = [];
-            document.getElementById('rawTextInput').value = '';
-            document.getElementById('addressListContainer').innerHTML = '<span class="text-gray-500">No addresses extracted yet.</span>';
-            document.getElementById('addressCount').innerText = '0';
-        }
+  const totalAmount = parseFloat(document.getElementById("totalAmount").value);
+  if (!totalAmount || totalAmount <= 0) return showToast("Enter valid amount");
 
-        async function executeGiveawayDistribution() {
-            if (!signer) {
-                alert('Please connect your wallet first!');
-                return;
-            }
-            if (extractedWallets.length === 0) {
-                alert('No addresses available for distribution.');
-                return;
-            }
-            alert('Prepared to distribute funds to ' + extractedWallets.length + ' winners via contract: ' + contractAddress);
-        }
+  const tokenAddr = document.getElementById("tokenSelect").value;
+  const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
 
-        async function executeStandardSplit() {
-            if (!signer) {
-                alert('Please connect your wallet first!');
-                return;
-            }
-            alert('Executing standard split on contract: ' + contractAddress);
-        }
-    </script>
+  if (!confirm(`Send ${totalAmount} ${symbol} equally to ${addresses.length} winners?`)) return;
+
+  isProcessing = true;
+  const btn = document.getElementById("sendBtn");
+  btn.disabled = true;
+  btn.textContent = "Sending...";
+
+  try {
+    const tokenContract = new ethers.Contract(tokenAddr, [
+      "function approve(address,uint256) returns (bool)",
+      "function decimals() view returns (uint8)"
+    ], signer);
+
+    const decimals = await tokenContract.decimals();
+    const totalWei = ethers.parseUnits(totalAmount.toString(), decimals);
+
+    await (await tokenContract.approve(CONTRACT_ADDRESS, totalWei)).wait();
+
+    const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
+    
+    const count = addresses.length;
+    let basisPoints = new Array(count).fill(Math.floor(10000 / count));
+    const sum = basisPoints.reduce((a, b) => a + b, 0);
+    basisPoints[basisPoints.length - 1] += (10000 - sum);
+
+    const tx = await contract.splitPayment(tokenAddr, addresses, basisPoints, totalWei, { gasLimit: 800000 });
+    await tx.wait();
+
+    document.getElementById("successMessage").innerHTML = `✅ Success! <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline">View Transaction</a>`;
+    document.getElementById("successMessage").classList.remove('hidden');
+    await updateBalance();
+    showToast("🎉 Giveaway sent successfully!");
+  } catch (error) {
+    console.error(error);
+    showToast(error.reason || error.message || "Transaction failed", 6000);
+  } finally {
+    isProcessing = false;
+    btn.disabled = false;
+    btn.textContent = "Send Equal Split to Winners";
+  }
+}
+
+// ==================== LOAD ====================
+window.addEventListener('load', () => {
+  if (localStorage.getItem('theme') === 'light') {
+    document.documentElement.classList.add('light');
+    const icon = document.getElementById("themeBtn").querySelector("i");
+    icon.classList.remove("fa-moon");
+    icon.classList.add("fa-sun");
+  }
+
+  const savedAddress = localStorage.getItem('giveawayUserAddress');
+  if (savedAddress) {
+    userAddress = savedAddress;
+    updateConnectButton();
+    if (window.ethereum) {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      provider.getSigner().then(s => {
+        signer = s;
+        updateBalance();
+      });
+    }
+  }
+
+  const params = new URLSearchParams(window.location.search);
+  if (params.has('wallets')) {
+    try {
+      const decoded = JSON.parse(atob(params.get('wallets')));
+      document.getElementById("winnersList").value = decoded.join("\n");
+      showToast("Wallet list loaded from link");
+    } catch (e) {}
+  }
+});
+</script>
 </body>
 </html>
