@@ -12,98 +12,128 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
     body { font-family: 'Inter', system-ui, sans-serif; }
-    .glass { background: rgba(255,255,255,0.08); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); }
-    .light .glass { background: rgba(255,255,255,0.88); border-color: rgba(0,0,0,0.12); }
-    .light body, .light h1, .light label { color: #1f2937; }
+    
+    /* Claymation Aesthetic Styles */
+    .glass { 
+      background: rgba(30, 27, 45, 0.75); 
+      backdrop-filter: blur(20px); 
+      border: 2px solid rgba(255, 255, 255, 0.12);
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.45), inset 0 2px 4px rgba(255, 255, 255, 0.15), inset 0 -3px 6px rgba(0, 0, 0, 0.6);
+      border-radius: 2rem;
+    }
+    .light .glass { 
+      background: rgba(245, 243, 248, 0.88); 
+      border-color: rgba(75, 55, 95, 0.18);
+      box-shadow: 0 12px 30px rgba(60, 40, 80, 0.12), inset 0 2px 4px rgba(255, 255, 255, 0.8), inset 0 -3px 6px rgba(0, 0, 0, 0.08);
+    }
+    .light body, .light h1, .light label { color: #2b233d; }
+
+    /* Clay Button Effect */
+    .clay-btn {
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.3), inset 0 2px 3px rgba(255, 255, 255, 0.25), inset 0 -3px 4px rgba(0, 0, 0, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+    .clay-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 9px 20px rgba(0, 0, 0, 0.35), inset 0 2px 4px rgba(255, 255, 255, 0.3), inset 0 -3px 4px rgba(0, 0, 0, 0.4);
+    }
+    .clay-btn:active {
+      transform: translateY(1px);
+      box-shadow: 0 3px 8px rgba(0, 0, 0, 0.3), inset 0 1px 2px rgba(0, 0, 0, 0.4);
+    }
 
     select, input, textarea {
-      background-color: rgba(255,255,255,0.05); 
+      background-color: rgba(20, 18, 30, 0.6); 
       color: white; 
-      border: 1px solid rgba(255,255,255,0.25);
+      border: 2px solid rgba(255, 255, 255, 0.12);
+      box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5);
+      border-radius: 1.25rem;
     }
     .light select, .light input, .light textarea {
-      background-color: #f8fafc; 
-      color: #1f2937; 
-      border: 1px solid #e2e8f0;
+      background-color: #f1ecf6; 
+      color: #2b233d; 
+      border: 2px solid rgba(75, 55, 95, 0.15);
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06);
     }
     select option {
-      background-color: #1a1a2e;
+      background-color: #1a1528;
       color: white;
     }
     .light select option {
-      background-color: #f8fafc;
-      color: #1f2937;
+      background-color: #f1ecf6;
+      color: #2b233d;
     }
   </style>
 </head>
-<body class="bg-gradient-to-br from-[#0b0b1f] to-[#1a1a2e] text-white min-h-screen">
+<body class="bg-gradient-to-br from-[#120f24] via-[#1a152e] to-[#251a3a] text-white min-h-screen">
 
   <div class="max-w-2xl mx-auto px-4 py-10">
     <div class="flex justify-between items-center mb-10">
-      <h1 class="text-4xl font-bold">ArcSplit Giveaway</h1>
+      <h1 class="text-4xl font-bold tracking-wide drop-shadow-md">ArcSplit Giveaway</h1>
       <div class="flex gap-3">
-        <button onclick="toggleTheme()" id="themeBtn" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl">
+        <button onclick="toggleTheme()" id="themeBtn" class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl clay-btn">
           <i class="fas fa-moon text-xl"></i>
         </button>
-        <button onclick="showConnectModal()" id="connectBtn" class="px-6 py-3 bg-white text-black font-semibold rounded-2xl flex items-center gap-2">
+        <button onclick="showConnectModal()" id="connectBtn" class="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold rounded-2xl flex items-center gap-2 clay-btn">
           <i class="fas fa-wallet"></i> 
           <span id="connectText">Connect Wallet</span>
         </button>
       </div>
     </div>
 
-    <div id="status" class="glass border border-white/10 rounded-3xl p-6 mb-8 text-base font-medium">
+    <div id="status" class="glass p-6 mb-8 text-base font-medium">
       Ready for Giveaway on Arc Testnet
     </div>
 
-    <div id="successMessage" class="hidden glass border border-emerald-500/30 bg-emerald-500/10 rounded-3xl p-6 mb-8 text-emerald-400"></div>
+    <div id="successMessage" class="hidden glass border-emerald-500/40 bg-emerald-500/15 p-6 mb-8 text-emerald-300"></div>
 
-    <div class="glass border border-white/10 rounded-3xl p-8 space-y-8">
+    <div class="glass p-8 space-y-8">
       <div class="grid grid-cols-2 gap-6">
         <div>
-          <label class="block text-gray-400 text-sm mb-2">Select Token</label>
-          <select id="tokenSelect" onchange="updateBalance()" class="w-full rounded-2xl px-6 py-5 outline-none">
+          <label class="block text-gray-300 text-sm font-medium mb-2">Select Token</label>
+          <select id="tokenSelect" onchange="updateBalance()" class="w-full px-6 py-5 outline-none font-medium">
             <option value="0x3600000000000000000000000000000000000000">USDC</option>
             <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
             <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
           </select>
         </div>
         <div>
-          <label class="block text-gray-400 text-sm mb-2">Total Amount</label>
-          <input type="number" id="totalAmount" value="100" step="0.000001" class="w-full rounded-2xl px-6 py-5 text-2xl outline-none">
+          <label class="block text-gray-300 text-sm font-medium mb-2">Total Amount</label>
+          <input type="number" id="totalAmount" value="100" step="0.000001" class="w-full px-6 py-5 text-2xl outline-none font-semibold">
         </div>
       </div>
 
       <div>
-        <label class="block text-gray-400 text-sm mb-2">Number of Winners</label>
-        <input type="number" id="winnerCount" value="10" min="1" max="300" class="w-full rounded-2xl px-6 py-5 text-2xl outline-none">
+        <label class="block text-gray-300 text-sm font-medium mb-2">Number of Winners</label>
+        <input type="number" id="winnerCount" value="10" min="1" max="300" class="w-full px-6 py-5 text-2xl outline-none font-semibold">
       </div>
 
       <div class="flex gap-3">
-        <button onclick="selectRandomWinners()" class="flex-1 py-4 bg-purple-600 rounded-2xl font-medium hover:brightness-110 transition">🎲 Random Select</button>
+        <button onclick="selectRandomWinners()" class="flex-1 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl font-semibold text-lg clay-btn">🎲 Random Select</button>
       </div>
 
-      <div class="border border-violet-500/30 rounded-3xl p-6 bg-gradient-to-br from-violet-500/5 to-transparent">
-        <h3 class="font-bold text-lg mb-4 flex items-center gap-2 text-violet-400">
+      <div class="border-2 border-violet-500/40 rounded-3xl p-6 bg-gradient-to-br from-violet-600/10 to-transparent shadow-inner">
+        <h3 class="font-bold text-lg mb-4 flex items-center gap-2 text-violet-300">
           <i class="fas fa-brain"></i> AI-Powered Wallet Extractor
         </h3>
-        <button onclick="showExtractModal()" class="w-full py-5 bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-2xl font-semibold text-lg hover:brightness-110 transition">
+        <button onclick="showExtractModal()" class="w-full py-5 bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-2xl font-semibold text-lg clay-btn">
           Extract Wallets from Comments / Text
         </button>
       </div>
 
       <div>
-        <label class="block text-gray-400 text-sm mb-3">All Participant Addresses</label>
-        <textarea id="winnersList" rows="8" class="w-full rounded-2xl px-6 py-5 font-mono text-sm outline-none" placeholder="Paste all addresses here..."></textarea>
+        <label class="block text-gray-300 text-sm font-medium mb-3">All Participant Addresses</label>
+        <textarea id="winnersList" rows="8" class="w-full px-6 py-5 font-mono text-sm outline-none" placeholder="Paste all addresses here..."></textarea>
         
         <div class="flex gap-3 mt-3">
-          <button onclick="exportWallets()" class="flex-1 py-3 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">📤 Export JSON</button>
-          <button onclick="importWallets()" class="flex-1 py-3 bg-white/10 hover:bg-white/20 rounded-2xl text-sm">📥 Import JSON</button>
-          <button onclick="copyShareableLink()" class="flex-1 py-3 bg-violet-600 hover:bg-violet-700 rounded-2xl text-sm">🔗 Share Link</button>
+          <button onclick="exportWallets()" class="flex-1 py-3 bg-white/10 hover:bg-white/20 rounded-2xl text-sm font-medium clay-btn">📤 Export JSON</button>
+          <button onclick="importWallets()" class="flex-1 py-3 bg-white/10 hover:bg-white/20 rounded-2xl text-sm font-medium clay-btn">📥 Import JSON</button>
+          <button onclick="copyShareableLink()" class="flex-1 py-3 bg-violet-600 hover:bg-violet-700 rounded-2xl text-sm font-medium clay-btn">🔗 Share Link</button>
         </div>
       </div>
 
-      <button id="sendBtn" onclick="sendGiveawaySplit()" class="w-full bg-gradient-to-r from-pink-500 to-rose-500 py-7 rounded-3xl text-xl font-bold">
+      <button id="sendBtn" onclick="sendGiveawaySplit()" class="w-full bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 py-7 rounded-3xl text-xl font-bold clay-btn shadow-lg">
         Send Equal Split to Winners
       </button>
     </div>
@@ -111,60 +141,60 @@
 
   <!-- Random Result Modal -->
   <div id="resultModal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-50">
-    <div class="glass rounded-3xl p-8 max-w-lg w-full mx-4">
+    <div class="glass rounded-3xl p-8 max-w-lg w-full mx-4 shadow-2xl">
       <div class="text-center mb-6">
         <h2 class="text-3xl font-bold text-emerald-400 mb-2">🎉 Winners Selected!</h2>
-        <p id="resultSubtitle" class="text-gray-400"></p>
+        <p id="resultSubtitle" class="text-gray-300"></p>
       </div>
-      <div id="winnersPreview" class="max-h-96 overflow-auto space-y-3 mb-8"></div>
+      <div id="winnersPreview" class="max-h-96 overflow-auto space-y-3 mb-8 pr-1"></div>
       <div class="flex gap-3">
-        <button onclick="hideResultModal()" class="flex-1 py-4 rounded-2xl border border-white/20 hover:bg-white/10">Close</button>
-        <button onclick="copyWinners()" class="flex-1 py-4 bg-emerald-500 hover:bg-emerald-600 rounded-2xl">Copy Winners</button>
+        <button onclick="hideResultModal()" class="flex-1 py-4 rounded-2xl border-2 border-white/20 hover:bg-white/10 clay-btn font-medium">Close</button>
+        <button onclick="copyWinners()" class="flex-1 py-4 bg-emerald-500 hover:bg-emerald-600 rounded-2xl clay-btn font-semibold">Copy Winners</button>
       </div>
     </div>
   </div>
 
   <!-- Extract Modal -->
   <div id="extractModal" class="hidden fixed inset-0 bg-black/90 flex items-center justify-center z-50">
-    <div class="glass rounded-3xl p-8 w-full max-w-3xl mx-4 max-h-[94vh] flex flex-col">
+    <div class="glass rounded-3xl p-8 w-full max-w-3xl mx-4 max-h-[94vh] flex flex-col shadow-2xl">
       <h3 class="text-2xl font-bold mb-1">AI-Powered Wallet Extractor</h3>
-      <p class="text-gray-400 mb-6">Paste comments • Smart detection + scoring</p>
-      <textarea id="commentsText" rows="7" class="w-full flex-1 bg-white/5 border border-white/20 rounded-2xl p-5 font-mono text-sm mb-4" placeholder="Paste all comments here..."></textarea>
+      <p class="text-gray-300 mb-6 text-sm">Paste comments • Smart detection + scoring</p>
+      <textarea id="commentsText" rows="7" class="w-full flex-1 bg-white/5 border-2 border-white/20 rounded-2xl p-5 font-mono text-sm mb-4 outline-none" placeholder="Paste all comments here..."></textarea>
       <div class="flex gap-3 mb-4">
-        <button onclick="extractWallets()" class="flex-1 py-4 bg-violet-600 hover:bg-violet-700 rounded-2xl font-semibold">Analyze & Extract</button>
-        <button onclick="clearAll()" class="px-8 py-4 border border-white/30 hover:bg-white/10 rounded-2xl">Clear</button>
+        <button onclick="extractWallets()" class="flex-1 py-4 bg-violet-600 hover:bg-violet-700 rounded-2xl font-semibold clay-btn">Analyze & Extract</button>
+        <button onclick="clearAll()" class="px-8 py-4 border-2 border-white/30 hover:bg-white/10 rounded-2xl clay-btn font-medium">Clear</button>
       </div>
-      <div class="bg-black/40 rounded-2xl p-5 flex-1 overflow-auto" id="resultPanel">
-        <div id="statsBar" class="flex justify-between text-sm mb-4"></div>
+      <div class="bg-black/50 border border-white/10 rounded-2xl p-5 flex-1 overflow-auto shadow-inner" id="resultPanel">
+        <div id="statsBar" class="flex justify-between text-sm mb-4 font-semibold"></div>
         <div id="previewList" class="font-mono text-sm space-y-2"></div>
       </div>
       <div class="flex gap-3 mt-6">
-        <button onclick="hideExtractModal()" class="flex-1 py-4 rounded-2xl border border-white/20 hover:bg-white/10">Cancel</button>
-        <button onclick="applyExtracted('append')" class="flex-1 py-4 bg-emerald-500 hover:bg-emerald-600 rounded-2xl">Append</button>
-        <button onclick="applyExtracted('replace')" class="flex-1 py-4 bg-fuchsia-500 hover:bg-fuchsia-600 rounded-2xl">Replace</button>
+        <button onclick="hideExtractModal()" class="flex-1 py-4 rounded-2xl border-2 border-white/20 hover:bg-white/10 clay-btn font-medium">Cancel</button>
+        <button onclick="applyExtracted('append')" class="flex-1 py-4 bg-emerald-500 hover:bg-emerald-600 rounded-2xl clay-btn font-semibold">Append</button>
+        <button onclick="applyExtracted('replace')" class="flex-1 py-4 bg-fuchsia-500 hover:bg-fuchsia-600 rounded-2xl clay-btn font-semibold">Replace</button>
       </div>
     </div>
   </div>
 
   <!-- Connect Modal -->
   <div id="connectModal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
-    <div class="glass border border-white/10 rounded-3xl p-8 max-w-lg w-full mx-4">
+    <div class="glass rounded-3xl p-8 max-w-lg w-full mx-4 shadow-2xl">
       <div class="flex justify-between items-center mb-6">
         <h3 class="text-2xl font-bold">Connect Wallet</h3>
-        <button onclick="hideConnectModal()" class="text-gray-400 hover:text-white text-3xl leading-none">×</button>
+        <button onclick="hideConnectModal()" class="text-gray-300 hover:text-white text-3xl leading-none">×</button>
       </div>
-      <button onclick="connectMetaMask()" class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all border border-white/10 hover:border-emerald-500">
+      <button onclick="connectMetaMask()" class="w-full flex items-center gap-4 p-5 rounded-2xl hover:bg-white/10 transition-all border-2 border-white/15 hover:border-emerald-500 clay-btn">
         <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" width="48" height="48" alt="MetaMask">
         <div class="text-left flex-1">
           <div class="font-semibold text-lg">MetaMask</div>
-          <div class="text-sm text-gray-400">Popular browser extension</div>
+          <div class="text-sm text-gray-300">Popular browser extension</div>
         </div>
       </button>
     </div>
   </div>
 
   <!-- Toast -->
-  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 border border-white/20 text-white px-6 py-4 rounded-2xl shadow-2xl z-50">
+  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-gray-900 border-2 border-white/20 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 font-medium">
     <span id="toastText"></span>
   </div>
 
@@ -340,7 +370,7 @@ function renderResult() {
       </div>
     </div>
   `).join('');
-  document.getElementById("previewList").innerHTML = html || '<p class="text-center text-gray-400 py-10">No addresses found</p>';
+  document.getElementById("previewList").innerHTML = html || '<p class="text-center text-gray-300 py-10">No addresses found</p>';
 }
 
 function copySingle(addr) {
@@ -368,7 +398,7 @@ function applyExtracted(mode) {
   showToast(`${onlyValid.length} valid addresses ${mode === 'replace' ? 'replaced' : 'added'}`);
 }
 
-// ==================== RANDOM SELECT (جدید - فقط برنده‌ها بمانند) ====================
+// ==================== RANDOM SELECT ====================
 function selectRandomWinners() {
   const text = document.getElementById("winnersList").value.trim();
   if (!text) return showToast("First enter participant addresses!");
@@ -383,7 +413,6 @@ function selectRandomWinners() {
   const shuffled = [...allAddresses].sort(() => 0.5 - Math.random());
   const winners = shuffled.slice(0, winnerCount);
 
-  // فقط برنده‌ها بمانند - بقیه پاک شوند
   document.getElementById("winnersList").value = winners.join("\n");
 
   startCountdownAndShowWinners(winners, allAddresses.length);
@@ -397,7 +426,7 @@ function startCountdownAndShowWinners(winners, totalParticipants) {
     <div class="text-center">
       <h2 class="text-5xl font-bold mb-8 text-white">🎉 Selecting Winners</h2>
       <div id="countdownNumber" class="text-[180px] font-bold text-emerald-400 mb-6">3</div>
-      <p class="text-gray-400 text-xl">Please wait...</p>
+      <p class="text-gray-300 text-xl">Please wait...</p>
     </div>
   `;
   document.body.appendChild(countdownModal);
