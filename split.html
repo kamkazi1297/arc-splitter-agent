@@ -260,6 +260,10 @@
         class="w-full mt-3 bg-purple-600 hover:bg-purple-700 py-6 rounded-3xl text-lg font-bold">
   🔗 Create Test Payment Link
 </button>
+      <button onclick="checkModules()" 
+        class="w-full mt-3 bg-indigo-600 hover:bg-indigo-700 py-6 rounded-3xl text-lg font-bold">
+  🔍 Check All Modules
+</button>
     </div>
 
     <div class="glass border border-white/10 rounded-3xl p-8">
@@ -450,16 +454,26 @@ function updateTelegramButton() {
     console.error("Failed to save wallet to bot:", e);
   }
 }
-  async function checkPaymentLinkModule() {
-    const router = new ethers.Contract(ROUTER_ADDRESS, routerABI, signer);
-    const modules = await router.getModules();
-    
-    console.log("Payment Link Address:", modules.paymentLink);
-    
-    if (modules.paymentLink === "0x0000000000000000000000000000000000000000") {
-        showToast("⚠️ آدرس PaymentLink هنوز در روتر ست نشده!", 6000);
-    } else {
-        showToast("✅ PaymentLink ست شده", 4000);
+  async function checkModules() {
+    if (!signer) {
+        return showToast("اول والت رو وصل کن", 3000);
+    }
+
+    try {
+        const router = new ethers.Contract(ROUTER_ADDRESS, routerABI, signer);
+        const modules = await router.getModules();
+
+        console.log("=== وضعیت ماژول‌های روتر ===");
+        console.log("Payment Link :", modules.paymentLink);
+        console.log("Vesting      :", modules.vestingSplitter);
+        console.log("Conditional  :", modules.conditionalSplitter);
+        console.log("Role         :", modules.roleSplitter);
+
+        showToast("ماژول‌ها چک شدند (کنسول رو ببین)", 5000);
+
+    } catch (e) {
+        console.error(e);
+        showToast("خطا در چک کردن ماژول‌ها", 4000);
     }
 }
 
