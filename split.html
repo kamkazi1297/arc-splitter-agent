@@ -450,6 +450,18 @@ function updateTelegramButton() {
     console.error("Failed to save wallet to bot:", e);
   }
 }
+  async function checkPaymentLinkModule() {
+    const router = new ethers.Contract(ROUTER_ADDRESS, routerABI, signer);
+    const modules = await router.getModules();
+    
+    console.log("Payment Link Address:", modules.paymentLink);
+    
+    if (modules.paymentLink === "0x0000000000000000000000000000000000000000") {
+        showToast("⚠️ آدرس PaymentLink هنوز در روتر ست نشده!", 6000);
+    } else {
+        showToast("✅ PaymentLink ست شده", 4000);
+    }
+}
 
   async function testRouter() {
     if (!signer) {
