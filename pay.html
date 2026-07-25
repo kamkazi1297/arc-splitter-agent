@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ArcSplit - Secure Payment Link</title>
+  <title>ArcPay - Secure Payment Link</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
@@ -56,23 +56,25 @@
         <h3 class="font-bold text-base">Confirm Payment</h3>
         <button onclick="closeModal()" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
       </div>
+      
       <div class="space-y-4 text-xs">
         <div class="flex justify-between bg-white/[0.02] p-3 rounded-xl border border-white/5">
           <span class="text-gray-400">Amount</span>
-          <span class="font-bold text-emerald-400 text-sm">250 USDC</span>
+          <span id="modalAmount" class="font-bold text-emerald-400 text-sm">250 USDC</span>
         </div>
         <div class="flex justify-between bg-white/[0.02] p-3 rounded-xl border border-white/5">
           <span class="text-gray-400">Recipient</span>
-          <span class="font-mono text-white">Kamkazi Studio</span>
+          <span id="modalRecipient" class="font-mono text-white">0x...</span>
         </div>
         <div class="flex justify-between bg-white/[0.02] p-3 rounded-xl border border-white/5">
           <span class="text-gray-400">Network</span>
-          <span class="font-bold text-white">Arc</span>
+          <span class="font-bold text-white">Arc Testnet</span>
         </div>
       </div>
+      
       <div class="grid grid-cols-2 gap-3 pt-2">
         <button onclick="closeModal()" class="py-3 bg-white/5 hover:bg-white/10 font-bold rounded-2xl text-xs">Cancel</button>
-        <button onclick="executePayment()" class="py-3 bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold rounded-2xl text-xs shadow-lg">Pay</button>
+        <button onclick="executePayment()" class="py-3 bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold rounded-2xl text-xs shadow-lg">Confirm & Pay</button>
       </div>
     </div>
   </div>
@@ -80,18 +82,16 @@
   <!-- MAIN CONTAINER -->
   <main class="w-full max-w-[560px] mx-auto flex flex-col justify-between flex-grow space-y-6">
 
-    <!-- 1. Header -->
+    <!-- Header -->
     <header class="flex justify-between items-center py-2 border-b border-white/10">
       <div>
-        <h1 class="font-extrabold text-sm tracking-tight text-white">ArcSplit</h1>
+        <h1 class="font-extrabold text-sm tracking-tight text-white">ArcPay</h1>
         <p class="text-[11px] text-gray-400">Secure Payment Link</p>
       </div>
-      <div class="text-[11px] text-gray-400 font-semibold flex items-center gap-1.5">
-        <span>Powered by Arc</span>
-      </div>
+      <div class="text-[11px] text-gray-400 font-semibold">Arc Testnet</div>
     </header>
 
-    <!-- LOADING STATE CONTAINER -->
+    <!-- LOADING STATE -->
     <div id="loadingState" class="glass rounded-3xl p-8 space-y-6">
       <div class="skeleton h-8 w-32"></div>
       <div class="space-y-3">
@@ -101,25 +101,25 @@
       </div>
     </div>
 
-    <!-- ERROR STATE CONTAINER -->
+    <!-- ERROR STATE -->
     <div id="errorState" class="hidden glass rounded-3xl p-8 text-center space-y-4">
       <div class="text-3xl text-rose-400"><i class="fas fa-exclamation-triangle"></i></div>
-      <h3 class="font-bold text-base">Unable to load payment.</h3>
+      <h3 class="font-bold text-base">Unable to load payment link</h3>
       <button onclick="location.reload()" class="px-6 py-2.5 bg-emerald-500 text-gray-950 font-bold rounded-xl text-xs">Retry</button>
     </div>
 
-    <!-- 404 STATE CONTAINER -->
+    <!-- NOT FOUND STATE -->
     <div id="notFoundState" class="hidden glass rounded-3xl p-8 text-center space-y-4">
       <div class="text-3xl text-gray-400"><i class="fas fa-link-slash"></i></div>
       <h3 class="font-bold text-base">Payment Link Not Found</h3>
-      <p class="text-xs text-gray-400">This payment request doesn't exist.</p>
-      <button onclick="history.back()" class="px-6 py-2.5 bg-white/10 font-bold rounded-xl text-xs">Back</button>
+      <p class="text-xs text-gray-400">This link may have expired or been cancelled.</p>
+      <button onclick="history.back()" class="px-6 py-2.5 bg-white/10 font-bold rounded-xl text-xs">Go Back</button>
     </div>
 
-    <!-- 2. Payment Card -->
+    <!-- PAYMENT CARD -->
     <section id="paymentCard" class="hidden glass rounded-3xl p-6 sm:p-8 space-y-6">
 
-      <!-- 3. Payment Status Badge -->
+      <!-- Status Badge -->
       <div class="flex justify-center">
         <div id="statusBadge" class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
           <span id="statusIcon">🟡</span>
@@ -127,191 +127,211 @@
         </div>
       </div>
 
-      <!-- 4. Payment Information -->
+      <!-- Amount -->
       <div class="text-center space-y-1">
-        <div class="text-4xl sm:text-5xl font-black text-white tracking-tight">250 <span class="text-emerald-400 text-3xl">USDC</span></div>
-        <div class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Payment Request</div>
+        <div id="amountDisplay" class="text-5xl font-black text-white tracking-tight">250 <span id="tokenSymbol" class="text-emerald-400 text-3xl">USDC</span></div>
+        <div id="titleDisplay" class="text-lg font-semibold text-white">Payment Request</div>
       </div>
 
-      <!-- 5. Recipient (with Display Name support) -->
+      <!-- Recipient -->
       <div class="bg-white/[0.02] border border-white/10 p-4 rounded-2xl flex items-center justify-between">
         <div>
           <div class="text-[11px] text-gray-400 uppercase tracking-wider">Recipient</div>
-          <div id="recipientName" class="font-bold text-sm text-white mt-0.5 flex items-center gap-1.5">
-            <i class="fas fa-user-circle text-emerald-400"></i> Kamkazi Studio
-          </div>
+          <div id="recipientName" class="font-bold text-sm text-white mt-0.5">Kamkazi Studio</div>
           <div id="recipientAddress" class="font-mono text-xs text-gray-400 mt-0.5">0x7B1A...9F21</div>
         </div>
-        <button onclick="copyRecipient()" class="px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all">
+        <button onclick="copyRecipient()" class="px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-semibold flex items-center gap-1.5">
           <i class="fas fa-copy text-emerald-400"></i> Copy
         </button>
       </div>
 
-      <!-- 6. Memo (Optional) -->
+      <!-- Description -->
       <div id="memoSection" class="bg-white/[0.02] border border-white/10 p-4 rounded-2xl space-y-1">
         <div class="text-[11px] text-gray-400 uppercase tracking-wider">Description</div>
-        <div class="text-xs font-medium text-white">Website Design Payment</div>
+        <div id="descriptionText" class="text-xs font-medium text-white">Website Design & Development Payment</div>
       </div>
 
-      <!-- 7. Expiry -->
+      <!-- Expiry -->
       <div id="expirySection" class="flex items-center justify-between text-xs px-2 text-gray-400">
         <span>Expires</span>
         <div class="text-right">
-          <div class="text-white font-medium">2 August 2026, 23:59 UTC</div>
-          <div id="expiryWarning" class="text-amber-400 text-[11px] mt-0.5">⚠ Expires in 5 hours</div>
+          <div id="expiryTime" class="text-white font-medium">2 August 2026, 23:59 UTC</div>
+          <div id="expiryWarning" class="text-amber-400 text-[11px] mt-0.5">Expires in 5 hours</div>
         </div>
       </div>
 
-      <!-- 8. Wallet Section -->
+      <!-- Wallet Status -->
       <div class="bg-white/[0.02] border border-white/10 p-4 rounded-2xl flex items-center justify-between">
         <div>
-          <div class="text-[11px] text-gray-400 uppercase tracking-wider">Wallet</div>
+          <div class="text-[11px] text-gray-400 uppercase tracking-wider">Connected Wallet</div>
           <div id="walletStatusText" class="font-mono text-xs font-bold text-gray-400 mt-0.5">Not Connected</div>
         </div>
-        <div id="walletActionContainer">
-          <button onclick="connectWallet()" class="px-4 py-2 bg-emerald-500 text-gray-950 font-bold rounded-xl text-xs shadow-md">Connect Wallet</button>
-        </div>
+        <button onclick="connectWallet()" id="connectBtn" class="px-4 py-2 bg-emerald-500 text-gray-950 font-bold rounded-xl text-xs shadow-md">Connect Wallet</button>
       </div>
 
-      <!-- 9. Payment Summary Card -->
+      <!-- Summary -->
       <div class="bg-black/30 border border-white/10 rounded-2xl p-4 space-y-3 text-xs">
         <div class="flex justify-between text-gray-400">
           <span>Token</span>
-          <span class="font-bold text-white">USDC</span>
+          <span id="summaryToken" class="font-bold text-white">USDC</span>
         </div>
         <div class="flex justify-between text-gray-400">
           <span>Amount</span>
-          <span class="font-bold text-white">250</span>
+          <span id="summaryAmount" class="font-bold text-white">250</span>
         </div>
         <div class="flex justify-between text-gray-400">
           <span>Network</span>
-          <span class="font-bold text-white">Arc</span>
-        </div>
-        <div class="flex justify-between text-gray-400 border-t border-white/10 pt-2">
-          <span>Estimated Fee</span>
-          <span class="font-bold text-white">0.02 USDC</span>
+          <span class="font-bold text-white">Arc Testnet</span>
         </div>
       </div>
 
-      <!-- 10. Action Button -->
-      <div id="actionContainer">
-        <button onclick="handleActionClick()" id="mainActionButton" class="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold rounded-2xl text-sm shadow-xl shadow-emerald-500/20 transition-all">
-          Connect Wallet
-        </button>
-      </div>
+      <!-- Main Button -->
+      <button onclick="handleActionClick()" id="mainActionButton" 
+        class="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold rounded-2xl text-base shadow-xl shadow-emerald-500/20 transition-all">
+        Connect Wallet to Claim
+      </button>
 
     </section>
 
-    <!-- Footer -->
     <footer class="text-center py-4 text-[11px] text-gray-500 border-t border-white/5">
-      Powered by ArcSplit
+      Powered by ArcSplit • Secure on Arc Network
     </footer>
 
   </main>
 
 <script>
-  let walletConnected = false;
-  let paymentState = 'pending'; // pending, processing, success
+  const CONTRACT_ADDRESS = "0xca96eBfD87065B90Ca9a07b8383669787c3218aE";
+  let signer = null;
+  let userAddress = null;
+  let currentLinkId = null;
+  let currentLink = null;
 
-  // Simulate loading state on load
-  window.addEventListener('load', () => {
-    setTimeout(() => {
-      document.getElementById('loadingState').classList.add('hidden');
-      document.getElementById('paymentCard').classList.remove('hidden');
-    }, 800);
-  });
+  const ArcPaymentLinksABI = [
+    "function getPaymentLink(bytes32 linkId) view returns (tuple(address creator, address token, uint256 amount, uint256 expiration, bytes32 claimHash, address restrictedTo, uint8 state, uint64 closedAt, string qrMetaData))",
+    "function claimPaymentLink(bytes32 linkId, string secretKey) external",
+    "function isLinkValid(bytes32 linkId) view returns (bool)"
+  ];
 
-  function showToast(msg) {
+  function showToast(msg, duration = 4000) {
     const toast = document.getElementById("toast");
     document.getElementById("toastText").textContent = msg;
     toast.classList.remove("hidden");
-    setTimeout(() => toast.classList.add("hidden"), 3000);
+    setTimeout(() => toast.classList.add("hidden"), duration);
   }
 
-  function copyRecipient() {
-    navigator.clipboard.writeText("0x7B1A2C34E5F678909F21");
-    showToast("Copied");
+  async function loadPaymentLink() {
+    const path = window.location.pathname;
+    currentLinkId = path.split('/').pop();
+
+    if (!currentLinkId || currentLinkId.length < 20) {
+      document.getElementById('loadingState').classList.add('hidden');
+      document.getElementById('notFoundState').classList.remove('hidden');
+      return;
+    }
+
+    try {
+      const provider = new ethers.JsonRpcProvider("https://rpc.testnet.arc.network");
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, ArcPaymentLinksABI, provider);
+
+      currentLink = await contract.getPaymentLink(currentLinkId);
+
+      if (currentLink.creator === ethers.ZeroAddress) {
+        document.getElementById('loadingState').classList.add('hidden');
+        document.getElementById('notFoundState').classList.remove('hidden');
+        return;
+      }
+
+      // Fill Data
+      document.getElementById('amountDisplay').innerHTML = `${ethers.formatUnits(currentLink.amount, 6)} <span class="text-emerald-400 text-3xl">USDC</span>`;
+      document.getElementById('titleDisplay').textContent = currentLink.qrMetaData || "Payment Request";
+      document.getElementById('recipientAddress').textContent = `${currentLink.creator.slice(0,8)}...${currentLink.creator.slice(-6)}`;
+      document.getElementById('descriptionText').textContent = currentLink.qrMetaData || "No description provided";
+
+      document.getElementById('loadingState').classList.add('hidden');
+      document.getElementById('paymentCard').classList.remove('hidden');
+
+    } catch (e) {
+      console.error(e);
+      document.getElementById('loadingState').classList.add('hidden');
+      document.getElementById('errorState').classList.remove('hidden');
+    }
   }
 
-  function connectWallet() {
-    walletConnected = true;
-    showToast("Wallet Connected");
-    
-    // Update Wallet Section UI
-    document.getElementById('walletStatusText').textContent = "0xA45...CC91";
-    document.getElementById('walletStatusText').className = "font-mono text-xs font-bold text-emerald-400 mt-0.5";
-    document.getElementById('walletActionContainer').innerHTML = `
-      <div class="flex items-center gap-2">
-        <span class="text-[10px] text-emerald-400 font-bold">Connected</span>
-        <button onclick="disconnectWallet()" class="text-[11px] text-rose-400 hover:underline font-semibold">Disconnect</button>
-      </div>
-    `;
+  async function connectWallet() {
+    if (!window.ethereum) return showToast("MetaMask not found");
 
-    // Update Main Action Button
-    document.getElementById('mainActionButton').textContent = "Pay 250 USDC";
-  }
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const network = await provider.getNetwork();
 
-  function disconnectWallet() {
-    walletConnected = false;
-    document.getElementById('walletStatusText').textContent = "Not Connected";
-    document.getElementById('walletStatusText').className = "font-mono text-xs font-bold text-gray-400 mt-0.5";
-    document.getElementById('walletActionContainer').innerHTML = `
-      <button onclick="connectWallet()" class="px-4 py-2 bg-emerald-500 text-gray-950 font-bold rounded-xl text-xs shadow-md">Connect Wallet</button>
-    `;
-    document.getElementById('mainActionButton').textContent = "Connect Wallet";
-    showToast("Wallet Disconnected");
+      if (network.chainId !== BigInt(5042002)) {
+        return showToast("Please switch to Arc Testnet");
+      }
+
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      userAddress = accounts[0];
+      signer = await provider.getSigner();
+
+      document.getElementById('walletStatusText').textContent = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
+      document.getElementById('walletStatusText').className = "font-mono text-xs font-bold text-emerald-400 mt-0.5";
+
+      document.getElementById('mainActionButton').textContent = "Claim Payment";
+      showToast("Wallet Connected Successfully");
+    } catch (e) {
+      showToast("Failed to connect wallet");
+    }
   }
 
   function handleActionClick() {
-    if (!walletConnected) {
+    if (!userAddress) {
       connectWallet();
-      return;
+    } else {
+      document.getElementById('confirmModal').classList.remove('hidden');
     }
-    // Open Modal
-    document.getElementById('confirmModal').classList.remove('hidden');
   }
 
   function closeModal() {
     document.getElementById('confirmModal').classList.add('hidden');
   }
 
-  function executePayment() {
+  async function executePayment() {
     closeModal();
-    paymentState = 'processing';
     
-    const actionContainer = document.getElementById('actionContainer');
-    actionContainer.innerHTML = `
-      <button disabled class="w-full py-4 bg-white/10 text-white font-bold rounded-2xl text-sm flex items-center justify-center gap-2 cursor-wait">
-        <i class="fas fa-spinner fa-spin text-emerald-400"></i> Processing Payment...
-      </button>
-    `;
+    if (!signer) return showToast("Please connect wallet first");
 
-    setTimeout(() => {
-      paymentState = 'success';
+    try {
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, ArcPaymentLinksABI, signer);
       
-      // Update Status Badge to Paid
-      const badge = document.getElementById('statusBadge');
-      badge.className = "inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
-      document.getElementById('statusIcon').textContent = "🟢";
-      document.getElementById('statusText').textContent = "Paid";
-
-      // Update Action container to Success state
-      actionContainer.innerHTML = `
-        <div class="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 text-center space-y-2">
-          <div class="text-emerald-400 font-bold text-sm flex items-center justify-center gap-1.5">
-            ✅ Payment Successful
-          </div>
-          <div class="text-xs text-white">250 USDC Sent</div>
-          <div class="flex items-center justify-center gap-2 pt-2 border-t border-white/10 text-xs">
-            <span class="text-gray-400">Transaction</span>
-            <span class="font-mono text-white">0x91D...</span>
-            <button onclick="showToast('Copied')" class="text-emerald-400 hover:underline font-bold">Copy</button>
-          </div>
-        </div>
+      document.getElementById('mainActionButton').innerHTML = `
+        <i class="fas fa-spinner fa-spin"></i> Processing...
       `;
-      showToast("Payment Successful");
-    }, 2000);
+      document.getElementById('mainActionButton').disabled = true;
+
+      const tx = await contract.claimPaymentLink(currentLinkId, ""); // secretKey empty for now
+      await tx.wait();
+
+      showToast("✅ Payment Claimed Successfully!", 6000);
+
+      // Success UI
+      document.getElementById('mainActionButton').innerHTML = `✅ Payment Received`;
+      document.getElementById('mainActionButton').classList.add('!bg-emerald-600');
+
+    } catch (error) {
+      console.error(error);
+      showToast(error.reason || error.message || "Claim failed", 5000);
+      document.getElementById('mainActionButton').innerHTML = `Claim Payment`;
+      document.getElementById('mainActionButton').disabled = false;
+    }
   }
+
+  function copyRecipient() {
+    if (currentLink) {
+      navigator.clipboard.writeText(currentLink.creator);
+      showToast("Address copied");
+    }
+  }
+
+  window.addEventListener('load', loadPaymentLink);
 </script>
 </body>
 </html>
