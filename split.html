@@ -379,6 +379,28 @@ const routerABI = [
       updateTelegramButton();
     }
   }
+  async function testRouter() {
+    if (!signer) {
+        return showToast("اول والت رو وصل کن!", 4000);
+    }
+
+    const router = new ethers.Contract(ROUTER_ADDRESS, routerABI, signer);
+
+    try {
+        showToast("در حال تست اتصال به Router...");
+
+        const modules = await router.getModules();
+        
+        console.log("✅ Router Connected Successfully!");
+        console.log("Modules:", modules);
+
+        showToast("✅ Router با موفقیت وصل شد! (جزئیات رو تو کنسول ببین)", 6000);
+
+    } catch (error) {
+        console.error(error);
+        showToast("❌ خطا در اتصال به Router", 5000);
+    }
+}
 
   function updateConnectButton() {
     const btn = document.getElementById("connectBtn");
