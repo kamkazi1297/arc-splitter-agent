@@ -1,201 +1,130 @@
 <!DOCTYPE html>
-<html lang="fa" dir="ltr">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ArcSplit - Programmable Money Tools</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    
-    body { font-family: 'Inter', sans-serif; }
-
-    .glass {
-      background: rgba(255,255,255,0.08);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(255,255,255,0.1);
-    }
-
-    /* ==================== LIGHT MODE ==================== */
-    .light body {
-      background: linear-gradient(to bottom right, #f1f5f9, #cbd5e1);
-    }
-
-    .light .glass {
-      background: rgba(241, 245, 249, 0.95);
-      border-color: rgba(148, 163, 184, 0.5);
-      box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
-    }
-
-    .light h1, 
-    .light h2, 
-    .light h3,
-    .light .text-4xl {
-      color: #0f172a !important;
-    }
-
-    .light .subtitle,
-    .light p.text-xl {
-      color: #1e2937 !important;
-    }
-
-    .light .feature-text {
-      color: #334155 !important;
-    }
-
-    .light .text-gray-400,
-    .light .text-gray-500 {
-      color: #475569 !important;
-    }
-
-    /* دکمه سوئیچ تم در حالت لایت */
-    .light #themeBtn {
-      background-color: rgba(15, 23, 42, 0.1) !important;
-      border: 1px solid rgba(15, 23, 42, 0.2) !important;
-      color: #0f172a !important;
-    }
-
-    .light #themeBtn:hover {
-      background-color: rgba(15, 23, 42, 0.15) !important;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arc Protocol | Central Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #0b0f19; color: #f3f4f6; }
+    </style>
 </head>
-<body class="bg-gradient-to-br from-[#0b0b1f] to-[#1a1a2e] text-white min-h-screen transition-all duration-500">
+<body class="min-h-screen flex flex-col justify-between">
 
-  <div class="max-w-5xl mx-auto px-6 py-16">
-    <!-- Header -->
-    <div class="flex justify-between items-center mb-16">
-      <div class="flex items-center gap-4">
-        <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-cyan-500 rounded-2xl flex items-center justify-center text-2xl font-bold text-white">A</div>
-        <div>
-          <h1 class="text-4xl font-bold tracking-tight logo-text">ArcSplit</h1>
-          <p class="subtitle text-gray-400 text-sm">Programmable Money Tools</p>
+    <!-- Navbar -->
+    <header class="border-b border-gray-800 bg-gray-900/50 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="bg-indigo-600 p-2 rounded-xl text-white font-bold text-xl"><i class="fa-solid fa-bolt"></i></div>
+                <span class="text-xl font-bold tracking-wide">Arc Protocol Hub</span>
+            </div>
+            <div>
+                <button id="connectWalletBtn" onclick="connectWallet()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-xl font-medium transition shadow-lg shadow-indigo-500/25 flex items-center gap-2 text-sm">
+                    <i class="fa-solid fa-wallet"></i> Connect Wallet
+                </button>
+            </div>
         </div>
-      </div>
+    </header>
 
-      <button onclick="toggleTheme()" id="themeBtn"
-              class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all">
-        <i class="fas fa-moon text-xl"></i>
-      </button>
-    </div>
-
-    <div class="text-center mb-16">
-      <h2 class="text-5xl font-bold mb-4 glow">Choose Your Tool</h2>
-      <p class="subtitle text-xl max-w-2xl mx-auto">
-        Professional tools to split and distribute tokens on Arc Testnet
-      </p>
-    </div>
-
-    <div class="grid md:grid-cols-2 gap-8">
-      <!-- Token Splitter -->
-      <a href="split.html" class="glass card block rounded-3xl overflow-hidden group">
-        <div class="h-2 bg-gradient-to-r from-emerald-400 to-cyan-400"></div>
-        <div class="p-10">
-          <div class="flex justify-between items-start mb-8">
-            <div class="text-6xl">🔀</div>
-            <span class="px-4 py-2 bg-emerald-500/20 text-emerald-400 text-sm font-medium rounded-full">Pro</span>
-          </div>
-          
-          <h3 class="text-3xl font-bold mb-3">Token Splitter Pro</h3>
-          <p class="feature-text leading-relaxed mb-8 text-lg">
-            Split tokens with custom percentages, real-time preview, 
-            quick templates, and advanced distribution controls.
-          </p>
-          
-          <div class="space-y-3 text-sm feature-text">
-            <div class="flex items-center gap-3">
-              <i class="fas fa-check text-emerald-500"></i>
-              <span>Custom percentage splits</span>
-            </div>
-            <div class="flex items-center gap-3">
-              <i class="fas fa-check text-emerald-500"></i>
-              <span>Quick templates & auto mode</span>
-            </div>
-            <div class="flex items-center gap-3">
-              <i class="fas fa-check text-emerald-500"></i>
-              <span>Telegram integration & notifications</span>
-            </div>
-            <div class="flex items-center gap-3">
-              <i class="fas fa-check text-emerald-500"></i>
-              <span>Import / Export & history</span>
-            </div>
-          </div>
-
-          <div class="mt-10 flex items-center justify-between text-emerald-600 font-medium">
-            <span>Launch Token Splitter</span>
-            <i class="fas fa-arrow-right text-xl group-hover:translate-x-2 transition"></i>
-          </div>
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-10 w-full">
+        <div class="text-center mb-12 space-y-2">
+            <h1 class="text-3xl font-extrabold tracking-tight">Smart Asset Management & Splitting</h1>
+            <p class="text-gray-400 text-sm">Select a module below to manage your decentralized routing, splits, streams, and tools.</p>
         </div>
-      </a>
 
-      <!-- Giveaway Tool -->
-      <a href="giveaway.html" class="glass card block rounded-3xl overflow-hidden group">
-        <div class="h-2 bg-gradient-to-r from-pink-500 to-rose-500"></div>
-        <div class="p-10">
-          <div class="flex justify-between items-start mb-8">
-            <div class="text-6xl">🎉</div>
-            <span class="px-4 py-2 bg-pink-500/20 text-pink-400 text-sm font-medium rounded-full">Giveaway</span>
-          </div>
-          
-          <h3 class="text-3xl font-bold mb-3">Giveaway Tool</h3>
-          <p class="feature-text leading-relaxed mb-8 text-lg">
-            Create fair giveaways with random winner selection, 
-            AI-powered wallet extractor, and instant equal distribution.
-          </p>
-          
-          <div class="space-y-3 text-sm feature-text">
-            <div class="flex items-center gap-3">
-              <i class="fas fa-check text-pink-500"></i>
-              <span>Random winner selection</span>
+        <!-- Cards Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            
+            <!-- Giveaway & Standard Splitter -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:border-indigo-500 transition group flex flex-col justify-between">
+                <div>
+                    <div class="text-indigo-400 text-3xl mb-4 group-hover:scale-110 transition transform"><i class="fa-solid fa-gift"></i></div>
+                    <h3 class="text-xl font-bold mb-2">Giveaway & Standard Splitter</h3>
+                    <p class="text-gray-400 text-sm mb-4">Extract wallets from text and distribute tokens equally or split standard transfers.</p>
+                    <span class="text-xs text-gray-500 block mb-4 font-mono">0x73Da...62cB2</span>
+                </div>
+                <a href="giveaway.html" class="block w-full text-center bg-gray-800 hover:bg-indigo-600 py-2.5 rounded-xl transition text-sm font-medium">Open Module</a>
             </div>
-            <div class="flex items-center gap-3">
-              <i class="fas fa-check text-pink-500"></i>
-              <span>AI Wallet Extractor from comments</span>
-            </div>
-            <div class="flex items-center gap-3">
-              <i class="fas fa-check text-pink-500"></i>
-              <span>Shareable links & JSON export</span>
-            </div>
-            <div class="flex items-center gap-3">
-              <i class="fas fa-check text-pink-500"></i>
-              <span>Confetti animation & live results</span>
-            </div>
-          </div>
 
-          <div class="mt-10 flex items-center justify-between text-pink-600 font-medium">
-            <span>Launch Giveaway Tool</span>
-            <i class="fas fa-arrow-right text-xl group-hover:translate-x-2 transition"></i>
-          </div>
+            <!-- Role-Based Split -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:border-indigo-500 transition group flex flex-col justify-between">
+                <div>
+                    <div class="text-indigo-400 text-3xl mb-4 group-hover:scale-110 transition transform"><i class="fa-solid fa-users-gear"></i></div>
+                    <h3 class="text-xl font-bold mb-2">Role-Based Splitter</h3>
+                    <p class="text-gray-400 text-sm mb-4">Manage revenue distribution based on organization roles and basis points.</p>
+                    <span class="text-xs text-gray-500 block mb-4 font-mono">0x2eC8...856E</span>
+                </div>
+                <a href="role-split.html" class="block w-full text-center bg-gray-800 hover:bg-indigo-600 py-2.5 rounded-xl transition text-sm font-medium">Open Module</a>
+            </div>
+
+            <!-- Conditional Splitter -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:border-indigo-500 transition group flex flex-col justify-between">
+                <div>
+                    <div class="text-indigo-400 text-3xl mb-4 group-hover:scale-110 transition transform"><i class="fa-solid fa-sliders"></i></div>
+                    <h3 class="text-xl font-bold mb-2">Conditional Splitter</h3>
+                    <p class="text-gray-400 text-sm mb-4">Configure rules, time-locks, and triggers for automated fund releases.</p>
+                    <span class="text-xs text-gray-500 block mb-4 font-mono">0x372E...19B2</span>
+                </div>
+                <a href="conditional.html" class="block w-full text-center bg-gray-800 hover:bg-indigo-600 py-2.5 rounded-xl transition text-sm font-medium">Open Module</a>
+            </div>
+
+            <!-- Vesting Splitter -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:border-indigo-500 transition group flex flex-col justify-between">
+                <div>
+                    <div class="text-indigo-400 text-3xl mb-4 group-hover:scale-110 transition transform"><i class="fa-solid fa-lock"></i></div>
+                    <h3 class="text-xl font-bold mb-2">Vesting Splitter</h3>
+                    <p class="text-gray-400 text-sm mb-4">Lock tokens and establish linear progressive vesting schedules.</p>
+                    <span class="text-xs text-gray-500 block mb-4 font-mono">0x714A...A5D9</span>
+                </div>
+                <a href="vesting.html" class="block w-full text-center bg-gray-800 hover:bg-indigo-600 py-2.5 rounded-xl transition text-sm font-medium">Open Module</a>
+            </div>
+
+            <!-- Agentic Stream -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:border-indigo-500 transition group flex flex-col justify-between">
+                <div>
+                    <div class="text-indigo-400 text-3xl mb-4 group-hover:scale-110 transition transform"><i class="fa-solid fa-robot"></i></div>
+                    <h3 class="text-xl font-bold mb-2">Agentic Stream</h3>
+                    <p class="text-gray-400 text-sm mb-4">Set automated periodic budget allowances for AI agents.</p>
+                    <span class="text-xs text-gray-500 block mb-4 font-mono">0xe955...01cA</span>
+                </div>
+                <a href="agent-stream.html" class="block w-full text-center bg-gray-800 hover:bg-indigo-600 py-2.5 rounded-xl transition text-sm font-medium">Open Module</a>
+            </div>
+
+            <!-- Payment Links -->
+            <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:border-indigo-500 transition group flex flex-col justify-between">
+                <div>
+                    <div class="text-indigo-400 text-3xl mb-4 group-hover:scale-110 transition transform"><i class="fa-solid fa-link"></i></div>
+                    <h3 class="text-xl font-bold mb-2">Payment Links</h3>
+                    <p class="text-gray-400 text-sm mb-4">Generate shareable smart payment links with automatic splitting.</p>
+                    <span class="text-xs text-gray-500 block mb-4 font-mono">0xca96...18aE</span>
+                </div>
+                <a href="payment-links.html" class="block w-full text-center bg-gray-800 hover:bg-indigo-600 py-2.5 rounded-xl transition text-sm font-medium">Open Module</a>
+            </div>
+
         </div>
-      </a>
-    </div>
+    </main>
 
-    <p class="text-center text-gray-500 mt-16 text-sm">
-      Built for Arc Testnet • Powered by USDC & Circle
-    </p>
-  </div>
+    <!-- Footer -->
+    <footer class="border-t border-gray-800 py-6 text-center text-gray-500 text-sm">
+        Arc Protocol © 2026
+    </footer>
 
-  <script>
-    function toggleTheme() {
-      const html = document.documentElement;
-      const isLight = html.classList.toggle('light');
-      
-      const icon = document.getElementById("themeBtn").querySelector("i");
-      if (isLight) {
-        icon.classList.replace("fa-moon", "fa-sun");
-        localStorage.setItem('theme', 'light');
-      } else {
-        icon.classList.replace("fa-sun", "fa-moon");
-        localStorage.setItem('theme', 'dark');
-      }
-    }
-
-    // Load saved theme
-    if (localStorage.getItem('theme') === 'light') {
-      document.documentElement.classList.add('light');
-      document.getElementById("themeBtn").querySelector("i").classList.replace("fa-moon", "fa-sun");
-    }
-  </script>
+    <script>
+        let provider, signer, userAddress;
+        async function connectWallet() {
+            if (window.ethereum) {
+                provider = new ethers.BrowserProvider(window.ethereum);
+                signer = await provider.getSigner();
+                userAddress = await signer.getAddress();
+                document.getElementById('connectWalletBtn').innerText = userAddress.substring(0, 6) + '...' + userAddress.substring(38);
+            } else {
+                alert('Please install MetaMask!');
+            }
+        }
+    </script>
 </body>
 </html>
