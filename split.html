@@ -1,73 +1,62 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="fa">
 <head>
   <meta charset="UTF-8">
-  <title>تست Payment Link</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>تست نهایی Payment Link</title>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
 </head>
-<body class="bg-zinc-950 text-white p-8">
+<body style="background:#111; color:white; padding:30px; font-family:Arial">
 
-  <div class="max-w-md mx-auto">
-    <h1 class="text-3xl font-bold text-center mb-10">تست Payment Link</h1>
-    
-    <button onclick="connect()" class="w-full bg-blue-600 py-4 rounded-2xl mb-4 text-lg">
-      اتصال والت
-    </button>
-    
-    <button onclick="createLink()" class="w-full bg-purple-600 py-6 rounded-3xl text-xl font-bold">
-      ایجاد Payment Link (۱۰ USDC)
-    </button>
+  <h2>تست نهایی Payment Link</h2>
+  
+  <button onclick="connect()" style="padding:15px 30px; margin:10px; background:blue">اتصال والت</button>
+  <button onclick="createLink()" style="padding:15px 30px; margin:10px; background:purple">ایجاد لینک</button>
 
-    <p id="status" class="text-center mt-8 text-sm text-gray-400"></p>
-  </div>
+  <p id="log" style="margin-top:20px; white-space:pre-wrap"></p>
 
 <script>
   const ADDR = "0xca96eBfD87065B90Ca9a07b8383669787c3218aE";
   let signer = null;
 
   async function connect() {
-    const provider = new ethers.BrowserProvider(window.ethereum);
-    signer = await provider.getSigner();
-    document.getElementById("status").innerHTML = "✅ والت متصل شد";
+    const p = new ethers.BrowserProvider(window.ethereum);
+    signer = await p.getSigner();
+    log("✅ والت متصل شد");
+  }
+
+  function log(msg) {
+    document.getElementById("log").innerHTML += msg + "\n";
   }
 
   async function createLink() {
-    if (!signer) return alert("اول والت را متصل کنید");
+    if (!signer) return log("❌ اول والت را وصل کن");
 
     try {
-      document.getElementById("status").innerHTML = "در حال ارسال...";
+      log("در حال ارسال...");
 
-      const iface = new ethers.Interface([
-        "function createPaymentLink((bytes32 linkId, address token, uint256 amount, uint256 expiration, bytes32 claimHash, address restrictedTo, string qrMetaData, uint256 salt) params) external payable"
-      ]);
+      const abi = ["function createPaymentLink(tuple(bytes32,address,uint256,uint256,bytes32,address,string,uint256) params) external payable"];
+
+      const contract = new ethers.Contract(ADDR, abi, signer);
 
       const params = [
-        ethers.ZeroHash,                                   // linkId
-        "0x3600000000000000000000000000000000000000",     // token = USDC
-        ethers.parseUnits("10", 6),                        // amount
-        Math.floor(Date.now() / 1000) + 604800,            // expiration (7 days)
-        ethers.ZeroHash,                                   // claimHash
-        ethers.ZeroAddress,                                // restrictedTo
-        "Test Simple Payment Link",                        // qrMetaData
-        Date.now()                                         // salt
+        ethers.ZeroHash,
+        "0x3600000000000000000000000000000000000000",
+        ethers.parseUnits("5", 6),           // 5 USDC
+        Math.floor(Date.now()/1000) + 86400*3, // 3 روز
+        ethers.ZeroHash,
+        ethers.ZeroAddress,
+        "تست ساده",
+        Date.now()
       ];
 
-      const data = iface.encodeFunctionData("createPaymentLink", [params]);
-
-      const tx = await signer.sendTransaction({
-        to: ADDR,
-        data: data,
-        gasLimit: 1000000
-      });
-
-      document.getElementById("status").innerHTML = `ارسال شد...<br>Hash: ${tx.hash.slice(0,12)}...`;
+      const tx = await contract.createPaymentLink(params, { gasLimit: 1200000 });
+      log("Tx Hash: " + tx.hash);
       await tx.wait();
-      document.getElementById("status").innerHTML = "✅ با موفقیت ایجاد شد!";
+      log("✅ موفقیت‌آمیز!");
 
     } catch (e) {
       console.error(e);
-      document.getElementById("status").innerHTML = "❌ خطا: " + (e.reason || e.message);
+      log("❌ خطا: " + (e.reason || e.message || e));
     }
   }
 </script>
