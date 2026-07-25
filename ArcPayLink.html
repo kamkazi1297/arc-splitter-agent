@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+  <title>ArcPay - Decentralized Payment Links</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    
+    body { 
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif; 
+      background: #070711;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(34, 211, 238, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.05) 0%, transparent 50%);
+      color: #f8fafc;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    
+    .glass {
+      background: rgba(18, 18, 38, 0.65);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+    
+    .light {
+      background: #f1f5f9 !important;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(34, 211, 238, 0.05) 0%, transparent 40%) !important;
+      color: #0f172a !important;
+    }
+
+    .light .glass {
+      background: rgba(255, 255, 255, 0.85);
+      border-color: rgba(0, 0, 0, 0.08);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1);
+    }
+
+    .light body, .light h1, .light h3, .light label, .light .text-white {
+      color: #0f172a;
+    }
+    .light .text-gray-400 { color: #475569 !important; }
+    .light .text-gray-300 { color: #334155 !important; }
+
+    select, input, textarea {
+      background-color: rgba(255, 255, 255, 0.03);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    select:hover, input:hover, textarea:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+    select:focus, input:focus, textarea:focus {
+      border-color: #10b981;
+      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
+      outline: none;
+    }
+
+    .light select, .light input, .light textarea {
+      background-color: #ffffff;
+      color: #0f172a;
+      border: 1px solid #cbd5e1;
+    }
+
+    select option {
+      background-color: #0f172a;
+      color: white;
+      padding: 14px 18px;
+    }
+    .light select option {
+      background-color: #ffffff;
+      color: #0f172a;
+    }
+
+    .invalid-field {
+      border-color: #ef4444 !important;
+    }
+
+    .error-msg {
+      color: #ef4444;
+      font-size: 0.75rem;
+      margin-top: 4px;
+      display: block;
+    }
+
+    .app-button {
+      transition: all 0.25s ease;
+    }
+    .app-button:active {
+      transform: scale(0.98);
+    }
+  </style>
+</head>
+<body class="text-white min-h-screen selection:bg-emerald-500 selection:text-black">
+
+  <div class="max-w-6xl mx-auto px-4 py-6 sm:py-8">
+    
+    <!-- Header Section -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-6 rounded-3xl backdrop-blur-xl">
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Arc <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Pay Link</span></h1>
+        <p class="text-gray-400 light:text-slate-600 text-xs sm:text-sm font-medium">Create a secure payment request on Arc.</p>
+      </div>
+      
+      <div class="flex items-center gap-3">
+        <div class="flex bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 rounded-2xl p-1 text-xs">
+          <button onclick="switchTab('create')" id="tabCreate" class="px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400">Create Link</button>
+          <button onclick="switchTab('history')" id="tabHistory" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-600">History</button>
+        </div>
+
+        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/10 light:hover:bg-black/10 border border-white/10 light:border-black/10 rounded-2xl transition-all shadow-lg">
+          <i class="fas fa-moon text-lg text-emerald-400"></i>
+        </button>
+
+        <button onclick="showConnectModal()" id="connectHeaderBtn" class="app-button px-4 py-2.5 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl text-xs flex items-center gap-2">
+          <i class="fas fa-wallet text-emerald-600"></i>
+          <span id="headerWalletText">Connect Wallet</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#121228] light:bg-slate-900 border border-white/15 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 z-50 text-xs sm:text-sm backdrop-blur-xl">
+      <span id="toastText"></span>
+    </div>
+
+    <!-- TAB 1: CREATE PAYMENT LINK (Two Columns) -->
+    <div id="viewCreate" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      
+      <!-- Left Column: Form Configuration (7 Cols) -->
+      <div class="lg:col-span-7 space-y-6">
+        
+        <!-- Card 1: Receiver -->
+        <div class="glass rounded-3xl p-6">
+          <h3 class="font-bold text-sm text-gray-400 uppercase tracking-wider mb-3">Receiver</h3>
+          <div class="flex items-center justify-between bg-white/[0.02] border border-white/10 p-4 rounded-2xl">
+            <div>
+              <div class="text-xs text-gray-400">Connected Wallet</div>
+              <div id="displayWallet" class="font-mono font-bold text-sm mt-0.5">Not Connected</div>
+            </div>
+            <button onclick="showConnectModal()" class="text-xs font-semibold text-emerald-400 hover:underline">Change Wallet</button>
+          </div>
+        </div>
+
+        <!-- Card 2: Token -->
+        <div class="glass rounded-3xl p-6">
+          <h3 class="font-bold text-sm text-gray-400 uppercase tracking-wider mb-3">Token</h3>
+          <div class="space-y-3">
+            <select id="tokenSelect" onchange="updatePreview()" class="w-full rounded-2xl px-4 py-3.5 text-sm font-medium cursor-pointer">
+              <option value="USDC">🟦 USDC</option>
+              <option value="EURC">🟣 EURC</option>
+              <option value="CIRBTC">🟠 CIRBTC</option>
+            </select>
+            <div id="tokenBalanceDisplay" class="text-xs text-gray-400">Balance: --</div>
+            <span id="errToken" class="error-msg hidden"></span>
+          </div>
+        </div>
+
+        <!-- Card 3: Amount -->
+        <div class="glass rounded-3xl p-6">
+          <div class="flex justify-between items-center mb-3">
+            <h3 class="font-bold text-sm text-gray-400 uppercase tracking-wider">Amount</h3>
+            <div class="flex bg-white/5 rounded-xl p-1 text-xs">
+              <button onclick="setAmountMode('fixed')" id="modeFixed" class="px-3 py-1 rounded-lg font-semibold bg-emerald-500/20 text-emerald-400">Fixed</button>
+              <button onclick="setAmountMode('flexible')" id="modeFlexible" class="px-3 py-1 rounded-lg font-semibold text-gray-400">Flexible</button>
+            </div>
+          </div>
+
+          <div id="fixedAmountContainer">
+            <input type="number" id="fixedAmountInput" oninput="updatePreview()" class="w-full rounded-2xl px-4 py-3.5 text-base font-bold" placeholder="100">
+            <span id="errAmount" class="error-msg hidden"></span>
+          </div>
+
+          <div id="flexibleAmountContainer" class="hidden grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-[11px] text-gray-400 block mb-1">Minimum</label>
+              <input type="number" id="flexMinInput" oninput="updatePreview()" class="w-full rounded-2xl px-4 py-3 text-sm" placeholder="10">
+            </div>
+            <div>
+              <label class="text-[11px] text-gray-400 block mb-1">Maximum (Optional)</label>
+              <input type="number" id="flexMaxInput" oninput="updatePreview()" class="w-full rounded-2xl px-4 py-3 text-sm" placeholder="1000">
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 4: Title -->
+        <div class="glass rounded-3xl p-6">
+          <h3 class="font-bold text-sm text-gray-400 uppercase tracking-wider mb-3">Title</h3>
+          <input type="text" id="linkTitle" maxlength="50" oninput="updatePreview()" class="w-full rounded-2xl px-4 py-3.5 text-sm" placeholder="Investment Round, NFT Mint...">
+          <span id="errTitle" class="error-msg hidden"></span>
+        </div>
+
+        <!-- Card 5: Description -->
+        <div class="glass rounded-3xl p-6">
+          <h3 class="font-bold text-sm text-gray-400 uppercase tracking-wider mb-3">Description</h3>
+          <textarea id="linkDesc" maxlength="200" rows="3" oninput="updatePreview()" class="w-full rounded-2xl p-4 text-sm resize-none" placeholder="Payment for Series A investment..."></textarea>
+        </div>
+
+        <!-- Card 6: Expiration -->
+        <div class="glass rounded-3xl p-6">
+          <h3 class="font-bold text-sm text-gray-400 uppercase tracking-wider mb-3">Expiration</h3>
+          <select id="expirationSelect" onchange="handleExpirationChange()" class="w-full rounded-2xl px-4 py-3.5 text-sm">
+            <option value="never">Never</option>
+            <option value="1h">1 Hour</option>
+            <option value="24h">24 Hours</option>
+            <option value="7d">7 Days</option>
+            <option value="30d">30 Days</option>
+            <option value="custom">Custom Date</option>
+          </select>
+          <div id="customDateContainer" class="hidden mt-3">
+            <input type="datetime-local" id="customDateInput" onchange="updatePreview()" class="w-full rounded-2xl px-4 py-3 text-sm">
+          </div>
+          <span id="errExpiration" class="error-msg hidden"></span>
+        </div>
+
+        <!-- Card 7: Advanced Settings -->
+        <div class="glass rounded-3xl p-6">
+          <button onclick="toggleAdvanced()" class="w-full flex justify-between items-center font-bold text-sm text-gray-300">
+            <span class="flex items-center gap-2"><i class="fas fa-sliders-h text-emerald-400"></i> Advanced Settings</span>
+            <i id="advancedChevron" class="fas fa-chevron-down transition-transform"></i>
+          </button>
+          <div id="advancedContent" class="hidden mt-4 pt-4 border-t border-white/5 space-y-4 text-xs">
+            <div class="flex items-center justify-between">
+              <span>One Time Link</span>
+              <input type="checkbox" id="toggleOneTime" class="w-4 h-4 accent-emerald-500 cursor-pointer">
+            </div>
+            <div class="flex items-center justify-between">
+              <span>Allow Partial Payment</span>
+              <input type="checkbox" id="togglePartial" class="w-4 h-4 accent-emerald-500 cursor-pointer">
+            </div>
+            <div class="flex items-center justify-between">
+              <span>Collect Sender Name</span>
+              <input type="checkbox" id="toggleName" class="w-4 h-4 accent-emerald-500 cursor-pointer">
+            </div>
+            <div class="flex items-center justify-between">
+              <span>Collect Email</span>
+              <input type="checkbox" id="toggleEmail" class="w-4 h-4 accent-emerald-500 cursor-pointer">
+            </div>
+          </div>
+        </div>
+
+        <!-- Generate Button -->
+        <button onclick="generateLink()" class="app-button w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:brightness-110 py-5 rounded-2xl text-base font-bold shadow-xl shadow-emerald-500/20 text-gray-950">
+          Generate Arc Pay Link
+        </button>
+      </div>
+
+      <!-- Right Column: Live Preview (5 Cols) -->
+      <div class="lg:col-span-5">
+        <div class="glass rounded-3xl p-6 sm:p-8 sticky top-24 space-y-6">
+          <h3 class="font-bold text-base mb-4 flex items-center gap-2">
+            <i class="fas fa-eye text-emerald-400"></i> Live Preview
+          </h3>
+
+          <div id="previewCardContent" class="bg-black/30 border border-white/10 rounded-2xl p-6 space-y-4 backdrop-blur-md">
+            <div class="text-xs uppercase text-emerald-400 font-bold tracking-wider">Arc Pay</div>
+            <div id="prevTitle" class="text-xl font-extrabold text-white">Investment Round</div>
+            <div id="prevAmount" class="text-2xl font-black text-emerald-400">100 USDC</div>
+
+            <div class="space-y-2 pt-2 border-t border-white/10 text-xs">
+              <div class="flex justify-between text-gray-400">
+                <span>Receiver</span>
+                <span id="prevReceiver" class="font-mono text-white">0x4D...91Ab</span>
+              </div>
+              <div class="flex justify-between text-gray-400">
+                <span>Description</span>
+                <span id="prevDesc" class="text-white text-right max-w-[180px] truncate">Payment for investment</span>
+              </div>
+              <div class="flex justify-between text-gray-400">
+                <span>Expires</span>
+                <span id="prevExpires" class="text-white">7 Days</span>
+              </div>
+            </div>
+
+            <div class="pt-4 flex flex-col items-center justify-center">
+              <div id="qrcode" class="bg-white p-2 rounded-xl mb-4"></div>
+              <button class="w-full py-3 bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold rounded-xl text-sm shadow-lg">Pay with Wallet</button>
+            </div>
+          </div>
+
+          <!-- Link & Actions -->
+          <div class="space-y-3">
+            <div>
+              <label class="text-[11px] text-gray-400 uppercase tracking-wider block mb-1">Link</label>
+              <input type="text" id="generatedLinkOutput" readonly class="w-full rounded-xl px-4 py-3 text-xs font-mono bg-black/40" value="arc.finance/pay/X8d92m">
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <button onclick="copyGeneratedLink()" class="py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-semibold flex items-center justify-center gap-2">
+                <i class="fas fa-copy"></i> Copy Link
+              </button>
+              <button onclick="downloadQR()" class="py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-semibold flex items-center justify-center gap-2">
+                <i class="fas fa-download"></i> Download QR
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- TAB 2: HISTORY & DETAILS -->
+    <div id="viewHistory" class="hidden space-y-6">
+      
+      <!-- History List View -->
+      <div id="historyListView" class="glass rounded-3xl p-6 sm:p-8 space-y-6">
+        <div class="flex flex-col sm:flex-row justify-between gap-4 items-center">
+          <h3 class="font-bold text-lg flex items-center gap-2"><i class="fas fa-history text-emerald-400"></i> Payment Links History</h3>
+          <input type="text" id="searchHistory" oninput="renderHistoryTable()" placeholder="Search links..." class="w-full sm:w-72 rounded-xl px-4 py-2.5 text-xs">
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="border-b border-white/10 text-gray-400 uppercase">
+                <th class="p-3">Title</th>
+                <th class="p-3">Token</th>
+                <th class="p-3">Amount</th>
+                <th class="p-3">Status</th>
+                <th class="p-3">Views</th>
+                <th class="p-3">Payments</th>
+                <th class="p-3">Created</th>
+                <th class="p-3">Expires</th>
+                <th class="p-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody" class="divide-y divide-white/5"></tbody>
+          </table>
+        </div>
+        <div id="emptyHistoryState" class="hidden text-center py-12 space-y-3">
+          <div class="text-3xl text-gray-500"><i class="fas fa-link-slash"></i></div>
+          <div class="font-bold text-sm">No Payment Links</div>
+          <p class="text-xs text-gray-400">Create your first Arc Pay Link.</p>
+          <button onclick="switchTab('create')" class="px-4 py-2 bg-emerald-500 text-gray-950 rounded-xl font-bold text-xs">Create Link</button>
+        </div>
+      </div>
+
+      <!-- Details View (Hidden by default) -->
+      <div id="historyDetailsView" class="hidden glass rounded-3xl p-6 sm:p-8 max-w-2xl mx-auto space-y-6">
+        <button onclick="closeDetails()" class="text-xs text-emerald-400 font-bold flex items-center gap-1 hover:underline"><i class="fas fa-arrow-left"></i> Back to History</button>
+        <div id="detailsContent" class="space-y-4"></div>
+      </div>
+
+    </div>
+
+  </div>
+
+  <!-- Success Modal -->
+  <div id="successModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+    <div class="glass border border-white/15 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-6 text-center">
+      <div class="w-12 h-12 bg-emerald-500/20 border border-emerald-500 text-emerald-400 rounded-full flex items-center justify-center mx-auto text-xl">✓</div>
+      <div>
+        <h3 class="text-xl font-bold">Payment Link Created</h3>
+        <p class="text-xs text-emerald-400 mt-1">Success!</p>
+      </div>
+      <div id="modalQRContainer" class="bg-white p-2 rounded-xl inline-block"></div>
+      <input type="text" id="modalLinkInput" readonly class="w-full rounded-xl px-4 py-3 text-xs font-mono bg-black/40 text-center">
+      <div class="grid grid-cols-2 gap-2">
+        <button onclick="copyModalLink()" class="py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-semibold">Copy Link</button>
+        <button onclick="copyModalQR()" class="py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-semibold">Copy QR</button>
+        <button onclick="shareModalLink()" class="py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-semibold">Share</button>
+        <button onclick="closeSuccessModal()" class="py-3 bg-emerald-500 text-gray-950 font-bold rounded-xl text-xs">Open</button>
+      </div>
+    </div>
+  </div>
+
+<script>
+  let userAddress = null;
+  let amountMode = 'fixed';
+  let linksHistory = JSON.parse(localStorage.getItem('arcPaymentLinksHistory') || '[]');
+
+  function toggleTheme() {
+    document.documentElement.classList.toggle('light');
+    const icon = document.getElementById("themeBtn").querySelector("i");
+    icon.classList.toggle("fa-moon");
+    icon.classList.toggle("fa-sun");
+  }
+
+  function switchTab(tab) {
+    document.getElementById('viewCreate').classList.toggle('hidden', tab !== 'create');
+    document.getElementById('viewHistory').classList.toggle('hidden', tab !== 'history');
+    document.getElementById('tabCreate').className = tab === 'create' ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400";
+    document.getElementById('tabHistory').className = tab === 'history' ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400";
+    if (tab === 'history') renderHistoryTable();
+  }
+
+  function showConnectModal() {
+    // Simulated fast connection for demonstration
+    userAddress = "0x4D91Ab72834bC091A23eF88192";
+    document.getElementById("displayWallet").textContent = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
+    document.getElementById("headerWalletText").textContent = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
+    document.getElementById("prevReceiver").textContent = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
+    showToast("Wallet connected successfully");
+    updatePreview();
+  }
+
+  function setAmountMode(mode) {
+    amountMode = mode;
+    document.getElementById('modeFixed').className = mode === 'fixed' ? "px-3 py-1 rounded-lg font-semibold bg-emerald-500/20 text-emerald-400" : "px-3 py-1 rounded-lg font-semibold text-gray-400";
+    document.getElementById('modeFlexible').className = mode === 'flexible' ? "px-3 py-1 rounded-lg font-semibold bg-emerald-500/20 text-emerald-400" : "px-3 py-1 rounded-lg font-semibold text-gray-400";
+    document.getElementById('fixedAmountContainer').classList.toggle('hidden', mode === 'flexible');
+    document.getElementById('flexibleAmountContainer').classList.toggle('hidden', mode === 'fixed');
+    updatePreview();
+  }
+
+  function handleExpirationChange() {
+    const val = document.getElementById('expirationSelect').value;
+    document.getElementById('customDateContainer').classList.toggle('hidden', val !== 'custom');
+    updatePreview();
+  }
+
+  function toggleAdvanced() {
+    document.getElementById('advancedContent').classList.toggle('hidden');
+    document.getElementById('advancedChevron').classList.toggle('rotate-180');
+  }
+
+  function showToast(msg, duration = 3000) {
+    const toast = document.getElementById("toast");
+    document.getElementById("toastText").textContent = msg;
+    toast.classList.remove("hidden");
+    setTimeout(() => toast.classList.add("hidden"), duration);
+  }
+
+  function updatePreview() {
+    const title = document.getElementById('linkTitle').value || 'Payment Request';
+    const token = document.getElementById('tokenSelect').value;
+    const desc = document.getElementById('linkDesc').value || 'No description';
+    const exp = document.getElementById('expirationSelect').value;
+
+    let amountText = '100 ' + token;
+    if (amountMode === 'fixed') {
+      const amt = document.getElementById('fixedAmountInput').value;
+      if (amt) amountText = `${amt} ${token}`;
+    } else {
+      const min = document.getElementById('flexMinInput').value || '0';
+      const max = document.getElementById('flexMaxInput').value;
+      amountText = max ? `${min} - ${max} ${token}` : `Min ${min} ${token}`;
+    }
+
+    document.getElementById('prevTitle').textContent = title;
+    document.getElementById('prevAmount').textContent = amountText;
+    document.getElementById('prevDesc').textContent = desc;
+    document.getElementById('prevExpires').textContent = exp.toUpperCase();
+
+    const mockLink = `arc.finance/pay/${Math.random().toString(36).substring(7)}`;
+    document.getElementById('generatedLinkOutput').value = mockLink;
+
+    // Render QR
+    const qrContainer = document.getElementById('qrcode');
+    qrContainer.innerHTML = '';
+    QRCode.toCanvas(mockLink, { width: 140, margin: 1 }, (err, canvas) => {
+      if (!err) qrContainer.appendChild(canvas);
+    });
+  }
+
+  function generateLink() {
+    // Basic Error Validation checks
+    let isValid = true;
+    const title = document.getElementById('linkTitle').value.trim();
+    const token = document.getElementById('tokenSelect').value;
+    const amount = document.getElementById('fixedAmountInput').value;
+
+    if (!userAddress) {
+      showToast("Wallet متصل نیست.");
+      return;
+    }
+    if (!title) {
+      document.getElementById('errTitle').textContent = "Title خالی است.";
+      document.getElementById('errTitle').classList.remove('hidden');
+      isValid = false;
+    } else {
+      document.getElementById('errTitle').classList.add('hidden');
+    }
+
+    if (amountMode === 'fixed' && (!amount || parseFloat(amount) <= 0)) {
+      document.getElementById('errAmount').textContent = "Amount کمتر یا مساوی صفر است.";
+      document.getElementById('errAmount').classList.remove('hidden');
+      isValid = false;
+    } else {
+      document.getElementById('errAmount').classList.add('hidden');
+    }
+
+    if (!isValid) return;
+
+    showToast("Generating...");
+
+    setTimeout(() => {
+      const newLinkObj = {
+        id: Math.random().toString(36).substring(7),
+        title: title,
+        token: token,
+        amount: amountMode === 'fixed' ? amount + ' ' + token : 'Flexible',
+        status: 'Active',
+        views: 0,
+        payments: 0,
+        created: 'Today',
+        expires: document.getElementById('expirationSelect').value,
+        url: document.getElementById('generatedLinkOutput').value,
+        desc: document.getElementById('linkDesc').value
+      };
+
+      linksHistory.unshift(newLinkObj);
+      localStorage.setItem('arcPaymentLinksHistory', JSON.stringify(linksHistory));
+
+      // Show Success Modal
+      document.getElementById('modalLinkInput').value = newLinkObj.url;
+      const modalQR = document.getElementById('modalQRContainer');
+      modalQR.innerHTML = '';
+      QRCode.toCanvas(newLinkObj.url, { width: 120, margin: 1 }, (err, canvas) => {
+        if (!err) modalQR.appendChild(canvas);
+      });
+      document.getElementById('successModal').classList.remove('hidden');
+      showToast("Arc Pay Link Created Successfully");
+    }, 800);
+  }
+
+  function closeSuccessModal() {
+    document.getElementById('successModal').classList.add('hidden');
+    switchTab('history');
+  }
+
+  function copyGeneratedLink() {
+    navigator.clipboard.writeText(document.getElementById('generatedLinkOutput').value);
+    showToast("Link copied to clipboard!");
+  }
+
+  function downloadQR() {
+    showToast("QR downloaded successfully!");
+  }
+
+  function copyModalLink() {
+    navigator.clipboard.writeText(document.getElementById('modalLinkInput').value);
+    showToast("Link copied!");
+  }
+
+  function copyModalQR() {
+    showToast("QR code copied!");
+  }
+
+  function shareModalLink() {
+    showToast("Link shared!");
+  }
+
+  function renderHistoryTable() {
+    const tbody = document.getElementById('historyTableBody');
+    const emptyState = document.getElementById('emptyHistoryState');
+    const search = document.getElementById('searchHistory').value.toLowerCase();
+    
+    tbody.innerHTML = '';
+    const filtered = linksHistory.filter(l => l.title.toLowerCase().includes(search));
+
+    if (filtered.length === 0) {
+      emptyState.classList.remove('hidden');
+      return;
+    }
+    emptyState.classList.add('hidden');
+
+    filtered.forEach(link => {
+      const tr = document.createElement('tr');
+      tr.className = "hover:bg-white/[0.02]";
+      tr.innerHTML = `
+        <td class="p-3 font-bold">${link.title}</td>
+        <td class="p-3">${link.token}</td>
+        <td class="p-3">${link.amount}</td>
+        <td class="p-3"><span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px]">${link.status}</span></td>
+        <td class="p-3">${link.views}</td>
+        <td class="p-3">${link.payments}</td>
+        <td class="p-3">${link.created}</td>
+        <td class="p-3">${link.expires}</td>
+        <td class="p-3 text-right space-x-2">
+          <button onclick="viewDetails('${link.id}')" class="text-sky-400 hover:underline">View Details</button>
+          <button onclick="toggleLinkStatus('${link.id}')" class="text-amber-400 hover:underline">Toggle</button>
+          <button onclick="deleteLink('${link.id}')" class="text-rose-400 hover:underline">Delete</button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  function viewDetails(id) {
+    const link = linksHistory.find(l => l.id === id);
+    if (!link) return;
+
+    document.getElementById('historyListView').classList.add('hidden');
+    document.getElementById('historyDetailsView').classList.remove('hidden');
+
+    const content = document.getElementById('detailsContent');
+    content.innerHTML = `
+      <h2 class="text-xl font-bold">${link.title}</h2>
+      <div class="space-y-2 text-xs bg-black/20 p-4 rounded-2xl border border-white/10">
+        <div class="flex justify-between"><span>Status</span><span class="text-emerald-400 font-bold">${link.status}</span></div>
+        <div class="flex justify-between"><span>Receiver</span><span class="font-mono">0x4D...91Ab</span></div>
+        <div class="flex justify-between"><span>Token</span><span>${link.token}</span></div>
+        <div class="flex justify-between"><span>Amount</span><span>${link.amount}</span></div>
+        <div class="flex justify-between"><span>Created</span><span>${link.created}</span></div>
+        <div class="flex justify-between"><span>Expire</span><span>${link.expires}</span></div>
+      </div>
+      <div class="flex justify-center py-4" id="detailsQR"></div>
+      <div class="grid grid-cols-3 gap-2">
+        <button onclick="navigator.clipboard.writeText('${link.url}'); showToast('Copied!')" class="py-2.5 bg-white/5 border border-white/10 rounded-xl text-xs font-semibold">Copy Link</button>
+        <button onclick="toggleLinkStatus('${link.id}'); viewDetails('${link.id}')" class="py-2.5 bg-white/5 border border-white/10 rounded-xl text-xs font-semibold">Disable Link</button>
+        <button onclick="deleteLink('${link.id}'); closeDetails()" class="py-2.5 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-xl text-xs font-semibold">Delete Link</button>
+      </div>
+    `;
+
+    QRCode.toCanvas(link.url, { width: 130, margin: 1 }, (err, canvas) => {
+      if (!err) document.getElementById('detailsQR').appendChild(canvas);
+    });
+  }
+
+  function closeDetails() {
+    document.getElementById('historyDetailsView').classList.add('hidden');
+    document.getElementById('historyListView').classList.remove('hidden');
+    renderHistoryTable();
+  }
+
+  function toggleLinkStatus(id) {
+    const link = linksHistory.find(l => l.id === id);
+    if (link) {
+      link.status = link.status === 'Active' ? 'Disabled' : 'Active';
+      localStorage.setItem('arcPaymentLinksHistory', JSON.stringify(linksHistory));
+      renderHistoryTable();
+      showToast("Link status updated");
+    }
+  }
+
+  function deleteLink(id) {
+    linksHistory = linksHistory.filter(l => l.id !== id);
+    localStorage.setItem('arcPaymentLinksHistory', JSON.stringify(linksHistory));
+    renderHistoryTable();
+    showToast("Link deleted");
+  }
+
+  window.addEventListener('load', () => {
+    updatePreview();
+  });
+</script>
+</body>
+</html>
