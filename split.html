@@ -155,7 +155,7 @@
 
     /* Custom responsive adjustments */
     @media (max-width: 640px) {
-      .max-w-2xl { max-width: 100% !important; padding-left: 12px; padding-right: 12px; }
+      .max-w-6xl { max-width: 100% !important; padding-left: 12px; padding-right: 12px; }
       .recipient-row { 
         flex-direction: column; 
         gap: 12px; 
@@ -177,7 +177,7 @@
 </head>
 <body class="text-white min-h-screen selection:bg-emerald-500 selection:text-black">
 
-  <div class="max-w-2xl mx-auto px-4 py-8 sm:py-12">
+  <div class="max-w-6xl mx-auto px-4 py-8 sm:py-12">
     <!-- Header Section -->
     <div class="flex justify-between items-center mb-8 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
       <div>
@@ -185,9 +185,17 @@
         <p class="text-gray-400 light:text-slate-600 text-xs sm:text-sm font-medium">Professional Decentralized Token Splitter</p>
       </div>
       
-      <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/10 light:hover:bg-black/10 border border-white/10 light:border-black/10 rounded-2xl transition-all shadow-lg">
-        <i class="fas fa-moon text-lg text-emerald-400"></i>
-      </button>
+      <div class="flex items-center gap-3">
+        <!-- Navigation Tabs -->
+        <div class="flex bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 rounded-2xl p-1 text-xs">
+          <button onclick="switchTab('splitter')" id="tabSplitter" class="px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400">Splitter</button>
+          <button onclick="switchTab('history')" id="tabHistory" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-600">History</button>
+        </div>
+
+        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/10 light:hover:bg-black/10 border border-white/10 light:border-black/10 rounded-2xl transition-all shadow-lg">
+          <i class="fas fa-moon text-lg text-emerald-400"></i>
+        </button>
+      </div>
     </div>
 
     <!-- Action Connect Hub -->
@@ -214,106 +222,157 @@
     </div>
     <div id="successMessage" class="hidden glass border border-emerald-500/30 bg-emerald-500/10 rounded-2xl p-5 mb-6 text-emerald-400 text-sm"></div>
 
-    <!-- Main Card Panel -->
-    <div class="glass rounded-3xl p-6 sm:p-8 mb-8">
+    <!-- Tab Contents -->
+    <div id="viewSplitter" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
       
-      <!-- Token Selection -->
-      <div class="mb-6">
-        <label class="block text-gray-400 light:text-slate-600 text-xs font-semibold uppercase tracking-wider mb-2">Select Token</label>
-        <div class="relative">
-          <select id="tokenSelect" onchange="handleTokenChange()" class="w-full rounded-2xl px-5 py-4 appearance-none focus:outline-none text-sm sm:text-base font-medium cursor-pointer">
-            <option value="0x3600000000000000000000000000000000000000">USDC</option>
-            <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
-            <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
-            <option value="custom">Add Custom Token...</option>
-          </select>
-          <div class="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 light:text-slate-600">
-            <i class="fas fa-chevron-down text-xs"></i>
-          </div>
-        </div>
-      </div>
-
-      <!-- Total Amount Input -->
-      <div class="mb-6">
-        <label class="block text-gray-400 light:text-slate-600 text-xs font-semibold uppercase tracking-wider mb-2">Total Amount</label>
-        <div class="flex gap-2.5">
-          <input type="number" id="totalAmount" value="100" step="0.000001" class="flex-1 rounded-2xl px-5 py-4 text-2xl sm:text-3xl font-bold outline-none" oninput="updateAll()">
-          <button onclick="setMaxAmount()" class="app-button px-6 bg-white/5 light:bg-black/5 hover:bg-white/10 light:hover:bg-black/10 border border-white/10 light:border-black/10 rounded-2xl font-bold text-sm text-emerald-400 hover:border-emerald-500/50 transition-all">MAX</button>
-        </div>
-      </div>
-
-      <!-- Quick Templates -->
-      <div class="mb-6">
-        <label class="block text-gray-400 light:text-slate-600 text-xs font-semibold uppercase tracking-wider mb-2.5">Quick Templates</label>
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-          <button onclick="loadTemplate(1)" class="app-button py-3 px-3 bg-white/5 light:bg-black/5 hover:bg-white/10 light:hover:bg-black/10 border border-white/10 light:border-black/10 rounded-xl text-xs font-semibold transition-all">50-50</button>
-          <button onclick="loadTemplate(2)" class="app-button py-3 px-3 bg-white/5 light:bg-black/5 hover:bg-white/10 light:hover:bg-black/10 border border-white/10 light:border-black/10 rounded-xl text-xs font-semibold transition-all">33-33-34</button>
-          <button onclick="loadTemplate(3)" class="app-button py-3 px-3 bg-white/5 light:bg-black/5 hover:bg-white/10 light:hover:bg-black/10 border border-white/10 light:border-black/10 rounded-xl text-xs font-semibold transition-all">40-60</button>
-          <button onclick="equalSplit()" class="app-button py-3 px-3 bg-white/5 light:bg-black/5 hover:bg-white/10 light:hover:bg-black/10 border border-white/10 light:border-black/10 rounded-xl text-xs font-semibold transition-all">Equal Split</button>
-        </div>
-      </div>
-
-      <div class="h-px bg-white/5 light:bg-black/10 my-6"></div>
-
-      <!-- Recipients Section -->
-      <div class="mb-6">
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
-          <h3 class="font-bold text-base">Recipients</h3>
-          <div class="flex flex-wrap items-center gap-2">
-            <div class="flex bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 rounded-xl p-1 text-xs">
-              <button onclick="setMode('manual')" id="manualBtn" class="mode-btn px-4 py-1.5 rounded-lg font-semibold transition-all">Manual</button>
-              <button onclick="setMode('auto')" id="autoBtn" class="mode-btn px-4 py-1.5 rounded-lg font-semibold transition-all">Auto</button>
+      <!-- Left Column: Configuration (7 Cols) -->
+      <div class="lg:col-span-7 space-y-6">
+        <div class="glass rounded-3xl p-6 sm:p-8">
+          
+          <!-- Token Selection -->
+          <div class="mb-6">
+            <label class="block text-gray-400 light:text-slate-600 text-xs font-semibold uppercase tracking-wider mb-2">Select Token</label>
+            <div class="relative">
+              <select id="tokenSelect" onchange="handleTokenChange()" class="w-full rounded-2xl px-5 py-4 appearance-none focus:outline-none text-sm sm:text-base font-medium cursor-pointer">
+                <option value="0x3600000000000000000000000000000000000000">USDC</option>
+                <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
+                <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
+                <option value="custom">Add Custom Token...</option>
+              </select>
+              <div class="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 light:text-slate-600">
+                <i class="fas fa-chevron-down text-xs"></i>
+              </div>
             </div>
-            <button onclick="showImportModal()" class="px-3.5 py-2 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 light:text-sky-600 border border-sky-500/20 rounded-xl flex items-center gap-1.5 text-xs font-semibold transition-all">
-              <i class="fas fa-upload"></i> Import
-            </button>
-            <button onclick="addRecipient()" class="px-3.5 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 light:text-emerald-600 border border-emerald-500/20 rounded-xl flex items-center gap-1.5 text-xs font-semibold transition-all">
-              <i class="fas fa-plus"></i> Add
+          </div>
+
+          <!-- Total Amount Input -->
+          <div class="mb-6">
+            <label class="block text-gray-400 light:text-slate-600 text-xs font-semibold uppercase tracking-wider mb-2">Total Amount</label>
+            <div class="flex gap-2.5">
+              <input type="number" id="totalAmount" value="100" step="0.000001" class="flex-1 rounded-2xl px-5 py-4 text-2xl sm:text-3xl font-bold outline-none" oninput="updateAll()">
+              <button onclick="setMaxAmount()" class="app-button px-6 bg-white/5 light:bg-black/5 hover:bg-white/10 light:hover:bg-black/10 border border-white/10 light:border-black/10 rounded-2xl font-bold text-sm text-emerald-400 hover:border-emerald-500/50 transition-all">MAX</button>
+            </div>
+          </div>
+
+          <!-- Quick Templates -->
+          <div class="mb-6">
+            <label class="block text-gray-400 light:text-slate-600 text-xs font-semibold uppercase tracking-wider mb-2.5">Quick Templates</label>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              <button onclick="loadTemplate(1)" class="app-button py-3 px-3 bg-white/5 light:bg-black/5 hover:bg-white/10 light:hover:bg-black/10 border border-white/10 light:border-black/10 rounded-xl text-xs font-semibold transition-all">50-50</button>
+              <button onclick="loadTemplate(2)" class="app-button py-3 px-3 bg-white/5 light:bg-black/5 hover:bg-white/10 light:hover:bg-black/10 border border-white/10 light:border-black/10 rounded-xl text-xs font-semibold transition-all">33-33-34</button>
+              <button onclick="loadTemplate(3)" class="app-button py-3 px-3 bg-white/5 light:bg-black/5 hover:bg-white/10 light:hover:bg-black/10 border border-white/10 light:border-black/10 rounded-xl text-xs font-semibold transition-all">40-60</button>
+              <button onclick="equalSplit()" class="app-button py-3 px-3 bg-white/5 light:bg-black/5 hover:bg-white/10 light:hover:bg-black/10 border border-white/10 light:border-black/10 rounded-xl text-xs font-semibold transition-all">Equal Split</button>
+            </div>
+          </div>
+
+          <div class="h-px bg-white/5 light:bg-black/10 my-6"></div>
+
+          <!-- Recipients Section -->
+          <div class="mb-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <h3 class="font-bold text-base">Recipients</h3>
+              <div class="flex flex-wrap items-center gap-2">
+                <div class="flex bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 rounded-xl p-1 text-xs">
+                  <button onclick="setMode('manual')" id="manualBtn" class="mode-btn px-4 py-1.5 rounded-lg font-semibold transition-all">Manual</button>
+                  <button onclick="setMode('auto')" id="autoBtn" class="mode-btn px-4 py-1.5 rounded-lg font-semibold transition-all">Auto</button>
+                </div>
+                <button onclick="showImportModal()" class="px-3.5 py-2 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 light:text-sky-600 border border-sky-500/20 rounded-xl flex items-center gap-1.5 text-xs font-semibold transition-all">
+                  <i class="fas fa-upload"></i> Import
+                </button>
+                <button onclick="addRecipient()" class="px-3.5 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 light:text-emerald-600 border border-emerald-500/20 rounded-xl flex items-center gap-1.5 text-xs font-semibold transition-all">
+                  <i class="fas fa-plus"></i> Add
+                </button>
+              </div>
+            </div>
+            <div id="recipients-list" class="space-y-3"></div>
+          </div>
+
+          <!-- Total & Distribute -->
+          <div class="flex flex-col sm:flex-row items-center justify-between gap-3 bg-white/[0.02] light:bg-black/5 border border-white/5 light:border-black/10 p-4 rounded-2xl">
+            <span id="percent-total" class="font-bold text-sm sm:text-base">Total: 0%</span>
+            <button onclick="distributeRemaining()" class="text-amber-400 light:text-amber-600 hover:text-amber-300 light:hover:text-amber-700 text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition-colors">
+              <i class="fas fa-sliders"></i> Distribute Remaining
             </button>
           </div>
         </div>
-        <div id="recipients-list" class="space-y-3"></div>
-      </div>
 
-      <!-- Split Preview Box -->
-      <div class="mb-6">
-        <h4 class="text-gray-400 light:text-slate-600 text-xs font-semibold uppercase tracking-wider mb-2.5">Split Preview</h4>
-        <div class="bg-black/25 light:bg-slate-100 border border-white/10 light:border-slate-300 rounded-2xl overflow-hidden backdrop-blur-md">
-          <div class="preview-scroll">
-            <table class="w-full text-left border-collapse">
-              <thead>
-                <tr class="border-b border-white/10 light:border-slate-300 sticky top-0 bg-[#121224] light:bg-slate-200 text-gray-400 light:text-slate-600 text-xs uppercase tracking-wider">
-                  <th class="p-3.5 font-semibold">Recipient</th>
-                  <th class="text-right p-3.5 font-semibold">Percent</th>
-                  <th class="text-right p-3.5 font-semibold">Amount</th>
-                </tr>
-              </thead>
-              <tbody id="preview-body" class="text-xs sm:text-sm divide-y divide-white/5 light:divide-slate-200"></tbody>
-            </table>
+        <!-- Advanced Settings Collapse -->
+        <div class="glass rounded-3xl p-6">
+          <button onclick="toggleAdvanced()" class="w-full flex justify-between items-center font-bold text-sm text-gray-300 light:text-slate-700">
+            <span class="flex items-center gap-2"><i class="fas fa-sliders-h text-emerald-400"></i> Advanced Settings</span>
+            <i id="advancedChevron" class="fas fa-chevron-down transition-transform"></i>
+          </button>
+          <div id="advancedContent" class="hidden mt-4 pt-4 border-t border-white/5 light:border-black/10 space-y-4 text-xs">
+            <div>
+              <label class="block text-gray-400 mb-1 font-semibold">Transaction Memo / Note</label>
+              <input type="text" id="txMemo" class="w-full rounded-xl px-4 py-3 outline-none" placeholder="Optional note for recipients...">
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Total & Action controls -->
-      <div class="flex flex-col sm:flex-row items-center justify-between gap-3 mb-6 bg-white/[0.02] light:bg-black/5 border border-white/5 light:border-black/10 p-4 rounded-2xl">
-        <span id="percent-total" class="font-bold text-sm sm:text-base">Total: 0%</span>
-        <button onclick="distributeRemaining()" class="text-amber-400 light:text-amber-600 hover:text-amber-300 light:hover:text-amber-700 text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition-colors">
-          <i class="fas fa-sliders"></i> Distribute Remaining
-        </button>
+      <!-- Right Column: Live Preview & Validation (5 Cols) -->
+      <div class="lg:col-span-5 space-y-6">
+        <div class="glass rounded-3xl p-6 sm:p-8 sticky top-6">
+          <h3 class="font-bold text-base mb-4 flex items-center gap-2">
+            <i class="fas fa-eye text-emerald-400"></i> Split Summary & Preview
+          </h3>
+
+          <!-- Mini Summary Cards -->
+          <div class="grid grid-cols-2 gap-3 mb-6">
+            <div class="bg-white/[0.02] light:bg-black/5 border border-white/5 light:border-black/10 p-3.5 rounded-2xl">
+              <div class="text-[11px] text-gray-400 uppercase tracking-wider font-semibold">Recipients</div>
+              <div id="summaryCount" class="text-lg font-bold mt-0.5">0</div>
+            </div>
+            <div class="bg-white/[0.02] light:bg-black/5 border border-white/5 light:border-black/10 p-3.5 rounded-2xl">
+              <div class="text-[11px] text-gray-400 uppercase tracking-wider font-semibold">Average Share</div>
+              <div id="summaryAvg" class="text-lg font-bold mt-0.5 text-emerald-400">0</div>
+            </div>
+          </div>
+
+          <!-- Preview Table -->
+          <div class="mb-6">
+            <div class="bg-black/25 light:bg-slate-100 border border-white/10 light:border-slate-300 rounded-2xl overflow-hidden backdrop-blur-md">
+              <div class="preview-scroll">
+                <table class="w-full text-left border-collapse">
+                  <thead>
+                    <tr class="border-b border-white/10 light:border-slate-300 sticky top-0 bg-[#121224] light:bg-slate-200 text-gray-400 light:text-slate-600 text-xs uppercase tracking-wider">
+                      <th class="p-3 font-semibold">Recipient</th>
+                      <th class="text-right p-3 font-semibold">%</th>
+                      <th class="text-right p-3 font-semibold">Amount</th>
+                    </tr>
+                  </thead>
+                  <tbody id="preview-body" class="text-xs divide-y divide-white/5 light:divide-slate-200"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- Validation Card -->
+          <div class="bg-white/[0.02] light:bg-black/5 border border-white/5 light:border-black/10 p-4 rounded-2xl mb-6 space-y-2 text-xs">
+            <div class="font-semibold text-gray-400 uppercase tracking-wider mb-2">Pre-Flight Checks</div>
+            <div id="valWallet" class="flex items-center gap-2 text-gray-400"><i class="fas fa-circle-xmark text-rose-400"></i> Wallet Connected</div>
+            <div id="valTotal" class="flex items-center gap-2 text-gray-400"><i class="fas fa-circle-xmark text-rose-400"></i> Total Percentage = 100%</div>
+            <div id="valRecipients" class="flex items-center gap-2 text-gray-400"><i class="fas fa-circle-xmark text-rose-400"></i> At least 2 Valid Recipients</div>
+          </div>
+
+          <!-- Send Button -->
+          <button id="sendBtn" onclick="sendSplit()" disabled class="app-button w-full bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 hover:brightness-110 py-5 rounded-2xl text-base sm:text-lg font-bold shadow-xl shadow-rose-500/25 transition-all opacity-50 cursor-not-allowed">
+            Send Split Transaction
+          </button>
+        </div>
       </div>
 
-      <button id="sendBtn" onclick="sendSplit()" class="app-button w-full bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 hover:brightness-110 py-5 rounded-2xl text-base sm:text-lg font-bold shadow-xl shadow-rose-500/25 transition-all">
-        Send Split Transaction
-      </button>
     </div>
 
-    <!-- Recent Transactions Box -->
-    <div class="glass rounded-3xl p-6 sm:p-8">
-      <h3 class="font-bold text-base mb-4 flex items-center gap-2">
-        <i class="fas fa-history text-gray-400 light:text-slate-600 text-sm"></i> Recent Transactions
+    <!-- History Tab View (Hidden by default) -->
+    <div id="viewHistory" class="hidden glass rounded-3xl p-6 sm:p-8">
+      <h3 class="font-bold text-lg mb-6 flex items-center gap-2">
+        <i class="fas fa-history text-emerald-400"></i> Transaction History
       </h3>
-      <div id="history" class="space-y-2.5 max-h-60 overflow-auto pr-1"></div>
+      <div id="history" class="space-y-3"></div>
     </div>
+
   </div>
 
   <!-- Import Modal -->
@@ -410,6 +469,22 @@ let telegramUsername = "";
     }
   ];
 
+  function switchTab(tab) {
+    const isSplitter = tab === 'splitter';
+    document.getElementById('viewSplitter').classList.toggle('hidden', !isSplitter);
+    document.getElementById('viewHistory').classList.toggle('hidden', isSplitter);
+    
+    document.getElementById('tabSplitter').className = isSplitter ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-600";
+    document.getElementById('tabHistory').className = !isSplitter ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-600";
+  }
+
+  function toggleAdvanced() {
+    const content = document.getElementById('advancedContent');
+    const chevron = document.getElementById('advancedChevron');
+    content.classList.toggle('hidden');
+    chevron.classList.toggle('rotate-180');
+  }
+
   function loadSavedConnections() {
     const savedWallet = localStorage.getItem('userAddress');
     const savedTelegram = localStorage.getItem('telegramUsername');
@@ -432,6 +507,7 @@ let telegramUsername = "";
     if (userAddress) {
       btn.className = "app-button px-6 py-4 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg shadow-emerald-500/10";
     }
+    updateValidations();
   }
 
   
@@ -601,6 +677,7 @@ function updateTelegramButton() {
     btn.onclick = showConnectModal;
     localStorage.removeItem('userAddress');
     showToast("Wallet disconnected");
+    updateValidations();
   }
 
   function getTotalAmount() {
@@ -618,6 +695,45 @@ function updateTelegramButton() {
     updateRecipientsAmounts();
     updatePercentTotal();
     updatePreview();
+    updateValidations();
+  }
+
+  function updateValidations() {
+    const rows = Array.from(document.querySelectorAll('.recipient-row'));
+    const validRecipients = rows.filter(r => {
+      const addr = r.querySelector('.address').value.trim();
+      const perc = parseFloat(r.querySelector('.percent').value) || 0;
+      return addr && ethers.isAddress(addr) && perc > 0;
+    });
+
+    const percents = rows.map(el => parseFloat(el.querySelector('.percent').value) || 0);
+    const totalPerc = percents.reduce((a, b) => a + b, 0);
+
+    const hasWallet = !!userAddress;
+    const isTotal100 = Math.abs(totalPerc - 100) < 0.000001;
+    const hasEnoughRecipients = validRecipients.length >= 2;
+
+    const elWallet = document.getElementById("valWallet");
+    const elTotal = document.getElementById("valTotal");
+    const elRecipients = document.getElementById("valRecipients");
+
+    elWallet.innerHTML = hasWallet ? `<i class="fas fa-circle-check text-emerald-400"></i> Wallet Connected` : `<i class="fas fa-circle-xmark text-rose-400"></i> Wallet Connected`;
+    elWallet.className = hasWallet ? "flex items-center gap-2 text-emerald-400 font-medium" : "flex items-center gap-2 text-gray-400";
+
+    elTotal.innerHTML = isTotal100 ? `<i class="fas fa-circle-check text-emerald-400"></i> Total Percentage = 100%` : `<i class="fas fa-circle-xmark text-rose-400"></i> Total Percentage = 100%`;
+    elTotal.className = isTotal100 ? "flex items-center gap-2 text-emerald-400 font-medium" : "flex items-center gap-2 text-gray-400";
+
+    elRecipients.innerHTML = hasEnoughRecipients ? `<i class="fas fa-circle-check text-emerald-400"></i> At least 2 Valid Recipients` : `<i class="fas fa-circle-xmark text-rose-400"></i> At least 2 Valid Recipients`;
+    elRecipients.className = hasEnoughRecipients ? "flex items-center gap-2 text-emerald-400 font-medium" : "flex items-center gap-2 text-gray-400";
+
+    const sendBtn = document.getElementById("sendBtn");
+    if (hasWallet && isTotal100 && hasEnoughRecipients) {
+      sendBtn.disabled = false;
+      sendBtn.classList.remove("opacity-50", "cursor-not-allowed");
+    } else {
+      sendBtn.disabled = true;
+      sendBtn.classList.add("opacity-50", "cursor-not-allowed");
+    }
   }
 
   function updateRecipientsAmounts() {
@@ -726,21 +842,33 @@ function updateTelegramButton() {
     const tbody = document.getElementById("preview-body");
     tbody.innerHTML = "";
     const totalAmount = getTotalAmount();
-    document.querySelectorAll('.recipient-row').forEach(row => {
+    const rows = document.querySelectorAll('.recipient-row');
+    
+    let validCount = 0;
+    let totalAmtSum = 0;
+
+    rows.forEach(row => {
       const addr = row.querySelector('.address').value.trim();
       const perc = parseFloat(row.querySelector('.percent').value) || 0;
       const amount = parseFloat(row.querySelector('.amount').value) || 0;
       if (addr) {
+        validCount++;
+        totalAmtSum += amount;
         const tr = document.createElement("tr");
         tr.className = "hover:bg-white/[0.02] light:hover:bg-slate-200/50";
         tr.innerHTML = `
-          <td class="p-3.5 font-mono text-xs text-gray-300 light:text-slate-700">${addr.substring(0,8)}...${addr.substring(addr.length - 6)}</td>
-          <td class="text-right p-3.5 font-medium">${perc.toFixed(2)}%</td>
-          <td class="text-right p-3.5 font-semibold text-emerald-400 light:text-emerald-600">${amount.toFixed(4)}</td>
+          <td class="p-3 font-mono text-xs text-gray-300 light:text-slate-700">${addr.substring(0,6)}...${addr.substring(addr.length - 4)}</td>
+          <td class="text-right p-3 font-medium">${perc.toFixed(2)}%</td>
+          <td class="text-right p-3 font-semibold text-emerald-400 light:text-emerald-600">${amount.toFixed(4)}</td>
         `;
         tbody.appendChild(tr);
       }
     });
+
+    document.getElementById("summaryCount").textContent = validCount;
+    const avg = validCount > 0 ? (totalAmtSum / validCount).toFixed(2) : "0";
+    const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
+    document.getElementById("summaryAvg").textContent = `${avg} ${symbol}`;
   }
 
   function distributeRemaining() {
@@ -832,6 +960,7 @@ function updateTelegramButton() {
     } else {
       await updateBalance();
     }
+    updatePreview();
   }
 
   async function setMaxAmount() {
@@ -960,7 +1089,10 @@ function updateTelegramButton() {
       transactions.unshift({
         hash: tx.hash,
         intent: `${totalAmount} ${symbol} → ${addresses.length} recipients`,
-        time: new Date().toLocaleString()
+        time: new Date().toLocaleDateString(undefined, {month: 'short', day: 'numeric'}) + ' ' + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+        amount: totalAmount,
+        symbol: symbol,
+        recipientsCount: addresses.length
       });
       localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
       renderHistory();
@@ -974,18 +1106,29 @@ function updateTelegramButton() {
       isProcessing = false;
       btn.disabled = false;
       btn.textContent = "Send Split Transaction";
+      updateValidations();
     }
   }
 
   function renderHistory() {
     const container = document.getElementById("history");
     container.innerHTML = transactions.length ? "" : "<p class='text-gray-400 light:text-slate-500 text-center py-6 text-xs'>No transactions yet.</p>";
-    transactions.slice(0, 5).forEach(tx => {
+    transactions.forEach(tx => {
       const div = document.createElement("div");
-      div.className = "bg-white/[0.02] light:bg-white/60 border border-white/5 light:border-slate-200 rounded-2xl p-3.5 text-xs flex flex-col gap-1 shadow-sm";
+      div.className = "bg-white/[0.02] light:bg-white/60 border border-white/5 light:border-slate-200 rounded-2xl p-4 text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shadow-sm";
       div.innerHTML = `
-        <div class="flex justify-between items-center"><span class="text-gray-400 light:text-slate-500">${tx.time}</span><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="text-emerald-400 light:text-emerald-600 font-semibold hover:underline">View Tx →</a></div>
-        <div class="font-medium text-gray-200 light:text-slate-800">${tx.intent}</div>
+        <div class="space-y-1">
+          <div class="flex items-center gap-2">
+            <span class="font-bold text-sm text-emerald-400 light:text-emerald-600">${tx.amount || ''} ${tx.symbol || ''}</span>
+            <span class="text-gray-400 light:text-slate-500">•</span>
+            <span class="text-gray-300 light:text-slate-700 font-medium">${tx.recipientsCount || 0} Recipients</span>
+          </div>
+          <div class="text-[11px] text-gray-400">${tx.time}</div>
+        </div>
+        <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+          <span class="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-semibold">Completed</span>
+          <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="text-xs text-sky-400 font-semibold hover:underline">View Tx →</a>
+        </div>
       `;
       container.appendChild(div);
     });
