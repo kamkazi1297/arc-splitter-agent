@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ArcSplit - Secure Payment Link</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    
+    body { 
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif; 
+      background: #070711;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(34, 211, 238, 0.08) 0%, transparent 40%);
+      color: #f8fafc;
+      min-height: 100vh;
+    }
+    
+    .glass {
+      background: rgba(18, 18, 38, 0.75);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+    }
+
+    .skeleton {
+      background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 8px;
+    }
+
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+  </style>
+</head>
+<body class="flex flex-col min-h-screen justify-between items-center px-4 py-6">
+
+  <!-- Toast Notification -->
+  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#121228] border border-white/15 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 z-50 text-xs sm:text-sm backdrop-blur-xl">
+    <span id="toastText"></span>
+  </div>
+
+  <!-- Confirm Payment Modal -->
+  <div id="confirmModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+    <div class="glass rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-6">
+      <div class="flex justify-between items-center pb-4 border-b border-white/10">
+        <h3 class="font-bold text-base">Confirm Payment</h3>
+        <button onclick="closeModal()" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
+      </div>
+      <div class="space-y-4 text-xs">
+        <div class="flex justify-between bg-white/[0.02] p-3 rounded-xl border border-white/5">
+          <span class="text-gray-400">Amount</span>
+          <span class="font-bold text-emerald-400 text-sm">250 USDC</span>
+        </div>
+        <div class="flex justify-between bg-white/[0.02] p-3 rounded-xl border border-white/5">
+          <span class="text-gray-400">Recipient</span>
+          <span class="font-mono text-white">Kamkazi Studio</span>
+        </div>
+        <div class="flex justify-between bg-white/[0.02] p-3 rounded-xl border border-white/5">
+          <span class="text-gray-400">Network</span>
+          <span class="font-bold text-white">Arc</span>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3 pt-2">
+        <button onclick="closeModal()" class="py-3 bg-white/5 hover:bg-white/10 font-bold rounded-2xl text-xs">Cancel</button>
+        <button onclick="executePayment()" class="py-3 bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold rounded-2xl text-xs shadow-lg">Pay</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN CONTAINER -->
+  <main class="w-full max-w-[560px] mx-auto flex flex-col justify-between flex-grow space-y-6">
+
+    <!-- 1. Header -->
+    <header class="flex justify-between items-center py-2 border-b border-white/10">
+      <div>
+        <h1 class="font-extrabold text-sm tracking-tight text-white">ArcSplit</h1>
+        <p class="text-[11px] text-gray-400">Secure Payment Link</p>
+      </div>
+      <div class="text-[11px] text-gray-400 font-semibold flex items-center gap-1.5">
+        <span>Powered by Arc</span>
+      </div>
+    </header>
+
+    <!-- LOADING STATE CONTAINER -->
+    <div id="loadingState" class="glass rounded-3xl p-8 space-y-6">
+      <div class="skeleton h-8 w-32"></div>
+      <div class="space-y-3">
+        <div class="skeleton h-12 w-full"></div>
+        <div class="skeleton h-16 w-full"></div>
+        <div class="skeleton h-24 w-full"></div>
+      </div>
+    </div>
+
+    <!-- ERROR STATE CONTAINER -->
+    <div id="errorState" class="hidden glass rounded-3xl p-8 text-center space-y-4">
+      <div class="text-3xl text-rose-400"><i class="fas fa-exclamation-triangle"></i></div>
+      <h3 class="font-bold text-base">Unable to load payment.</h3>
+      <button onclick="location.reload()" class="px-6 py-2.5 bg-emerald-500 text-gray-950 font-bold rounded-xl text-xs">Retry</button>
+    </div>
+
+    <!-- 404 STATE CONTAINER -->
+    <div id="notFoundState" class="hidden glass rounded-3xl p-8 text-center space-y-4">
+      <div class="text-3xl text-gray-400"><i class="fas fa-link-slash"></i></div>
+      <h3 class="font-bold text-base">Payment Link Not Found</h3>
+      <p class="text-xs text-gray-400">This payment request doesn't exist.</p>
+      <button onclick="history.back()" class="px-6 py-2.5 bg-white/10 font-bold rounded-xl text-xs">Back</button>
+    </div>
+
+    <!-- 2. Payment Card -->
+    <section id="paymentCard" class="hidden glass rounded-3xl p-6 sm:p-8 space-y-6">
+
+      <!-- 3. Payment Status Badge -->
+      <div class="flex justify-center">
+        <div id="statusBadge" class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+          <span id="statusIcon">🟡</span>
+          <span id="statusText">Pending Payment</span>
+        </div>
+      </div>
+
+      <!-- 4. Payment Information -->
+      <div class="text-center space-y-1">
+        <div class="text-4xl sm:text-5xl font-black text-white tracking-tight">250 <span class="text-emerald-400 text-3xl">USDC</span></div>
+        <div class="text-xs text-gray-400 uppercase tracking-wider font-semibold">Payment Request</div>
+      </div>
+
+      <!-- 5. Recipient (with Display Name support) -->
+      <div class="bg-white/[0.02] border border-white/10 p-4 rounded-2xl flex items-center justify-between">
+        <div>
+          <div class="text-[11px] text-gray-400 uppercase tracking-wider">Recipient</div>
+          <div id="recipientName" class="font-bold text-sm text-white mt-0.5 flex items-center gap-1.5">
+            <i class="fas fa-user-circle text-emerald-400"></i> Kamkazi Studio
+          </div>
+          <div id="recipientAddress" class="font-mono text-xs text-gray-400 mt-0.5">0x7B1A...9F21</div>
+        </div>
+        <button onclick="copyRecipient()" class="px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all">
+          <i class="fas fa-copy text-emerald-400"></i> Copy
+        </button>
+      </div>
+
+      <!-- 6. Memo (Optional) -->
+      <div id="memoSection" class="bg-white/[0.02] border border-white/10 p-4 rounded-2xl space-y-1">
+        <div class="text-[11px] text-gray-400 uppercase tracking-wider">Description</div>
+        <div class="text-xs font-medium text-white">Website Design Payment</div>
+      </div>
+
+      <!-- 7. Expiry -->
+      <div id="expirySection" class="flex items-center justify-between text-xs px-2 text-gray-400">
+        <span>Expires</span>
+        <div class="text-right">
+          <div class="text-white font-medium">2 August 2026, 23:59 UTC</div>
+          <div id="expiryWarning" class="text-amber-400 text-[11px] mt-0.5">⚠ Expires in 5 hours</div>
+        </div>
+      </div>
+
+      <!-- 8. Wallet Section -->
+      <div class="bg-white/[0.02] border border-white/10 p-4 rounded-2xl flex items-center justify-between">
+        <div>
+          <div class="text-[11px] text-gray-400 uppercase tracking-wider">Wallet</div>
+          <div id="walletStatusText" class="font-mono text-xs font-bold text-gray-400 mt-0.5">Not Connected</div>
+        </div>
+        <div id="walletActionContainer">
+          <button onclick="connectWallet()" class="px-4 py-2 bg-emerald-500 text-gray-950 font-bold rounded-xl text-xs shadow-md">Connect Wallet</button>
+        </div>
+      </div>
+
+      <!-- 9. Payment Summary Card -->
+      <div class="bg-black/30 border border-white/10 rounded-2xl p-4 space-y-3 text-xs">
+        <div class="flex justify-between text-gray-400">
+          <span>Token</span>
+          <span class="font-bold text-white">USDC</span>
+        </div>
+        <div class="flex justify-between text-gray-400">
+          <span>Amount</span>
+          <span class="font-bold text-white">250</span>
+        </div>
+        <div class="flex justify-between text-gray-400">
+          <span>Network</span>
+          <span class="font-bold text-white">Arc</span>
+        </div>
+        <div class="flex justify-between text-gray-400 border-t border-white/10 pt-2">
+          <span>Estimated Fee</span>
+          <span class="font-bold text-white">0.02 USDC</span>
+        </div>
+      </div>
+
+      <!-- 10. Action Button -->
+      <div id="actionContainer">
+        <button onclick="handleActionClick()" id="mainActionButton" class="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold rounded-2xl text-sm shadow-xl shadow-emerald-500/20 transition-all">
+          Connect Wallet
+        </button>
+      </div>
+
+    </section>
+
+    <!-- Footer -->
+    <footer class="text-center py-4 text-[11px] text-gray-500 border-t border-white/5">
+      Powered by ArcSplit
+    </footer>
+
+  </main>
+
+<script>
+  let walletConnected = false;
+  let paymentState = 'pending'; // pending, processing, success
+
+  // Simulate loading state on load
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      document.getElementById('loadingState').classList.add('hidden');
+      document.getElementById('paymentCard').classList.remove('hidden');
+    }, 800);
+  });
+
+  function showToast(msg) {
+    const toast = document.getElementById("toast");
+    document.getElementById("toastText").textContent = msg;
+    toast.classList.remove("hidden");
+    setTimeout(() => toast.classList.add("hidden"), 3000);
+  }
+
+  function copyRecipient() {
+    navigator.clipboard.writeText("0x7B1A2C34E5F678909F21");
+    showToast("Copied");
+  }
+
+  function connectWallet() {
+    walletConnected = true;
+    showToast("Wallet Connected");
+    
+    // Update Wallet Section UI
+    document.getElementById('walletStatusText').textContent = "0xA45...CC91";
+    document.getElementById('walletStatusText').className = "font-mono text-xs font-bold text-emerald-400 mt-0.5";
+    document.getElementById('walletActionContainer').innerHTML = `
+      <div class="flex items-center gap-2">
+        <span class="text-[10px] text-emerald-400 font-bold">Connected</span>
+        <button onclick="disconnectWallet()" class="text-[11px] text-rose-400 hover:underline font-semibold">Disconnect</button>
+      </div>
+    `;
+
+    // Update Main Action Button
+    document.getElementById('mainActionButton').textContent = "Pay 250 USDC";
+  }
+
+  function disconnectWallet() {
+    walletConnected = false;
+    document.getElementById('walletStatusText').textContent = "Not Connected";
+    document.getElementById('walletStatusText').className = "font-mono text-xs font-bold text-gray-400 mt-0.5";
+    document.getElementById('walletActionContainer').innerHTML = `
+      <button onclick="connectWallet()" class="px-4 py-2 bg-emerald-500 text-gray-950 font-bold rounded-xl text-xs shadow-md">Connect Wallet</button>
+    `;
+    document.getElementById('mainActionButton').textContent = "Connect Wallet";
+    showToast("Wallet Disconnected");
+  }
+
+  function handleActionClick() {
+    if (!walletConnected) {
+      connectWallet();
+      return;
+    }
+    // Open Modal
+    document.getElementById('confirmModal').classList.remove('hidden');
+  }
+
+  function closeModal() {
+    document.getElementById('confirmModal').classList.add('hidden');
+  }
+
+  function executePayment() {
+    closeModal();
+    paymentState = 'processing';
+    
+    const actionContainer = document.getElementById('actionContainer');
+    actionContainer.innerHTML = `
+      <button disabled class="w-full py-4 bg-white/10 text-white font-bold rounded-2xl text-sm flex items-center justify-center gap-2 cursor-wait">
+        <i class="fas fa-spinner fa-spin text-emerald-400"></i> Processing Payment...
+      </button>
+    `;
+
+    setTimeout(() => {
+      paymentState = 'success';
+      
+      // Update Status Badge to Paid
+      const badge = document.getElementById('statusBadge');
+      badge.className = "inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+      document.getElementById('statusIcon').textContent = "🟢";
+      document.getElementById('statusText').textContent = "Paid";
+
+      // Update Action container to Success state
+      actionContainer.innerHTML = `
+        <div class="bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-4 text-center space-y-2">
+          <div class="text-emerald-400 font-bold text-sm flex items-center justify-center gap-1.5">
+            ✅ Payment Successful
+          </div>
+          <div class="text-xs text-white">250 USDC Sent</div>
+          <div class="flex items-center justify-center gap-2 pt-2 border-t border-white/10 text-xs">
+            <span class="text-gray-400">Transaction</span>
+            <span class="font-mono text-white">0x91D...</span>
+            <button onclick="showToast('Copied')" class="text-emerald-400 hover:underline font-bold">Copy</button>
+          </div>
+        </div>
+      `;
+      showToast("Payment Successful");
+    }, 2000);
+  }
+</script>
+</body>
+</html>
