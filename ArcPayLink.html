@@ -328,9 +328,10 @@
     CIRBTC: { address: "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF", decimals: 8, symbol: "cirBTC" }
   };
 
-  const ArcPaymentLinksABI = [
+    const ArcPaymentLinksABI = [
     "function createPaymentLink(tuple(bytes32 linkId, address token, uint256 amount, uint256 expiration, bytes32 claimHash, address restrictedTo, string qrMetaData, uint256 salt) params) external payable",
     "function generateLinkId(address restrictedTo, uint256 salt) external view returns (bytes32)",
+    "function getPaymentLink(bytes32 linkId) view returns (tuple(address creator, address token, uint256 amount, uint256 expiration, bytes32 claimHash, address restrictedTo, uint8 state, uint64 closedAt, string qrMetaData))",
     "event PaymentLinkCreated(bytes32 indexed linkId, address indexed creator, address indexed token, uint256 amount, uint256 expiration, address restrictedTo, string qrMetaData)"
   ];
 
@@ -386,53 +387,65 @@
   await loadUserBalance();
   updatePreview();
 }
-  
 
-  async function loadUserBalance() {
-  const select = document.getElementById('tokenSelect');
-  const tokenAddress = select.value;
-  const tokenSymbol = select.options[select.selectedIndex].text.replace(/[^A-Za-z]/g, '').toUpperCase() || "TOKEN";
+    async function loadUserBalance() {
+    const select = document.getElementById('tokenSelect');
+    const tokenAddress = select.value;
+    if (!tokenAddress || tokenAddress === "custom") return;
 
-  if (!signer || !userAddress || !tokenAddress) return;
+    const tokenSymbol = select.options[select.selectedIndex].text.replace(/[^A-Za-z0-9]/g, '');
 
-  try {
-    const contract = new ethers.Contract(tokenAddress, [
-      "function balanceOf(address) view returns (uint256)",
-      "function decimals() view returns (uint8)"
-    ], signer);
+    if (!signer || !userAddress) return;
 
-    const [bal, decimals] = await Promise.all([
-      contract.balanceOf(userAddress),
-      contract.decimals()
-    ]);
+    try {
+      const contract = new ethers.Contract(tokenAddress, [
+        "function balanceOf(address) view returns (uint256)",
+        "function decimals() view returns (uint8)"
+      ], signer);
 
-    const formatted = ethers.formatUnits(bal, decimals);
-    document.getElementById("tokenBalanceDisplay").innerHTML = 
-      `Balance: <span class="text-emerald-400">${parseFloat(formatted).toFixed(4)} ${tokenSymbol}</span>`;
-  } catch (e) {
-    document.getElementById("tokenBalanceDisplay").textContent = "Balance: —";
+      const [bal, decimals] = await Promise.all([
+        contract.balanceOf(userAddress),
+        contract.decimals()
+      ]);
+
+      const formatted = ethers.formatUnits(bal, decimals);
+      document.getElementById("tokenBalanceDisplay").innerHTML = 
+        `Balance: <span class="text-emerald-400">${parseFloat(formatted).toFixed(4)} ${tokenSymbol}</span>`;
+    } catch (e) {
+      document.getElementById("tokenBalanceDisplay").textContent = "Balance: —";
+    }
   }
-}
 
-  // ====================== CREATE LINK ======================
+  
+    // ====================== CREATE LINK ======================
   async function generateLink() {
     if (!signer || !userAddress) return showToast("Please connect your wallet first", 4000);
 
     const title = document.getElementById('linkTitle').value.trim();
-    const tokenKey = document.getElementById('tokenSelect').value;
-    const tokenInfo = tokens[tokenKey];
+    const desc = document.getElementById('linkDesc').value.trim();
+    const select = document.getElementById('tokenSelect');
+    const tokenAddress = select.value;
+    const tokenSymbol = select.options[select.selectedIndex].text.replace(/[^A-Za-z0-9]/g, '');
+
     const amountInput = parseFloat(document.getElementById('fixedAmountInput').value);
 
     if (!title) return showError('errTitle', "Title is required");
-    if (amountMode === 'fixed' && (!amountInput || amountInput <= 0)) {
+    if (!amountInput || amountInput <= 0) {
       return showError('errAmount', "Please enter a valid amount");
     }
 
-    showToast("Creating payment link...");
+    showToast("Creating payment link on blockchain...");
 
     try {
       const contract = new ethers.Contract(CONTRACT_ADDRESS, ArcPaymentLinksABI, signer);
-      const amountWei = ethers.parseUnits(amountInput.toString(), tokenInfo.decimals);
+      
+      // Get decimals dynamically
+      const tokenContract = new ethers.Contract(tokenAddress, [
+        "function decimals() view returns (uint8)"
+      ], signer);
+      
+      const decimals = await tokenContract.decimals();
+      const amountWei = ethers.parseUnits(amountInput.toString(), decimals);
 
       let expiration = 0;
       const expOption = document.getElementById('expirationSelect').value;
@@ -446,31 +459,35 @@
 
       const params = {
         linkId: linkId,
-        token: tokenInfo.address,
+        token: tokenAddress,
         amount: amountWei,
         expiration: expiration,
-        claimHash: ethers.ZeroHash,
+        claimHash: ethers.ZeroHash,           // Secret Key فعلاً خاموش
         restrictedTo: ethers.ZeroAddress,
-        qrMetaData: title,
+        qrMetaData: title + (desc ? " | " + desc : ""),
         salt: salt
       };
 
       const tx = await contract.createPaymentLink(params, {
-        value: tokenInfo.address === ethers.ZeroAddress ? amountWei : 0
+        value: tokenAddress === ethers.ZeroAddress ? amountWei : 0   // برای native token
       });
 
+      showToast("Waiting for confirmation...");
+
       await tx.wait();
+
+      const shortId = linkId.toString().slice(0, 16);
 
       const newLink = {
         id: linkId,
         txHash: tx.hash,
         title: title,
-        token: tokenInfo.symbol,
+        token: tokenSymbol,
         amount: amountInput,
         expiration: expiration,
         status: "Active",
         createdAt: Date.now(),
-        url: `https://arcsplit.kamkazi-1297.workers.dev/pay/${linkId.toString().slice(0,16)}`,
+        url: `https://arcsplit.kamkazi-1297.workers.dev/pay?id=${linkId}`,
         creator: userAddress
       };
 
@@ -478,14 +495,13 @@
       localStorage.setItem('arcPaymentLinks', JSON.stringify(currentLinks));
 
       showSuccessModal(newLink);
-      showToast("Payment Link Created Successfully!", 5000);
+      showToast("✅ Payment Link Created Successfully!", 5000);
 
     } catch (error) {
       console.error(error);
-      showToast(error.reason || error.message || "Transaction failed", 6000);
+      showToast(error.reason || error.message || "Transaction failed", 7000);
     }
   }
-
   function getExpirationSeconds(option) {
     const map = { '1h': 3600, '24h': 86400, '7d': 604800, '30d': 2592000 };
     return map[option] || 0;
