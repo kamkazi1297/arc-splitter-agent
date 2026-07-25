@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arc Protocol | Vesting Splitter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body { font-family: 'Inter', sans-serif; background-color: #0b0f19; color: #f3f4f6; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+
+    <!-- Navbar -->
+    <header class="border-b border-gray-800 bg-gray-900/50 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <a href="index.html" class="bg-indigo-600 p-2 rounded-xl text-white font-bold text-xl"><i class="fa-solid fa-arrow-left"></i></a>
+                <span class="text-xl font-bold tracking-wide">Vesting Splitter</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <span class="text-xs text-gray-400 font-mono bg-gray-800 px-3 py-1.5 rounded-lg">Contract: 0x714A...A5D9</span>
+                <button id="connectWalletBtn" onclick="connectWallet()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl font-medium transition flex items-center gap-2 text-sm">
+                    <i class="fa-solid fa-wallet"></i> Connect Wallet
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-4xl mx-auto px-4 py-10 w-full space-y-8">
+        
+        <div class="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-6">
+            <div>
+                <h3 class="text-lg font-bold flex items-center gap-2"><i class="fa-solid fa-lock text-indigo-400"></i> Create Vesting Schedule</h3>
+                <p class="text-gray-400 text-sm">Lock tokens and set a linear or cliff vesting period for automatic progressive release.</p>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Beneficiary Address</label>
+                    <input type="text" id="beneficiaryAddr" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-sm font-mono text-gray-200 focus:outline-none focus:border-indigo-500" placeholder="0x...">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Start Timestamp</label>
+                        <input type="number" id="startTime" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-sm text-gray-200 focus:outline-none focus:border-indigo-500" placeholder="Unix timestamp">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Duration (Seconds)</label>
+                        <input type="number" id="duration" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-sm text-gray-200 focus:outline-none focus:border-indigo-500" placeholder="e.g. 31536000 (1 Year)">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1">Total Token Amount</label>
+                    <input type="number" id="vestingAmount" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-4 py-3 text-sm text-gray-200 focus:outline-none focus:border-indigo-500" placeholder="0.0">
+                </div>
+            </div>
+
+            <button onclick="createVestingSchedule()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 rounded-xl font-medium transition text-sm">Initialize Vesting Schedule</button>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-gray-800 py-6 text-center text-gray-500 text-sm">
+        Arc Protocol © 2026
+    </footer>
+
+    <script>
+        const contractAddress = "0x714Ad5eD106F82640DF51ee0C0E1D471Ff0A5D9d";
+        let provider, signer, userAddress;
+
+        async function connectWallet() {
+            if (window.ethereum) {
+                provider = new ethers.BrowserProvider(window.ethereum);
+                signer = await provider.getSigner();
+                userAddress = await signer.getAddress();
+                document.getElementById('connectWalletBtn').innerText = userAddress.substring(0, 6) + '...' + userAddress.substring(38);
+            } else {
+                alert('Please install MetaMask!');
+            }
+        }
+
+        async function createVestingSchedule() {
+            if (!signer) {
+                alert('Please connect your wallet first!');
+                return;
+            }
+            alert('Creating vesting schedule on contract: ' + contractAddress);
+        }
+    </script>
+</body>
+</html>
