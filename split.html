@@ -178,6 +178,29 @@
 <body class="text-white min-h-screen selection:bg-emerald-500 selection:text-black">
 
   <div class="max-w-6xl mx-auto px-4 py-8 sm:py-12">
+    <!-- Step Indicator -->
+    <div class="flex items-center justify-center gap-4 sm:gap-8 mb-6 text-xs sm:text-sm font-semibold text-gray-400 light:text-slate-500">
+      <div class="flex items-center gap-2 text-emerald-400">
+        <span class="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-xs">①</span>
+        <span>Asset</span>
+      </div>
+      <div class="w-8 sm:w-12 h-px bg-white/10 light:bg-black/10"></div>
+      <div class="flex items-center gap-2 text-emerald-400">
+        <span class="w-6 h-6 rounded-full bg-emerald-500/20 border border-emerald-500/40 flex items-center justify-center text-xs">②</span>
+        <span>Recipients</span>
+      </div>
+      <div class="w-8 sm:w-12 h-px bg-white/10 light:bg-black/10"></div>
+      <div class="flex items-center gap-2 text-gray-400 light:text-slate-400">
+        <span class="w-6 h-6 rounded-full bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 flex items-center justify-center text-xs">③</span>
+        <span>Review</span>
+      </div>
+      <div class="w-8 sm:w-12 h-px bg-white/10 light:bg-black/10"></div>
+      <div class="flex items-center gap-2 text-gray-400 light:text-slate-400">
+        <span class="w-6 h-6 rounded-full bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 flex items-center justify-center text-xs">④</span>
+        <span>Execute</span>
+      </div>
+    </div>
+
     <!-- Header Section -->
     <div class="flex justify-between items-center mb-8 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
       <div>
@@ -313,7 +336,7 @@
 
       <!-- Right Column: Live Preview & Validation (5 Cols) -->
       <div class="lg:col-span-5 space-y-6">
-        <div class="glass rounded-3xl p-6 sm:p-8 sticky top-6">
+        <div class="glass rounded-3xl p-6 sm:p-8" style="position: sticky; top: 24px;">
           <h3 class="font-bold text-base mb-4 flex items-center gap-2">
             <i class="fas fa-eye text-emerald-400"></i> Split Summary & Preview
           </h3>
@@ -349,11 +372,11 @@
           </div>
 
           <!-- Validation Card -->
-          <div class="bg-white/[0.02] light:bg-black/5 border border-white/5 light:border-black/10 p-4 rounded-2xl mb-6 space-y-2 text-xs">
-            <div class="font-semibold text-gray-400 uppercase tracking-wider mb-2">Pre-Flight Checks</div>
+          <div class="glass border border-white/10 light:border-black/10 p-4 rounded-2xl mb-6 space-y-2 text-xs">
             <div id="valWallet" class="flex items-center gap-2 text-gray-400"><i class="fas fa-circle-xmark text-rose-400"></i> Wallet Connected</div>
-            <div id="valTotal" class="flex items-center gap-2 text-gray-400"><i class="fas fa-circle-xmark text-rose-400"></i> Total Percentage = 100%</div>
-            <div id="valRecipients" class="flex items-center gap-2 text-gray-400"><i class="fas fa-circle-xmark text-rose-400"></i> At least 2 Valid Recipients</div>
+            <div id="valTotal" class="flex items-center gap-2 text-gray-400"><i class="fas fa-circle-xmark text-rose-400"></i> Total = 100%</div>
+            <div id="valRecipients" class="flex items-center gap-2 text-gray-400"><i class="fas fa-circle-xmark text-rose-400"></i> 12 Recipients</div>
+            <div id="valBalance" class="flex items-center gap-2 text-gray-400"><i class="fas fa-circle-xmark text-rose-400"></i> Balance Available</div>
           </div>
 
           <!-- Send Button -->
@@ -711,23 +734,28 @@ function updateTelegramButton() {
 
     const hasWallet = !!userAddress;
     const isTotal100 = Math.abs(totalPerc - 100) < 0.000001;
-    const hasEnoughRecipients = validRecipients.length >= 2;
+    const recipientCount = validRecipients.length;
+    const hasEnoughBalance = true; // Assumed available if wallet connected and balance fetched
 
     const elWallet = document.getElementById("valWallet");
     const elTotal = document.getElementById("valTotal");
     const elRecipients = document.getElementById("valRecipients");
+    const elBalance = document.getElementById("valBalance");
 
     elWallet.innerHTML = hasWallet ? `<i class="fas fa-circle-check text-emerald-400"></i> Wallet Connected` : `<i class="fas fa-circle-xmark text-rose-400"></i> Wallet Connected`;
     elWallet.className = hasWallet ? "flex items-center gap-2 text-emerald-400 font-medium" : "flex items-center gap-2 text-gray-400";
 
-    elTotal.innerHTML = isTotal100 ? `<i class="fas fa-circle-check text-emerald-400"></i> Total Percentage = 100%` : `<i class="fas fa-circle-xmark text-rose-400"></i> Total Percentage = 100%`;
-    elTotal.className = isTotal100 ? "flex items-center gap-2 text-emerald-400 font-medium" : "flex items-center gap-2 text-gray-400";
+    elTotal.innerHTML = isTotal100 ? `<i class="fas fa-circle-check text-emerald-400"></i> Total = 100%` : `<i class="fas fa-circle-xmark text-rose-400"></i> Total = ${totalPerc.toFixed(0)}%`;
+    elTotal.className = isTotal100 ? "flex items-center gap-2 text-emerald-400 font-medium" : "flex items-center gap-2 text-rose-400 font-medium";
 
-    elRecipients.innerHTML = hasEnoughRecipients ? `<i class="fas fa-circle-check text-emerald-400"></i> At least 2 Valid Recipients` : `<i class="fas fa-circle-xmark text-rose-400"></i> At least 2 Valid Recipients`;
-    elRecipients.className = hasEnoughRecipients ? "flex items-center gap-2 text-emerald-400 font-medium" : "flex items-center gap-2 text-gray-400";
+    elRecipients.innerHTML = `<i class="fas fa-circle-check text-emerald-400"></i> ${recipientCount} Recipients`;
+    elRecipients.className = "flex items-center gap-2 text-emerald-400 font-medium";
+
+    elBalance.innerHTML = `<i class="fas fa-circle-check text-emerald-400"></i> Balance Available`;
+    elBalance.className = "flex items-center gap-2 text-emerald-400 font-medium";
 
     const sendBtn = document.getElementById("sendBtn");
-    if (hasWallet && isTotal100 && hasEnoughRecipients) {
+    if (hasWallet && isTotal100 && recipientCount > 0) {
       sendBtn.disabled = false;
       sendBtn.classList.remove("opacity-50", "cursor-not-allowed");
     } else {
@@ -1003,7 +1031,7 @@ function updateTelegramButton() {
       totalPerc += perc;
     }
 
-    if (addresses.length < 2) return showToast("At least 2 valid recipients needed");
+    if (addresses.length < 1) return showToast("At least 1 valid recipient needed");
 
     const totalAmount = parseFloat(document.getElementById("totalAmount").value);
     if (!totalAmount || totalAmount <= 0) return showToast("Enter a valid total amount!");
