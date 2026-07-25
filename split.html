@@ -1,77 +1,42 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="fa">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>تست Payment Link</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>تست ساده Payment Link</title>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
 </head>
-<body class="bg-zinc-950 text-white min-h-screen">
+<body>
 
-  <div class="max-w-lg mx-auto p-8">
-    <h1 class="text-3xl font-bold mb-8 text-center">تست Payment Link</h1>
-
-    <div class="bg-zinc-900 rounded-3xl p-8">
-      <button onclick="connectWallet()" 
-              class="w-full bg-blue-600 hover:bg-blue-700 py-4 rounded-2xl text-lg font-semibold mb-6">
-        اتصال والت
-      </button>
-
-      <button onclick="createPaymentLink()" 
-              class="w-full bg-purple-600 hover:bg-purple-700 py-6 rounded-3xl text-xl font-bold">
-        🔗 ایجاد Payment Link (۱۰ USDC)
-      </button>
-    </div>
-
-    <p id="status" class="text-center mt-6 text-gray-400"></p>
-  </div>
+  <h2>تست Payment Link</h2>
+  <button onclick="connect()">اتصال والت</button>
+  <button onclick="testCall()">تست فراخوانی تابع</button>
 
 <script>
-  const PAYMENT_LINK_ADDRESS = "0xca96eBfD87065B90Ca9a07b8383669787c3218aE";
-
-  const paymentLinkABI = [
-    "function createPaymentLink(tuple(bytes32 linkId, address token, uint256 amount, uint256 expiration, bytes32 claimHash, address restrictedTo, string qrMetaData, uint256 salt) params) external payable"
-  ];
-
   let signer = null;
+  const ADDR = "0xca96eBfD87065B90Ca9a07b8383669787c3218aE";
 
-  async function connectWallet() {
-    if (!window.ethereum) return alert("MetaMask پیدا نشد");
-    
+  async function connect() {
     const provider = new ethers.BrowserProvider(window.ethereum);
     signer = await provider.getSigner();
-    document.getElementById("status").innerHTML = "✅ والت متصل شد";
+    alert("والت متصل شد");
   }
 
-  async function createPaymentLink() {
-    if (!signer) return alert("ابتدا والت را متصل کنید");
+  async function testCall() {
+    if (!signer) return alert("اول والت را وصل کن");
 
     try {
-      document.getElementById("status").innerHTML = "در حال ارسال تراکنش...";
+      // تست خیلی ساده - فقط چک کنیم آیا قرارداد وجود دارد
+      const code = await signer.provider.getCode(ADDR);
+      console.log("Contract Code Length:", code.length);
 
-      const contract = new ethers.Contract(PAYMENT_LINK_ADDRESS, paymentLinkABI, signer);
-
-      const params = {
-        linkId: ethers.ZeroHash,
-        token: "0x3600000000000000000000000000000000000000", // USDC
-        amount: ethers.parseUnits("10", 6),
-        expiration: Math.floor(Date.now() / 1000) + (7 * 86400),
-        claimHash: ethers.ZeroHash,
-        restrictedTo: ethers.ZeroAddress,
-        qrMetaData: "تست Payment Link",
-        salt: Date.now()
-      };
-
-      const tx = await contract.createPaymentLink(params, { gasLimit: 800000 });
-      await tx.wait();
-
-      document.getElementById("status").innerHTML = `✅ موفق!<br>Tx: ${tx.hash.slice(0,12)}...`;
-      console.log("Transaction Hash:", tx.hash);
-
+      if (code.length > 2) {
+        alert("✅ قرارداد در این آدرس وجود دارد");
+      } else {
+        alert("❌ قرارداد در این آدرس وجود ندارد");
+      }
     } catch (e) {
       console.error(e);
-      document.getElementById("status").innerHTML = "❌ خطا: " + (e.reason || e.message);
+      alert("خطا: " + e.message);
     }
   }
 </script>
