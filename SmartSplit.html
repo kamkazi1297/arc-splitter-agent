@@ -49,7 +49,7 @@
     .light .text-gray-400 { color: #475569 !important; }
     .light .text-gray-300 { color: #334155 !important; }
 
- 
+    /* استایل ثابت دکمه ولت متصل شده */
     .wallet-connected-glass {
       background: rgba(18, 18, 38, 0.85) !important;
       backdrop-filter: blur(24px) !important;
@@ -121,12 +121,17 @@
       </div>
     </div>
 
-    <!-- Connect Hub & Balance Section -->
+    <!-- Connect Hub, Disconnect & Balance Section -->
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-      <!-- Connect Wallet Button -->
-      <button onclick="connectWallet()" id="connectBtn" class="px-6 py-4 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg">
-        <i class="fas fa-wallet text-emerald-600"></i> <span id="connectText">Connect Wallet</span>
-      </button>
+      <!-- Connect / Disconnect Wallet Hub -->
+      <div class="flex gap-2">
+        <button onclick="connectWallet()" id="connectBtn" class="flex-1 px-6 py-4 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg">
+          <i class="fas fa-wallet text-emerald-600"></i> <span id="connectText">Connect Wallet</span>
+        </button>
+        <button onclick="disconnectWallet()" id="disconnectBtn" class="hidden px-4 py-4 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 font-bold rounded-2xl transition-all flex items-center justify-center" title="Disconnect Wallet">
+          <i class="fas fa-power-off text-base"></i>
+        </button>
+      </div>
 
       <!-- Balance Box with Auto-Retry Status -->
       <div class="glass rounded-2xl p-4 flex items-center justify-between">
@@ -278,7 +283,24 @@
     document.getElementById('tabHistory').className = !isSplitter ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400";
   }
 
-  // اتصال ولت با متد استاندارد EIP-1193 و ethers.js v6 و اعمال استایل ثابت شیشه‌ای
+  // بررسی وضعیت اتصال ولت هنگام بارگذاری صفحه برای حفظ پایداری بعد از رفرش
+  async function checkInitialConnection() {
+    if (typeof window.ethereum !== 'undefined') {
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        if (accounts && accounts.length > 0) {
+          provider = new ethers.BrowserProvider(window.ethereum);
+          signer = await provider.getSigner();
+          userAddress = accounts[0];
+          updateWalletUI();
+          fetchBalanceWithRetry();
+        }
+      } catch (err) {
+        console.error("Auto-connect check failed:", err);
+      }
+    }
+  }
+
   async function connectWallet() {
     if (typeof window.ethereum !== 'undefined') {
       try {
@@ -288,11 +310,7 @@
         signer = await provider.getSigner();
         userAddress = await signer.getAddress();
         
-        const shortAddr = userAddress.substring(0, 6) + "..." + userAddress.substring(userAddress.length - 4);
-        const btn = document.getElementById('connectBtn');
-        btn.className = "px-6 py-4 wallet-connected-glass font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg";
-        document.getElementById('connectText').innerHTML = `<i class="fas fa-check-circle text-emerald-400"></i> ${shortAddr}`;
-        
+        updateWalletUI();
         showToast("Wallet Connected Successfully!");
         fetchBalanceWithRetry();
       } catch (err) {
@@ -304,27 +322,63 @@
     }
   }
 
-  // تابع دریافت بالانس همراه با سیستم تلاش مجدد خودکار (3 بار retry)
+  function updateWalletUI() {
+    if (!userAddress) return;
+    const shortAddr = userAddress.substring(0, 6) + "..." + userAddress.substring(userAddress.length - 4);
+    const btn = document.getElementById('connectBtn');
+    btn.className = "flex-1 px-6 py-4 wallet-connected-glass font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg";
+    document.getElementById('connectText').innerHTML = `<i class="fas fa-check-circle text-emerald-400"></i> ${shortAddr}`;
+    document.getElementById('disconnectBtn').classList.remove('hidden');
+  }
+
+  function disconnectWallet() {
+    userAddress = null;
+    signer = null;
+    provider = null;
+
+    const btn = document.getElementById('connectBtn');
+    btn.className = "flex-1 px-6 py-4 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg";
+    document.getElementById('connectText').innerHTML = `Connect Wallet`;
+    document.getElementById('disconnectBtn').classList.add('hidden');
+
+    document.getElementById('walletBalanceDisplay').textContent = "0.00 USDC";
+    const badge = document.getElementById('retryStatusBadge');
+    badge.className = "text-[10px] px-2.5 py-1 rounded-full bg-white/5 text-gray-400 border border-white/10";
+    badge.textContent = "Not Connected";
+
+    showToast("Wallet disconnected.");
+    runSimulation();
+  }
+
+  // تابع دریافت بالانس با مکانیسم تلاش مجدد خودکار (3 بار retry) و پشتیبانی کامل از خطایابی
   async function fetchBalanceWithRetry(retries = 3) {
     const badge = document.getElementById('retryStatusBadge');
     const balanceDisplay = document.getElementById('walletBalanceDisplay');
     
-    if (!userAddress || !provider) {
+    if (!userAddress) {
       balanceDisplay.textContent = "0.00 USDC";
       badge.textContent = "Not Connected";
+      badge.className = "text-[10px] px-2.5 py-1 rounded-full bg-white/5 text-gray-400 border border-white/10";
       return;
     }
 
-    badge.className = "text-[10px] px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 animate-pulse";
-    badge.textContent = "Fetching Balance...";
-
     for (let attempt = 1; attempt <= retries; attempt++) {
+      badge.className = "text-[10px] px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 animate-pulse";
+      badge.textContent = `Syncing (Attempt ${attempt}/${retries})...`;
+
       try {
-        // شبیه‌سازی درخواست شبکه (در نسخه پروودر واقعی اینجا فراخوانی متد balanceOf قرارداد ERC20 انجام می‌شود)
-        await new Promise(resolve => setTimeout(resolve, 800));
-        
-        // تولید یک بالانس تستی معتبر برای نمایش عملکرد
-        const mockBalance = (Math.random() * 5400 + 120).toFixed(2);
+        // شبیه‌سازی دقیق ارتباط با شبکه بلاکچین برای گرفتن بالانس توکن انتخاب شده
+        await new Promise((resolve, reject) => {
+          setTimeout(() => {
+            if (Math.random() < 0.15 && attempt < 3) {
+              reject(new Error("RPC Timeout")); // تست پایداری رتری در صورت قطعی لحظه‌ای
+            } else {
+              resolve();
+            }
+          }, 600);
+        });
+
+        const mockBalance = (Math.random() * 8500 + 350).toFixed(2);
         const tokenSymbol = document.getElementById('tokenSelect').value;
 
         balanceDisplay.textContent = `${mockBalance} ${tokenSymbol}`;
@@ -332,11 +386,11 @@
         badge.textContent = "Synced";
         return;
       } catch (err) {
-        console.warn(`Attempt ${attempt} failed to fetch balance.`);
+        console.warn(`Attempt ${attempt} failed to fetch balance. Retrying...`);
         if (attempt === retries) {
-          balanceDisplay.textContent = "Error";
+          balanceDisplay.textContent = "0.00 USDC";
           badge.className = "text-[10px] px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20";
-          badge.textContent = "Fetch Failed";
+          badge.textContent = "Sync Failed (Max Retries)";
         }
       }
     }
@@ -403,7 +457,7 @@
         </div>
 
         <div class="space-y-2 pt-2 border-t border-white/5">
-          <div class="text-[10px] text-gray-400 uppercase font-semibold">Contract Split Distribution (Recipients & Basis Points / %)</div>
+          <div class="text-[10px] text-gray-400 uppercase font-semibold">Contract Split Distribution (Recipients & %)</div>
           ${recipientsHtml}
           <button onclick="addRuleRecipientPrompt(${index})" class="text-[11px] text-emerald-400 font-semibold hover:underline flex items-center gap-1 mt-1">
             <i class="fas fa-plus"></i> Add Recipient
@@ -489,11 +543,10 @@
   }
 
   function removeRuleRecipient(ruleIdx, recIdx) {
-    rules[ruleIdx].recipients.splice(ruleIdx, 1);
+    rules[ruleIdx].recipients.splice(recIdx, 1);
     renderRules();
   }
 
-  // پیاده‌سازی منطق کامل مطابق با ارزیابی شرطی قرارداد هوشمند (صف‌بندی اولویت‌دار قوانین)
   function runSimulation() {
     const amountInput = parseFloat(document.getElementById('simAmountInput').value) || 0;
     let matchedRuleName = "Fallback (Otherwise Rule)";
@@ -513,7 +566,6 @@
         if (c.op === '<=' && amountInput <= valNum) matched = true;
         if (c.op === '==' && amountInput === valNum) matched = true;
       } else if (c.type === 'Sender') {
-        // شبیه‌سازی تطابق آدرس فرستنده در موتور قانون
         if (userAddress && userAddress.toLowerCase() === (c.val || "").toLowerCase()) {
           matched = true;
         }
@@ -602,8 +654,8 @@
   }
 
   window.addEventListener('load', () => {
-    // همه فیلدها و لیست‌ها خالی بارگذاری می‌شوند تا کاربر خودش مقادیر را وارد کند
     renderRules();
+    checkInitialConnection(); // بررسی اتصال قبلی ولت هنگام لود صفحه
   });
 </script>
 </body>
