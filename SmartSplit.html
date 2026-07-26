@@ -49,7 +49,6 @@
     .light .text-gray-400 { color: #475569 !important; }
     .light .text-gray-300 { color: #334155 !important; }
 
-    /* استایل ثابت دکمه ولت متصل شده */
     .wallet-connected-glass {
       background: rgba(18, 18, 38, 0.85) !important;
       backdrop-filter: blur(24px) !important;
@@ -107,7 +106,7 @@
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
       <div>
         <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Smart Conditional Split</span></h1>
-        <p class="text-gray-400 light:text-slate-600 text-xs sm:text-sm font-medium">Create rule-based payment distributions & Web3 Rule Engine</p>
+        <p class="text-gray-400 light:text-slate-600 text-xs sm:text-sm font-medium">Contract: <span class="font-mono text-emerald-400 text-xs">0x372Ec402aD0BDbeD367c80C89a585A8077B919B2</span></p>
       </div>
       
       <div class="flex items-center gap-3">
@@ -123,7 +122,6 @@
 
     <!-- Connect Hub, Disconnect & Balance Section -->
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-      <!-- Connect / Disconnect Wallet Hub -->
       <div class="flex gap-2">
         <button onclick="connectWallet()" id="connectBtn" class="flex-1 px-6 py-4 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg">
           <i class="fas fa-wallet text-emerald-600"></i> <span id="connectText">Connect Wallet</span>
@@ -133,15 +131,14 @@
         </button>
       </div>
 
-      <!-- Balance Box with Auto-Retry Status -->
       <div class="glass rounded-2xl p-4 flex items-center justify-between">
         <div class="flex items-center gap-3">
           <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400">
             <i class="fas fa-coins text-lg"></i>
           </div>
           <div>
-            <div class="text-[11px] text-gray-400 uppercase font-semibold">Wallet Balance</div>
-            <div id="walletBalanceDisplay" class="text-sm font-bold tracking-wide">0.00 USDC</div>
+            <div class="text-[11px] text-gray-400 uppercase font-semibold">Token Balance</div>
+            <div id="walletBalanceDisplay" class="text-sm font-bold tracking-wide">0.00</div>
           </div>
         </div>
         <div id="retryStatusBadge" class="text-[10px] px-2.5 py-1 rounded-full bg-white/5 text-gray-400 border border-white/10">
@@ -171,15 +168,31 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Select Token</label>
-              <select id="tokenSelect" class="w-full rounded-2xl px-4 py-3.5 text-sm font-medium cursor-pointer" onchange="fetchBalanceWithRetry()">
-                <option value="USDC">USDC</option>
-                <option value="EURC">EURC</option>
-                <option value="CIRBTC">CIRBTC (cirBTC)</option>
+              <select id="tokenSelect" class="w-full rounded-2xl px-4 py-3.5 text-sm font-medium cursor-pointer" onchange="handleTokenSelectChange()">
+                <option value="0x3600000000000000000000000000000000000000">USDC</option>
+                <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
+                <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">CIRBTC (cirBTC)</option>
+                <option value="CUSTOM">+ Add Custom Token</option>
               </select>
             </div>
             <div>
               <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Default Base Amount</label>
               <input type="number" id="baseTestAmount" placeholder="e.g. 1000" class="w-full rounded-2xl px-4 py-3.5 text-sm font-bold" oninput="runSimulation()">
+            </div>
+          </div>
+
+          <!-- Custom Token Input Modal/Box (Hidden by default) -->
+          <div id="customTokenBox" class="hidden mt-4 pt-4 border-t border-white/10 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-gray-400 text-[11px] font-semibold uppercase mb-1">Custom Token Symbol</label>
+              <input type="text" id="customTokenSymbol" placeholder="e.g. MYT" class="w-full rounded-xl px-3 py-2 text-xs font-bold">
+            </div>
+            <div>
+              <label class="block text-gray-400 text-[11px] font-semibold uppercase mb-1">Custom Token Address</label>
+              <div class="flex gap-2">
+                <input type="text" id="customTokenAddress" placeholder="0x..." class="flex-1 rounded-xl px-3 py-2 text-xs font-mono">
+                <button onclick="saveCustomToken()" class="px-4 bg-emerald-500 hover:bg-emerald-600 text-black font-bold rounded-xl text-xs">Add</button>
+              </div>
             </div>
           </div>
         </div>
@@ -196,10 +209,8 @@
             </button>
           </div>
 
-          <!-- Rules Container -->
           <div id="rulesContainer" class="space-y-4"></div>
 
-          <!-- Default Rule (Otherwise) -->
           <div class="mt-4 p-4 rounded-2xl border border-white/10 bg-white/[0.01] border-dashed">
             <div class="flex items-center justify-between mb-3">
               <span class="text-xs font-bold text-amber-400 uppercase tracking-wider">Fallback Rule (Otherwise)</span>
@@ -225,13 +236,11 @@
             <span class="px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 text-[10px] font-bold">Real-time</span>
           </div>
 
-          <!-- Simulation Input -->
           <div class="mb-5">
             <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Test Amount</label>
             <input type="number" id="simAmountInput" placeholder="Enter amount to test..." class="w-full rounded-2xl px-4 py-3 text-sm font-bold" oninput="runSimulation()">
           </div>
 
-          <!-- Simulation Result Box -->
           <div class="bg-black/30 border border-white/10 rounded-2xl p-4 mb-5 space-y-3">
             <div class="flex justify-between items-center text-xs pb-2 border-b border-white/10">
               <span class="text-gray-400">Matched Rule:</span>
@@ -245,10 +254,8 @@
             </div>
           </div>
 
-          <!-- Validation & Errors container -->
           <div id="engineErrors" class="hidden glass border border-rose-500/30 bg-rose-500/10 rounded-2xl p-3.5 mb-5 text-xs text-rose-300 space-y-1"></div>
 
-          <!-- Action Button -->
           <button onclick="deploySmartSplit()" class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:brightness-110 py-4 rounded-2xl font-bold text-sm shadow-lg shadow-emerald-500/20 transition-all">
             Deploy Smart Split Contract
           </button>
@@ -271,6 +278,7 @@
   </div>
 
 <script>
+  const CONTRACT_ADDRESS = "0x372Ec402aD0BDbeD367c80C89a585A8077B919B2";
   let provider, signer, userAddress = null;
   let rules = [];
   let defaultRecipients = [];
@@ -283,7 +291,6 @@
     document.getElementById('tabHistory').className = !isSplitter ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400";
   }
 
-  // بررسی وضعیت اتصال ولت هنگام بارگذاری صفحه برای حفظ پایداری بعد از رفرش
   async function checkInitialConnection() {
     if (typeof window.ethereum !== 'undefined') {
       try {
@@ -341,7 +348,7 @@
     document.getElementById('connectText').innerHTML = `Connect Wallet`;
     document.getElementById('disconnectBtn').classList.add('hidden');
 
-    document.getElementById('walletBalanceDisplay').textContent = "0.00 USDC";
+    document.getElementById('walletBalanceDisplay').textContent = "0.00";
     const badge = document.getElementById('retryStatusBadge');
     badge.className = "text-[10px] px-2.5 py-1 rounded-full bg-white/5 text-gray-400 border border-white/10";
     badge.textContent = "Not Connected";
@@ -350,45 +357,83 @@
     runSimulation();
   }
 
-  // تابع دریافت بالانس با مکانیسم تلاش مجدد خودکار (3 بار retry) و پشتیبانی کامل از خطایابی
+  function handleTokenSelectChange() {
+    const select = document.getElementById('tokenSelect');
+    const customBox = document.getElementById('customTokenBox');
+    if (select.value === 'CUSTOM') {
+      customBox.classList.remove('hidden');
+    } else {
+      customBox.classList.add('hidden');
+      fetchBalanceWithRetry();
+    }
+  }
+
+  function saveCustomToken() {
+    const symbol = document.getElementById('customTokenSymbol').value.trim().toUpperCase();
+    const address = document.getElementById('customTokenAddress').value.trim();
+
+    if (!symbol || !address) {
+      showToast("Please enter both custom token symbol and address.");
+      return;
+    }
+
+    const select = document.getElementById('tokenSelect');
+    const opt = document.createElement('option');
+    opt.value = address;
+    opt.textContent = `${symbol} (Custom)`;
+    opt.selected = true;
+
+    select.insertBefore(opt, select.lastElementChild);
+    document.getElementById('customTokenBox').classList.add('hidden');
+    document.getElementById('customTokenSymbol').value = '';
+    document.getElementById('customTokenAddress').value = '';
+    
+    showToast(`Custom token ${symbol} added successfully!`);
+    fetchBalanceWithRetry();
+  }
+
+  // تابع دریافت بالانس با قابلیت Auto-Retry (تلاش مجدد ۳ باره)
   async function fetchBalanceWithRetry(retries = 3) {
     const badge = document.getElementById('retryStatusBadge');
     const balanceDisplay = document.getElementById('walletBalanceDisplay');
+    const select = document.getElementById('tokenSelect');
     
     if (!userAddress) {
-      balanceDisplay.textContent = "0.00 USDC";
+      balanceDisplay.textContent = "0.00";
       badge.textContent = "Not Connected";
       badge.className = "text-[10px] px-2.5 py-1 rounded-full bg-white/5 text-gray-400 border border-white/10";
       return;
     }
+
+    if (select.value === 'CUSTOM') return;
 
     for (let attempt = 1; attempt <= retries; attempt++) {
       badge.className = "text-[10px] px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 animate-pulse";
       badge.textContent = `Syncing (Attempt ${attempt}/${retries})...`;
 
       try {
-        // شبیه‌سازی دقیق ارتباط با شبکه بلاکچین برای گرفتن بالانس توکن انتخاب شده
+        // شبیه‌سازی اتصال به شبکه بلاکچین برای دریافت بالانس دقیق توکن انتخاب شده
         await new Promise((resolve, reject) => {
           setTimeout(() => {
-            if (Math.random() < 0.15 && attempt < 3) {
-              reject(new Error("RPC Timeout")); // تست پایداری رتری در صورت قطعی لحظه‌ای
+            if (Math.random() < 0.1 && attempt < 3) {
+              reject(new Error("RPC Timeout"));
             } else {
               resolve();
             }
-          }, 600);
+          }, 500);
         });
 
-        const mockBalance = (Math.random() * 8500 + 350).toFixed(2);
-        const tokenSymbol = document.getElementById('tokenSelect').value;
+        const mockBalance = (Math.random() * 12000 + 450).toFixed(2);
+        const selectedOptionText = select.options[select.selectedIndex].text.split(' ')[0];
 
-        balanceDisplay.textContent = `${mockBalance} ${tokenSymbol}`;
+        balanceDisplay.textContent = `${mockBalance} ${selectedOptionText}`;
         badge.className = "text-[10px] px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
         badge.textContent = "Synced";
         return;
       } catch (err) {
-        console.warn(`Attempt ${attempt} failed to fetch balance. Retrying...`);
+        console.warn(`Attempt ${attempt} failed. Retrying...`);
         if (attempt === retries) {
-          balanceDisplay.textContent = "0.00 USDC";
+          balanceDisplay.textContent = "0.00";
           badge.className = "text-[10px] px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20";
           badge.textContent = "Sync Failed (Max Retries)";
         }
@@ -637,13 +682,13 @@
       showToast("Please connect your wallet first!");
       return;
     }
-    showToast("🚀 Deploying Smart Conditional Split Contract on Arc Testnet...");
+    showToast("🚀 Deploying Smart Conditional Split Contract...");
     setTimeout(() => {
       switchTab('history');
       document.getElementById('historyList').innerHTML = `
         <div class="glass p-4 rounded-2xl flex justify-between items-center">
           <div>
-            <div class="font-bold text-white text-sm">Smart Split Contract #1</div>
+            <div class="font-bold text-white text-sm">Contract: ${CONTRACT_ADDRESS.substring(0,8)}...</div>
             <div class="text-xs text-emerald-400 mt-1">${rules.length} Conditional Rules Active • Deployed by ${userAddress.substring(0,6)}...</div>
           </div>
           <span class="px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full text-xs font-semibold">Active Engine</span>
@@ -655,7 +700,7 @@
 
   window.addEventListener('load', () => {
     renderRules();
-    checkInitialConnection(); // بررسی اتصال قبلی ولت هنگام لود صفحه
+    checkInitialConnection();
   });
 </script>
 </body>
