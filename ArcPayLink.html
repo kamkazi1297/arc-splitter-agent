@@ -314,13 +314,12 @@
   let userAddress = null;
   let provider = null;
   let amountMode = 'fixed';
-  let isProcessing = false; // قفل برای جلوگیری از تداخل کلیک‌های همزمان
+  let isProcessing = false;
   let currentLinks = JSON.parse(localStorage.getItem('arcPaymentLinks') || '[]');
 
   const ArcPaymentLinksABI = [
     "function createPaymentLink(tuple(bytes32 linkId, address token, uint256 amount, uint256 expiration, bytes32 claimHash, address restrictedTo, string qrMetaData, uint256 salt) params) external payable",
-    "function generateLinkId(address restrictedTo, uint256 salt) external view returns (bytes32)",
-    "function getPaymentLink(bytes32 linkId) view returns (tuple(address creator, address token, uint256 amount, uint256 expiration, bytes32 claimHash, address restrictedTo, uint8 state, uint64 closedAt, string qrMetaData))"
+    "event PaymentLinkCreated(bytes32 indexed linkId, address indexed creator, address token, uint256 amount)"
   ];
 
   window.addEventListener('load', async () => {
@@ -452,7 +451,7 @@
   }
 
   async function generateLink() {
-    if (isProcessing) return; // جلوگیری از کلیک‌های تداخل‌زا
+    if (isProcessing) return;
     if (!signer || !userAddress) return showToast("Please connect your wallet first", 4000);
 
     const title = document.getElementById('linkTitle').value.trim();
@@ -501,7 +500,6 @@
           await approveTx.wait();
           showToast("Approval confirmed! Preparing link...");
           
-          // مکث ۳ ثانیه‌ای جهت هماهنگی تست‌نت
           await new Promise(resolve => setTimeout(resolve, 3000));
         }
       } else {
@@ -537,7 +535,7 @@
       showToast("Waiting for blockchain confirmation...");
       const receipt = await tx.wait();
 
-      let actualLinkId = salt.toString();
+      let actualLinkId = "";
       for (const log of receipt.logs) {
         try {
           const parsedLog = contract.interface.parseLog(log);
@@ -548,6 +546,12 @@
         } catch (err) {}
       }
 
+      if (!actualLinkId) {
+        throw new Error("PaymentLinkCreated event not found in receipt logs.");
+      }
+
+      const finalUrl = `${window.location.origin}/pay.html?id=${actualLinkId}`;
+
       const newLink = {
         id: actualLinkId,
         txHash: tx.hash,
@@ -557,13 +561,14 @@
         expiration: expiration,
         status: "Active",
         createdAt: Date.now(),
-        url: `${window.location.origin}/pay.html?id=${actualLinkId}`,
+        url: finalUrl,
         creator: userAddress
       };
 
       currentLinks.unshift(newLink);
       localStorage.setItem('arcPaymentLinks', JSON.stringify(currentLinks));
 
+      document.getElementById('generatedLinkOutput').value = finalUrl;
       showSuccessModal(newLink);
       renderHistory();
       showToast("✅ Payment Link Created Successfully!", 5000);
