@@ -319,7 +319,9 @@
 
   const ArcPaymentLinksABI = [
     "function createPaymentLink(tuple(bytes32 linkId, address token, uint256 amount, uint256 expiration, bytes32 claimHash, address restrictedTo, string qrMetaData, uint256 salt) params) external payable",
-    "event PaymentLinkCreated(bytes32 indexed linkId, address indexed creator, address token, uint256 amount)"
+    "function generateLinkId(address restrictedTo, uint256 salt) external view returns (bytes32)",
+    "function generateLinkId(address restrictedTo) external view returns (bytes32)",
+    "event PaymentLinkCreated(bytes32 indexed linkId, address indexed creator, address token, uint256 amount, uint256 expiration, address restrictedTo, string qrMetaData)"
   ];
 
   window.addEventListener('load', async () => {
@@ -500,7 +502,7 @@
           await approveTx.wait();
           showToast("Approval confirmed! Preparing link...");
           
-          await new Promise(resolve => setTimeout(resolve, 3000));
+          await new Promise(resolve => setTimeout(resolve, 2000));
         }
       } else {
         amountWei = ethers.parseUnits(amountInput.toString(), 18);
@@ -513,15 +515,25 @@
         expiration = Math.floor(Date.now() / 1000) + seconds;
       }
 
-      const salt = Date.now();
+      const salt = Math.floor(Math.random() * 1000000000);
+      const restrictedTo = ethers.ZeroAddress;
+
+      // Compute exact linkId deterministically via contract view function to guarantee accuracy
+      let computedLinkId;
+      try {
+        computedLinkId = await contract.generateLinkId(restrictedTo, salt);
+      } catch (err) {
+        console.warn("View generateLinkId failed, using ZeroHash fallback:", err);
+        computedLinkId = ethers.ZeroHash;
+      }
 
       const params = {
-        linkId: ethers.ZeroHash,
+        linkId: computedLinkId,
         token: isNative ? ethers.ZeroAddress : tokenAddress,
         amount: amountWei,
         expiration: expiration,
         claimHash: ethers.ZeroHash,
-        restrictedTo: ethers.ZeroAddress,
+        restrictedTo: restrictedTo,
         qrMetaData: title + (desc ? " | " + desc : ""),
         salt: salt
       };
@@ -535,25 +547,21 @@
       showToast("Waiting for blockchain confirmation...");
       const receipt = await tx.wait();
 
-      let actualLinkId = "";
-      for (const log of receipt.logs) {
-        try {
-          const parsedLog = contract.interface.parseLog(log);
-          if (parsedLog && (parsedLog.name === "PaymentLinkCreated" || parsedLog.name.includes("Link"))) {
-            actualLinkId = parsedLog.args.linkId || parsedLog.args[0];
-            break;
-          }
-        } catch (err) {}
+      let actualLinkId = computedLinkId;
+      if (actualLinkId === ethers.ZeroHash) {
+        for (const log of receipt.logs) {
+          try {
+            const parsedLog = contract.interface.parseLog(log);
+            if (parsedLog && parsedLog.name === "PaymentLinkCreated") {
+              actualLinkId = parsedLog.args.linkId || parsedLog.args[0];
+              break;
+            }
+          } catch (err) {}
+        }
       }
 
-      if (!actualLinkId) {
-        actualLinkId = ethers.solidityPackedKeccak256(
-          ["address", "address", "uint256", "uint256", "uint256"],
-          [userAddress, isNative ? ethers.ZeroAddress : tokenAddress, amountWei, expiration, salt]
-        );
-      }
-
-      const finalUrl = `${window.location.origin}/pay.html?id=${actualLinkId}`;
+      const cleanBaseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+      const finalUrl = `${cleanBaseUrl}pay.html?id=${actualLinkId}`;
 
       const newLink = {
         id: actualLinkId,
@@ -636,7 +644,8 @@
     document.getElementById('prevAmount').textContent = `${amount} ${tokenSymbol}`;
     document.getElementById('prevDesc').textContent = document.getElementById('linkDesc').value || '—';
 
-    const mockUrl = `${window.location.origin}/pay.html?id=sample`;
+    const cleanBaseUrl = window.location.origin + window.location.pathname.substring(0, window.location.pathname.lastIndexOf('/') + 1);
+    const mockUrl = `${cleanBaseUrl}pay.html?id=sample`;
     document.getElementById('generatedLinkOutput').value = mockUrl;
 
     const qrContainer = document.getElementById('qrcode');
