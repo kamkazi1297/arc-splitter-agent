@@ -9,10 +9,10 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
     
     body { 
-      font-family: 'Plus Jakarta Sans', system-ui, sans-serif; 
+      font-family: 'Inter', system-ui, -apple-system, sans-serif; 
       background: #070711;
       background-image: 
         radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.08) 0%, transparent 40%),
@@ -127,11 +127,18 @@
         </div>
       </div>
 
+      <!-- Title / Header of the payment -->
       <div class="text-center space-y-1">
-        <div id="amountDisplay" class="text-5xl font-black text-white tracking-tight">— <span id="tokenSymbol" class="text-emerald-400 text-3xl">Token</span></div>
-        <div id="titleDisplay" class="text-lg font-semibold text-white">Payment Request</div>
+        <div id="titleDisplay" class="text-xl font-bold text-white tracking-tight">Payment Request</div>
       </div>
 
+      <!-- Amount Display (Cleaned up from extra descriptions) -->
+      <div class="bg-white/[0.02] border border-white/10 p-5 rounded-2xl text-center space-y-1">
+        <div class="text-[11px] text-gray-400 uppercase tracking-wider font-semibold">Amount to Pay</div>
+        <div id="amountDisplay" class="text-4xl sm:text-5xl font-black text-white tracking-tight">— <span id="tokenSymbol" class="text-emerald-400 text-2xl sm:text-3xl">Token</span></div>
+      </div>
+
+      <!-- Recipient Section -->
       <div class="bg-white/[0.02] border border-white/10 p-4 rounded-2xl flex items-center justify-between">
         <div>
           <div class="text-[11px] text-gray-400 uppercase tracking-wider">Recipient</div>
@@ -142,6 +149,7 @@
         </button>
       </div>
 
+      <!-- Description Section (Separated from Title) -->
       <div id="memoSection" class="bg-white/[0.02] border border-white/10 p-4 rounded-2xl space-y-1">
         <div class="text-[11px] text-gray-400 uppercase tracking-wider">Description</div>
         <div id="descriptionText" class="text-xs font-medium text-white">—</div>
@@ -158,7 +166,7 @@
         </div>
       </div>
 
-      <!-- Transaction Hash Display Section (Hidden initially) -->
+      <!-- Transaction Hash Display Section -->
       <div id="txHashSection" class="hidden bg-emerald-500/5 border border-emerald-500/20 p-4 rounded-2xl space-y-1.5">
         <div class="text-[11px] text-emerald-400 uppercase tracking-wider font-semibold">Transaction Successful</div>
         <div class="flex items-center justify-between">
@@ -210,10 +218,9 @@
     setTimeout(() => toast.classList.add("hidden"), duration);
   }
 
-  // Helper function to get correct token symbol based on address
   function getTokenSymbol(tokenAddress) {
     if (!tokenAddress || tokenAddress === ethers.ZeroAddress || tokenAddress.toLowerCase() === "0x0000000000000000000000000000000000000000") {
-      return "ARC"; // Or native network currency symbol
+      return "ARC";
     }
     const lowerAddr = tokenAddress.toLowerCase();
     if (lowerAddr === "0x3600000000000000000000000000000000000000".toLowerCase()) return "USDC";
@@ -259,12 +266,29 @@
       const symbol = getTokenSymbol(currentLink.token);
       const formattedAmount = ethers.formatUnits(currentLink.amount, tokenDecimals);
       
-      document.getElementById('amountDisplay').innerHTML = `${formattedAmount} <span class="text-emerald-400 text-3xl">${symbol}</span>`;
+      document.getElementById('amountDisplay').innerHTML = `${formattedAmount} <span class="text-emerald-400 text-2xl sm:text-3xl">${symbol}</span>`;
       document.getElementById('modalAmount').textContent = `${formattedAmount} ${symbol}`;
-      document.getElementById('titleDisplay').textContent = currentLink.qrMetaData || "Payment Request";
+      
+      // Separating Title and Description logic safely if formatted as "Title | Description" or standard text
+      let rawMeta = currentLink.qrMetaData || "Payment Request";
+      let titlePart = rawMeta;
+      let descPart = "No description provided";
+
+      if (rawMeta.includes(" | ")) {
+        const parts = rawMeta.split(" | ");
+        titlePart = parts[0];
+        descPart = parts.slice(1).join(" | ");
+      } else if (rawMeta.includes(" - ")) {
+        const parts = rawMeta.split(" - ");
+        titlePart = parts[0];
+        descPart = parts.slice(1).join(" - ");
+      }
+
+      document.getElementById('titleDisplay').textContent = titlePart;
+      document.getElementById('descriptionText').textContent = descPart;
+      
       document.getElementById('recipientAddress').textContent = currentLink.creator;
       document.getElementById('modalRecipient').textContent = `${currentLink.creator.slice(0,6)}...${currentLink.creator.slice(-4)}`;
-      document.getElementById('descriptionText').textContent = currentLink.qrMetaData || "No description provided";
 
       document.getElementById('loadingState').classList.add('hidden');
       document.getElementById('paymentCard').classList.remove('hidden');
@@ -299,7 +323,6 @@
       userAddress = accounts[0];
       signer = await provider.getSigner();
 
-      // Update UI for Connected State with Disconnect button
       document.getElementById('walletStatusText').textContent = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
       document.getElementById('walletStatusText').className = "font-mono text-xs font-bold text-emerald-400 mt-0.5";
       
@@ -320,7 +343,6 @@
     signer = null;
     userAddress = null;
 
-    // Reset UI to Not Connected state
     document.getElementById('walletStatusText').textContent = "Not Connected";
     document.getElementById('walletStatusText').className = "font-mono text-xs font-bold text-gray-400 mt-0.5";
     
@@ -387,10 +409,9 @@
 
       showToast("✅ Payment Successful!", 6000);
 
-      // Display Transaction Hash Section
       document.getElementById('txHashText').textContent = `${currentTxHash.slice(0, 10)}...${currentTxHash.slice(-8)}`;
-      // Note: Replace the explorer URL below with the actual Arc Testnet explorer URL if different
-      document.getElementById('txExplorerLink').href = `https://testnet.arcscan.io/tx/${currentTxHash}`;
+      // Correct Explorer URL configured here:
+      document.getElementById('txExplorerLink').href = `https://testnet.arcscan.app/tx/${currentTxHash}`;
       document.getElementById('txHashSection').classList.remove('hidden');
 
       actionBtn.innerHTML = `✅ Payment Completed`;
