@@ -124,10 +124,15 @@
           <i class="fas fa-moon text-lg text-emerald-400"></i>
         </button>
 
-        <button onclick="connectWallet()" id="connectHeaderBtn" class="app-button px-4 py-2.5 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl text-xs flex items-center gap-2">
-          <i class="fas fa-wallet text-emerald-600"></i>
-          <span id="headerWalletText">Connect Wallet</span>
-        </button>
+        <div class="flex items-center gap-2">
+          <button onclick="connectWallet()" id="connectHeaderBtn" class="app-button px-4 py-2.5 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl text-xs flex items-center gap-2">
+            <i class="fas fa-wallet text-emerald-600"></i>
+            <span id="headerWalletText">Connect Wallet</span>
+          </button>
+          <button onclick="disconnectWallet()" id="disconnectBtn" class="hidden w-11 h-11 items-center justify-center bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 rounded-2xl transition-all shadow-lg" title="Disconnect Wallet">
+            <i class="fas fa-power-off text-sm"></i>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -162,7 +167,12 @@
               <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">🟠 cirBTC</option>
               <option value="custom">➕ Add Custom Token...</option>
             </select>
-            <div id="tokenBalanceDisplay" class="text-xs text-gray-400">Balance: —</div>
+            <div class="flex items-center justify-between text-xs pt-1">
+              <div id="tokenBalanceDisplay" class="text-gray-400">Balance: —</div>
+              <button onclick="loadUserBalance()" class="text-emerald-400 hover:underline flex items-center gap-1 font-semibold">
+                <i class="fas fa-rotate-right"></i> Retry / Refresh
+              </button>
+            </div>
           </div>
         </div>
 
@@ -357,6 +367,8 @@
       document.getElementById("displayWallet").textContent = shortAddress;
       document.getElementById("headerWalletText").textContent = shortAddress;
       document.getElementById("prevReceiver").textContent = shortAddress;
+      document.getElementById("disconnectBtn").classList.remove("hidden");
+      document.getElementById("disconnectBtn").classList.add("flex");
 
       showToast("✅ Wallet Connected Successfully", 3000);
       await loadUserBalance();
@@ -366,6 +378,21 @@
       console.error("Wallet Connection Error:", e);
       showToast("Failed to connect wallet. Please try again.", 5000);
     }
+  }
+
+  function disconnectWallet() {
+    signer = null;
+    userAddress = null;
+    provider = null;
+
+    document.getElementById("displayWallet").textContent = "Not Connected";
+    document.getElementById("headerWalletText").textContent = "Connect Wallet";
+    document.getElementById("prevReceiver").textContent = "Not Connected";
+    document.getElementById("disconnectBtn").classList.remove("flex");
+    document.getElementById("disconnectBtn").classList.add("hidden");
+    document.getElementById("tokenBalanceDisplay").textContent = "Balance: —";
+
+    showToast("Wallet disconnected", 3000);
   }
 
   async function handleTokenChange() {
@@ -389,7 +416,10 @@
   async function loadUserBalance() {
     const select = document.getElementById('tokenSelect');
     const tokenAddress = select.value;
-    if (!tokenAddress || tokenAddress === "custom" || !signer || !userAddress) return;
+    if (!tokenAddress || tokenAddress === "custom" || !signer || !userAddress) {
+      document.getElementById("tokenBalanceDisplay").textContent = "Balance: —";
+      return;
+    }
 
     const tokenSymbol = select.options[select.selectedIndex].text.replace(/[^A-Za-z0-9]/g, '');
 
@@ -408,7 +438,8 @@
       document.getElementById("tokenBalanceDisplay").innerHTML = 
         `Balance: <span class="text-emerald-400">${parseFloat(formatted).toFixed(4)} ${tokenSymbol}</span>`;
     } catch (e) {
-      document.getElementById("tokenBalanceDisplay").textContent = "Balance: —";
+      console.error(e);
+      document.getElementById("tokenBalanceDisplay").textContent = "Balance: Error loading";
     }
   }
 
@@ -428,14 +459,27 @@
       return showError('errAmount', "Please enter a valid amount");
     }
 
-    showToast("Creating payment link on blockchain...");
-
     try {
       const contract = new ethers.Contract(CONTRACT_ADDRESS, ArcPaymentLinksABI, signer);
-      const tokenContract = new ethers.Contract(tokenAddress, ["function decimals() view returns (uint8)"], signer);
+      const tokenContract = new ethers.Contract(tokenAddress, [
+        "function decimals() view returns (uint8)",
+        "function allowance(address owner, address spender) view returns (uint256)",
+        "function approve(address spender, uint256 amount) returns (bool)"
+      ], signer);
       
       const decimals = await tokenContract.decimals();
       const amountWei = ethers.parseUnits(amountInput.toString(), decimals);
+
+      // Handle ERC20 approval before creating payment link
+      if (tokenAddress !== ethers.ZeroAddress) {
+        showToast("Checking token allowance...");
+        const allowance = await tokenContract.allowance(userAddress, CONTRACT_ADDRESS);
+        if (allowance < amountWei) {
+          showToast("Approving token spending in wallet...");
+          const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, amountWei);
+          await approveTx.wait();
+        }
+      }
 
       let expiration = 0;
       const expOption = document.getElementById('expirationSelect').value;
@@ -458,7 +502,10 @@
         salt: salt
       };
 
-      const tx = await contract.createPaymentLink(params);
+      const isNative = (tokenAddress === ethers.ZeroAddress);
+      showToast("Creating payment link on blockchain...");
+      
+      const tx = await contract.createPaymentLink(params, { value: isNative ? amountWei : 0 });
       showToast("Waiting for confirmation...");
       await tx.wait();
 
