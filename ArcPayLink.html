@@ -332,15 +332,12 @@
     renderHistory();
   });
 
-  // مودال چندولتی و حرفه‌ای با استفاده از پنل انتخاب مستقیم ولت‌ها (Injected / WalletConnect / MetaMask / TrustWallet)
   async function connectWallet() {
-    try {
-      if (!window.ethereum) {
-        showToast("No Web3 wallet detected! Please install MetaMask or Trust Wallet.", 5000);
-        return;
-      }
+    if (!window.ethereum) {
+      return showToast("MetaMask not found! Please install MetaMask.", 5000);
+    }
 
-      // درخواست اتصال استاندارد اکانت‌ها
+    try {
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       userAddress = accounts[0];
 
@@ -348,57 +345,34 @@
       const network = await provider.getNetwork();
       
       if (network.chainId !== BigInt(ARC_CHAIN_ID)) {
-        showToast("Switching network to Arc Testnet...", 3000);
+        showToast("Switching to Arc Testnet...", 3000);
         try {
           await window.ethereum.request({
             method: 'wallet_switchEthereumChain',
             params: [{ chainId: ARC_CHAIN_ID_HEX }]
           });
         } catch (switchError) {
-          // اگر شبکه روی کیف پول اضافه نشده بود، آن را ادد می‌کنیم
-          if (switchError.code === 4902) {
-            try {
-              await window.ethereum.request({
-                method: 'wallet_addEthereumChain',
-                params: [{
-                  chainId: ARC_CHAIN_ID_HEX,
-                  chainName: 'Arc Testnet',
-                  nativeCurrency: { name: 'ARC', symbol: 'ARC', decimals: 18 },
-                  rpcUrls: ['https://rpc.testnet.arc.network'],
-                  blockExplorerUrls: ['https://testnet.arcscan.app']
-                }]
-              });
-            } catch (addError) {
-              return showToast("Failed to add Arc Testnet to your wallet.", 5000);
-            }
-          } else {
-            return showToast("Please switch to Arc Testnet manually.", 5000);
-          }
+          return showToast("Please manually switch to Arc Testnet (Chain ID: 5042002)", 6000);
         }
       }
 
       signer = await provider.getSigner();
-      updateWalletUI(userAddress);
+      const shortAddress = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
+      
+      document.getElementById("displayWallet").textContent = shortAddress;
+      document.getElementById("headerWalletText").textContent = shortAddress;
+      document.getElementById("prevReceiver").textContent = shortAddress;
+      document.getElementById("disconnectBtn").classList.remove("hidden");
+      document.getElementById("disconnectBtn").classList.add("flex");
+
+      showToast("✅ Wallet Connected Successfully", 3000);
+      await loadUserBalanceWithRetry();
+      updatePreview();
 
     } catch (e) {
       console.error("Wallet Connection Error:", e);
-      showToast("Failed to connect wallet.", 4000);
+      showToast("Failed to connect wallet. Please try again.", 5000);
     }
-  }
-
-  function updateWalletUI(addr) {
-    userAddress = addr;
-    const shortAddress = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
-    
-    document.getElementById("displayWallet").textContent = shortAddress;
-    document.getElementById("headerWalletText").textContent = shortAddress;
-    document.getElementById("prevReceiver").textContent = shortAddress;
-    document.getElementById("disconnectBtn").classList.remove("hidden");
-    document.getElementById("disconnectBtn").classList.add("flex");
-
-    showToast("✅ Wallet Connected Successfully", 3000);
-    loadUserBalanceWithRetry();
-    updatePreview();
   }
 
   function disconnectWallet() {
@@ -443,24 +417,38 @@
     }
 
     const tokenSymbol = select.options[select.selectedIndex].text.replace(/[^A-Za-z0-9]/g, '');
+    let success = false;
 
-    try {
-      const contract = new ethers.Contract(tokenAddress, [
-        "function balanceOf(address) view returns (uint256)",
-        "function decimals() view returns (uint8)"
-      ], signer);
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        document.getElementById("tokenBalanceDisplay").textContent = `Balance: Loading... (Attempt ${attempt}/3)`;
+        
+        const contract = new ethers.Contract(tokenAddress, [
+          "function balanceOf(address) view returns (uint256)",
+          "function decimals() view returns (uint8)"
+        ], signer);
 
-      const [bal, decimals] = await Promise.all([
-        contract.balanceOf(userAddress),
-        contract.decimals()
-      ]);
+        const [bal, decimals] = await Promise.all([
+          contract.balanceOf(userAddress),
+          contract.decimals()
+        ]);
 
-      const formatted = ethers.formatUnits(bal, decimals);
-      document.getElementById("tokenBalanceDisplay").innerHTML = 
-        `Balance: <span class="text-emerald-400">${parseFloat(formatted).toFixed(4)} ${tokenSymbol}</span>`;
-    } catch (e) {
-      console.warn("Could not load token balance:", e);
-      document.getElementById("tokenBalanceDisplay").textContent = "Balance: —";
+        const formatted = ethers.formatUnits(bal, decimals);
+        document.getElementById("tokenBalanceDisplay").innerHTML = 
+          `Balance: <span class="text-emerald-400">${parseFloat(formatted).toFixed(4)} ${tokenSymbol}</span>`;
+        
+        success = true;
+        break;
+      } catch (e) {
+        console.warn(`Attempt ${attempt} failed to load balance:`, e);
+        if (attempt < 3) {
+          await new Promise(resolve => setTimeout(resolve, 1500));
+        }
+      }
+    }
+
+    if (!success) {
+      document.getElementById("tokenBalanceDisplay").textContent = "Balance: Unable to load";
     }
   }
 
@@ -507,9 +495,14 @@
         const allowance = await tokenContract.allowance(userAddress, CONTRACT_ADDRESS);
         
         if (allowance < amountWei) {
-          showToast("Please approve token spending in your wallet...");
+          showToast("Please approve token spending in MetaMask...");
           const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, amountWei);
+          
+          showToast("Waiting for approval confirmation...");
           await approveTx.wait();
+          showToast("Approval confirmed! Preparing link...");
+          
+          await new Promise(resolve => setTimeout(resolve, 2000));
         }
       } else {
         amountWei = ethers.parseUnits(amountInput.toString(), 18);
@@ -525,10 +518,12 @@
       const salt = Math.floor(Math.random() * 1000000000);
       const restrictedTo = ethers.ZeroAddress;
 
+      // Compute exact linkId deterministically via contract view function to guarantee accuracy
       let computedLinkId;
       try {
         computedLinkId = await contract.generateLinkId(restrictedTo, salt);
       } catch (err) {
+        console.warn("View generateLinkId failed, using ZeroHash fallback:", err);
         computedLinkId = ethers.ZeroHash;
       }
 
@@ -543,12 +538,13 @@
         salt: salt
       };
 
-      showToast("Please confirm payment link creation in your wallet...");
+      showToast("Please confirm payment link creation in MetaMask...");
       
       const tx = await contract.createPaymentLink(params, { 
         value: isNative ? amountWei : 0 
       });
       
+      showToast("Waiting for blockchain confirmation...");
       const receipt = await tx.wait();
 
       let actualLinkId = computedLinkId;
@@ -591,7 +587,8 @@
     } catch (error) {
       console.error("Detailed Error:", error);
       if (error.code !== "ACTION_REJECTED") {
-        showToast(error.reason || error.shortMessage || error.message || "Transaction failed", 7000);
+        let errorMsg = error.reason || error.shortMessage || error.message || "Transaction failed";
+        showToast(errorMsg, 7000);
       } else {
         showToast("Transaction cancelled by user.", 3000);
       }
