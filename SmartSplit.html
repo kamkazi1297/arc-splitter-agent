@@ -181,7 +181,7 @@
             </div>
           </div>
 
-          <!-- Custom Token Input Modal/Box (Hidden by default) -->
+          <!-- Custom Token Input Box -->
           <div id="customTokenBox" class="hidden mt-4 pt-4 border-t border-white/10 grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label class="block text-gray-400 text-[11px] font-semibold uppercase mb-1">Custom Token Symbol</label>
@@ -282,6 +282,12 @@
   let provider, signer, userAddress = null;
   let rules = [];
   let defaultRecipients = [];
+
+  // Minimal ERC20 ABI to fetch balance and decimals
+  const ERC20_ABI = [
+    "function balanceOf(address owner) view returns (uint256)",
+    "function decimals() view returns (uint8)"
+  ];
 
   function switchTab(tab) {
     const isSplitter = tab === 'splitter';
@@ -392,13 +398,13 @@
     fetchBalanceWithRetry();
   }
 
-  // تابع دریافت بالانس با قابلیت Auto-Retry (تلاش مجدد ۳ باره)
+  // تابع واقعی و ایمن دریافت بالانس از بلاکچین با متد balanceOf و Auto-Retry
   async function fetchBalanceWithRetry(retries = 3) {
     const badge = document.getElementById('retryStatusBadge');
     const balanceDisplay = document.getElementById('walletBalanceDisplay');
     const select = document.getElementById('tokenSelect');
     
-    if (!userAddress) {
+    if (!userAddress || !provider) {
       balanceDisplay.textContent = "0.00";
       badge.textContent = "Not Connected";
       badge.className = "text-[10px] px-2.5 py-1 rounded-full bg-white/5 text-gray-400 border border-white/10";
@@ -407,35 +413,33 @@
 
     if (select.value === 'CUSTOM') return;
 
+    const tokenAddress = select.value;
+    const selectedSymbol = select.options[select.selectedIndex].text.split(' ')[0];
+
     for (let attempt = 1; attempt <= retries; attempt++) {
       badge.className = "text-[10px] px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 animate-pulse";
       badge.textContent = `Syncing (Attempt ${attempt}/${retries})...`;
 
       try {
-        // شبیه‌سازی اتصال به شبکه بلاکچین برای دریافت بالانس دقیق توکن انتخاب شده
-        await new Promise((resolve, reject) => {
-          setTimeout(() => {
-            if (Math.random() < 0.1 && attempt < 3) {
-              reject(new Error("RPC Timeout"));
-            } else {
-              resolve();
-            }
-          }, 500);
-        });
+        const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+        const [rawBalance, decimals] = await Promise.all([
+          tokenContract.balanceOf(userAddress),
+          tokenContract.decimals().catch(() => 18) // Default to 18 if decimals fails
+        ]);
 
-        const mockBalance = (Math.random() * 12000 + 450).toFixed(2);
-        const selectedOptionText = select.options[select.selectedIndex].text.split(' ')[0];
+        const formattedBalance = ethers.formatUnits(rawBalance, decimals);
+        const displayVal = parseFloat(formattedBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
 
-        balanceDisplay.textContent = `${mockBalance} ${selectedOptionText}`;
+        balanceDisplay.textContent = `${displayVal} ${selectedSymbol}`;
         badge.className = "text-[10px] px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
         badge.textContent = "Synced";
         return;
       } catch (err) {
-        console.warn(`Attempt ${attempt} failed. Retrying...`);
+        console.warn(`Attempt ${attempt} failed to fetch actual balance. Retrying...`, err);
         if (attempt === retries) {
-          balanceDisplay.textContent = "0.00";
+          balanceDisplay.textContent = `0.00 ${selectedSymbol}`;
           badge.className = "text-[10px] px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20";
-          badge.textContent = "Sync Failed (Max Retries)";
+          badge.textContent = "Sync Failed (RPC Error)";
         }
       }
     }
