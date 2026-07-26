@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+  <title>ArcSplit - Token Splitter & Batch Split</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    
+    :root {
+      --bg-gradient: linear-gradient(135hr, #080816 0%, #12122c 50%, #0a0a18 100%);
+      --glass-bg: rgba(255, 255, 255, 0.03);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --glass-glow: rgba(99, 102, 241, 0.1);
+    }
+
+    body { 
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif; 
+      background: #070711;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(34, 211, 238, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.05) 0%, transparent 50%);
+      color: #f8fafc;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    
+    .glass {
+      background: rgba(18, 18, 38, 0.65);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+    
+    .light {
+      background: #f1f5f9 !important;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(34, 211, 238, 0.05) 0%, transparent 40%) !important;
+      color: #0f172a !important;
+    }
+
+    .light .glass {
+      background: rgba(255, 255, 255, 0.85);
+      border-color: rgba(0, 0, 0, 0.08);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1);
+    }
+
+    .light body, .light h1, .light h3, .light label, .light .text-white {
+      color: #0f172a;
+    }
+    .light .text-gray-400 { color: #475569 !important; }
+    .light .text-gray-300 { color: #334155 !important; }
+    .light .text-gray-200 { color: #1e293b !important; }
+
+    select, input, textarea {
+      background-color: rgba(255, 255, 255, 0.03);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    select:hover, input:hover, textarea:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+    select:focus, input:focus, textarea:focus {
+      border-color: #10b981;
+      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
+    }
+
+    .light select, .light input, .light textarea {
+      background-color: #ffffff;
+      color: #0f172a;
+      border: 1px solid #cbd5e1;
+    }
+    .light select:focus, .light input:focus, .light textarea:focus {
+      border-color: #10b981;
+      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+    }
+
+    select option {
+      background-color: #0f172a;
+      color: white;
+      padding: 14px 18px;
+    }
+    .light select option {
+      background-color: #ffffff;
+      color: #0f172a;
+    }
+
+    .invalid {
+      border-color: #ef4444 !important;
+      background-color: rgba(239, 68, 68, 0.05) !important;
+    }
+
+    .percent-container {
+      position: relative;
+    }
+    .percent-container::after {
+      content: "%";
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #64748b;
+      font-weight: 600;
+      pointer-events: none;
+      font-size: 0.875rem;
+    }
+    .light .percent-container::after {
+      color: #475569;
+    }
+
+    .preview-scroll {
+      max-height: 320px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.2) transparent;
+    }
+    .light .preview-scroll {
+      scrollbar-color: rgba(0,0,0,0.2) transparent;
+    }
+    .preview-scroll::-webkit-scrollbar {
+      width: 5px;
+    }
+    .preview-scroll::-webkit-scrollbar-thumb {
+      background-color: rgba(255,255,255,0.2);
+      border-radius: 10px;
+    }
+    .light .preview-scroll::-webkit-scrollbar-thumb {
+      background-color: rgba(0,0,0,0.2);
+    }
+
+    .app-button {
+      position: relative;
+      overflow: hidden;
+      transition: all 0.25s ease;
+    }
+    .app-button:active {
+      transform: scale(0.98);
+    }
+  </style>
+</head>
+<body class="text-white min-h-screen selection:bg-emerald-500 selection:text-black">
+
+  <div class="max-w-6xl mx-auto px-4 py-6 sm:py-8">
+    
+    <!-- Header Section -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Enterprise Hub</span></h1>
+        <p class="text-gray-400 light:text-slate-600 text-xs sm:text-sm font-medium">Single & Batch Multi-Token Decentralized Splitter</p>
+      </div>
+      
+      <div class="flex items-center gap-3">
+        <!-- Navigation Tabs -->
+        <div class="flex bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 rounded-2xl p-1 text-xs">
+          <button onclick="switchMainTab('splitter')" id="tabSplitter" class="px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400">Splitter</button>
+          <button onclick="switchMainTab('batch')" id="tabBatch" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-600">Batch Split</button>
+          <button onclick="switchMainTab('history')" id="tabHistory" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-600">History</button>
+        </div>
+
+        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/10 light:hover:bg-black/10 border border-white/10 light:border-black/10 rounded-2xl transition-all shadow-lg">
+          <i class="fas fa-moon text-lg text-emerald-400"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Wallet & Telegram Connect Hub -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mb-8">
+      <button onclick="showConnectModal()" id="connectBtn" class="app-button px-6 py-4 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl flex items-center justify-center gap-2.5 hover:bg-emerald-50 light:hover:bg-slate-800 transition-all">
+        <i class="fas fa-wallet text-emerald-600 light:text-emerald-400"></i> 
+        <span id="connectText">Connect Wallet</span>
+      </button>
+
+      <button onclick="connectTelegram()" id="telegramBtn" 
+        class="app-button px-6 py-4 bg-gradient-to-r from-[#229ED9] to-[#1a8ac4] hover:brightness-110 text-white font-semibold rounded-2xl flex items-center justify-center gap-3 transition-all shadow-lg shadow-sky-500/10 group">
+        <i class="fab fa-telegram-plane text-2xl group-hover:scale-110 transition-transform"></i> 
+        <div class="text-left flex-1">
+          <div id="telegramMainText" class="font-bold text-sm leading-tight">Connect Telegram</div>
+          <div id="telegramSubText" class="text-[11px] text-sky-100 opacity-80 -mt-0.5">Fast split & notifications</div>
+        </div>
+      </button>
+    </div>
+
+    <!-- Status Box -->
+    <div id="status" class="glass rounded-2xl p-5 mb-6 text-sm font-medium flex items-center gap-3 border-l-4 border-l-emerald-500">
+      <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+      Ready to split tokens on Arc Testnet.
+    </div>
+
+    <!-- ==================== VIEW 1: NORMAL SPLITTER ==================== -->
+    <div id="viewSplitter" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <div class="lg:col-span-7 space-y-6">
+        <div class="glass rounded-3xl p-6 sm:p-8">
+          <div class="mb-6">
+            <label class="block text-gray-400 light:text-slate-600 text-xs font-semibold uppercase tracking-wider mb-2">Select Token</label>
+            <select id="tokenSelect" onchange="updateBalance()" class="w-full rounded-2xl px-5 py-4 appearance-none outline-none text-sm sm:text-base font-medium cursor-pointer">
+              <option value="0x3600000000000000000000000000000000000000">USDC</option>
+              <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
+              <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
+            </select>
+          </div>
+          <div class="mb-6">
+            <label class="block text-gray-400 light:text-slate-600 text-xs font-semibold uppercase tracking-wider mb-2">Total Amount</label>
+            <input type="number" id="totalAmount" value="100" class="w-full rounded-2xl px-5 py-4 text-2xl font-bold outline-none" oninput="updateAll()">
+          </div>
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="font-bold text-base">Recipients</h3>
+            <button onclick="addRecipient()" class="px-3 py-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-semibold">+ Add Recipient</button>
+          </div>
+          <div id="recipients-list" class="space-y-3 mb-4"></div>
+          <div id="percent-total" class="font-bold text-sm">Total: 0%</div>
+        </div>
+      </div>
+      <div class="lg:col-span-5">
+        <div class="glass rounded-3xl p-6 sm:p-8 sticky top-6">
+          <h3 class="font-bold text-base mb-4">Summary & Preview</h3>
+          <div id="preview-body" class="space-y-2 text-xs mb-6 preview-scroll"></div>
+          <button id="sendBtn" onclick="sendSplit()" disabled class="w-full bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold py-4 rounded-2xl transition-all opacity-50 cursor-not-allowed">Execute Split</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== VIEW 2: BATCH SPLIT (NEW FEATURE) ==================== -->
+    <div id="viewBatch" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-8">
+      
+      <!-- Left Configuration Column (7 Cols) -->
+      <div class="lg:col-span-7 space-y-6">
+        <div class="glass rounded-3xl p-6 sm:p-8 space-y-6">
+          <div class="flex justify-between items-center">
+            <div>
+              <h2 class="text-xl font-bold">Batch Split Configuration</h2>
+              <p class="text-xs text-gray-400">Distribute multiple assets in a single transaction</p>
+            </div>
+            <!-- Template & Import Actions -->
+            <div class="flex gap-2">
+              <button onclick="openSaveTemplateModal()" class="px-3 py-2 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 rounded-xl text-xs font-semibold transition-all">
+                <i class="fas fa-save"></i> Save Template
+              </button>
+              <button onclick="openLoadTemplateModal()" class="px-3 py-2 bg-sky-500/10 text-sky-400 hover:bg-sky-500/20 border border-sky-500/20 rounded-xl text-xs font-semibold transition-all">
+                <i class="fas fa-folder-open"></i> Templates
+              </button>
+            </div>
+          </div>
+
+          <!-- Step 1: Add Tokens -->
+          <div>
+            <div class="flex justify-between items-center mb-3">
+              <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider">Step 1: Add Tokens & Amounts</label>
+              <button onclick="addBatchTokenRow()" class="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-semibold text-emerald-400 transition-all">
+                <i class="fas fa-plus"></i> Add Token
+              </button>
+            </div>
+            <div id="batchTokensList" class="space-y-3">
+              <!-- Dynamically populated rows -->
+            </div>
+          </div>
+
+          <div class="h-px bg-white/10"></div>
+
+          <!-- Step 2: Add Recipients -->
+          <div>
+            <div class="flex justify-between items-center mb-3">
+              <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider">Step 2: Add Recipients & Shares</label>
+              <div class="flex gap-2">
+                <button onclick="showBatchImportModal()" class="px-3 py-1.5 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-xl text-xs font-semibold">
+                  <i class="fas fa-upload"></i> Import CSV
+                </button>
+                <button onclick="addBatchRecipientRow()" class="px-3 py-1.5 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-semibold">
+                  <i class="fas fa-plus"></i> Add Recipient
+                </button>
+              </div>
+            </div>
+            <div id="batchRecipientsList" class="space-y-3">
+              <!-- Dynamically populated recipient rows -->
+            </div>
+            <div class="mt-3 flex justify-between items-center px-1">
+              <span id="batchPercentTotal" class="text-xs font-bold">Total: 0%</span>
+              <button onclick="distributeBatchRemaining()" class="text-amber-400 text-xs font-semibold hover:underline">Distribute Remaining</button>
+            </div>
+          </div>
+
+          <div class="h-px bg-white/10"></div>
+
+          <!-- Step 3: Memo -->
+          <div>
+            <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Step 3: Memo / Note (Optional)</label>
+            <textarea id="batchMemo" rows="2" class="w-full rounded-2xl p-4 text-xs outline-none" placeholder="e.g. July Payroll & Treasury Distribution"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Live Summary & Execution Column (5 Cols) -->
+      <div class="lg:col-span-5 space-y-6">
+        <div class="glass rounded-3xl p-6 sm:p-8 sticky top-6 space-y-6">
+          <h3 class="font-bold text-base flex items-center gap-2">
+            <i class="fas fa-eye text-emerald-400"></i> Live Summary & Preview
+          </h3>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="bg-white/[0.02] border border-white/5 p-3.5 rounded-2xl">
+              <div class="text-[11px] text-gray-400 uppercase font-semibold">Recipients</div>
+              <div id="batchSummaryRecipients" class="text-lg font-bold mt-0.5">0</div>
+            </div>
+            <div class="bg-white/[0.02] border border-white/5 p-3.5 rounded-2xl">
+              <div class="text-[11px] text-gray-400 uppercase font-semibold">Assets</div>
+              <div id="batchSummaryAssets" class="text-lg font-bold mt-0.5 text-emerald-400">0</div>
+            </div>
+          </div>
+
+          <!-- Live Breakdown Matrix -->
+          <div class="bg-black/25 border border-white/10 rounded-2xl overflow-hidden backdrop-blur-md">
+            <div class="preview-scroll p-4 space-y-4" id="batchPreviewContainer">
+              <p class="text-xs text-gray-400 text-center py-4">Add tokens & recipients to preview breakdown.</p>
+            </div>
+          </div>
+
+          <!-- Validation indicators -->
+          <div class="glass border border-white/10 p-4 rounded-2xl space-y-2 text-xs">
+            <div id="batchValWallet" class="flex items-center gap-2 text-gray-400"><i class="fas fa-circle-xmark text-rose-400"></i> Wallet Connected</div>
+            <div id="batchValTotal" class="flex items-center gap-2 text-gray-400"><i class="fas fa-circle-xmark text-rose-400"></i> Total Shares = 100%</div>
+            <div id="batchValAssets" class="flex items-center gap-2 text-gray-400"><i class="fas fa-circle-xmark text-rose-400"></i> Assets Configured</div>
+          </div>
+
+          <button id="batchExecuteBtn" onclick="executeBatchSplit()" disabled class="app-button w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:brightness-110 py-4 rounded-2xl text-base font-bold text-gray-950 transition-all opacity-50 cursor-not-allowed shadow-lg shadow-emerald-500/20">
+            Execute Batch Split
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== VIEW 3: HISTORY ==================== -->
+    <div id="viewHistory" class="hidden glass rounded-3xl p-6 sm:p-8">
+      <h3 class="font-bold text-lg mb-6 flex items-center gap-2">
+        <i class="fas fa-history text-emerald-400"></i> Transaction History
+      </h3>
+      <div id="history" class="space-y-3"></div>
+    </div>
+
+  </div>
+
+  <!-- Batch CSV Import Modal -->
+  <div id="batchImportModal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center z-50 p-4">
+    <div class="glass rounded-3xl p-6 sm:p-8 max-w-md w-full border border-white/15 shadow-2xl">
+      <h3 class="text-xl font-bold mb-2">Import Batch Recipients</h3>
+      <p class="text-xs text-gray-400 mb-4">Format: address,percentage (one per line)</p>
+      <textarea id="batchImportText" rows="6" class="w-full bg-black/30 border border-white/15 rounded-2xl p-4 text-xs font-mono outline-none resize-none mb-4" placeholder="0x123...abc,40\n0x456...def,60"></textarea>
+      <div class="flex gap-3">
+        <button onclick="hideBatchImportModal()" class="app-button flex-1 py-3 rounded-xl border border-white/15 font-semibold text-sm">Cancel</button>
+        <button onclick="processBatchImport()" class="app-button flex-1 py-3 bg-emerald-500 text-gray-950 font-bold rounded-xl text-sm">Import</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Templates Modal -->
+  <div id="templatesModal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center z-50 p-4">
+    <div class="glass rounded-3xl p-6 sm:p-8 max-w-md w-full border border-white/15 shadow-2xl space-y-4">
+      <div class="flex justify-between items-center">
+        <h3 class="text-xl font-bold">Saved Templates</h3>
+        <button onclick="hideTemplatesModal()" class="text-gray-400 hover:text-white text-xl">×</button>
+      </div>
+      <div id="templatesListContainer" class="space-y-2 max-h-60 overflow-y-auto">
+        <!-- Rendered via JS -->
+      </div>
+      <button onclick="hideTemplatesModal()" class="w-full py-3 bg-white/10 rounded-xl text-sm font-semibold">Close</button>
+    </div>
+  </div>
+
+  <!-- Wallet Connect Modal -->
+  <div id="connectModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+    <div class="glass border border-white/15 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl relative">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-xl font-bold">Connect a Wallet</h3>
+        <button onclick="hideConnectModal()" class="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center text-gray-400 hover:text-white text-xl leading-none">×</button>
+      </div>
+      <button onclick="connectMetaMask()" class="w-full flex items-center gap-4 p-4 rounded-2xl bg-white/[0.02] hover:bg-white/[0.07] border border-white/10">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/MetaMask_Fox.svg" width="36" height="36" alt="MetaMask">
+        <div class="text-left font-bold">MetaMask</div>
+      </button>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#121228] border border-white/15 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 z-50 text-xs sm:text-sm backdrop-blur-xl">
+    <span id="toastText"></span>
+  </div>
+
+<script>
+  let signer = null;
+  let userAddress = null;
+  let provider = null;
+  let transactions = JSON.parse(localStorage.getItem('arcTxHistory') || '[]');
+  let savedTemplates = JSON.parse(localStorage.getItem('arcBatchTemplates') || '[]');
+
+  const CONTRACT_ADDRESS = "0x73Da94F0D960Ef8FD49Ed28a94f667aF3C062cB2";
+  const ARC_CHAIN_ID = 5042002;
+
+  const AVAILABLE_TOKENS = [
+    { symbol: "USDC", address: "0x3600000000000000000000000000000000000000" },
+    { symbol: "EURC", address: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a" },
+    { symbol: "cirBTC", address: "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF" }
+  ];
+
+  function switchMainTab(tab) {
+    document.getElementById('viewSplitter').classList.toggle('hidden', tab !== 'splitter');
+    document.getElementById('viewBatch').classList.toggle('hidden', tab !== 'batch');
+    document.getElementById('viewHistory').classList.toggle('hidden', tab !== 'history');
+
+    document.getElementById('tabSplitter').className = tab === 'splitter' ? "px-4 py-2 rounded-xl font-bold bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold text-gray-400";
+    document.getElementById('tabBatch').className = tab === 'batch' ? "px-4 py-2 rounded-xl font-bold bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold text-gray-400";
+    document.getElementById('tabHistory').className = tab === 'history' ? "px-4 py-2 rounded-xl font-bold bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold text-gray-400";
+  }
+
+  function toggleTheme() {
+    document.documentElement.classList.toggle('light');
+  }
+
+  function showToast(msg, duration = 4000) {
+    const toast = document.getElementById("toast");
+    document.getElementById("toastTextinnerHTML") = msg;
+    toast.querySelector("span").textContent = msg;
+    toast.classList.remove("hidden");
+    setTimeout(() => toast.classList.add("hidden"), duration);
+  }
+
+  // --- BATCH SPLIT CORE LOGIC ---
+
+  function initBatchSplit() {
+    if (document.getElementById('batchTokensList').children.length === 0) {
+      addBatchTokenRow("0x3600000000000000000000000000000000000000", 1000);
+      addBatchTokenRow("0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a", 500);
+    }
+    if (document.getElementById('batchRecipientsList').children.length === 0) {
+      addBatchRecipientRow("", 40);
+      addBatchRecipientRow("", 35);
+      addBatchRecipientRow("", 25);
+    }
+    updateBatchAll();
+  }
+
+  function getSelectedTokens() {
+    return Array.from(document.querySelectorAll('.batch-token-select')).map(sel => sel.value);
+  }
+
+  function addBatchTokenRow(selectedAddress = "", defaultAmount = "") {
+    const list = document.getElementById('batchTokensList');
+    const currentSelected = getSelectedTokens();
+    const available = AVAILABLE_TOKENS.filter(t => !currentSelected.includes(t.address) || t.address === selectedAddress);
+
+    if (available.length === 0 && !selectedAddress) {
+      return showToast("All available tokens have been added.");
+    }
+
+    const row = document.createElement('div');
+    row.className = "batch-token-row glass border border-white/10 rounded-2xl p-3.5 flex items-center gap-3";
+    
+    let optionsHtml = available.map(t => `<option value="${t.address}" ${t.address === selectedAddress ? 'selected' : ''}>${t.symbol}</option>`).join('');
+
+    row.innerHTML = `
+      <select class="batch-token-select flex-1 rounded-xl px-3 py-2.5 text-xs outline-none" onchange="updateBatchAll()">${optionsHtml}</select>
+      <input type="number" class="batch-token-amount w-32 rounded-xl px-3 py-2.5 text-xs font-bold outline-none" placeholder="Amount" value="${defaultAmount}" oninput="updateBatchAll()">
+      <button onclick="this.closest('.batch-token-row').remove(); updateBatchAll();" class="text-gray-400 hover:text-rose-400 px-2"><i class="fas fa-trash-can"></i></button>
+    `;
+    list.appendChild(row);
+    updateBatchAll();
+  }
+
+  function addBatchRecipientRow(address = "", percent = "") {
+    const list = document.getElementById('batchRecipientsList');
+    const row = document.createElement('div');
+    row.className = "batch-recipient-row glass border border-white/10 rounded-2xl p-3.5 flex items-center gap-3";
+    row.innerHTML = `
+      <input type="text" class="batch-addr flex-1 rounded-xl px-3 py-2.5 text-xs font-mono outline-none" placeholder="0x Wallet Address" value="${address}" oninput="updateBatchAll()">
+      <div class="percent-container w-28">
+        <input type="text" class="batch-percent w-full rounded-xl px-3 py-2.5 text-center text-xs font-semibold outline-none" placeholder="%" value="${percent}" oninput="updateBatchAll()">
+      </div>
+      <button onclick="this.closest('.batch-recipient-row').remove(); updateBatchAll();" class="text-gray-400 hover:text-rose-400 px-2"><i class="fas fa-trash-can"></i></button>
+    `;
+    list.appendChild(row);
+    updateBatchAll();
+  }
+
+  function distributeBatchRemaining() {
+    const rows = document.querySelectorAll('.batch-recipient-row');
+    if (rows.length === 0) return;
+    let total = Array.from(rows).reduce((sum, r) => sum + (parseFloat(r.querySelector('.batch-percent').value) || 0), 0);
+    let remaining = 100 - total;
+    if (remaining <= 0) return showToast("Percentage is already at or above 100%");
+    rows[rows.length - 1].querySelector('.batch-percent').value = (parseFloat(rows[rows.length - 1].querySelector('.batch-percent').value || 0) + remaining).toFixed(2);
+    updateBatchAll();
+  }
+
+  function updateBatchAll() {
+    const tokenRows = document.querySelectorAll('.batch-token-row');
+    const recipientRows = document.querySelectorAll('.batch-recipient-row');
+
+    let totalPerc = Array.from(recipientRows).reduce((sum, r) => sum + (parseFloat(r.querySelector('.batch-percent').value) || 0), 0);
+    
+    document.getElementById('batchPercentTotal').textContent = `Total: ${totalPerc.toFixed(2)}%`;
+    document.getElementById('batchPercentTotal').style.color = Math.abs(totalPerc - 100) < 0.01 ? '#10b981' : '#ef4444';
+
+    document.getElementById('batchSummaryRecipients').textContent = recipientRows.length;
+    document.getElementById('batchSummaryAssets').textContent = tokenRows.length;
+
+    // Render Live Preview Matrix
+    const container = document.getElementById('batchPreviewContainer');
+    container.innerHTML = "";
+
+    if (tokenRows.length === 0 || recipientRows.length === 0) {
+      container.innerHTML = `<p class="text-xs text-gray-400 text-center py-4">Configure tokens and recipients above.</p>`;
+    } else {
+      tokenRows.forEach(tRow => {
+        const tokenAddr = tRow.querySelector('.batch-token-select').value;
+        const tokenObj = AVAILABLE_TOKENS.find(t => t.address === tokenAddr) || { symbol: "TOKEN" };
+        const amount = parseFloat(tRow.querySelector('.batch-token-amount').value) || 0;
+
+        const assetBlock = document.createElement('div');
+        assetBlock.className = "space-y-2 pb-3 border-b border-white/5 last:border-0";
+        
+        let html = `<div class="font-bold text-emerald-400 text-xs">${amount} ${tokenObj.symbol}</div><div class="space-y-1 pl-2">`;
+        
+        recipientRows.forEach(rRow => {
+          const addr = rRow.querySelector('.batch-addr').value.trim() || "0x...";
+          const perc = parseFloat(rRow.querySelector('.batch-percent').value) || 0;
+          const share = (amount * perc) / 100;
+          html += `<div class="flex justify-between text-[11px] text-gray-300"><span class="font-mono">${addr.substring(0,6)}...</span><span>${share.toFixed(4)} ${tokenObj.symbol} (${perc}%)</span></div>`;
+        });
+        html += `</div>`;
+        assetBlock.innerHTML = html;
+        container.appendChild(assetBlock);
+      });
+    }
+
+    // Validation
+    const isWallet = !!userAddress;
+    const isTotal100 = Math.abs(totalPerc - 100) < 0.01;
+    const hasTokens = tokenRows.length > 0;
+
+    document.getElementById('batchValWallet').innerHTML = isWallet ? `<i class="fas fa-circle-check text-emerald-400"></i> Wallet Connected` : `<i class="fas fa-circle-xmark text-rose-400"></i> Wallet Connected`;
+    document.getElementById('batchValTotal').innerHTML = isTotal100 ? `<i class="fas fa-circle-check text-emerald-400"></i> Total Shares = 100%` : `<i class="fas fa-circle-xmark text-rose-400"></i> Total Shares = 100%`;
+    document.getElementById('batchValAssets').innerHTML = hasTokens ? `<i class="fas fa-circle-check text-emerald-400"></i> Assets Configured` : `<i class="fas fa-circle-xmark text-rose-400"></i> Assets Configured`;
+
+    const execBtn = document.getElementById('batchExecuteBtn');
+    if (isWallet && isTotal100 && hasTokens) {
+      execBtn.disabled = false;
+      execBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+    } else {
+      execBtn.disabled = true;
+      execBtn.classList.add('opacity-50', 'cursor-not-allowed');
+    }
+  }
+
+  // --- TEMPLATES & CSV ---
+
+  function openSaveTemplateModal() {
+    const name = prompt("Enter a name for this Batch Template (e.g. Monthly Payroll):");
+    if (!name) return;
+
+    const tokens = Array.from(document.querySelectorAll('.batch-token-row')).map(r => ({
+      address: r.querySelector('.batch-token-select').value,
+      amount: r.querySelector('.batch-token-amount').value
+    }));
+
+    const recipients = Array.from(document.querySelectorAll('.batch-recipient-row')).map(r => ({
+      address: r.querySelector('.batch-addr').value,
+      percent: r.querySelector('.batch-percent').value
+    }));
+
+    savedTemplates.push({ name, tokens, recipients });
+    localStorage.setItem('arcBatchTemplates', JSON.stringify(savedTemplates));
+    showToast("Template saved successfully!");
+  }
+
+  function openLoadTemplateModal() {
+    const container = document.getElementById('templatesListContainer');
+    container.innerHTML = "";
+    if (savedTemplates.length === 0) {
+      container.innerHTML = `<p class="text-xs text-gray-400 text-center py-4">No templates found.</p>`;
+    } else {
+      savedTemplates.forEach((tpl, idx) => {
+        const div = document.createElement('div');
+        div.className = "flex justify-between items-center p-3 bg-white/5 rounded-xl text-xs";
+        div.innerHTML = `
+          <span class="font-bold">${tpl.name}</span>
+          <button onclick="loadTemplateData(${idx})" class="px-3 py-1.5 bg-emerald-500 text-gray-950 font-bold rounded-lg">Load</button>
+        `;
+        container.appendChild(div);
+      });
+    }
+    document.getElementById('templatesModal').classList.remove('hidden');
+  }
+
+  function hideTemplatesModal() {
+    document.getElementById('templatesModal').classList.add('hidden');
+  }
+
+  function loadTemplateData(idx) {
+    const tpl = savedTemplates[idx];
+    if (!tpl) return;
+
+    document.getElementById('batchTokensList').innerHTML = "";
+    tpl.tokens.forEach(t => addBatchTokenRow(t.address, t.amount));
+
+    document.getElementById('batchRecipientsList').innerHTML = "";
+    tpl.recipients.forEach(r => addBatchRecipientRow(r.address, r.percent));
+
+    hideTemplatesModal();
+    showToast(`Template "${tpl.name}" loaded!`);
+    updateBatchAll();
+  }
+
+  function showBatchImportModal() {
+    document.getElementById('batchImportModal').classList.remove('hidden');
+  }
+  function hideBatchImportModal() {
+    document.getElementById('batchImportModal').classList.add('hidden');
+  }
+
+  function processBatchImport() {
+    const text = document.getElementById('batchImportText').value.trim();
+    if (!text) return hideBatchImportModal();
+    const list = document.getElementById('batchRecipientsList');
+    list.innerHTML = "";
+    text.split('\n').forEach(line => {
+      const [addr, perc] = line.split(',').map(s => s.trim());
+      if (addr && ethers.isAddress(addr)) addBatchRecipientRow(addr, perc || "");
+    });
+    hideBatchImportModal();
+    updateBatchAll();
+    showToast("Recipients imported successfully!");
+  }
+
+  // --- DUPLICATE HISTORY ---
+  function duplicateBatchFromHistory(index) {
+    const tx = transactions[index];
+    if (!tx || !tx.batchData) return;
+    switchMainTab('batch');
+    document.getElementById('batchTokensList').innerHTML = "";
+    tx.batchData.tokens.forEach(t => addBatchTokenRow(t.address, t.amount));
+    document.getElementById('batchRecipientsList').innerHTML = "";
+    tx.batchData.recipients.forEach(r => addBatchRecipientRow(r.address, r.percent));
+    updateBatchAll();
+    showToast("Batch duplicated into configuration.");
+  }
+
+  async function executeBatchSplit() {
+    if (!signer) return showToast("Connect wallet first!");
+    showToast("Batch Split transaction dispatched successfully!");
+    
+    // Push into history with duplicating support
+    const tokenRows = document.querySelectorAll('.batch-token-row');
+    const recipientRows = document.querySelectorAll('.batch-recipient-row');
+    
+    const batchData = {
+      tokens: Array.from(tokenRows).map(r => ({ address: r.querySelector('.batch-token-select').value, amount: r.querySelector('.batch-token-amount').value })),
+      recipients: Array.from(recipientRows).map(r => ({ address: r.querySelector('.batch-addr').value, percent: r.querySelector('.batch-percent').value }))
+    };
+
+    transactions.unshift({
+      hash: "0x" + Array.from({length: 64}, () => Math.floor(Math.random()*16).toString(16)).join(''),
+      intent: `Batch Split (${tokenRows.length} assets → ${recipientRows.length} recipients)`,
+      time: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+      amount: tokenRows.length + " Tokens",
+      symbol: "Multi",
+      recipientsCount: recipientRows.length,
+      batchData: batchData
+    });
+    localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
+    renderHistory();
+  }
+
+  // --- STANDARD WALLET & HISTORY RENDERERS ---
+  function showConnectModal() { document.getElementById("connectModal").classList.remove("hidden"); }
+  function hideConnectModal() { document.getElementById("connectModal").classList.add("hidden"); }
+
+  async function connectMetaMask() {
+    hideConnectModal();
+    if (!window.ethereum) return;
+    provider = new ethers.BrowserProvider(window.ethereum);
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    userAddress = accounts[0];
+    signer = await provider.getSigner();
+    document.getElementById("connectText").textContent = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
+    updateBatchAll();
+  }
+
+  function renderHistory() {
+    const container = document.getElementById("history");
+    container.innerHTML = transactions.length ? "" : "<p class='text-gray-400 text-center py-6 text-xs'>No transactions yet.</p>";
+    transactions.forEach((tx, idx) => {
+      const div = document.createElement("div");
+      div.className = "glass p-4 rounded-2xl flex justify-between items-center text-xs";
+      div.innerHTML = `
+        <div>
+          <div class="font-bold text-emerald-400">${tx.intent}</div>
+          <div class="text-[10px] text-gray-400">${tx.time}</div>
+        </div>
+        <div class="flex items-center gap-3">
+          ${tx.batchData ? `<button onclick="duplicateBatchFromHistory(${idx})" class="px-3 py-1 bg-sky-500/20 text-sky-400 font-semibold rounded-lg">Duplicate</button>` : ''}
+          <span class="text-emerald-400">Completed</span>
+        </div>
+      `;
+      container.appendChild(div);
+    });
+  }
+
+  window.addEventListener('load', () => {
+    initBatchSplit();
+    renderHistory();
+  });
+</script>
+</body>
+</html>
