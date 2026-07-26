@@ -109,7 +109,7 @@
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
       <div>
         <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight header-title-text">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Smart Conditional Split</span></h1>
-        <p class="text-gray-400 light:text-slate-600 text-xs sm:text-sm font-medium">Create rule based payment distributions.</p>
+        <p class="text-gray-400 light:text-slate-600 text-xs sm:text-sm font-medium">Contract Engine Configurator</p>
       </div>
       
       <div class="flex items-center gap-3">
@@ -409,27 +409,51 @@
     runSimulation();
   }
 
-  async function updateBalance(retry = 0) {
-  if (!signer || !userAddress) return;
-  const statusEl = document.getElementById("status");
-  statusEl.innerHTML = `<div class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></div> Connected • Loading balance...`;
-  try {
-    const tokenAddr = document.getElementById("tokenSelect").value;
-    if (tokenAddr === "custom") return;
-    const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
-    const contract = new ethers.Contract(tokenAddr, [
-      "function balanceOf(address) view returns (uint256)",
-      "function decimals() view returns (uint8)"
-    ], signer);
-    const [balance, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
-    const formatted = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4);
-    statusEl.innerHTML = `<div class="w-2 h-2 rounded-full bg-emerald-500"></div> Connected • Balance: <span class="text-emerald-400 light:text-emerald-600 font-bold">${formatted} ${symbol}</span>`;
-  } catch (e) {
-    if (retry < 2) setTimeout(() => updateBalance(retry + 1), 1000);
-    else statusEl.innerHTML = `<div class="w-2 h-2 rounded-full bg-amber-500"></div> Connected • <span class="text-amber-400 light:text-amber-600">Balance unavailable</span>`;
-  }
-}
+  async function fetchBalanceWithRetry(retries = 5) {
+    const badge = document.getElementById('retryStatusBadge');
+    const balanceDisplay = document.getElementById('walletBalanceDisplay');
+    const select = document.getElementById('tokenSelect');
     
+    if (!userAddress || !provider) {
+      balanceDisplay.textContent = "0.00";
+      badge.textContent = "Not Connected";
+      badge.className = "text-[10px] px-2.5 py-1 rounded-full bg-white/5 text-gray-400 border border-white/10";
+      return;
+    }
+
+    if (select.value === 'CUSTOM') return;
+
+    const tokenAddress = select.value;
+    const selectedSymbol = select.options[select.selectedIndex].text.split(' ')[0];
+
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      badge.className = "text-[10px] px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 animate-pulse";
+      badge.textContent = `Syncing (Attempt ${attempt}/${retries})...`;
+
+      try {
+        const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+        const [rawBalance, decimals] = await Promise.all([
+          tokenContract.balanceOf(userAddress),
+          tokenContract.decimals().catch(() => 18)
+        ]);
+
+        const formattedBalance = ethers.formatUnits(rawBalance, decimals);
+        const displayVal = parseFloat(formattedBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+
+        balanceDisplay.textContent = `${displayVal} ${selectedSymbol}`;
+        badge.className = "text-[10px] px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+        badge.textContent = "Synced";
+        return;
+      } catch (err) {
+        console.warn(`Attempt ${attempt} failed to fetch actual balance. Retrying...`, err);
+        if (attempt === retries) {
+          balanceDisplay.textContent = `0.00 ${selectedSymbol}`;
+          badge.className = "text-[10px] px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20";
+          badge.textContent = "Sync Failed (RPC Error)";
+        }
+      }
+    }
+  }
 
   function renderRules() {
     const container = document.getElementById('rulesContainer');
