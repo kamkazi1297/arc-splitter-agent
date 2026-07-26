@@ -406,7 +406,6 @@
     updatePreview();
   }
 
-  // تابع دریافت بالانس با تلاش خودکار (۳ بار با فاصله زمانی ۱.۵ ثانیه)
   async function loadUserBalanceWithRetry() {
     const select = document.getElementById('tokenSelect');
     const tokenAddress = select.value;
@@ -437,11 +436,10 @@
           `Balance: <span class="text-emerald-400">${parseFloat(formatted).toFixed(4)} ${tokenSymbol}</span>`;
         
         success = true;
-        break; // اگر موفق شد، حلقه متوقف می‌شود
+        break;
       } catch (e) {
         console.warn(`Attempt ${attempt} failed to load balance:`, e);
         if (attempt < 3) {
-          // انتظار ۱.۵ ثانیه قبل از تلاش مجدد
           await new Promise(resolve => setTimeout(resolve, 1500));
         }
       }
@@ -497,8 +495,8 @@
           await approveTx.wait();
           showToast("Approval confirmed!");
           
-          // مکث کوتاه ۲ ثانیه‌ای برای هماهنگی با شبکه تست‌نت
-          await new Promise(resolve => setTimeout(resolve, 2000));
+          // مکث مطمئن ۳ ثانیه‌ای برای همگام‌سازی تست‌نت
+          await new Promise(resolve => setTimeout(resolve, 3000));
         }
       } else {
         amountWei = ethers.parseUnits(amountInput.toString(), 18);
@@ -512,10 +510,10 @@
       }
 
       const salt = Date.now();
-      const linkId = await contract.generateLinkId(ethers.ZeroAddress, salt);
 
+      // اصلاح کلیدی: ارسال ZeroHash به قرارداد تا خودش LinkId را امن و بدون تداخل بسازد
       const params = {
-        linkId: linkId,
+        linkId: ethers.ZeroHash,
         token: isNative ? ethers.ZeroAddress : tokenAddress,
         amount: amountWei,
         expiration: expiration,
@@ -525,16 +523,6 @@
         salt: salt
       };
 
-      console.log("=== DEBUG CONTRACT PARAMS ===");
-      console.log("Contract Address:", CONTRACT_ADDRESS);
-      console.log("Is Native Token?:", isNative);
-      console.log("Token Address in Params:", params.token);
-      console.log("Amount (Wei):", params.amount.toString());
-      console.log("Expiration:", params.expiration);
-      console.log("Salt:", params.salt.toString());
-      console.log("Full Params Object:", params);
-      console.log("=============================");
-
       showToast("Creating payment link on blockchain...");
       
       const tx = await contract.createPaymentLink(params, { 
@@ -542,10 +530,22 @@
       });
       
       showToast("Waiting for confirmation...");
-      await tx.wait();
+      const receipt = await tx.wait();
+
+      // استخراج دقیق linkId از رویداد PaymentLinkCreated
+      let actualLinkId = salt.toString();
+      for (const log of receipt.logs) {
+        try {
+          const parsedLog = contract.interface.parseLog(log);
+          if (parsedLog && parsedLog.name === "PaymentLinkCreated") {
+            actualLinkId = parsedLog.args.linkId;
+            break;
+          }
+        } catch (err) {}
+      }
 
       const newLink = {
-        id: linkId,
+        id: actualLinkId,
         txHash: tx.hash,
         title: title,
         token: tokenSymbol,
@@ -553,7 +553,7 @@
         expiration: expiration,
         status: "Active",
         createdAt: Date.now(),
-        url: `${window.location.origin}/pay.html?id=${linkId}`,
+        url: `${window.location.origin}/pay.html?id=${actualLinkId}`,
         creator: userAddress
       };
 
