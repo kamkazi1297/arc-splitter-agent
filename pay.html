@@ -180,6 +180,7 @@
   let userAddress = null;
   let currentLinkId = null;
   let currentLink = null;
+  let tokenDecimals = 6;
 
   const ArcPaymentLinksABI = [
     "function getPaymentLink(bytes32 linkId) view returns (tuple(address creator, address token, uint256 amount, uint256 expiration, bytes32 claimHash, address restrictedTo, uint8 state, uint64 closedAt, string qrMetaData))",
@@ -204,7 +205,6 @@
     }
 
     try {
-      // استفاده از RPC رسمی شبکه برای خواندن اطلاعات بدون نیاز به ولت اولیه
       const provider = new ethers.JsonRpcProvider("https://rpc.testnet.arc.network");
       const contract = new ethers.Contract(CONTRACT_ADDRESS, ArcPaymentLinksABI, provider);
 
@@ -216,10 +216,17 @@
         return;
       }
 
-      // Fill Data
-      const formattedAmount = ethers.formatUnits(currentLink.amount, 6);
-      document.getElementById('amountDisplay').innerHTML = `${formattedAmount} <span class="text-emerald-400 text-3xl">USDC</span>`;
-      document.getElementById('modalAmount').textContent = `${formattedAmount} USDC`;
+      // Read Decimals dynamically from token contract
+      try {
+        const tokenContract = new ethers.Contract(currentLink.token, ["function decimals() view returns (uint8)"], provider);
+        tokenDecimals = await tokenContract.decimals();
+      } catch (err) {
+        tokenDecimals = 6; // Fallback
+      }
+
+      const formattedAmount = ethers.formatUnits(currentLink.amount, tokenDecimals);
+      document.getElementById('amountDisplay').innerHTML = `${formattedAmount} <span class="text-emerald-400 text-3xl">Token</span>`;
+      document.getElementById('modalAmount').textContent = `${formattedAmount} Token`;
       document.getElementById('titleDisplay').textContent = currentLink.qrMetaData || "Payment Request";
       document.getElementById('recipientAddress').textContent = currentLink.creator;
       document.getElementById('modalRecipient').textContent = `${currentLink.creator.slice(0,6)}...${currentLink.creator.slice(-4)}`;
@@ -284,24 +291,40 @@
     if (!signer) return showToast("Please connect wallet first");
 
     try {
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, ArcPaymentLinksABI, signer);
-      
-      document.getElementById('mainActionButton').innerHTML = `<i class="fas fa-spinner fa-spin"></i> Processing...`;
-      document.getElementById('mainActionButton').disabled = true;
+      const actionBtn = document.getElementById('mainActionButton');
+      actionBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Processing...`;
+      actionBtn.disabled = true;
 
+      // Check and handle ERC20 Allowance if token is not native zero address
+      if (currentLink.token && currentLink.token !== ethers.ZeroAddress) {
+        const tokenContract = new ethers.Contract(currentLink.token, [
+          "function allowance(address owner, address spender) view returns (uint256)",
+          "function approve(address spender, uint256 amount) returns (bool)"
+        ], signer);
+
+        const allowance = await tokenContract.allowance(userAddress, CONTRACT_ADDRESS);
+        if (allowance < currentLink.amount) {
+          showToast("Approving token spending...");
+          const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, currentLink.amount);
+          await approveTx.wait();
+        }
+      }
+
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, ArcPaymentLinksABI, signer);
       const tx = await contract.claimPaymentLink(currentLinkId, "");
       await tx.wait();
 
       showToast("✅ Payment Claimed Successfully!", 6000);
 
-      document.getElementById('mainActionButton').innerHTML = `✅ Payment Received`;
-      document.getElementById('mainActionButton').classList.add('!bg-emerald-600');
+      actionBtn.innerHTML = `✅ Payment Received`;
+      actionBtn.classList.add('!bg-emerald-600');
 
     } catch (error) {
       console.error(error);
       showToast(error.reason || error.message || "Claim failed", 5000);
-      document.getElementById('mainActionButton').innerHTML = `Claim Payment`;
-      document.getElementById('mainActionButton'].disabled = false;
+      const actionBtn = document.getElementById('mainActionButton');
+      actionBtn.innerHTML = `Claim Payment`;
+      actionBtn.disabled = false;
     }
   }
 
