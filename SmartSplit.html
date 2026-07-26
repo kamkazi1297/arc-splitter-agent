@@ -106,7 +106,7 @@
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
       <div>
         <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Smart Conditional Split</span></h1>
-        <p class="text-gray-400 light:text-slate-600 text-xs sm:text-sm font-medium">Create rule-based payment distributions.</p>
+        <p class="text-gray-400 light:text-slate-600 text-xs sm:text-sm font-medium">Contract Engine Configurator</p>
       </div>
       
       <div class="flex items-center gap-3">
@@ -267,7 +267,7 @@
     <!-- History View -->
     <div id="viewHistory" class="hidden glass rounded-3xl p-6">
       <h3 class="font-bold text-lg mb-4">Smart Split History</h3>
-      <div id="historyList" class="space-y-3 text-xs text-gray-400">No smart splits deployed yet.</div>
+      <div id="historyList" class="space-y-4 text-xs text-gray-400">No smart splits deployed yet.</div>
     </div>
 
   </div>
@@ -278,12 +278,10 @@
   </div>
 
 <script>
-  const CONTRACT_ADDRESS = "0x372Ec402aD0BDbeD367c80C89a585A8077B919B2";
   let provider, signer, userAddress = null;
   let rules = [];
   let defaultRecipients = [];
 
-  // Minimal ERC20 ABI to fetch balance and decimals
   const ERC20_ABI = [
     "function balanceOf(address owner) view returns (uint256)",
     "function decimals() view returns (uint8)"
@@ -372,6 +370,7 @@
       customBox.classList.add('hidden');
       fetchBalanceWithRetry();
     }
+    runSimulation();
   }
 
   function saveCustomToken() {
@@ -396,9 +395,9 @@
     
     showToast(`Custom token ${symbol} added successfully!`);
     fetchBalanceWithRetry();
+    runSimulation();
   }
 
-  // تابع واقعی و ایمن دریافت بالانس از بلاکچین با متد balanceOf و Auto-Retry
   async function fetchBalanceWithRetry(retries = 3) {
     const badge = document.getElementById('retryStatusBadge');
     const balanceDisplay = document.getElementById('walletBalanceDisplay');
@@ -424,7 +423,7 @@
         const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
         const [rawBalance, decimals] = await Promise.all([
           tokenContract.balanceOf(userAddress),
-          tokenContract.decimals().catch(() => 18) // Default to 18 if decimals fails
+          tokenContract.decimals().catch(() => 18)
         ]);
 
         const formattedBalance = ethers.formatUnits(rawBalance, decimals);
@@ -480,12 +479,13 @@
           </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 items-center text-xs">
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 items-center text-xs">
           <div>
             <span class="text-gray-400 text-[10px] uppercase font-semibold">Condition Type</span>
             <select onchange="updateRuleCond(${index}, 'type', this.value)" class="w-full rounded-xl px-3 py-2 mt-1">
               <option value="Amount" ${rule.condition.type === 'Amount' ? 'selected' : ''}>Amount Threshold</option>
               <option value="Sender" ${rule.condition.type === 'Sender' ? 'selected' : ''}>Sender Address</option>
+              <option value="Token" ${rule.condition.type === 'Token' ? 'selected' : ''}>Token Type</option>
             </select>
           </div>
           <div>
@@ -499,9 +499,11 @@
               <option value="==" ${rule.condition.op === '==' ? 'selected' : ''}>== (Equals)</option>
             </select>
           </div>
-          <div>
-            <span class="text-gray-400 text-[10px] uppercase font-semibold">Threshold / Match Value</span>
-            <input type="text" value="${rule.condition.val}" oninput="updateRuleCond(${index}, 'val', this.value)" placeholder="e.g. 500 or 0x..." class="w-full rounded-xl px-3 py-2 mt-1 font-bold">
+          <div class="sm:col-span-2">
+            <span class="text-gray-400 text-[10px] uppercase font-semibold">Threshold / Match Value / Token</span>
+            <div id="condValueContainer_${index}" class="mt-1">
+              ${getConditionValueInputHtml(index, rule.condition)}
+            </div>
           </div>
         </div>
 
@@ -519,6 +521,21 @@
     renderDefaultRecipients();
     runSimulation();
     checkEngineErrors();
+  }
+
+  function getConditionValueInputHtml(index, cond) {
+    if (cond.type === 'Token') {
+      const currentTokenSelect = document.getElementById('tokenSelect');
+      let optionsHtml = '';
+      for (let i = 0; i < currentTokenSelect.options.length - 1; i++) {
+        const opt = currentTokenSelect.options[i];
+        const isSelected = cond.val === opt.value ? 'selected' : '';
+        optionsHtml += `<option value="${opt.value}" ${isSelected}>${opt.text}</option>`;
+      }
+      return `<select onchange="updateRuleCond(${index}, 'val', this.value)" class="w-full rounded-xl px-3 py-2">${optionsHtml}</select>`;
+    } else {
+      return `<input type="text" value="${cond.val}" oninput="updateRuleCond(${index}, 'val', this.value)" placeholder="e.g. 500 or 0x..." class="w-full rounded-xl px-3 py-2 font-bold">`;
+    }
   }
 
   function renderDefaultRecipients() {
@@ -578,6 +595,12 @@
 
   function updateRuleCond(index, field, value) {
     rules[index].condition[field] = value;
+    if (field === 'type') {
+      const container = document.getElementById(`condValueContainer_${index}`);
+      if (container) {
+        container.innerHTML = getConditionValueInputHtml(index, rules[index].condition);
+      }
+    }
     runSimulation();
   }
 
@@ -598,6 +621,7 @@
 
   function runSimulation() {
     const amountInput = parseFloat(document.getElementById('simAmountInput').value) || 0;
+    const selectTokenVal = document.getElementById('tokenSelect').value;
     let matchedRuleName = "Fallback (Otherwise Rule)";
     let selectedRecipients = defaultRecipients;
 
@@ -616,6 +640,10 @@
         if (c.op === '==' && amountInput === valNum) matched = true;
       } else if (c.type === 'Sender') {
         if (userAddress && userAddress.toLowerCase() === (c.val || "").toLowerCase()) {
+          matched = true;
+        }
+      } else if (c.type === 'Token') {
+        if (selectTokenVal.toLowerCase() === (c.val || "").toLowerCase()) {
           matched = true;
         }
       }
@@ -689,13 +717,75 @@
     showToast("🚀 Deploying Smart Conditional Split Contract...");
     setTimeout(() => {
       switchTab('history');
-      document.getElementById('historyList').innerHTML = `
-        <div class="glass p-4 rounded-2xl flex justify-between items-center">
-          <div>
-            <div class="font-bold text-white text-sm">Contract: ${CONTRACT_ADDRESS.substring(0,8)}...</div>
-            <div class="text-xs text-emerald-400 mt-1">${rules.length} Conditional Rules Active • Deployed by ${userAddress.substring(0,6)}...</div>
+      
+      let rulesHistoryHtml = rules.map((rule, idx) => {
+        let condText = `${rule.condition.type} ${rule.condition.op} ${rule.condition.val}`;
+        if (rule.condition.type === 'Token') {
+          const select = document.getElementById('tokenSelect');
+          let tokenSymbol = rule.condition.val;
+          for (let opt of select.options) {
+            if (opt.value === rule.condition.val) {
+              tokenSymbol = opt.text.split(' ')[0];
+              break;
+            }
+          }
+          condText = `Token Type == ${tokenSymbol}`;
+        }
+        
+        let recsHtml = rule.recipients.map(r => `
+          <div class="flex justify-between items-center bg-black/20 px-3 py-1.5 rounded-lg my-1">
+            <span class="font-mono text-gray-300">${r.address ? r.address.substring(0,6) + '...' + r.address.substring(r.address.length-4) : 'Unassigned'}</span>
+            <span class="font-bold text-emerald-400">${r.perc}%</span>
           </div>
-          <span class="px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full text-xs font-semibold">Active Engine</span>
+        `).join('');
+
+        return `
+          <div class="bg-white/[0.03] border border-white/5 p-3.5 rounded-2xl space-y-2">
+            <div class="flex justify-between items-center text-xs font-bold text-emerald-400">
+              <span>Conditional Rule #${idx + 1}</span>
+              <span class="text-[10px] text-gray-400 bg-white/5 px-2 py-0.5 rounded-md">${condText}</span>
+            </div>
+            <div class="space-y-1">
+              <div class="text-[10px] text-gray-400 uppercase font-semibold">Recipients Breakdown:</div>
+              ${recsHtml}
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      let fallbackRecsHtml = defaultRecipients.map(r => `
+        <div class="flex justify-between items-center bg-black/20 px-3 py-1.5 rounded-lg my-1">
+          <span class="font-mono text-gray-300">${r.address ? r.address.substring(0,6) + '...' + r.address.substring(r.address.length-4) : 'Unassigned'}</span>
+          <span class="font-bold text-amber-400">${r.perc}%</span>
+        </div>
+      `).join('');
+
+      let fallbackHistoryHtml = `
+        <div class="bg-white/[0.03] border border-white/5 p-3.5 rounded-2xl space-y-2">
+          <div class="flex justify-between items-center text-xs font-bold text-amber-400">
+            <span>Fallback Rule (Otherwise)</span>
+            <span class="text-[10px] text-gray-400 bg-white/5 px-2 py-0.5 rounded-md">Default Execution</span>
+          </div>
+          <div class="space-y-1">
+            <div class="text-[10px] text-gray-400 uppercase font-semibold">Recipients Breakdown:</div>
+            ${fallbackRecsHtml}
+          </div>
+        </div>
+      `;
+
+      document.getElementById('historyList').innerHTML = `
+        <div class="glass p-5 rounded-3xl space-y-4">
+          <div class="flex justify-between items-center pb-3 border-b border-white/10">
+            <div>
+              <div class="font-bold text-white text-sm">Deployment Session</div>
+              <div class="text-xs text-emerald-400 mt-1">${rules.length} Conditional Rules Active • Deployed by ${userAddress.substring(0,6)}...</div>
+            </div>
+            <span class="px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full text-xs font-semibold">Active Engine</span>
+          </div>
+          <div class="space-y-3">
+            ${rulesHistoryHtml}
+            ${fallbackHistoryHtml}
+          </div>
         </div>
       `;
       showToast("Contract deployed successfully!");
