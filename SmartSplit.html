@@ -777,11 +777,22 @@
         if (rule.condition.op === '<') opVal = 1; 
         else if (rule.condition.op === '=' || rule.condition.op === '==') opVal = 2; 
 
+        // رفع خطا: اگر مقدار شرط آدرس یا متن غیرعددی بود، مقدار threshold را صفر در نظر می‌گیریم
+        let thresholdVal = 0n;
+        const rawVal = rule.condition.val || "0";
+        if (rule.condition.type !== 'Token' && !rawVal.startsWith('0x')) {
+          try {
+            thresholdVal = ethers.parseUnits(rawVal, decimals);
+          } catch (e) {
+            thresholdVal = 0n;
+          }
+        }
+
         conditionInputs.push({
           cType: cTypeVal,
           targetAddress: userAddress,
           tokenAddress: tokenAddress === "CUSTOM" ? ethers.ZeroAddress : tokenAddress,
-          threshold: ethers.parseUnits(rule.condition.val || "0", decimals),
+          threshold: thresholdVal,
           operator: opVal
         });
       });
@@ -791,7 +802,7 @@
           cType: 0, 
           targetAddress: ethers.ZeroAddress,
           tokenAddress: ethers.ZeroAddress,
-          threshold: 0,
+          threshold: 0n,
           operator: 2 
         });
       }
