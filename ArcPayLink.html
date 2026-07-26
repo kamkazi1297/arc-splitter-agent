@@ -314,6 +314,7 @@
   let userAddress = null;
   let provider = null;
   let amountMode = 'fixed';
+  let isProcessing = false; // قفل برای جلوگیری از تداخل کلیک‌های همزمان
   let currentLinks = JSON.parse(localStorage.getItem('arcPaymentLinks') || '[]');
 
   const ArcPaymentLinksABI = [
@@ -451,6 +452,7 @@
   }
 
   async function generateLink() {
+    if (isProcessing) return; // جلوگیری از کلیک‌های تداخل‌زا
     if (!signer || !userAddress) return showToast("Please connect your wallet first", 4000);
 
     const title = document.getElementById('linkTitle').value.trim();
@@ -466,13 +468,17 @@
       return showError('errAmount', "Please enter a valid amount");
     }
 
+    isProcessing = true;
+    const generateBtn = document.querySelector('button[onclick="generateLink()"]');
+    const originalBtnText = generateBtn.textContent;
+    generateBtn.textContent = "Processing...";
+    generateBtn.style.opacity = "0.7";
+
     try {
       const contract = new ethers.Contract(CONTRACT_ADDRESS, ArcPaymentLinksABI, signer);
-      
       const isNative = (tokenAddress === ethers.ZeroAddress || tokenAddress.toLowerCase() === "0x0000000000000000000000000000000000000000");
 
       let amountWei;
-      let decimals = 18;
 
       if (!isNative) {
         const tokenContract = new ethers.Contract(tokenAddress, [
@@ -481,21 +487,21 @@
           "function approve(address spender, uint256 amount) returns (bool)"
         ], signer);
         
-        decimals = await tokenContract.decimals();
+        const decimals = await tokenContract.decimals();
         amountWei = ethers.parseUnits(amountInput.toString(), decimals);
 
         showToast("Checking token allowance...");
         const allowance = await tokenContract.allowance(userAddress, CONTRACT_ADDRESS);
         
         if (allowance < amountWei) {
-          showToast("Please approve token spending in your wallet...");
+          showToast("Please approve token spending in MetaMask...");
           const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, amountWei);
           
           showToast("Waiting for approval confirmation...");
           await approveTx.wait();
-          showToast("Approval confirmed!");
+          showToast("Approval confirmed! Preparing link...");
           
-          // مکث مطمئن ۳ ثانیه‌ای برای همگام‌سازی تست‌نت
+          // مکث ۳ ثانیه‌ای جهت هماهنگی تست‌نت
           await new Promise(resolve => setTimeout(resolve, 3000));
         }
       } else {
@@ -511,7 +517,6 @@
 
       const salt = Date.now();
 
-      // اصلاح کلیدی: ارسال ZeroHash به قرارداد تا خودش LinkId را امن و بدون تداخل بسازد
       const params = {
         linkId: ethers.ZeroHash,
         token: isNative ? ethers.ZeroAddress : tokenAddress,
@@ -523,16 +528,15 @@
         salt: salt
       };
 
-      showToast("Creating payment link on blockchain...");
+      showToast("Please confirm payment link creation in MetaMask...");
       
       const tx = await contract.createPaymentLink(params, { 
         value: isNative ? amountWei : 0 
       });
       
-      showToast("Waiting for confirmation...");
+      showToast("Waiting for blockchain confirmation...");
       const receipt = await tx.wait();
 
-      // استخراج دقیق linkId از رویداد PaymentLinkCreated
       let actualLinkId = salt.toString();
       for (const log of receipt.logs) {
         try {
@@ -566,8 +570,16 @@
 
     } catch (error) {
       console.error("Detailed Error:", error);
-      let errorMsg = error.reason || error.shortMessage || error.message || "Transaction failed";
-      showToast(errorMsg, 7000);
+      if (error.code !== "ACTION_REJECTED") {
+        let errorMsg = error.reason || error.shortMessage || error.message || "Transaction failed";
+        showToast(errorMsg, 7000);
+      } else {
+        showToast("Transaction cancelled by user.", 3000);
+      }
+    } finally {
+      isProcessing = false;
+      generateBtn.textContent = originalBtnText;
+      generateBtn.style.opacity = "1";
     }
   }
 
