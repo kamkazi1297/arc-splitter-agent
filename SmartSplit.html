@@ -49,7 +49,6 @@
     .light .text-gray-400 { color: #475569 !important; }
     .light .text-gray-300 { color: #334155 !important; }
     
-    /* Keep ArcSplit header title and History text white/light-proof if needed or styled specifically */
     .header-title-text, .history-title-text { color: #ffffff !important; }
 
     .wallet-connected-glass {
@@ -431,11 +430,24 @@
       badge.textContent = `Syncing (Attempt ${attempt}/${retries})...`;
 
       try {
-        const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
-        const [rawBalance, decimals] = await Promise.all([
-          tokenContract.balanceOf(userAddress),
-          tokenContract.decimals().catch(() => 18)
-        ]);
+        const selectedTokenAddress = select.value;
+        const balanceDisplay = document.getElementById('walletBalanceDisplay');
+        const badge = document.getElementById('retryStatusBadge');
+        const selectedSymbol = select.options[select.selectedIndex].text.split(' ')[0];
+
+        let rawBalance = 0n;
+        let decimals = 18;
+
+        if (selectedTokenAddress === "0x3600000000000000000000000000000000000000") {
+          rawBalance = await provider.getBalance(userAddress);
+          decimals = 18;
+        } else {
+          const tokenContract = new ethers.Contract(selectedTokenAddress, ERC20_ABI, provider);
+          [rawBalance, decimals] = await Promise.all([
+            tokenContract.balanceOf(userAddress),
+            tokenContract.decimals().catch(() => 18)
+          ]);
+        }
 
         const formattedBalance = ethers.formatUnits(rawBalance, decimals);
         const displayVal = parseFloat(formattedBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
