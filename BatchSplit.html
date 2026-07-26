@@ -140,7 +140,12 @@
 
     <!-- Token Balances Hub (Added) -->
     <div id="walletBalancesBox" class="glass rounded-2xl p-5 mb-8 hidden border border-emerald-500/20">
-      <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Your Token Balances</div>
+      <div class="flex justify-between items-center mb-3">
+        <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Your Token Balances (All 3 Tokens)</div>
+        <button onclick="fetchAndRenderBalancesWithRetry()" class="px-3 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all">
+          <i class="fas fa-rotate text-[10px]"></i> Refresh Balances
+        </button>
+      </div>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" id="balancesContainer">
         <!-- Balances injected here -->
       </div>
@@ -304,9 +309,9 @@
           <i class="fas fa-spinner fa-spin"></i>
           <span id="progressStepText">Preparing transaction...</span>
         </div>
-        <!-- Transaction Hash Link Section -->
-        <div id="txHashResultBox" class="hidden pt-2 border-t border-white/10 text-xs font-mono">
-          <span class="text-gray-400">Transaction Hash:</span>
+        <!-- Transaction Hash Link Section (Unified block) -->
+        <div id="txHashResultBox" class="hidden pt-2 border-t border-white/10 text-xs font-mono space-y-1">
+          <div><span class="text-gray-400">Transaction Hash Link:</span></div>
           <a id="txHashLink" href="#" target="_blank" class="text-cyan-400 underline block truncate mt-1"></a>
         </div>
       </div>
@@ -388,14 +393,12 @@ const AVAILABLE_TOKENS = [
   { address: "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF", symbol: "cirBTC", decimals: 8 }
 ];
 
-// Solidity ABI based on provided ArcRoleSplitter contract
 const contractAbi = [
   "function splitNative() external payable",
   "function splitBundleTokens(address[] calldata tokens, uint256[] calldata amounts) external",
   "function allowedTokens(address) view returns (bool)"
 ];
 
-// ERC-20 Minimal ABI for balance checking
 const erc20Abi = [
   "function balanceOf(address account) view returns (uint256)",
   "function approve(address spender, uint256 amount) returns (bool)"
@@ -452,7 +455,7 @@ function switchView(view) {
   }
 }
 
-// ==================== WALLET CONNECTION & BALANCES ====================
+// ==================== WALLET CONNECTION & RETRY BALANCES ====================
 function handleWalletClick() {
   if (!userAddress) {
     showConnectModal();
@@ -467,7 +470,7 @@ function showConnectModal() {
       provider.getSigner().then(s => { 
         signer = s; 
         updateConnectButton(); 
-        fetchAndRenderBalances();
+        fetchAndRenderBalancesWithRetry();
         showToast("Wallet connected"); 
       });
     }).catch(() => showToast("Connection rejected"));
@@ -502,41 +505,54 @@ function updateConnectButton() {
   }
 }
 
-async function fetchAndRenderBalances() {
+// Automatic 3-time retry mechanism for loading/updating all 3 token balances
+async function fetchAndRenderBalancesWithRetry(maxRetries = 3) {
   if (!signer || !userAddress) return;
   const container = document.getElementById("balancesContainer");
   document.getElementById("walletBalancesBox").classList.remove("hidden");
 
-  let balancesHtml = "";
-  const provider = signer.provider;
+  let attempt = 0;
+  let success = false;
 
-  for (const token of AVAILABLE_TOKENS) {
+  while (attempt < maxRetries && !success) {
+    attempt++;
     try {
-      let formattedBal = "0.00";
-      if (token.address === NATIVE_TOKEN) {
-        const bal = await provider.getBalance(userAddress);
-        formattedBal = ethers.formatEther(bal);
-      } else {
-        const erc20 = new ethers.Contract(token.address, erc20Abi, provider);
-        const bal = await erc20.balanceOf(userAddress);
-        formattedBal = ethers.formatUnits(bal, token.decimals);
+      let balancesHtml = "";
+      const provider = signer.provider;
+
+      for (const token of AVAILABLE_TOKENS) {
+        let formattedBal = "0.00";
+        if (token.address === NATIVE_TOKEN) {
+          const bal = await provider.getBalance(userAddress);
+          formattedBal = ethers.formatEther(bal);
+        } else {
+          const erc20 = new ethers.Contract(token.address, erc20Abi, provider);
+          const bal = await erc20.balanceOf(userAddress);
+          formattedBal = ethers.formatUnits(bal, token.decimals);
+        }
+        balancesHtml += `
+          <div class="bg-white/5 p-3 rounded-xl border border-white/5 flex items-center justify-between font-mono">
+            <span class="font-bold text-emerald-400">${token.symbol}</span>
+            <span class="text-white text-xs">${parseFloat(formattedBal).toFixed(4)}</span>
+          </div>
+        `;
       }
-      balancesHtml += `
-        <div class="bg-white/5 p-3 rounded-xl border border-white/5 flex items-center justify-between font-mono">
-          <span class="font-bold text-emerald-400">${token.symbol}</span>
-          <span class="text-white text-xs">${parseFloat(formattedBal).toFixed(4)}</span>
-        </div>
-      `;
+      container.innerHTML = balancesHtml;
+      success = true;
     } catch (e) {
-      balancesHtml += `
-        <div class="bg-white/5 p-3 rounded-xl border border-white/5 flex items-center justify-between font-mono">
-          <span class="font-bold text-emerald-400">${token.symbol}</span>
-          <span class="text-rose-400 text-xs">Error</span>
-        </div>
-      `;
+      console.warn(`Balance fetch attempt ${attempt} failed:`, e);
+      if (attempt >= maxRetries) {
+        container.innerHTML = `
+          <div class="col-span-3 bg-rose-500/10 border border-rose-500/20 p-3 rounded-xl text-rose-400 text-center text-xs font-mono">
+            Failed to load token balances after ${maxRetries} attempts. Click Refresh to try again.
+          </div>
+        `;
+      } else {
+        // Wait 1.5 seconds before retrying
+        await new Promise(res => setTimeout(res, 1500));
+      }
     }
   }
-  container.innerHTML = balancesHtml;
 }
 
 // ==================== BUILD UI RENDERERS ====================
@@ -795,7 +811,7 @@ async function executeConfirmedBatch() {
       tx = await contract.splitBundleTokens(tokens, amounts);
     }
 
-    // Display transaction hash link right away
+    // Display transaction hash link clearly
     txHashLink.href = `https://testnet.arcscan.app/tx/${tx.hash}`;
     txHashLink.textContent = tx.hash;
     txHashBox.classList.remove("hidden");
@@ -816,6 +832,9 @@ async function executeConfirmedBatch() {
     confetti({ particleCount: 200, spread: 80, origin: { y: 0.6 } });
     showToast("🎉 Batch Split Completed Successfully!");
     
+    // Refresh balances after successful transaction execution with retry
+    fetchAndRenderBalancesWithRetry();
+
     setTimeout(() => {
       hideConfirmModal();
       switchView('history');
@@ -884,7 +903,7 @@ function viewDetails(idx) {
 
   content.innerHTML = `
     <div class="font-bold text-sm text-cyan-400 mb-2">${h.memo} (${h.date})</div>
-    <div class="mb-3 text-gray-300">Tx Hash: <a href="https://testnet.arcscan.app/tx/${h.txHash}" target="_blank" class="underline text-emerald-400">${h.txHash}</a></div>
+    <div class="mb-3 text-gray-300">Tx Hash Link: <a href="https://testnet.arcscan.app/tx/${h.txHash}" target="_blank" class="underline text-emerald-400">${h.txHash}</a></div>
     <div class="font-bold text-white mb-1">Tokens:</div>
     ${h.tokens.map(t => `<div class="text-gray-300">${t.amount} (${t.token})</div>`).join('')}
     <div class="font-bold text-white mt-3 mb-1">Recipients:</div>
