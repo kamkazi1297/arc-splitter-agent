@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+  <title>ArcSplit - Token Splitter & Vesting</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    
+    :root {
+      --bg-gradient: linear-gradient(135deg, #080816 0%, #12122c 50%, #0a0a18 100%);
+      --glass-bg: rgba(255, 255, 255, 0.03);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --glass-glow: rgba(99, 102, 241, 0.1);
+    }
+
+    body { 
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif; 
+      background: #070711;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(34, 211, 238, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.05) 0%, transparent 50%);
+      color: #f8fafc;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    
+    .glass {
+      background: rgba(18, 18, 38, 0.65);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+    
+    .light {
+      background: #f1f5f9 !important;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(34, 211, 238, 0.05) 0%, transparent 40%) !important;
+      color: #0f172a !important;
+    }
+
+    .light .glass {
+      background: rgba(255, 255, 255, 0.85);
+      border-color: rgba(0, 0, 0, 0.08);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1);
+    }
+
+    .light body, .light h1, .light h3, .light label, .light .text-white {
+      color: #0f172a;
+    }
+    .light .text-gray-400 { color: #475569 !important; }
+    .light .text-gray-300 { color: #334155 !important; }
+    .light .text-gray-200 { color: #1e293b !important; }
+
+    select, input {
+      background-color: rgba(255, 255, 255, 0.03);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    select:hover, input:hover {
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+    select:focus, input:focus {
+      border-color: #10b981;
+      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
+    }
+
+    .light select, .light input {
+      background-color: #ffffff;
+      color: #0f172a;
+      border: 1px solid #cbd5e1;
+    }
+    .light select:focus, .light input:focus {
+      border-color: #10b981;
+      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+    }
+
+    select option {
+      background-color: #0f172a;
+      color: white;
+      padding: 14px 18px;
+    }
+    .light select option {
+      background-color: #ffffff;
+      color: #0f172a;
+    }
+
+    .invalid {
+      border-color: #ef4444 !important;
+      background-color: rgba(239, 68, 68, 0.05) !important;
+      animation: shake 0.3s;
+    }
+
+    .percent-container, .amount-container {
+      position: relative;
+    }
+    .percent-container::after {
+      content: "%";
+      position: absolute;
+      right: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #64748b;
+      font-weight: 600;
+      pointer-events: none;
+      font-size: 0.875rem;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-4px); }
+      75% { transform: translateX(4px); }
+    }
+
+    .preview-scroll {
+      max-height: 280px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.2) transparent;
+    }
+    .preview-scroll::-webkit-scrollbar {
+      width: 5px;
+    }
+    .preview-scroll::-webkit-scrollbar-thumb {
+      background-color: rgba(255,255,255,0.2);
+      border-radius: 10px;
+    }
+
+    .app-button {
+      position: relative;
+      overflow: hidden;
+      transition: all 0.25s ease;
+    }
+    .app-button:active {
+      transform: scale(0.98);
+    }
+  </style>
+</head>
+<body class="text-white min-h-screen selection:bg-emerald-500 selection:text-black">
+
+  <div class="max-w-6xl mx-auto px-4 py-6 sm:py-8">
+    
+    <!-- Next Unlock Widget ⭐⭐⭐⭐⭐ -->
+    <div id="nextUnlockWidget" class="hidden mb-6 glass border border-emerald-500/30 bg-emerald-500/5 rounded-3xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 backdrop-blur-xl">
+      <div class="flex items-center gap-3.5">
+        <div class="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400 text-xl font-bold">
+          <i class="fas fa-lock-open"></i>
+        </div>
+        <div>
+          <div class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Next Unlock</div>
+          <div id="nextUnlockTime" class="text-sm sm:text-base font-bold text-emerald-400">3 Days Remaining</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-6">
+        <div>
+          <div class="text-xs text-gray-400 font-semibold uppercase tracking-wider">Amount</div>
+          <div id="nextUnlockAmount" class="text-base sm:text-lg font-extrabold">250 USDC</div>
+        </div>
+        <button onclick="claimNextUnlock()" class="app-button px-5 py-2.5 bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold rounded-xl text-xs sm:text-sm transition-all shadow-lg shadow-emerald-500/20">
+          Claim Unlock
+        </button>
+      </div>
+    </div>
+
+    <!-- Header Section -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Token & Vesting</span></h1>
+        <p class="text-gray-400 light:text-slate-600 text-xs sm:text-sm font-medium">Professional Token Splitter & Vesting Schedules</p>
+      </div>
+      
+      <div class="flex items-center gap-3">
+        <!-- Navigation Tabs -->
+        <div class="flex bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 rounded-2xl p-1 text-xs">
+          <button onclick="switchTab('splitter')" id="tabSplitter" class="px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400">Splitter</button>
+          <button onclick="switchTab('vesting')" id="tabVesting" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-600">Vesting</button>
+          <button onclick="switchTab('history')" id="tabHistory" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-600">History</button>
+        </div>
+
+        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/10 light:hover:bg-black/10 border border-white/10 light:border-black/10 rounded-2xl transition-all shadow-lg">
+          <i class="fas fa-moon text-lg text-emerald-400"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Action Connect Hub -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mb-8">
+      <button onclick="showConnectModal()" id="connectBtn" class="app-button px-6 py-4 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl flex items-center justify-center gap-2.5 hover:bg-emerald-50 light:hover:bg-slate-800 transition-all">
+        <i class="fas fa-wallet text-emerald-600 light:text-emerald-400"></i> 
+        <span id="connectText">Connect Wallet</span>
+      </button>
+
+      <button onclick="connectTelegram()" id="telegramBtn" 
+        class="app-button px-6 py-4 bg-gradient-to-r from-[#229ED9] to-[#1a8ac4] hover:brightness-110 text-white font-semibold rounded-2xl flex items-center justify-center gap-3 transition-all shadow-lg shadow-sky-500/10 group">
+        <i class="fab fa-telegram-plane text-2xl group-hover:scale-110 transition-transform"></i> 
+        <div class="text-left flex-1">
+          <div id="telegramMainText" class="font-bold text-sm leading-tight">Connect Telegram</div>
+          <div id="telegramSubText" class="text-[11px] text-sky-100 opacity-80 -mt-0.5">Fast split & notifications</div>
+        </div>
+      </button>
+    </div>
+
+    <!-- Status Boxes -->
+    <div id="status" class="glass rounded-2xl p-5 mb-4 text-sm font-medium flex items-center gap-3 border-l-4 border-l-emerald-500">
+      <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+      Ready to manage tokens & vesting schedules on Arc Testnet.
+    </div>
+    <div id="successMessage" class="hidden glass border border-emerald-500/30 bg-emerald-500/10 rounded-2xl p-5 mb-6 text-emerald-400 text-sm"></div>
+
+    <!-- Tab Contents -->
+    
+    <!-- 1. Splitter View (Existing) -->
+    <div id="viewSplitter" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      <!-- Left Column: Configuration -->
+      <div class="lg:col-span-7 space-y-6">
+        <div class="glass rounded-3xl p-6 sm:p-8">
+          <div class="mb-6">
+            <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Select Token</label>
+            <div class="relative">
+              <select id="tokenSelect" onchange="handleTokenChange()" class="w-full rounded-2xl px-5 py-4 appearance-none focus:outline-none text-sm sm:text-base font-medium cursor-pointer">
+                <option value="0x3600000000000000000000000000000000000000">USDC</option>
+                <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
+                <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
+              </select>
+              <div class="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                <i class="fas fa-chevron-down text-xs"></i>
+              </div>
+            </div>
+          </div>
+
+          <div class="mb-6">
+            <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Total Amount</label>
+            <div class="flex gap-2.5">
+              <input type="number" id="totalAmount" value="100" step="0.000001" class="flex-1 rounded-2xl px-5 py-4 text-2xl sm:text-3xl font-bold outline-none" oninput="updateAll()">
+              <button onclick="setMaxAmount()" class="app-button px-6 bg-white/5 border border-white/10 rounded-2xl font-bold text-sm text-emerald-400">MAX</button>
+            </div>
+          </div>
+
+          <div class="mb-6">
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-bold text-base">Recipients</h3>
+              <button onclick="addRecipient()" class="px-3.5 py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl flex items-center gap-1.5 text-xs font-semibold">
+                <i class="fas fa-plus"></i> Add
+              </button>
+            </div>
+            <div id="recipients-list" class="space-y-3"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Summary -->
+      <div class="lg:col-span-5 space-y-6">
+        <div class="glass rounded-3xl p-6 sm:p-8 sticky top-6">
+          <h3 class="font-bold text-base mb-4 flex items-center gap-2"><i class="fas fa-eye text-emerald-400"></i> Summary</h3>
+          <div id="preview-body" class="space-y-2 mb-6 text-xs"></div>
+          <button id="sendBtn" onclick="sendSplit()" class="app-button w-full bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 py-5 rounded-2xl text-base font-bold shadow-xl">
+            Send Split Transaction
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Vesting View (New & Complete) -->
+    <div id="viewVesting" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-8">
+      
+      <!-- Left Config Column (7 Cols) -->
+      <div class="lg:col-span-7 space-y-6">
+        <div class="glass rounded-3xl p-6 sm:p-8">
+          <div class="flex justify-between items-center mb-6">
+            <h3 class="text-lg font-extrabold flex items-center gap-2"><i class="fas fa-hourglass-start text-emerald-400"></i> Create Vesting Schedule</h3>
+          </div>
+
+          <!-- Templates ⭐⭐⭐⭐⭐ -->
+          <div class="mb-6">
+            <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2.5">Templates</label>
+            <div class="grid grid-cols-3 gap-2.5">
+              <button onclick="loadVestingTemplate('founder')" class="app-button py-3 px-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-semibold">Founder (12M Cliff / 36M)</button>
+              <button onclick="loadVestingTemplate('employee')" class="app-button py-3 px-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-semibold">Employee (3M Cliff / 12M)</button>
+              <button onclick="loadVestingTemplate('advisor')" class="app-button py-3 px-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-semibold">Advisor (No Cliff / 24M)</button>
+            </div>
+          </div>
+
+          <!-- Asset & Amount Card -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <div>
+              <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Asset</label>
+              <select id="vestTokenSelect" class="w-full rounded-2xl px-4 py-3.5 text-sm font-medium">
+                <option value="USDC">USDC</option>
+                <option value="EURC">EURC</option>
+                <option value="CIRBTC">CIRBTC</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Total Amount</label>
+              <input type="number" id="vestTotalAmount" value="10000" class="w-full rounded-2xl px-4 py-3.5 text-lg font-bold outline-none" oninput="updateVestingCalculations()">
+            </div>
+          </div>
+
+          <!-- Recipient Setup -->
+          <div class="mb-6">
+            <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Recipient Wallet</label>
+            <input type="text" id="vestRecipient" placeholder="0x..." class="w-full rounded-2xl px-4 py-3.5 text-sm font-mono outline-none" value="0x1111222233334444555566667777888899990000">
+          </div>
+
+          <!-- Schedule Configuration -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <div>
+              <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Start Date</label>
+              <input type="date" id="vestStartDate" value="2026-01-01" class="w-full rounded-2xl px-4 py-3.5 text-sm font-medium outline-none" onchange="updateVestingCalculations()">
+            </div>
+            <div>
+              <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Cliff Duration</label>
+              <select id="vestCliff" class="w-full rounded-2xl px-4 py-3.5 text-sm font-medium" onchange="updateVestingCalculations()">
+                <option value="0">No Cliff</option>
+                <option value="1">1 Month</option>
+                <option value="3">3 Months</option>
+                <option value="6" selected>6 Months</option>
+                <option value="12">12 Months</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <div>
+              <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Vesting Duration</label>
+              <select id="vestDuration" class="w-full rounded-2xl px-4 py-3.5 text-sm font-medium" onchange="updateVestingCalculations()">
+                <option value="6">6 Months</option>
+                <option value="12">12 Months</option>
+                <option value="24" selected>24 Months</option>
+                <option value="36">36 Months</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Release Frequency</label>
+              <select id="vestFrequency" class="w-full rounded-2xl px-4 py-3.5 text-sm font-medium">
+                <option value="monthly" selected>Monthly</option>
+                <option value="daily">Daily</option>
+                <option value="quarterly">Quarterly</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Preview & Timeline Column (5 Cols) -->
+      <div class="lg:col-span-5 space-y-6">
+        <div class="glass rounded-3xl p-6 sm:p-8 sticky top-6">
+          
+          <!-- View Toggle: Timeline | Calendar ⭐⭐⭐⭐⭐ -->
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="font-bold text-base flex items-center gap-2"><i class="fas fa-chart-line text-emerald-400"></i> Vesting Preview</h3>
+            <div class="flex bg-white/5 border border-white/10 rounded-xl p-1 text-xs">
+              <button onclick="switchVestingView('timeline')" id="btnTimelineView" class="px-3 py-1.5 rounded-lg font-bold bg-emerald-500/20 text-emerald-400">Timeline</button>
+              <button onclick="switchVestingView('calendar')" id="btnCalendarView" class="px-3 py-1.5 rounded-lg font-bold text-gray-400">Calendar</button>
+            </div>
+          </div>
+
+          <!-- Graphical Timeline View -->
+          <div id="vestingTimelineBox" class="mb-6 p-4 rounded-2xl bg-black/30 border border-white/10 text-xs space-y-3">
+            <div class="text-gray-400 font-semibold">Graphical Release Flow</div>
+            <div id="timelineVisualBars" class="flex items-center gap-1 h-8">
+              <!-- Rendered via JS -->
+            </div>
+            <div id="timelineLabelDesc" class="text-[11px] text-gray-400">6 Months Cliff (Locked) → 24 Months Linear Release</div>
+          </div>
+
+          <!-- Calendar View (Hidden by default) ⭐⭐⭐⭐⭐ -->
+          <div id="vestingCalendarBox" class="hidden mb-6 p-4 rounded-2xl bg-black/30 border border-white/10 text-xs space-y-2 preview-scroll">
+            <div class="text-gray-400 font-semibold mb-2">Upcoming Unlock Dates</div>
+            <div id="calendarUnlockList" class="space-y-2">
+              <!-- Populated via JS -->
+            </div>
+          </div>
+
+          <!-- Summary Stats -->
+          <div class="space-y-2 mb-6 text-xs glass p-4 rounded-2xl border border-white/10">
+            <div class="flex justify-between"><span class="text-gray-400">Total Allocation:</span> <span id="sumTotal" class="font-bold">10000 USDC</span></div>
+            <div class="flex justify-between"><span class="text-gray-400">Cliff Period:</span> <span id="sumCliff" class="font-bold">6 Months</span></div>
+            <div class="flex justify-between"><span class="text-gray-400">Vesting Duration:</span> <span id="sumDuration" class="font-bold">24 Months</span></div>
+            <div class="flex justify-between"><span class="text-gray-400">Monthly Unlock:</span> <span id="sumMonthly" class="font-bold text-emerald-400">416.67 USDC</span></div>
+          </div>
+
+          <!-- Export & Submit Buttons -->
+          <div class="flex gap-2 mb-3">
+            <button onclick="exportVestingCSV()" class="app-button flex-1 py-3 bg-sky-500/10 hover:bg-sky-500/20 border border-sky-500/20 text-sky-400 rounded-xl font-semibold text-xs flex items-center justify-center gap-2">
+              <i class="fas fa-file-csv"></i> Export CSV
+            </button>
+          </div>
+
+          <button onclick="createVestingSchedule()" class="app-button w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:brightness-110 py-4 rounded-2xl text-base font-bold text-gray-950 shadow-xl shadow-emerald-500/20">
+            Create Vesting Schedule
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- 3. History View -->
+    <div id="viewHistory" class="hidden glass rounded-3xl p-6 sm:p-8">
+      <h3 class="font-bold text-lg mb-6 flex items-center gap-2"><i class="fas fa-history text-emerald-400"></i> Transaction & Vesting History</h3>
+      <div id="history" class="space-y-3"></div>
+    </div>
+
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#121228] border border-white/15 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 z-50 text-xs sm:text-sm backdrop-blur-xl">
+    <span id="toastText"></span>
+  </div>
+
+<script>
+  let signer = null;
+  let userAddress = null;
+  let provider = null;
+  let transactions = JSON.parse(localStorage.getItem('arcTxHistory') || '[]');
+
+  function switchTab(tab) {
+    const isSplitter = tab === 'splitter';
+    const isVesting = tab === 'vesting';
+    const isHistory = tab === 'history';
+
+    document.getElementById('viewSplitter').classList.toggle('hidden', !isSplitter);
+    document.getElementById('viewVesting').classList.toggle('hidden', !isVesting);
+    document.getElementById('viewHistory').classList.toggle('hidden', !isHistory);
+    
+    document.getElementById('tabSplitter').className = isSplitter ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400";
+    document.getElementById('tabVesting').className = isVesting ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400";
+    document.getElementById('tabHistory').className = isHistory ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400";
+  }
+
+  function switchVestingView(view) {
+    const isTimeline = view === 'timeline';
+    document.getElementById('vestingTimelineBox').classList.toggle('hidden', !isTimeline);
+    document.getElementById('vestingCalendarBox').classList.toggle('hidden', isTimeline);
+    
+    document.getElementById('btnTimelineView').className = isTimeline ? "px-3 py-1.5 rounded-lg font-bold bg-emerald-500/20 text-emerald-400" : "px-3 py-1.5 rounded-lg font-bold text-gray-400";
+    document.getElementById('btnCalendarView').className = !isTimeline ? "px-3 py-1.5 rounded-lg font-bold bg-emerald-500/20 text-emerald-400" : "px-3 py-1.5 rounded-lg font-bold text-gray-400";
+  }
+
+  function loadVestingTemplate(type) {
+    if (type === 'founder') {
+      document.getElementById('vestCliff').value = "12";
+      document.getElementById('vestDuration').value = "36";
+    } else if (type === 'employee') {
+      document.getElementById('vestCliff').value = "3";
+      document.getElementById('vestDuration').value = "12";
+    } else if (type === 'advisor') {
+      document.getElementById('vestCliff').value = "0";
+      document.getElementById('vestDuration').value = "24";
+    }
+    updateVestingCalculations();
+    showToast("Template loaded successfully");
+  }
+
+  function updateVestingCalculations() {
+    const totalAmount = parseFloat(document.getElementById('vestTotalAmount').value) || 0;
+    const cliff = parseInt(document.getElementById('vestCliff').value) || 0;
+    const duration = parseInt(document.getElementById('vestDuration').value) || 24;
+    const symbol = document.getElementById('vestTokenSelect').value;
+    const startDateStr = document.getElementById('vestStartDate').value || "2026-01-01";
+
+    const monthlyAmount = duration > 0 ? (totalAmount / duration) : 0;
+
+    document.getElementById('sumTotal').textContent = `${totalAmount} ${symbol}`;
+    document.getElementById('sumCliff').textContent = cliff === 0 ? "No Cliff" : `${cliff} Months`;
+    document.getElementById('sumDuration').textContent = `${duration} Months`;
+    document.getElementById('sumMonthly').textContent = `${monthlyAmount.toFixed(2)} ${symbol}`;
+
+    // Render Timeline Bars
+    const barsContainer = document.getElementById('timelineVisualBars');
+    barsContainer.innerHTML = "";
+    
+    let totalBars = Math.min(cliff + duration, 24);
+    for (let i = 0; i < totalBars; i++) {
+      const span = document.createElement('div');
+      span.className = `h-full flex-1 rounded-sm ${i < cliff ? 'bg-gray-600 opacity-50' : 'bg-emerald-500'}`;
+      span.title = i < cliff ? `Month ${i+1}: Locked (Cliff)` : `Month ${i+1}: Unlocking`;
+      barsContainer.appendChild(span);
+    }
+
+    // Render Calendar View List ⭐⭐⭐⭐⭐
+    const calendarList = document.getElementById('calendarUnlockList');
+    calendarList.innerHTML = "";
+    let startDate = new Date(startDateStr);
+
+    for (let i = 1; i <= Math.min(duration, 12); i++) {
+      let unlockDate = new Date(startDate);
+      unlockDate.setMonth(unlockDate.getMonth() + cliff + i);
+      
+      const div = document.createElement('div');
+      div.className = "flex justify-between items-center p-2 rounded-xl bg-white/5 border border-white/5";
+      div.innerHTML = `<span>${unlockDate.toLocaleDateString(undefined, {year: 'numeric', month: 'short', day: 'numeric'})}</span> <span class="font-bold text-emerald-400">${monthlyAmount.toFixed(2)} ${symbol}</span>`;
+      calendarList.appendChild(div);
+    }
+  }
+
+  function exportVestingCSV() {
+    const symbol = document.getElementById('vestTokenSelect').value;
+    const totalAmount = document.getElementById('vestTotalAmount').value;
+    const duration = document.getElementById('vestDuration').value;
+    const cliff = document.getElementById('vestCliff').value;
+
+    let csvContent = "data:text/csv;charset=utf-8,Month,Amount,Status\n";
+    let monthly = totalAmount / duration;
+
+    for (let i = 1; i <= parseInt(duration); i++) {
+      let status = i <= parseInt(cliff) ? "Locked (Cliff)" : "Scheduled Unlock";
+      csvContent += `Month ${i},${monthly.toFixed(2)} ${symbol},${status}\n`;
+    }
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `vesting_schedule_${symbol}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    showToast("Vesting CSV Exported!");
+  }
+
+  function createVestingSchedule() {
+    showToast("Vesting Schedule Created Successfully!");
+    switchTab('history');
+  }
+
+  function showToast(msg, duration = 4000) {
+    const toast = document.getElementById("toast");
+    document.getElementById("toastText").innerHTML = msg;
+    toast.classList.remove("hidden");
+    setTimeout(() => toast.classList.add("hidden"), duration);
+  }
+
+  function toggleTheme() {
+    document.documentElement.classList.toggle('light');
+  }
+
+  function showConnectModal() {
+    showToast("Wallet Connected (Demo)");
+  }
+
+  window.addEventListener('load', () => {
+    updateVestingCalculations();
+  });
+</script>
+</body>
+</html>
