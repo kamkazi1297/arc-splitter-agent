@@ -49,6 +49,7 @@
     .light .text-gray-400 { color: #475569 !important; }
     .light .text-gray-300 { color: #334155 !important; }
     
+    /* Keep ArcSplit header title and History text white/light-proof if needed or styled specifically */
     .header-title-text, .history-title-text { color: #ffffff !important; }
 
     .wallet-connected-glass {
@@ -430,38 +431,25 @@
       badge.textContent = `Syncing (Attempt ${attempt}/${retries})...`;
 
       try {
-        const selectedTokenAddress = select.value;
-        const balanceDisplay = document.getElementById('walletBalanceDisplay');
-        const badge = document.getElementById('retryStatusBadge');
-        const selectedSymbol = select.options[select.selectedIndex].text.split(' ')[0];
-
-        let rawBalance = 0n;
-        let decimals = 18;
-
-        if (selectedTokenAddress === "0x3600000000000000000000000000000000000000") {
-          rawBalance = await provider.getBalance(userAddress);
-          decimals = 18;
-        } else {
-          const tokenContract = new ethers.Contract(selectedTokenAddress, ERC20_ABI, provider);
-          [rawBalance, decimals] = await Promise.all([
-            tokenContract.balanceOf(userAddress),
-            tokenContract.decimals().catch(() => 18)
-          ]);
-        }
+        const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+        const [rawBalance, decimals] = await Promise.all([
+          tokenContract.balanceOf(userAddress),
+          tokenContract.decimals().catch(() => 18)
+        ]);
 
         const formattedBalance = ethers.formatUnits(rawBalance, decimals);
         const displayVal = parseFloat(formattedBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
 
         balanceDisplay.textContent = `${displayVal} ${selectedSymbol}`;
         badge.className = "text-[10px] px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
-        badge.textContent = "Synced";
+        badge.textContent = "";
         return;
       } catch (err) {
         console.warn(`Attempt ${attempt} failed to fetch actual balance. Retrying...`, err);
         if (attempt === retries) {
           balanceDisplay.textContent = `0.00 ${selectedSymbol}`;
           badge.className = "text-[10px] px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20";
-          badge.textContent = "Sync Failed (RPC Error)";
+          badge.textContent = "";
         }
       }
     }
