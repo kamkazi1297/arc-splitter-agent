@@ -45,9 +45,10 @@
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1);
     }
 
-    .light body, .light h1, .light h3, .light label, .light .text-white { color: #0f172a; }
+    .light body, .light h1, .light h3, .light label, .light .text-white { color: #0f172a !important; }
     .light .text-gray-400 { color: #475569 !important; }
     .light .text-gray-300 { color: #334155 !important; }
+    .light .header-title-text { color: #0f172a !important; }
 
     .wallet-connected-glass {
       background: rgba(18, 18, 38, 0.85) !important;
@@ -105,7 +106,7 @@
     <!-- Header Section -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
       <div>
-        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Smart Conditional Split</span></h1>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight header-title-text">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Smart Conditional Split</span></h1>
         <p class="text-gray-400 light:text-slate-600 text-xs sm:text-sm font-medium">Contract Engine Configurator</p>
       </div>
       
@@ -217,9 +218,14 @@
               <span class="text-xs text-gray-400">Executed if no conditions match</span>
             </div>
             <div id="defaultRecipientsList" class="space-y-2"></div>
-            <button onclick="addDefaultRecipient()" class="mt-3 text-xs text-emerald-400 font-semibold hover:underline flex items-center gap-1">
-              <i class="fas fa-plus"></i> Add Recipient
-            </button>
+            <div class="flex items-center justify-between mt-3">
+              <button onclick="addDefaultRecipient()" class="text-xs text-emerald-400 font-semibold hover:underline flex items-center gap-1">
+                <i class="fas fa-plus"></i> Add Recipient
+              </button>
+              <button onclick="distributeRemainingDefault()" class="text-[11px] text-cyan-400 font-semibold hover:underline flex items-center gap-1">
+                <i class="fas fa-balance-scale"></i> Distribute Remaining
+              </button>
+            </div>
           </div>
         </div>
 
@@ -256,7 +262,7 @@
 
           <div id="engineErrors" class="hidden glass border border-rose-500/30 bg-rose-500/10 rounded-2xl p-3.5 mb-5 text-xs text-rose-300 space-y-1"></div>
 
-          <button onclick="deploySmartSplit()" class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:brightness-110 py-4 rounded-2xl font-bold text-sm shadow-lg shadow-emerald-500/20 transition-all">
+          <button id="deployBtn" onclick="deploySmartSplit()" class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:brightness-110 py-4 rounded-2xl font-bold text-sm shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2">
             Deploy Smart Split Contract
           </button>
         </div>
@@ -266,7 +272,7 @@
 
     <!-- History View -->
     <div id="viewHistory" class="hidden glass rounded-3xl p-6">
-      <h3 class="font-bold text-lg mb-4">Smart Split History</h3>
+      <h3 class="font-bold text-lg mb-4 text-white light:text-slate-900">Smart Split History</h3>
       <div id="historyList" class="space-y-4 text-xs text-gray-400">No smart splits deployed yet.</div>
     </div>
 
@@ -324,6 +330,7 @@
         updateWalletUI();
         showToast("Wallet Connected Successfully!");
         fetchBalanceWithRetry();
+        checkEngineErrors();
       } catch (err) {
         console.error(err);
         showToast("Wallet connection rejected or failed.");
@@ -340,6 +347,7 @@
     btn.className = "flex-1 px-6 py-4 wallet-connected-glass font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg";
     document.getElementById('connectText').innerHTML = `<i class="fas fa-check-circle text-emerald-400"></i> ${shortAddr}`;
     document.getElementById('disconnectBtn').classList.remove('hidden');
+    checkEngineErrors();
   }
 
   function disconnectWallet() {
@@ -359,6 +367,7 @@
 
     showToast("Wallet disconnected.");
     runSimulation();
+    checkEngineErrors();
   }
 
   function handleTokenSelectChange() {
@@ -486,6 +495,9 @@
               <option value="Amount" ${rule.condition.type === 'Amount' ? 'selected' : ''}>Amount Threshold</option>
               <option value="Sender" ${rule.condition.type === 'Sender' ? 'selected' : ''}>Sender Address</option>
               <option value="Token" ${rule.condition.type === 'Token' ? 'selected' : ''}>Token Type</option>
+              <option value="ManualTag" ${rule.condition.type === 'ManualTag' ? 'selected' : ''}>Manual Tag</option>
+              <option value="DateTime" ${rule.condition.type === 'DateTime' ? 'selected' : ''}>Date / Time</option>
+              <option value="Wallet" ${rule.condition.type === 'Wallet' ? 'selected' : ''}>Wallet Whitelist</option>
             </select>
           </div>
           <div>
@@ -510,9 +522,14 @@
         <div class="space-y-2 pt-2 border-t border-white/5">
           <div class="text-[10px] text-gray-400 uppercase font-semibold">Contract Split Distribution (Recipients & %)</div>
           ${recipientsHtml}
-          <button onclick="addRuleRecipientPrompt(${index})" class="text-[11px] text-emerald-400 font-semibold hover:underline flex items-center gap-1 mt-1">
-            <i class="fas fa-plus"></i> Add Recipient
-          </button>
+          <div class="flex items-center justify-between mt-1">
+            <button onclick="addRuleRecipientPrompt(${index})" class="text-[11px] text-emerald-400 font-semibold hover:underline flex items-center gap-1">
+              <i class="fas fa-plus"></i> Add Recipient
+            </button>
+            <button onclick="distributeRemainingRule(${index})" class="text-[11px] text-cyan-400 font-semibold hover:underline flex items-center gap-1">
+              <i class="fas fa-balance-scale"></i> Distribute Remaining
+            </button>
+          </div>
         </div>
       `;
       container.appendChild(card);
@@ -533,6 +550,12 @@
         optionsHtml += `<option value="${opt.value}" ${isSelected}>${opt.text}</option>`;
       }
       return `<select onchange="updateRuleCond(${index}, 'val', this.value)" class="w-full rounded-xl px-3 py-2">${optionsHtml}</select>`;
+    } else if (cond.type === 'DateTime') {
+      return `<input type="datetime-local" value="${cond.val}" oninput="updateRuleCond(${index}, 'val', this.value)" class="w-full rounded-xl px-3 py-2 text-xs font-bold">`;
+    } else if (cond.type === 'ManualTag') {
+      return `<input type="text" value="${cond.val}" oninput="updateRuleCond(${index}, 'val', this.value)" placeholder="e.g. VIP_PROMO" class="w-full rounded-xl px-3 py-2 text-xs font-bold">`;
+    } else if (cond.type === 'Wallet') {
+      return `<input type="text" value="${cond.val}" oninput="updateRuleCond(${index}, 'val', this.value)" placeholder="0xWhitelistedAddress..." class="w-full rounded-xl px-3 py-2 text-xs font-bold">`;
     } else {
       return `<input type="text" value="${cond.val}" oninput="updateRuleCond(${index}, 'val', this.value)" placeholder="e.g. 500 or 0x..." class="w-full rounded-xl px-3 py-2 font-bold">`;
     }
@@ -545,15 +568,32 @@
       <div class="flex items-center gap-2">
         <input type="text" value="${r.address}" oninput="defaultRecipients[${idx}].address=this.value" class="flex-1 bg-black/20 rounded-xl px-3 py-1.5 text-xs" placeholder="0xFallback Receiver...">
         <div class="percent-container w-24">
-          <input type="number" value="${r.perc}" oninput="defaultRecipients[${idx}].perc=parseFloat(this.value)||0; runSimulation()" class="w-full bg-black/25 rounded-xl px-3 py-1.5 text-center text-xs font-bold" placeholder="0">
+          <input type="number" value="${r.perc}" oninput="defaultRecipients[${idx}].perc=parseFloat(this.value)||0; runSimulation(); checkEngineErrors();" class="w-full bg-black/25 rounded-xl px-3 py-1.5 text-center text-xs font-bold" placeholder="0">
         </div>
-        <button onclick="defaultRecipients.splice(${idx},1); renderRules()" class="text-gray-500 hover:text-rose-400 text-xs px-1"><i class="fas fa-times"></i></button>
+        <button onclick="defaultRecipients.splice(${idx},1); renderRules();" class="text-gray-500 hover:text-rose-400 text-xs px-1"><i class="fas fa-times"></i></button>
       </div>
     `).join('');
   }
 
   function addDefaultRecipient() {
     defaultRecipients.push({ address: '', perc: 0 });
+    renderRules();
+  }
+
+  function distributeRemainingDefault() {
+    if (defaultRecipients.length === 0) return;
+    let currentSum = defaultRecipients.slice(0, -1).reduce((acc, r) => acc + (parseFloat(r.perc) || 0), 0);
+    let remaining = Math.max(0, 100 - currentSum);
+    defaultRecipients[defaultRecipients.length - 1].perc = remaining;
+    renderRules();
+  }
+
+  function distributeRemainingRule(ruleIdx) {
+    let recs = rules[ruleIdx].recipients;
+    if (recs.length === 0) return;
+    let currentSum = recs.slice(0, -1).reduce((acc, r) => acc + (parseFloat(r.perc) || 0), 0);
+    let remaining = Math.max(0, 100 - currentSum);
+    recs[recs.length - 1].perc = remaining;
     renderRules();
   }
 
@@ -607,6 +647,7 @@
   function updateRuleRecipient(ruleIdx, recIdx, field, val) {
     rules[ruleIdx].recipients[recIdx][field] = field === 'perc' ? (parseFloat(val) || 0) : val;
     runSimulation();
+    checkEngineErrors();
   }
 
   function addRuleRecipientPrompt(ruleIdx) {
@@ -638,7 +679,7 @@
         if (c.op === '>=' && amountInput >= valNum) matched = true;
         if (c.op === '<=' && amountInput <= valNum) matched = true;
         if (c.op === '==' && amountInput === valNum) matched = true;
-      } else if (c.type === 'Sender') {
+      } else if (c.type === 'Sender' || c.type === 'Wallet') {
         if (userAddress && userAddress.toLowerCase() === (c.val || "").toLowerCase()) {
           matched = true;
         }
@@ -646,6 +687,16 @@
         if (selectTokenVal.toLowerCase() === (c.val || "").toLowerCase()) {
           matched = true;
         }
+      } else if (c.type === 'DateTime') {
+        const targetTime = new Date(c.val).getTime();
+        const nowTime = new Date().getTime();
+        if (!isNaN(targetTime)) {
+          if (c.op === '>=' && nowTime >= targetTime) matched = true;
+          else if (c.op === '<=' && nowTime <= targetTime) matched = true;
+          else if (nowTime >= targetTime) matched = true;
+        }
+      } else if (c.type === 'ManualTag') {
+        if ((c.val || "").trim().length > 0) matched = true;
       }
 
       if (matched) {
@@ -715,8 +766,14 @@
       return;
     }
 
+    const deployBtn = document.getElementById('deployBtn');
+    const originalBtnHtml = deployBtn.innerHTML;
+
     try {
-      showToast("🚀 Preparing Smart Contract Transaction...");
+      deployBtn.disabled = true;
+
+      deployBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Preparing...`;
+      await new Promise(r => setTimeout(r, 600));
 
       const CONTRACT_ADDRESS = "0x372Ec402aD0BDbeD367c80C89a585A8077B919B2";
       
@@ -733,6 +790,8 @@
 
       if (!baseAmountInput || parseFloat(baseAmountInput) <= 0) {
         showToast("Please enter a valid Default Base Amount.");
+        deployBtn.disabled = false;
+        deployBtn.innerHTML = originalBtnHtml;
         return;
       }
 
@@ -764,23 +823,26 @@
 
       if (Math.abs(totalAssignedPerc - 100) > 0.01) {
         showToast("Error: Total recipient percentages must equal exactly 100%.");
+        deployBtn.disabled = false;
+        deployBtn.innerHTML = originalBtnHtml;
         return;
       }
 
       const conditionInputs = [];
       rules.forEach(rule => {
         let cTypeVal = 0; 
-        if (rule.condition.type === 'Balance') cTypeVal = 1;
-        else if (rule.condition.type === 'Token') cTypeVal = 1; 
+        if (rule.condition.type === 'Token') cTypeVal = 1;
+        else if (rule.condition.type === 'ManualTag') cTypeVal = 2;
+        else if (rule.condition.type === 'DateTime') cTypeVal = 3;
+        else if (rule.condition.type === 'Wallet') cTypeVal = 4;
 
         let opVal = 0; 
         if (rule.condition.op === '<') opVal = 1; 
         else if (rule.condition.op === '=' || rule.condition.op === '==') opVal = 2; 
 
-        // رفع خطا: اگر مقدار شرط آدرس یا متن غیرعددی بود، مقدار threshold را صفر در نظر می‌گیریم
         let thresholdVal = 0n;
         const rawVal = rule.condition.val || "0";
-        if (rule.condition.type !== 'Token' && !rawVal.startsWith('0x')) {
+        if (rule.condition.type !== 'Token' && rule.condition.type !== 'ManualTag' && !rawVal.startsWith('0x') && rule.condition.type !== 'DateTime') {
           try {
             thresholdVal = ethers.parseUnits(rawVal, decimals);
           } catch (e) {
@@ -810,12 +872,13 @@
       const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
       if (tokenAddress !== ethers.ZeroAddress) {
-        showToast("Requesting Token Approval...");
+        deployBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Signing...`;
         const tokenContract = new ethers.Contract(tokenAddress, ERC20_APPROVE_ABI, signer);
         const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, totalAmountParsed);
         await approveTx.wait();
-        showToast("Approval confirmed. Sending deployment transaction...");
       }
+
+      deployBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Submitting...`;
 
       const deadline = 0; 
       const isAndLogic = true;
@@ -845,12 +908,13 @@
         );
       }
 
-      showToast("Transaction sent! Waiting for confirmation...");
+      deployBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Completed`;
       await tx.wait();
 
       showToast("Smart Split successfully deployed on-chain!");
       switchTab('history');
       
+      let totalNumBase = parseFloat(baseAmountInput) || 0;
       let rulesHistoryHtml = rules.map((rule, idx) => {
         let condText = `${rule.condition.type} ${rule.condition.op} ${rule.condition.val}`;
         if (rule.condition.type === 'Token') {
@@ -865,12 +929,18 @@
           condText = `Token Type == ${tokenSymbol}`;
         }
         
-        let recsHtml = rule.recipients.map(r => `
-          <div class="flex justify-between items-center bg-black/20 px-3 py-1.5 rounded-lg my-1">
-            <span class="font-mono text-gray-300">${r.address ? r.address.substring(0,6) + '...' + r.address.substring(r.address.length-4) : 'Unassigned'}</span>
-            <span class="font-bold text-emerald-400">${r.perc}%</span>
-          </div>
-        `).join('');
+        let recsHtml = rule.recipients.map(r => {
+          let tokenValCalc = (totalNumBase * (r.perc || 0)) / 100;
+          return `
+            <div class="flex justify-between items-center bg-black/20 px-3 py-1.5 rounded-lg my-1">
+              <span class="font-mono text-gray-300">${r.address ? r.address.substring(0,6) + '...' + r.address.substring(r.address.length-4) : 'Unassigned'}</span>
+              <div class="text-right">
+                <span class="font-bold text-emerald-400 block">${tokenValCalc.toFixed(2)} Tokens</span>
+                <span class="text-[10px] text-gray-400">${r.perc}%</span>
+              </div>
+            </div>
+          `;
+        }).join('');
 
         return `
           <div class="bg-white/[0.03] border border-white/5 p-3.5 rounded-2xl space-y-2">
@@ -886,12 +956,18 @@
         `;
       }).join('');
 
-      let fallbackRecsHtml = defaultRecipients.map(r => `
-        <div class="flex justify-between items-center bg-black/20 px-3 py-1.5 rounded-lg my-1">
-          <span class="font-mono text-gray-300">${r.address ? r.address.substring(0,6) + '...' + r.address.substring(r.address.length-4) : 'Unassigned'}</span>
-          <span class="font-bold text-amber-400">${r.perc}%</span>
-        </div>
-      `).join('');
+      let fallbackRecsHtml = defaultRecipients.map(r => {
+        let tokenValCalc = (totalNumBase * (r.perc || 0)) / 100;
+        return `
+          <div class="flex justify-between items-center bg-black/20 px-3 py-1.5 rounded-lg my-1">
+            <span class="font-mono text-gray-300">${r.address ? r.address.substring(0,6) + '...' + r.address.substring(r.address.length-4) : 'Unassigned'}</span>
+            <div class="text-right">
+              <span class="font-bold text-amber-400 block">${tokenValCalc.toFixed(2)} Tokens</span>
+              <span class="text-[10px] text-gray-400">${r.perc}%</span>
+            </div>
+          </div>
+        `;
+      }).join('');
 
       let fallbackHistoryHtml = `
         <div class="bg-white/[0.03] border border-white/5 p-3.5 rounded-2xl space-y-2">
@@ -906,12 +982,20 @@
         </div>
       `;
 
+      const explorerUrl = `https://testnet.arcanscan.network/tx/${tx.hash}`;
+
       document.getElementById('historyList').innerHTML = `
         <div class="glass p-5 rounded-3xl space-y-4">
           <div class="flex justify-between items-center pb-3 border-b border-white/10">
             <div>
-              <div class="font-bold text-white text-sm">On-Chain Deployed Split</div>
-              <div class="text-xs text-emerald-400 mt-1">Tx Hash: ${tx.hash.substring(0, 10)}... • Deployed by ${userAddress.substring(0,6)}...</div>
+              <div class="font-bold text-white light:text-slate-900 text-sm">On-Chain Deployed Split</div>
+              <div class="text-xs text-gray-400 mt-1 flex items-center gap-1.5">
+                Tx Hash: 
+                <a href="${explorerUrl}" target="_blank" class="text-cyan-400 hover:underline font-mono inline-flex items-center gap-1">
+                  ${tx.hash}
+                  <i class="fas fa-external-link-alt text-[10px]"></i>
+                </a>
+              </div>
             </div>
             <span class="px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full text-xs font-semibold">Confirmed</span>
           </div>
@@ -922,9 +1006,14 @@
         </div>
       `;
 
+      deployBtn.disabled = false;
+      deployBtn.innerHTML = originalBtnHtml;
+
     } catch (err) {
       console.error(err);
       showToast("Transaction failed or rejected by user.");
+      deployBtn.disabled = false;
+      deployBtn.innerHTML = originalBtnHtml;
     }
   }
 
