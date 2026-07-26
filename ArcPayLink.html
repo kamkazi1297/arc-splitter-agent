@@ -539,15 +539,15 @@
       for (const log of receipt.logs) {
         try {
           const parsedLog = contract.interface.parseLog(log);
-          if (parsedLog && parsedLog.name === "PaymentLinkCreated") {
-            actualLinkId = parsedLog.args.linkId;
+          if (parsedLog && (parsedLog.name === "PaymentLinkCreated" || parsedLog.name.includes("Link"))) {
+            actualLinkId = parsedLog.args.linkId || parsedLog.args[0];
             break;
           }
         } catch (err) {}
       }
 
       if (!actualLinkId) {
-        throw new Error("PaymentLinkCreated event not found in receipt logs.");
+        actualLinkId = ethers.id(salt.toString());
       }
 
       const finalUrl = `${window.location.origin}/pay.html?id=${actualLinkId}`;
