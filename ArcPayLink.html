@@ -7,6 +7,8 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <!-- اضافه شدن کتابخانه استاندارد AppKit برای مودال حرفه‌ای ولت‌ها -->
+  <script src="https://cdn.jsdelivr.net/npm/@reown/appkit@latest/dist/index.umd.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 
   <style>
@@ -324,6 +326,31 @@
     "event PaymentLinkCreated(bytes32 indexed linkId, address indexed creator, address token, uint256 amount, uint256 expiration, address restrictedTo, string qrMetaData)"
   ];
 
+  // راه‌اندازی مودال حرفه‌ای چندولتی (WalletConnect / AppKit)
+  let modalInstance = null;
+  try {
+    if (window.AppKit && window.AppKit.createAppKit) {
+      const arcNetwork = {
+        id: ARC_CHAIN_ID,
+        name: 'Arc Testnet',
+        network: 'arc-testnet',
+        nativeCurrency: { name: 'ARC', symbol: 'ARC', decimals: 18 },
+        rpcUrls: { default: { http: ['https://rpc.testnet.arc.network'] } },
+        blockExplorers: { default: { name: 'ArcScan', url: 'https://testnet.arcscan.app' } },
+        testnet: true
+      };
+
+      modalInstance = window.AppKit.createAppKit({
+        adapters: [new window.AppKit.EthersAdapter()],
+        networks: [arcNetwork],
+        projectId: 'c0b893a903264c8dbe4df66fb31d1d86', // شناسه عمومی استاندارد برای تست
+        features: { analytics: true }
+      });
+    }
+  } catch (err) {
+    console.warn("AppKit initialization fallback warning:", err);
+  }
+
   window.addEventListener('load', async () => {
     if (window.ethereum && window.ethereum.selectedAddress) {
       setTimeout(connectWallet, 800);
@@ -333,11 +360,20 @@
   });
 
   async function connectWallet() {
-    if (!window.ethereum) {
-      return showToast("MetaMask not found! Please install MetaMask.", 5000);
-    }
-
     try {
+      // اگر مودال حرفه‌ای لود شده باشد، آن را باز می‌کنیم تا کاربر از بین تمام ولت‌ها انتخاب کند
+      if (modalInstance) {
+        await modalInstance.open();
+        // چک کردن وضعیت اتصال بعد از باز شدن مودال
+        setTimeout(checkAndUpdateConnection, 1000);
+        return;
+      }
+
+      // فالبک به متد استاندارد مرورگر در صورت عدم دسترسی
+      if (!window.ethereum) {
+        return showToast("MetaMask or Web3 Wallet not found!", 5000);
+      }
+
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       userAddress = accounts[0];
 
@@ -357,17 +393,7 @@
       }
 
       signer = await provider.getSigner();
-      const shortAddress = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
-      
-      document.getElementById("displayWallet").textContent = shortAddress;
-      document.getElementById("headerWalletText").textContent = shortAddress;
-      document.getElementById("prevReceiver").textContent = shortAddress;
-      document.getElementById("disconnectBtn").classList.remove("hidden");
-      document.getElementById("disconnectBtn").classList.add("flex");
-
-      showToast("✅ Wallet Connected Successfully", 3000);
-      await loadUserBalanceWithRetry();
-      updatePreview();
+      updateWalletUI(userAddress);
 
     } catch (e) {
       console.error("Wallet Connection Error:", e);
@@ -375,10 +401,45 @@
     }
   }
 
+  async function checkAndUpdateConnection() {
+    if (modalInstance) {
+      try {
+        const providerData = modalInstance.getProvider ? modalInstance.getProvider() : window.ethereum;
+        if (providerData) {
+          provider = new ethers.BrowserProvider(providerData);
+          signer = await provider.getSigner();
+          userAddress = await signer.getAddress();
+          updateWalletUI(userAddress);
+        }
+      } catch (e) {
+        console.log("Waiting for user wallet selection...");
+      }
+    }
+  }
+
+  function updateWalletUI(addr) {
+    userAddress = addr;
+    const shortAddress = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
+    
+    document.getElementById("displayWallet").textContent = shortAddress;
+    document.getElementById("headerWalletText").textContent = shortAddress;
+    document.getElementById("prevReceiver").textContent = shortAddress;
+    document.getElementById("disconnectBtn").classList.remove("hidden");
+    document.getElementById("disconnectBtn").classList.add("flex");
+
+    showToast("✅ Wallet Connected Successfully", 3000);
+    loadUserBalanceWithRetry();
+    updatePreview();
+  }
+
   function disconnectWallet() {
     signer = null;
     userAddress = null;
     provider = null;
+
+    if (modalInstance && modalInstance.disconnect) {
+      modalInstance.disconnect();
+    }
 
     document.getElementById("displayWallet").textContent = "Not Connected";
     document.getElementById("headerWalletText").textContent = "Connect Wallet";
@@ -495,7 +556,7 @@
         const allowance = await tokenContract.allowance(userAddress, CONTRACT_ADDRESS);
         
         if (allowance < amountWei) {
-          showToast("Please approve token spending in MetaMask...");
+          showToast("Please approve token spending in your wallet...");
           const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, amountWei);
           
           showToast("Waiting for approval confirmation...");
@@ -518,7 +579,6 @@
       const salt = Math.floor(Math.random() * 1000000000);
       const restrictedTo = ethers.ZeroAddress;
 
-      // Compute exact linkId deterministically via contract view function to guarantee accuracy
       let computedLinkId;
       try {
         computedLinkId = await contract.generateLinkId(restrictedTo, salt);
@@ -538,7 +598,7 @@
         salt: salt
       };
 
-      showToast("Please confirm payment link creation in MetaMask...");
+      showToast("Please confirm payment link creation in your wallet...");
       
       const tx = await contract.createPaymentLink(params, { 
         value: isNative ? amountWei : 0 
