@@ -547,7 +547,10 @@
       }
 
       if (!actualLinkId) {
-        actualLinkId = ethers.id(salt.toString());
+        actualLinkId = ethers.solidityPackedKeccak256(
+          ["address", "address", "uint256", "uint256", "uint256"],
+          [userAddress, isNative ? ethers.ZeroAddress : tokenAddress, amountWei, expiration, salt]
+        );
       }
 
       const finalUrl = `${window.location.origin}/pay.html?id=${actualLinkId}`;
