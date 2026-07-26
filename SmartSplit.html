@@ -436,6 +436,10 @@
           tokenContract.balanceOf(userAddress),
           tokenContract.decimals().catch(() => 18)
         ]);
+        catch (e) {
+    if (retry < 2) setTimeout(() => updateBalance(retry + 1), 1000);
+    else statusEl.innerHTML = `<div class="w-2 h-2 rounded-full bg-amber-500"></div> Connected • <span class="text-amber-400 light:text-amber-600">Balance unavailable</span>`;
+  }
 
         const formattedBalance = ethers.formatUnits(rawBalance, decimals);
         const displayVal = parseFloat(formattedBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
