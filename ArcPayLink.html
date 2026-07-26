@@ -461,24 +461,33 @@
 
     try {
       const contract = new ethers.Contract(CONTRACT_ADDRESS, ArcPaymentLinksABI, signer);
-      const tokenContract = new ethers.Contract(tokenAddress, [
-        "function decimals() view returns (uint8)",
-        "function allowance(address owner, address spender) view returns (uint256)",
-        "function approve(address spender, uint256 amount) returns (bool)"
-      ], signer);
       
-      const decimals = await tokenContract.decimals();
-      const amountWei = ethers.parseUnits(amountInput.toString(), decimals);
+      const isNative = (tokenAddress === ethers.ZeroAddress || tokenAddress.toLowerCase() === "0x0000000000000000000000000000000000000000");
 
-      // Handle ERC20 approval before creating payment link
-      if (tokenAddress !== ethers.ZeroAddress) {
+      let amountWei;
+      let decimals = 18;
+
+      if (!isNative) {
+        const tokenContract = new ethers.Contract(tokenAddress, [
+          "function decimals() view returns (uint8)",
+          "function allowance(address owner, address spender) view returns (uint256)",
+          "function approve(address spender, uint256 amount) returns (bool)"
+        ], signer);
+        
+        decimals = await tokenContract.decimals();
+        amountWei = ethers.parseUnits(amountInput.toString(), decimals);
+
         showToast("Checking token allowance...");
         const allowance = await tokenContract.allowance(userAddress, CONTRACT_ADDRESS);
+        
         if (allowance < amountWei) {
-          showToast("Approving token spending in wallet...");
+          showToast("Please approve token spending in your wallet...");
           const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, amountWei);
           await approveTx.wait();
+          showToast("Approval confirmed!");
         }
+      } else {
+        amountWei = ethers.parseUnits(amountInput.toString(), 18);
       }
 
       let expiration = 0;
@@ -493,7 +502,7 @@
 
       const params = {
         linkId: linkId,
-        token: tokenAddress,
+        token: isNative ? ethers.ZeroAddress : tokenAddress,
         amount: amountWei,
         expiration: expiration,
         claimHash: ethers.ZeroHash,
@@ -502,10 +511,12 @@
         salt: salt
       };
 
-      const isNative = (tokenAddress === ethers.ZeroAddress);
       showToast("Creating payment link on blockchain...");
       
-      const tx = await contract.createPaymentLink(params, { value: isNative ? amountWei : 0 });
+      const tx = await contract.createPaymentLink(params, { 
+        value: isNative ? amountWei : 0 
+      });
+      
       showToast("Waiting for confirmation...");
       await tx.wait();
 
@@ -530,8 +541,9 @@
       showToast("✅ Payment Link Created Successfully!", 5000);
 
     } catch (error) {
-      console.error(error);
-      showToast(error.reason || error.message || "Transaction failed", 7000);
+      console.error("Detailed Error:", error);
+      let errorMsg = error.reason || error.shortMessage || error.message || "Transaction failed";
+      showToast(errorMsg, 7000);
     }
   }
 
