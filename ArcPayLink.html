@@ -84,10 +84,6 @@
       color: #0f172a;
     }
 
-    .invalid-field {
-      border-color: #ef4444 !important;
-    }
-
     .error-msg {
       color: #ef4444;
       font-size: 0.75rem;
@@ -169,9 +165,6 @@
             </select>
             <div class="flex items-center justify-between text-xs pt-1">
               <div id="tokenBalanceDisplay" class="text-gray-400">Balance: —</div>
-              <button onclick="loadUserBalance()" class="text-emerald-400 hover:underline flex items-center gap-1 font-semibold">
-                <i class="fas fa-rotate-right"></i> Retry / Refresh
-              </button>
             </div>
           </div>
         </div>
@@ -371,7 +364,7 @@
       document.getElementById("disconnectBtn").classList.add("flex");
 
       showToast("✅ Wallet Connected Successfully", 3000);
-      await loadUserBalance();
+      await loadUserBalanceWithRetry();
       updatePreview();
 
     } catch (e) {
@@ -409,11 +402,12 @@
         select.value = "0x3600000000000000000000000000000000000000";
       }
     }
-    await loadUserBalance();
+    await loadUserBalanceWithRetry();
     updatePreview();
   }
 
-  async function loadUserBalance() {
+  // تابع دریافت بالانس با تلاش خودکار (۳ بار با فاصله زمانی ۱.۵ ثانیه)
+  async function loadUserBalanceWithRetry() {
     const select = document.getElementById('tokenSelect');
     const tokenAddress = select.value;
     if (!tokenAddress || tokenAddress === "custom" || !signer || !userAddress) {
@@ -422,24 +416,39 @@
     }
 
     const tokenSymbol = select.options[select.selectedIndex].text.replace(/[^A-Za-z0-9]/g, '');
+    let success = false;
 
-    try {
-      const contract = new ethers.Contract(tokenAddress, [
-        "function balanceOf(address) view returns (uint256)",
-        "function decimals() view returns (uint8)"
-      ], signer);
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        document.getElementById("tokenBalanceDisplay").textContent = `Balance: Loading... (Attempt ${attempt}/3)`;
+        
+        const contract = new ethers.Contract(tokenAddress, [
+          "function balanceOf(address) view returns (uint256)",
+          "function decimals() view returns (uint8)"
+        ], signer);
 
-      const [bal, decimals] = await Promise.all([
-        contract.balanceOf(userAddress),
-        contract.decimals()
-      ]);
+        const [bal, decimals] = await Promise.all([
+          contract.balanceOf(userAddress),
+          contract.decimals()
+        ]);
 
-      const formatted = ethers.formatUnits(bal, decimals);
-      document.getElementById("tokenBalanceDisplay").innerHTML = 
-        `Balance: <span class="text-emerald-400">${parseFloat(formatted).toFixed(4)} ${tokenSymbol}</span>`;
-    } catch (e) {
-      console.error(e);
-      document.getElementById("tokenBalanceDisplay").textContent = "Balance: Error loading";
+        const formatted = ethers.formatUnits(bal, decimals);
+        document.getElementById("tokenBalanceDisplay").innerHTML = 
+          `Balance: <span class="text-emerald-400">${parseFloat(formatted).toFixed(4)} ${tokenSymbol}</span>`;
+        
+        success = true;
+        break; // اگر موفق شد، حلقه متوقف می‌شود
+      } catch (e) {
+        console.warn(`Attempt ${attempt} failed to load balance:`, e);
+        if (attempt < 3) {
+          // انتظار ۱.۵ ثانیه قبل از تلاش مجدد
+          await new Promise(resolve => setTimeout(resolve, 1500));
+        }
+      }
+    }
+
+    if (!success) {
+      document.getElementById("tokenBalanceDisplay").textContent = "Balance: Unable to load";
     }
   }
 
@@ -483,8 +492,13 @@
         if (allowance < amountWei) {
           showToast("Please approve token spending in your wallet...");
           const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, amountWei);
+          
+          showToast("Waiting for approval confirmation...");
           await approveTx.wait();
           showToast("Approval confirmed!");
+          
+          // مکث کوتاه ۲ ثانیه‌ای برای هماهنگی با شبکه تست‌نت
+          await new Promise(resolve => setTimeout(resolve, 2000));
         }
       } else {
         amountWei = ethers.parseUnits(amountInput.toString(), 18);
@@ -511,7 +525,6 @@
         salt: salt
       };
 
-      // چاپ اطلاعات کامل برای دیباگ دقیق در کنسول
       console.log("=== DEBUG CONTRACT PARAMS ===");
       console.log("Contract Address:", CONTRACT_ADDRESS);
       console.log("Is Native Token?:", isNative);
