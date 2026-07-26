@@ -72,7 +72,7 @@
       color: #0f172a;
       border: 1px solid #cbd5e1;
     }
-        /* ==================== FIX FOR SELECT OPTIONS ==================== */
+
     select option {
       background-color: #1a1a2e;
       color: white;
@@ -81,15 +81,6 @@
 
     .light select option {
       background-color: #ffffff;
-      color: #0f172a;
-    }
-
-    /* بهبود نمایش در Dark Mode */
-    select {
-      color: white;
-    }
-
-    .light select {
       color: #0f172a;
     }
 
@@ -166,11 +157,11 @@
           <h3 class="font-bold text-sm text-gray-400 uppercase tracking-wider mb-3">Token</h3>
           <div class="space-y-3">
             <select id="tokenSelect" onchange="handleTokenChange()" class="w-full rounded-2xl px-4 py-3.5 text-sm font-medium cursor-pointer">
-  <option value="USDC">🟦 USDC</option>
-  <option value="EURC">🟣 EURC</option>
-  <option value="CIRBTC">🟠 cirBTC</option>
-  <option value="custom">➕ Add Custom Token...</option>
-</select>
+              <option value="0x3600000000000000000000000000000000000000">🟦 USDC</option>
+              <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">🟣 EURC</option>
+              <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">🟠 cirBTC</option>
+              <option value="custom">➕ Add Custom Token...</option>
+            </select>
             <div id="tokenBalanceDisplay" class="text-xs text-gray-400">Balance: —</div>
           </div>
         </div>
@@ -312,9 +303,9 @@
   </div>
 
 <script>
-  // ====================== CONFIG ======================
   const CONTRACT_ADDRESS = "0xca96eBfD87065B90Ca9a07b8383669787c3218aE";
   const ARC_CHAIN_ID = 5042002;
+  const ARC_CHAIN_ID_HEX = "0x4cebe2"; // اصلاح شده به هگزادسیمال صحیح
 
   let signer = null;
   let userAddress = null;
@@ -322,65 +313,45 @@
   let amountMode = 'fixed';
   let currentLinks = JSON.parse(localStorage.getItem('arcPaymentLinks') || '[]');
 
-  const tokens = {
-    USDC:   { address: "0x3600000000000000000000000000000000000000", decimals: 6, symbol: "USDC" },
-    EURC:   { address: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a", decimals: 6, symbol: "EURC" },
-    CIRBTC: { address: "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF", decimals: 8, symbol: "cirBTC" }
-  };
-
-    // Auto reconnect if already connected
-  window.addEventListener('load', async () => {
-    if (window.ethereum && window.ethereum.selectedAddress) {
-      setTimeout(connectWallet, 800); // تلاش خودکار برای اتصال
-    }
-    updatePreview();
-  });
-
-    const ArcPaymentLinksABI = [
+  const ArcPaymentLinksABI = [
     "function createPaymentLink(tuple(bytes32 linkId, address token, uint256 amount, uint256 expiration, bytes32 claimHash, address restrictedTo, string qrMetaData, uint256 salt) params) external payable",
     "function generateLinkId(address restrictedTo, uint256 salt) external view returns (bytes32)",
-    "function getPaymentLink(bytes32 linkId) view returns (tuple(address creator, address token, uint256 amount, uint256 expiration, bytes32 claimHash, address restrictedTo, uint8 state, uint64 closedAt, string qrMetaData))",
-    "event PaymentLinkCreated(bytes32 indexed linkId, address indexed creator, address indexed token, uint256 amount, uint256 expiration, address restrictedTo, string qrMetaData)"
+    "function getPaymentLink(bytes32 linkId) view returns (tuple(address creator, address token, uint256 amount, uint256 expiration, bytes32 claimHash, address restrictedTo, uint8 state, uint64 closedAt, string qrMetaData))"
   ];
 
-  // ====================== WALLET ======================
-    // ====================== WALLET ======================
+  window.addEventListener('load', async () => {
+    if (window.ethereum && window.ethereum.selectedAddress) {
+      setTimeout(connectWallet, 800);
+    }
+    updatePreview();
+    renderHistory();
+  });
+
   async function connectWallet() {
     if (!window.ethereum) {
       return showToast("MetaMask not found! Please install MetaMask.", 5000);
     }
 
     try {
-      // درخواست حساب‌ها
-      const accounts = await window.ethereum.request({ 
-        method: 'eth_requestAccounts' 
-      });
-
+      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       userAddress = accounts[0];
 
-      // ایجاد Provider
       provider = new ethers.BrowserProvider(window.ethereum);
-      
-      // چک شبکه
       const network = await provider.getNetwork();
       
       if (network.chainId !== BigInt(ARC_CHAIN_ID)) {
         showToast("Switching to Arc Testnet...", 3000);
-        
         try {
           await window.ethereum.request({
             method: 'wallet_switchEthereumChain',
-            params: [{ chainId: '0x4D0002' }]   // 5042002 در hex
+            params: [{ chainId: ARC_CHAIN_ID_HEX }]
           });
         } catch (switchError) {
           return showToast("Please manually switch to Arc Testnet (Chain ID: 5042002)", 6000);
         }
       }
 
-      // گرفتن Signer
       signer = await provider.getSigner();
-
-      // بروزرسانی UI
       const shortAddress = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
       
       document.getElementById("displayWallet").textContent = shortAddress;
@@ -388,7 +359,6 @@
       document.getElementById("prevReceiver").textContent = shortAddress;
 
       showToast("✅ Wallet Connected Successfully", 3000);
-      
       await loadUserBalance();
       updatePreview();
 
@@ -399,36 +369,29 @@
   }
 
   async function handleTokenChange() {
-  const select = document.getElementById('tokenSelect');
-  
-  if (select.value === 'custom') {
-    const customAddress = prompt("Enter Custom Token Address (0x...):");
-    
-    if (customAddress && ethers.isAddress(customAddress)) {
-      // اضافه کردن گزینه جدید
-      const option = new Option(`🔹 Custom (${customAddress.slice(0,6)}...)`, customAddress);
-      select.add(option);
-      select.value = customAddress;
-      
-      showToast("Custom token added", 2500);
-    } else {
-      showToast("Invalid address", 3000);
-      select.value = "USDC"; // برگشت به پیش‌فرض
+    const select = document.getElementById('tokenSelect');
+    if (select.value === 'custom') {
+      const customAddress = prompt("Enter Custom Token Address (0x...):");
+      if (customAddress && ethers.isAddress(customAddress)) {
+        const option = new Option(`🔹 Custom (${customAddress.slice(0,6)}...)`, customAddress);
+        select.add(option);
+        select.value = customAddress;
+        showToast("Custom token added", 2500);
+      } else {
+        showToast("Invalid address", 3000);
+        select.value = "0x3600000000000000000000000000000000000000";
+      }
     }
+    await loadUserBalance();
+    updatePreview();
   }
-  
-  await loadUserBalance();
-  updatePreview();
-}
 
-    async function loadUserBalance() {
+  async function loadUserBalance() {
     const select = document.getElementById('tokenSelect');
     const tokenAddress = select.value;
-    if (!tokenAddress || tokenAddress === "custom") return;
+    if (!tokenAddress || tokenAddress === "custom" || !signer || !userAddress) return;
 
     const tokenSymbol = select.options[select.selectedIndex].text.replace(/[^A-Za-z0-9]/g, '');
-
-    if (!signer || !userAddress) return;
 
     try {
       const contract = new ethers.Contract(tokenAddress, [
@@ -449,8 +412,6 @@
     }
   }
 
-  
-    // ====================== CREATE LINK ======================
   async function generateLink() {
     if (!signer || !userAddress) return showToast("Please connect your wallet first", 4000);
 
@@ -471,11 +432,7 @@
 
     try {
       const contract = new ethers.Contract(CONTRACT_ADDRESS, ArcPaymentLinksABI, signer);
-      
-      // Get decimals dynamically
-      const tokenContract = new ethers.Contract(tokenAddress, [
-        "function decimals() view returns (uint8)"
-      ], signer);
+      const tokenContract = new ethers.Contract(tokenAddress, ["function decimals() view returns (uint8)"], signer);
       
       const decimals = await tokenContract.decimals();
       const amountWei = ethers.parseUnits(amountInput.toString(), decimals);
@@ -495,21 +452,15 @@
         token: tokenAddress,
         amount: amountWei,
         expiration: expiration,
-        claimHash: ethers.ZeroHash,           // Secret Key فعلاً خاموش
+        claimHash: ethers.ZeroHash,
         restrictedTo: ethers.ZeroAddress,
         qrMetaData: title + (desc ? " | " + desc : ""),
         salt: salt
       };
 
-      const tx = await contract.createPaymentLink(params, {
-        value: tokenAddress === ethers.ZeroAddress ? amountWei : 0   // برای native token
-      });
-
+      const tx = await contract.createPaymentLink(params);
       showToast("Waiting for confirmation...");
-
       await tx.wait();
-
-      const shortId = linkId.toString().slice(0, 16);
 
       const newLink = {
         id: linkId,
@@ -520,7 +471,7 @@
         expiration: expiration,
         status: "Active",
         createdAt: Date.now(),
-        url: `https://arcsplit.kamkazi-1297.workers.dev/pay?id=${linkId}`,
+        url: `${window.location.origin}/pay.html?id=${linkId}`,
         creator: userAddress
       };
 
@@ -528,6 +479,7 @@
       localStorage.setItem('arcPaymentLinks', JSON.stringify(currentLinks));
 
       showSuccessModal(newLink);
+      renderHistory();
       showToast("✅ Payment Link Created Successfully!", 5000);
 
     } catch (error) {
@@ -535,12 +487,12 @@
       showToast(error.reason || error.message || "Transaction failed", 7000);
     }
   }
+
   function getExpirationSeconds(option) {
     const map = { '1h': 3600, '24h': 86400, '7d': 604800, '30d': 2592000 };
     return map[option] || 0;
   }
 
-  // ====================== UI FUNCTIONS ======================
   function setAmountMode(mode) {
     amountMode = mode;
     document.getElementById('modeFixed').classList.toggle('bg-emerald-500/20', mode === 'fixed');
@@ -573,14 +525,15 @@
 
   function updatePreview() {
     const title = document.getElementById('linkTitle').value || 'Payment Request';
-    const token = document.getElementById('tokenSelect').value;
+    const select = document.getElementById('tokenSelect');
+    const tokenSymbol = select.options[select.selectedIndex].text.replace(/[^A-Za-z0-9]/g, '');
     const amount = document.getElementById('fixedAmountInput').value || '100';
 
     document.getElementById('prevTitle').textContent = title;
-    document.getElementById('prevAmount').textContent = `${amount} ${token}`;
+    document.getElementById('prevAmount').textContent = `${amount} ${tokenSymbol}`;
     document.getElementById('prevDesc').textContent = document.getElementById('linkDesc').value || '—';
 
-    const mockUrl = `https://arcsplit.kamkazi-1297.workers.dev/pay/example`;
+    const mockUrl = `${window.location.origin}/pay.html?id=sample`;
     document.getElementById('generatedLinkOutput').value = mockUrl;
 
     const qrContainer = document.getElementById('qrcode');
@@ -632,17 +585,31 @@
       : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400";
   }
 
+  function renderHistory() {
+    const container = document.getElementById('historyTableBody');
+    if (currentLinks.length === 0) {
+      container.innerHTML = `<div class="text-center text-gray-500 py-6 text-xs">No payment links created yet.</div>`;
+      return;
+    }
+    container.innerHTML = currentLinks.map(link => `
+      <div class="bg-white/[0.02] border border-white/10 p-4 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 text-xs">
+        <div>
+          <div class="font-bold text-white text-sm">${link.title}</div>
+          <div class="text-gray-400 mt-0.5">${link.amount} ${link.token} • Created: ${new Date(link.createdAt).toLocaleDateString()}</div>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="navigator.clipboard.writeText('${link.url}'); showToast('Link copied!')" class="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl font-semibold">Copy Link</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
   function toggleTheme() {
     document.documentElement.classList.toggle('light');
     const icon = document.getElementById("themeBtn").querySelector("i");
     icon.classList.toggle("fa-moon");
     icon.classList.toggle("fa-sun");
   }
-
-  // ====================== INIT ======================
-  window.addEventListener('load', () => {
-    updatePreview();
-  });
 </script>
 </body>
 </html>
