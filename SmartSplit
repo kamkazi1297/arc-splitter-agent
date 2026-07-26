@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+  <title>ArcSplit - Smart Conditional Split</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    
+    body { 
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif; 
+      background: #070711;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(34, 211, 238, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.05) 0%, transparent 50%);
+      color: #f8fafc;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    
+    .glass {
+      background: rgba(18, 18, 38, 0.65);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+    
+    .light {
+      background: #f1f5f9 !important;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(34, 211, 238, 0.05) 0%, transparent 40%) !important;
+      color: #0f172a !important;
+    }
+
+    .light .glass {
+      background: rgba(255, 255, 255, 0.85);
+      border-color: rgba(0, 0, 0, 0.08);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1);
+    }
+
+    .light body, .light h1, .light h3, .light label, .light .text-white { color: #0f172a; }
+    .light .text-gray-400 { color: #475569 !important; }
+    .light .text-gray-300 { color: #334155 !important; }
+
+    select, input {
+      background-color: rgba(255, 255, 255, 0.03);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    select:focus, input:focus {
+      border-color: #10b981;
+      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
+      outline: none;
+    }
+    .light select, .light input {
+      background-color: #ffffff;
+      color: #0f172a;
+      border: 1px solid #cbd5e1;
+    }
+
+    select option { background-color: #0f172a; color: white; padding: 10px; }
+    .light select option { background-color: #ffffff; color: #0f172a; }
+
+    .percent-container { position: relative; }
+    .percent-container::after {
+      content: "%";
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: #64748b;
+      font-weight: 600;
+      pointer-events: none;
+      font-size: 0.8rem;
+    }
+
+    .preview-scroll {
+      max-height: 320px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.2) transparent;
+    }
+  </style>
+</head>
+<body class="text-white min-h-screen selection:bg-emerald-500 selection:text-black">
+
+  <div class="max-w-7xl mx-auto px-4 py-6 sm:py-8">
+    
+    <!-- Header Section -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Smart Conditional Split</span></h1>
+        <p class="text-gray-400 light:text-slate-600 text-xs sm:text-sm font-medium">Create rule-based payment distributions & Web3 Rule Engine</p>
+      </div>
+      
+      <div class="flex items-center gap-3">
+        <div class="flex bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 rounded-2xl p-1 text-xs">
+          <button onclick="switchTab('splitter')" id="tabSplitter" class="px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400">Rule Engine</button>
+          <button onclick="switchTab('history')" id="tabHistory" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-600">History</button>
+        </div>
+        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/10 border border-white/10 rounded-2xl transition-all">
+          <i class="fas fa-moon text-lg text-emerald-400"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Connect Hub -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mb-8">
+      <button onclick="showConnectModal()" id="connectBtn" class="px-6 py-4 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all">
+        <i class="fas fa-wallet text-emerald-600"></i> <span id="connectText">Connect Wallet</span>
+      </button>
+      <button onclick="connectTelegram()" id="telegramBtn" class="px-6 py-4 bg-gradient-to-r from-[#229ED9] to-[#1a8ac4] text-white font-semibold rounded-2xl flex items-center justify-center gap-3 transition-all shadow-lg shadow-sky-500/10">
+        <i class="fab fa-telegram-plane text-2xl"></i> 
+        <div class="text-left flex-1">
+          <div class="font-bold text-sm leading-tight">Connect Telegram</div>
+          <div class="text-[11px] text-sky-100 opacity-80">Fast split & notifications</div>
+        </div>
+      </button>
+    </div>
+
+    <!-- Status Banner -->
+    <div id="status" class="glass rounded-2xl p-4 mb-6 text-sm font-medium flex items-center gap-3 border-l-4 border-l-emerald-500">
+      <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+      Ready to configure Rule-Based Split on Arc Testnet[cite: 1].
+    </div>
+
+    <!-- Main Layout (3 Columns / Grid Structure) -->
+    <div id="viewSplitter" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      
+      <!-- COLUMN 1 & 2: Rules Builder & Base Asset (8 Cols) -->
+      <div class="lg:col-span-8 space-y-6">
+        
+        <!-- Step 1: Base Asset -->
+        <div class="glass rounded-3xl p-6">
+          <div class="flex items-center gap-2 mb-4">
+            <span class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">1</span>
+            <h3 class="font-bold text-base">Base Asset & Initial Setup</h3>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Select Token</label>
+              <select id="tokenSelect" class="w-full rounded-2xl px-4 py-3.5 text-sm font-medium cursor-pointer">
+                <option value="USDC">USDC</option>
+                <option value="EURC">EURC</option>
+                <option value="CIRBTC">CIRBTC (cirBTC)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Default Base Amount</label>
+              <input type="number" id="baseTestAmount" value="2500" class="w-full rounded-2xl px-4 py-3.5 text-sm font-bold" oninput="runSimulation()">
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Rules Builder -->
+        <div class="glass rounded-3xl p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center gap-2">
+              <span class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">2</span>
+              <h3 class="font-bold text-base">Conditional Rules (Rule Engine)[cite: 1]</h3>
+            </div>
+            <button onclick="addRuleCard()" class="px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
+              <i class="fas fa-plus"></i> Add Rule[cite: 1]
+            </button>
+          </div>
+
+          <!-- Rules Container -->
+          <div id="rulesContainer" class="space-y-4">
+            <!-- Dynamic Rule Cards Will Be Injected Here -->
+          </div>
+
+          <!-- Default Rule (Otherwise) -->
+          <div class="mt-4 p-4 rounded-2xl border border-white/10 bg-white/[0.01] border-dashed">
+            <div class="flex items-center justify-between mb-3">
+              <span class="text-xs font-bold text-amber-400 uppercase tracking-wider">Otherwise (Default Rule)[cite: 1]</span>
+              <span class="text-xs text-gray-400">Executed if no rules match</span>
+            </div>
+            <div id="defaultRecipientsList" class="space-y-2">
+              <!-- Default Distribution Recipients -->
+            </div>
+            <button onclick="addDefaultRecipient()" class="mt-3 text-xs text-emerald-400 font-semibold hover:underline flex items-center gap-1">
+              <i class="fas fa-plus"></i> Add Recipient
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- COLUMN 3: Live Preview & Simulator (4 Cols) -->
+      <div class="lg:col-span-4 space-y-6">
+        <div class="glass rounded-3xl p-6 sticky top-6">
+          
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold text-base flex items-center gap-2">
+              <i class="fas fa-play-circle text-emerald-400"></i> Live Simulator[cite: 1]
+            </h3>
+            <span class="px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 text-[10px] font-bold">Real-time</span>
+          </div>
+
+          <!-- Simulation Input -->
+          <div class="mb-5">
+            <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Test Amount[cite: 1]</label>
+            <input type="number" id="simAmountInput" value="2500" class="w-full rounded-2xl px-4 py-3 text-sm font-bold" oninput="runSimulation()">
+          </div>
+
+          <!-- Simulation Result Box -->
+          <div class="bg-black/30 border border-white/10 rounded-2xl p-4 mb-5 space-y-3">
+            <div class="flex justify-between items-center text-xs pb-2 border-b border-white/10">
+              <span class="text-gray-400">Matched Rule:</span>
+              <span id="simMatchedRule" class="font-bold text-emerald-400">Rule #2</span>
+            </div>
+            <div>
+              <div class="text-[11px] text-gray-400 uppercase font-semibold mb-2">Distribution Result[cite: 1]</div>
+              <div id="simResultBreakdown" class="space-y-1.5 preview-scroll text-xs">
+                <!-- Breakdown populated via JS -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Validation & Errors container -->
+          <div id="engineErrors" class="hidden glass border border-rose-500/30 bg-rose-500/10 rounded-2xl p-3.5 mb-5 text-xs text-rose-300 space-y-1">
+            <!-- Warnings like overlap or sum != 100%[cite: 1] -->
+          </div>
+
+          <!-- Action Button -->
+          <button onclick="deploySmartSplit()" class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:brightness-110 py-4 rounded-2xl font-bold text-sm shadow-lg shadow-emerald-500/20 transition-all">
+            Save Smart Split[cite: 1]
+          </button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- History View -->
+    <div id="viewHistory" class="hidden glass rounded-3xl p-6">
+      <h3 class="font-bold text-lg mb-4">Smart Split History</h3>
+      <div id="historyList" class="space-y-3 text-xs text-gray-400">No smart splits created yet.</div>
+    </div>
+
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#121228] border border-white/15 text-white px-5 py-3 rounded-2xl shadow-2xl z-50 text-xs sm:text-sm backdrop-blur-xl">
+    <span id="toastText"></span>
+  </div>
+
+<script>
+  let rules = [
+    { id: 1, active: true, condition: { type: 'Amount', op: '>', val: 1000 }, recipients: [{name:'Treasury', perc:40}, {name:'Team', perc:40}, {name:'Community', perc:20}] },
+    { id: 2, active: true, condition: { type: 'Amount', op: '<=', val: 1000 }, recipients: [{name:'Treasury', perc:50}, {name:'Team', perc:30}, {name:'Community', perc:20}] }
+  ];
+
+  let defaultRecipients = [
+    { name: 'Treasury', perc: 50 },
+    { name: 'Team', perc: 25 },
+    { name: 'Community', perc: 25 }
+  ];
+
+  function switchTab(tab) {
+    const isSplitter = tab === 'splitter';
+    document.getElementById('viewSplitter').classList.toggle('hidden', !isSplitter);
+    document.getElementById('viewHistory').classList.toggle('hidden', isSplitter);
+    document.getElementById('tabSplitter').className = isSplitter ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400";
+    document.getElementById('tabHistory').className = !isSplitter ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400";
+  }
+
+  function renderRules() {
+    const container = document.getElementById('rulesContainer');
+    container.innerHTML = '';
+
+    rules.forEach((rule, index) => {
+      const card = document.createElement('div');
+      card.className = "glass border border-white/10 rounded-2xl p-4 relative group space-y-3";
+      
+      let recipientsHtml = rule.recipients.map((r, rIdx) => `
+        <div class="flex items-center gap-2">
+          <input type="text" value="${r.name}" oninput="updateRuleRecipient(${index}, ${rIdx}, 'name', this.value)" class="flex-1 bg-black/20 rounded-xl px-3 py-2 text-xs" placeholder="Recipient">
+          <div class="percent-container w-24">
+            <input type="number" value="${r.perc}" oninput="updateRuleRecipient(${index}, ${rIdx}, 'perc', this.value)" class="w-full bg-black/25 rounded-xl px-3 py-2 text-center text-xs font-bold">
+          </div>
+          <button onclick="removeRuleRecipient(${index}, ${rIdx})" class="text-gray-500 hover:text-rose-400 text-xs px-1"><i class="fas fa-times"></i></button>
+        </div>
+      `).join('');
+
+      card.innerHTML = `
+        <div class="flex items-center justify-between pb-2 border-b border-white/5">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-extrabold text-emerald-400">Rule #${index + 1}[cite: 1]</span>
+            <label class="relative inline-flex items-center cursor-pointer ml-2">
+              <input type="checkbox" ${rule.active ? 'checked' : ''} onchange="toggleRuleActive(${index})" class="sr-only peer">
+              <div class="w-7 h-4 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-500"></div>
+            </label>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button onclick="moveRule(${index}, -1)" title="Move Up" class="text-gray-400 hover:text-white px-1 text-xs"><i class="fas fa-arrow-up"></i></button>
+            <button onclick="moveRule(${index}, 1)" title="Move Down" class="text-gray-400 hover:text-white px-1 text-xs"><i class="fas fa-arrow-down"></i></button>
+            <button onclick="duplicateRule(${index})" title="Duplicate" class="text-cyan-400 hover:text-cyan-300 px-1 text-xs"><i class="fas fa-copy"></i></button>
+            <button onclick="deleteRule(${index})" title="Delete" class="text-rose-400 hover:text-rose-300 px-1 text-xs"><i class="fas fa-trash"></i></button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 items-center text-xs">
+          <div>
+            <span class="text-gray-400 text-[10px] uppercase font-semibold">Condition[cite: 1]</span>
+            <select onchange="updateRuleCond(${index}, 'type', this.value)" class="w-full rounded-xl px-3 py-2 mt-1">
+              <option value="Amount" ${rule.condition.type === 'Amount' ? 'selected' : ''}>Amount</option>
+              <option value="Token" ${rule.condition.type === 'Token' ? 'selected' : ''}>Token</option>
+              <option value="Wallet" ${rule.condition.type === 'Wallet' ? 'selected' : ''}>Wallet</option>
+            </select>
+          </div>
+          <div>
+            <span class="text-gray-400 text-[10px] uppercase font-semibold">Operator</span>
+            <select onchange="updateRuleCond(${index}, 'op', this.value)" class="w-full rounded-xl px-3 py-2 mt-1">
+              <option value=">" ${rule.condition.op === '>' ? 'selected' : ''}>></option>
+              <option value="<" ${rule.condition.op === '<' ? 'selected' : ''}><</option>
+              <option value="=" ${rule.condition.op === '=' ? 'selected' : ''}>=</option>
+              <option value=">=" ${rule.condition.op === '>=' ? 'selected' : ''}>>=</option>
+              <option value="<=" ${rule.condition.op === '<=' ? 'selected' : ''}><=</option>
+            </select>
+          </div>
+          <div>
+            <span class="text-gray-400 text-[10px] uppercase font-semibold">Threshold Value</span>
+            <input type="text" value="${rule.condition.val}" oninput="updateRuleCond(${index}, 'val', this.value)" class="w-full rounded-xl px-3 py-2 mt-1 font-bold">
+          </div>
+        </div>
+
+        <div class="space-y-2 pt-2 border-t border-white/5">
+          <div class="text-[10px] text-gray-400 uppercase font-semibold">Distribution (THEN)[cite: 1]</div>
+          ${recipientsHtml}
+          <button onclick="addRuleRecipientPrompt(${index})" class="text-[11px] text-emerald-400 font-semibold hover:underline flex items-center gap-1 mt-1">
+            <i class="fas fa-plus"></i> Add Recipient
+          </button>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+
+    renderDefaultRecipients();
+    runSimulation();
+    checkEngineErrors();
+  }
+
+  function renderDefaultRecipients() {
+    const list = document.getElementById('defaultResList') || document.getElementById('defaultRecipientsList');
+    if (!list) return;
+    list.innerHTML = defaultRecipients.map((r, idx) => `
+      <div class="flex items-center gap-2">
+        <input type="text" value="${r.name}" oninput="defaultRecipients[${idx}].name=this.value" class="flex-1 bg-black/20 rounded-xl px-3 py-1.5 text-xs">
+        <div class="percent-container w-24">
+          <input type="number" value="${r.perc}" oninput="defaultRecipients[${idx}].perc=parseFloat(this.value)||0; runSimulation()" class="w-full bg-black/25 rounded-xl px-3 py-1.5 text-center text-xs font-bold">
+        </div>
+        <button onclick="defaultRecipients.splice(${idx},1); renderRules()" class="text-gray-500 hover:text-rose-400 text-xs px-1"><i class="fas fa-times"></i></button>
+      </div>
+    `).join('');
+  }
+
+  function addDefaultRecipient() {
+    defaultRecipients.push({ name: 'New Receiver', perc: 0 });
+    renderRules();
+  }
+
+  function addRuleCard() {
+    rules.push({
+      id: Date.now(),
+      active: true,
+      condition: { type: 'Amount', op: '>', val: 5000 },
+      recipients: [{ name: 'Treasury', perc: 100 }]
+    });
+    renderRules();
+  }
+
+  function deleteRule(index) {
+    rules.splice(index, 1);
+    renderRules();
+  }
+
+  function duplicateRule(index) {
+    const cloned = JSON.parse(JSON.stringify(rules[index]));
+    cloned.id = Date.now();
+    rules.splice(index + 1, 0, cloned);
+    renderRules();
+  }
+
+  function moveRule(index, direction) {
+    const target = index + direction;
+    if (target < 0 || target >= rules.length) return;
+    const temp = rules[index];
+    rules[index] = rules[target];
+    rules[target] = temp;
+    renderRules();
+  }
+
+  function toggleRuleActive(index) {
+    rules[index].active = !rules[index].active;
+    runSimulation();
+  }
+
+  function updateRuleCond(index, field, value) {
+    rules[index].condition[field] = value;
+    runSimulation();
+  }
+
+  function updateRuleRecipient(ruleIdx, recIdx, field, val) {
+    rules[ruleIdx].recipients[recIdx][field] = field === 'perc' ? (parseFloat(val) || 0) : val;
+    runSimulation();
+  }
+
+  function addRuleRecipientPrompt(ruleIdx) {
+    rules[ruleIdx].recipients.push({ name: 'Recipient', perc: 0 });
+    renderRules();
+  }
+
+  function removeRuleRecipient(ruleIdx, recIdx) {
+    rules[ruleIdx].recipients.splice(recIdx, 1);
+    renderRules();
+  }
+
+  function runSimulation() {
+    const amountInput = parseFloat(document.getElementById('simAmountInput').value) || 0;
+    let matchedRuleName = "Otherwise (Default Rule)";
+    let selectedRecipients = defaultRecipients;
+
+    for (let i = 0; i < rules.length; i++) {
+      if (!rules[i].active) continue;
+      const c = rules[i].condition;
+      let valNum = parseFloat(c.val) || 0;
+      let matched = false;
+
+      if (c.type === 'Amount') {
+        if (c.op === '>' && amountInput > valNum) matched = true;
+        if (c.op === '<' && amountInput < valNum) matched = true;
+        if (c.op === '=' && amountInput === valNum) matched = true;
+        if (c.op === '>=' && amountInput >= valNum) matched = true;
+        if (c.op === '<=' && amountInput <= valNum) matched = true;
+      }
+
+      if (matched) {
+        matchedRuleName = `Rule #${i + 1}`;
+        selectedRecipients = rules[i].recipients;
+        break;
+      }
+    }
+
+    document.getElementById('simMatchedRule').textContent = matchedRuleName;
+    const breakdownEl = document.getElementById('simResultBreakdown');
+    breakdownEl.innerHTML = '';
+
+    selectedRecipients.forEach(r => {
+      const calculatedAmt = (amountInput * r.perc) / 100;
+      const row = document.createElement('div');
+      row.className = "flex justify-between items-center text-xs bg-white/[0.02] p-2 rounded-xl";
+      row.innerHTML = `<span class="font-medium text-gray-300">${r.name} (${r.perc}%)</span> <span class="font-bold text-emerald-400">${calculatedAmt.toFixed(2)}</span>`;
+      breakdownEl.appendChild(row);
+    });
+  }
+
+  function checkEngineErrors() {
+    const errBox = document.getElementById('engineErrors');
+    let errors = [];
+
+    rules.forEach((rule, idx) => {
+      const totalPerc = rule.recipients.reduce((sum, r) => sum + r.perc, 0);
+      if (Math.abs(totalPerc - 100) > 0.01) {
+        errors.push(`⚠️ Rule #${idx + 1}: Total percentage is ${totalPerc}% (Must be 100%)[cite: 1].`);
+      }
+    });
+
+    const defSum = defaultRecipients.reduce((sum, r) => sum + r.perc, 0);
+    if (Math.abs(defSum - 100) > 0.01) {
+      errors.push(`⚠️ Default Rule: Total percentage is ${defSum}% (Must be 100%)[cite: 1].`);
+    }
+
+    if (errors.length > 0) {
+      errBox.innerHTML = errors.join('<br>');
+      errBox.classList.remove('hidden');
+    } else {
+      errBox.classList.add('hidden');
+    }
+  }
+
+  function showToast(msg, duration = 4000) {
+    const t = document.getElementById("toast");
+    document.getElementById("toastText").innerHTML = msg;
+    t.classList.remove("hidden");
+    setTimeout(() => t.classList.add("hidden"), duration);
+  }
+
+  function toggleTheme() {
+    document.documentElement.classList.toggle('light');
+  }
+
+  function showConnectModal() {
+    showToast("Connecting wallet to Arc Testnet...");
+    setTimeout(() => {
+      document.getElementById('connectText').textContent = "0x71C...39aE";
+      showToast("Wallet Connected Successfully!");
+    }, 1000);
+  }
+
+  function connectTelegram() {
+    showToast("🔗 Redirecting to Telegram Bot (@ArcSplitPro_bot)...");
+  }
+
+  function deploySmartSplit() {
+    showToast("🚀 Smart Split Rules saved successfully into Rule Engine!");
+    setTimeout(() => {
+      switchTab('history');
+      document.getElementById('historyList').innerHTML = `
+        <div class="glass p-4 rounded-2xl flex justify-between items-center">
+          <div>
+            <div class="font-bold text-white text-sm">Smart Conditional Split #1</div>
+            <div class="text-xs text-emerald-400 mt-1">${rules.length} Active Rules configured</div>
+          </div>
+          <span class="px-3 py-1 bg-emerald-500/10 text-emerald-400 rounded-full text-xs font-semibold">Active Engine</span>
+        </div>
+      `;
+    }, 1000);
+  }
+
+  window.addEventListener('load', () => {
+    renderRules();
+  });
+</script>
+</body>
+</html>
