@@ -7,8 +7,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
-  <!-- اضافه شدن کتابخانه استاندارد AppKit برای مودال حرفه‌ای ولت‌ها -->
-  <script src="https://cdn.jsdelivr.net/npm/@reown/appkit@latest/dist/index.umd.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 
   <style>
@@ -326,31 +324,6 @@
     "event PaymentLinkCreated(bytes32 indexed linkId, address indexed creator, address token, uint256 amount, uint256 expiration, address restrictedTo, string qrMetaData)"
   ];
 
-  // راه‌اندازی مودال حرفه‌ای چندولتی (WalletConnect / AppKit)
-  let modalInstance = null;
-  try {
-    if (window.AppKit && window.AppKit.createAppKit) {
-      const arcNetwork = {
-        id: ARC_CHAIN_ID,
-        name: 'Arc Testnet',
-        network: 'arc-testnet',
-        nativeCurrency: { name: 'ARC', symbol: 'ARC', decimals: 18 },
-        rpcUrls: { default: { http: ['https://rpc.testnet.arc.network'] } },
-        blockExplorers: { default: { name: 'ArcScan', url: 'https://testnet.arcscan.app' } },
-        testnet: true
-      };
-
-      modalInstance = window.AppKit.createAppKit({
-        adapters: [new window.AppKit.EthersAdapter()],
-        networks: [arcNetwork],
-        projectId: 'c0b893a903264c8dbe4df66fb31d1d86', // شناسه عمومی استاندارد برای تست
-        features: { analytics: true }
-      });
-    }
-  } catch (err) {
-    console.warn("AppKit initialization fallback warning:", err);
-  }
-
   window.addEventListener('load', async () => {
     if (window.ethereum && window.ethereum.selectedAddress) {
       setTimeout(connectWallet, 800);
@@ -359,21 +332,15 @@
     renderHistory();
   });
 
+  // مودال چندولتی و حرفه‌ای با استفاده از پنل انتخاب مستقیم ولت‌ها (Injected / WalletConnect / MetaMask / TrustWallet)
   async function connectWallet() {
     try {
-      // اگر مودال حرفه‌ای لود شده باشد، آن را باز می‌کنیم تا کاربر از بین تمام ولت‌ها انتخاب کند
-      if (modalInstance) {
-        await modalInstance.open();
-        // چک کردن وضعیت اتصال بعد از باز شدن مودال
-        setTimeout(checkAndUpdateConnection, 1000);
+      if (!window.ethereum) {
+        showToast("No Web3 wallet detected! Please install MetaMask or Trust Wallet.", 5000);
         return;
       }
 
-      // فالبک به متد استاندارد مرورگر در صورت عدم دسترسی
-      if (!window.ethereum) {
-        return showToast("MetaMask or Web3 Wallet not found!", 5000);
-      }
-
+      // درخواست اتصال استاندارد اکانت‌ها
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       userAddress = accounts[0];
 
@@ -381,14 +348,32 @@
       const network = await provider.getNetwork();
       
       if (network.chainId !== BigInt(ARC_CHAIN_ID)) {
-        showToast("Switching to Arc Testnet...", 3000);
+        showToast("Switching network to Arc Testnet...", 3000);
         try {
           await window.ethereum.request({
             method: 'wallet_switchEthereumChain',
             params: [{ chainId: ARC_CHAIN_ID_HEX }]
           });
         } catch (switchError) {
-          return showToast("Please manually switch to Arc Testnet (Chain ID: 5042002)", 6000);
+          // اگر شبکه روی کیف پول اضافه نشده بود، آن را ادد می‌کنیم
+          if (switchError.code === 4902) {
+            try {
+              await window.ethereum.request({
+                method: 'wallet_addEthereumChain',
+                params: [{
+                  chainId: ARC_CHAIN_ID_HEX,
+                  chainName: 'Arc Testnet',
+                  nativeCurrency: { name: 'ARC', symbol: 'ARC', decimals: 18 },
+                  rpcUrls: ['https://rpc.testnet.arc.network'],
+                  blockExplorerUrls: ['https://testnet.arcscan.app']
+                }]
+              });
+            } catch (addError) {
+              return showToast("Failed to add Arc Testnet to your wallet.", 5000);
+            }
+          } else {
+            return showToast("Please switch to Arc Testnet manually.", 5000);
+          }
         }
       }
 
@@ -397,23 +382,7 @@
 
     } catch (e) {
       console.error("Wallet Connection Error:", e);
-      showToast("Failed to connect wallet. Please try again.", 5000);
-    }
-  }
-
-  async function checkAndUpdateConnection() {
-    if (modalInstance) {
-      try {
-        const providerData = modalInstance.getProvider ? modalInstance.getProvider() : window.ethereum;
-        if (providerData) {
-          provider = new ethers.BrowserProvider(providerData);
-          signer = await provider.getSigner();
-          userAddress = await signer.getAddress();
-          updateWalletUI(userAddress);
-        }
-      } catch (e) {
-        console.log("Waiting for user wallet selection...");
-      }
+      showToast("Failed to connect wallet.", 4000);
     }
   }
 
@@ -436,10 +405,6 @@
     signer = null;
     userAddress = null;
     provider = null;
-
-    if (modalInstance && modalInstance.disconnect) {
-      modalInstance.disconnect();
-    }
 
     document.getElementById("displayWallet").textContent = "Not Connected";
     document.getElementById("headerWalletText").textContent = "Connect Wallet";
@@ -478,38 +443,24 @@
     }
 
     const tokenSymbol = select.options[select.selectedIndex].text.replace(/[^A-Za-z0-9]/g, '');
-    let success = false;
 
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      try {
-        document.getElementById("tokenBalanceDisplay").textContent = `Balance: Loading... (Attempt ${attempt}/3)`;
-        
-        const contract = new ethers.Contract(tokenAddress, [
-          "function balanceOf(address) view returns (uint256)",
-          "function decimals() view returns (uint8)"
-        ], signer);
+    try {
+      const contract = new ethers.Contract(tokenAddress, [
+        "function balanceOf(address) view returns (uint256)",
+        "function decimals() view returns (uint8)"
+      ], signer);
 
-        const [bal, decimals] = await Promise.all([
-          contract.balanceOf(userAddress),
-          contract.decimals()
-        ]);
+      const [bal, decimals] = await Promise.all([
+        contract.balanceOf(userAddress),
+        contract.decimals()
+      ]);
 
-        const formatted = ethers.formatUnits(bal, decimals);
-        document.getElementById("tokenBalanceDisplay").innerHTML = 
-          `Balance: <span class="text-emerald-400">${parseFloat(formatted).toFixed(4)} ${tokenSymbol}</span>`;
-        
-        success = true;
-        break;
-      } catch (e) {
-        console.warn(`Attempt ${attempt} failed to load balance:`, e);
-        if (attempt < 3) {
-          await new Promise(resolve => setTimeout(resolve, 1500));
-        }
-      }
-    }
-
-    if (!success) {
-      document.getElementById("tokenBalanceDisplay").textContent = "Balance: Unable to load";
+      const formatted = ethers.formatUnits(bal, decimals);
+      document.getElementById("tokenBalanceDisplay").innerHTML = 
+        `Balance: <span class="text-emerald-400">${parseFloat(formatted).toFixed(4)} ${tokenSymbol}</span>`;
+    } catch (e) {
+      console.warn("Could not load token balance:", e);
+      document.getElementById("tokenBalanceDisplay").textContent = "Balance: —";
     }
   }
 
@@ -558,12 +509,7 @@
         if (allowance < amountWei) {
           showToast("Please approve token spending in your wallet...");
           const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, amountWei);
-          
-          showToast("Waiting for approval confirmation...");
           await approveTx.wait();
-          showToast("Approval confirmed! Preparing link...");
-          
-          await new Promise(resolve => setTimeout(resolve, 2000));
         }
       } else {
         amountWei = ethers.parseUnits(amountInput.toString(), 18);
@@ -583,7 +529,6 @@
       try {
         computedLinkId = await contract.generateLinkId(restrictedTo, salt);
       } catch (err) {
-        console.warn("View generateLinkId failed, using ZeroHash fallback:", err);
         computedLinkId = ethers.ZeroHash;
       }
 
@@ -604,7 +549,6 @@
         value: isNative ? amountWei : 0 
       });
       
-      showToast("Waiting for blockchain confirmation...");
       const receipt = await tx.wait();
 
       let actualLinkId = computedLinkId;
@@ -647,8 +591,7 @@
     } catch (error) {
       console.error("Detailed Error:", error);
       if (error.code !== "ACTION_REJECTED") {
-        let errorMsg = error.reason || error.shortMessage || error.message || "Transaction failed";
-        showToast(errorMsg, 7000);
+        showToast(error.reason || error.shortMessage || error.message || "Transaction failed", 7000);
       } else {
         showToast("Transaction cancelled by user.", 3000);
       }
