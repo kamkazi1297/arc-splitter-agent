@@ -45,10 +45,12 @@
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1);
     }
 
-    .light body, .light h1, .light h3, .light label, .light .text-white { color: #0f172a !important; }
+    .light body, .light h3, .light label, .light .text-white { color: #0f172a !important; }
     .light .text-gray-400 { color: #475569 !important; }
     .light .text-gray-300 { color: #334155 !important; }
-    .light .header-title-text { color: #0f172a !important; }
+    
+    /* Keep ArcSplit header title and History text white/light-proof if needed or styled specifically */
+    .header-title-text, .history-title-text { color: #ffffff !important; }
 
     .wallet-connected-glass {
       background: rgba(18, 18, 38, 0.85) !important;
@@ -272,7 +274,7 @@
 
     <!-- History View -->
     <div id="viewHistory" class="hidden glass rounded-3xl p-6">
-      <h3 class="font-bold text-lg mb-4 text-white light:text-slate-900">Smart Split History</h3>
+      <h3 class="font-bold text-lg mb-4 history-title-text">Smart Split History</h3>
       <div id="historyList" class="space-y-4 text-xs text-gray-400">No smart splits deployed yet.</div>
     </div>
 
@@ -785,8 +787,16 @@
         "function approve(address spender, uint256 amount) returns (bool)"
       ];
 
-      const tokenAddress = document.getElementById('tokenSelect').value;
+      const tokenSelectElem = document.getElementById('tokenSelect');
+      const tokenAddress = tokenSelectElem.value;
       const baseAmountInput = document.getElementById('baseTestAmount').value;
+
+      let tokenSymbol = "Tokens";
+      if (tokenAddress === "0x3600000000000000000000000000000000000000") {
+        tokenSymbol = "USDC";
+      } else {
+        tokenSymbol = tokenSelectElem.options[tokenSelectElem.selectedIndex].text.split(' ')[0];
+      }
 
       if (!baseAmountInput || parseFloat(baseAmountInput) <= 0) {
         showToast("Please enter a valid Default Base Amount.");
@@ -918,15 +928,14 @@
       let rulesHistoryHtml = rules.map((rule, idx) => {
         let condText = `${rule.condition.type} ${rule.condition.op} ${rule.condition.val}`;
         if (rule.condition.type === 'Token') {
-          const select = document.getElementById('tokenSelect');
-          let tokenSymbol = rule.condition.val;
-          for (let opt of select.options) {
+          let targetSymbol = rule.condition.val;
+          for (let opt of tokenSelectElem.options) {
             if (opt.value === rule.condition.val) {
-              tokenSymbol = opt.text.split(' ')[0];
+              targetSymbol = opt.text.split(' ')[0];
               break;
             }
           }
-          condText = `Token Type == ${tokenSymbol}`;
+          condText = `Token Type == ${targetSymbol}`;
         }
         
         let recsHtml = rule.recipients.map(r => {
@@ -935,7 +944,7 @@
             <div class="flex justify-between items-center bg-black/20 px-3 py-1.5 rounded-lg my-1">
               <span class="font-mono text-gray-300">${r.address ? r.address.substring(0,6) + '...' + r.address.substring(r.address.length-4) : 'Unassigned'}</span>
               <div class="text-right">
-                <span class="font-bold text-emerald-400 block">${tokenValCalc.toFixed(2)} Tokens</span>
+                <span class="font-bold text-emerald-400 block">${tokenValCalc.toFixed(2)} ${tokenSymbol}</span>
                 <span class="text-[10px] text-gray-400">${r.perc}%</span>
               </div>
             </div>
@@ -962,7 +971,7 @@
           <div class="flex justify-between items-center bg-black/20 px-3 py-1.5 rounded-lg my-1">
             <span class="font-mono text-gray-300">${r.address ? r.address.substring(0,6) + '...' + r.address.substring(r.address.length-4) : 'Unassigned'}</span>
             <div class="text-right">
-              <span class="font-bold text-amber-400 block">${tokenValCalc.toFixed(2)} Tokens</span>
+              <span class="font-bold text-amber-400 block">${tokenValCalc.toFixed(2)} ${tokenSymbol}</span>
               <span class="text-[10px] text-gray-400">${r.perc}%</span>
             </div>
           </div>
@@ -982,7 +991,7 @@
         </div>
       `;
 
-      const explorerUrl = `https://testnet.arcanscan.network/tx/${tx.hash}`;
+      const explorerUrl = `https://testnet.arcscan.app/tx/${tx.hash}`;
 
       document.getElementById('historyList').innerHTML = `
         <div class="glass p-5 rounded-3xl space-y-4">
