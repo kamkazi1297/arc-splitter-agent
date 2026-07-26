@@ -147,34 +147,36 @@
         <div id="descriptionText" class="text-xs font-medium text-white">—</div>
       </div>
 
-      <!-- Connected Wallet Section (Updated with Disconnect capability) -->
+      <!-- Connected Wallet Section -->
       <div class="bg-white/[0.02] border border-white/10 p-4 rounded-2xl flex items-center justify-between">
         <div>
           <div class="text-[11px] text-gray-400 uppercase tracking-wider">Connected Wallet</div>
           <div id="walletStatusText" class="font-mono text-xs font-bold text-gray-400 mt-0.5">Not Connected</div>
         </div>
-        <div class="flex items-center gap-2">
+        <div id="walletActionContainer">
           <button onclick="connectWallet()" id="connectBtn" class="px-4 py-2 bg-emerald-500 text-gray-950 font-bold rounded-xl text-xs shadow-md">Connect Wallet</button>
-          <button onclick="disconnectWallet()" id="disconnectBtn" class="hidden px-3 py-2 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 rounded-xl text-xs font-semibold" title="Disconnect Wallet">
-            <i class="fas fa-power-off"></i>
-          </button>
         </div>
       </div>
 
-      <!-- Transaction Hash Section (Hidden by default, shown after payment) -->
-      <div id="txHashSection" class="hidden bg-white/[0.02] border border-emerald-500/20 p-4 rounded-2xl space-y-1">
-        <div class="text-[11px] text-emerald-400 uppercase tracking-wider font-semibold">Transaction Hash</div>
+      <!-- Transaction Hash Display Section (Hidden initially) -->
+      <div id="txHashSection" class="hidden bg-emerald-500/5 border border-emerald-500/20 p-4 rounded-2xl space-y-1.5">
+        <div class="text-[11px] text-emerald-400 uppercase tracking-wider font-semibold">Transaction Successful</div>
         <div class="flex items-center justify-between">
-          <span id="txHashText" class="font-mono text-xs text-gray-300 truncate max-width-[280px]">—</span>
-          <a id="txExplorerLink" href="#" target="_blank" class="px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-semibold text-emerald-400 flex items-center gap-1.5">
-            View <i class="fas fa-external-link-alt text-[10px]"></i>
-          </a>
+          <span id="txHashText" class="font-mono text-xs text-gray-300">0x...</span>
+          <div class="flex gap-2">
+            <button onclick="copyTxHash()" class="px-2.5 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-semibold text-gray-300">
+              <i class="fas fa-copy"></i>
+            </button>
+            <a id="txExplorerLink" href="#" target="_blank" class="px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 rounded-lg text-xs font-semibold text-emerald-300 flex items-center gap-1">
+              Explorer <i class="fas fa-external-link-alt text-[10px]"></i>
+            </a>
+          </div>
         </div>
       </div>
 
       <button onclick="handleActionClick()" id="mainActionButton" 
         class="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold rounded-2xl text-base shadow-xl shadow-emerald-500/20 transition-all">
-        Connect Wallet to Claim
+        Connect Wallet to Pay
       </button>
 
     </section>
@@ -188,13 +190,12 @@
 <script>
   const CONTRACT_ADDRESS = "0xca96eBfD87065B90Ca9a07b8383669787c3218aE";
   const ARC_CHAIN_ID_HEX = "0x4cebe2";
-  const BLOCK_EXPLORER_URL = "https://testnet.arcscan.io/tx/"; // آدرس کاوشگر (قابل تغییر بر اساس شبکه شما)
   let signer = null;
   let userAddress = null;
   let currentLinkId = null;
   let currentLink = null;
   let tokenDecimals = 6;
-  let tokenSymbolName = "Token";
+  let currentTxHash = "";
 
   const ArcPaymentLinksABI = [
     "function getPaymentLink(bytes32 linkId) view returns (tuple(address creator, address token, uint256 amount, uint256 expiration, bytes32 claimHash, address restrictedTo, uint8 state, uint64 closedAt, string qrMetaData))",
@@ -207,6 +208,18 @@
     document.getElementById("toastText").textContent = msg;
     toast.classList.remove("hidden");
     setTimeout(() => toast.classList.add("hidden"), duration);
+  }
+
+  // Helper function to get correct token symbol based on address
+  function getTokenSymbol(tokenAddress) {
+    if (!tokenAddress || tokenAddress === ethers.ZeroAddress || tokenAddress.toLowerCase() === "0x0000000000000000000000000000000000000000") {
+      return "ARC"; // Or native network currency symbol
+    }
+    const lowerAddr = tokenAddress.toLowerCase();
+    if (lowerAddr === "0x3600000000000000000000000000000000000000".toLowerCase()) return "USDC";
+    if (lowerAddr === "0x89b50855aa3be2f677cd6303cec089b5f319d72a".toLowerCase()) return "EURC";
+    if (lowerAddr === "0xf0c4a4ce82a5746abaab9425360ab04fbba432bf".toLowerCase()) return "CIRBTC";
+    return "Token";
   }
 
   async function loadPaymentLink() {
@@ -234,27 +247,20 @@
       const isNative = (currentLink.token === ethers.ZeroAddress || currentLink.token.toLowerCase() === "0x0000000000000000000000000000000000000000");
       if (!isNative) {
         try {
-          const tokenContract = new ethers.Contract(currentLink.token, [
-            "function decimals() view returns (uint8)",
-            "function symbol() view returns (string)"
-          ], provider);
+          const tokenContract = new ethers.Contract(currentLink.token, ["function decimals() view returns (uint8)"], provider);
           tokenDecimals = await tokenContract.decimals();
-          tokenSymbolName = await tokenContract.symbol();
         } catch (err) {
           tokenDecimals = 6;
-          tokenSymbolName = "Token";
         }
       } else {
         tokenDecimals = 18;
-        tokenSymbolName = "ARC"; // یا اسم توکن بومی شبکه شما
       }
 
+      const symbol = getTokenSymbol(currentLink.token);
       const formattedAmount = ethers.formatUnits(currentLink.amount, tokenDecimals);
       
-      // نمایش نام واقعی توکن
-      document.getElementById('amountDisplay').innerHTML = `${formattedAmount} <span class="text-emerald-400 text-3xl">${tokenSymbolName}</span>`;
-      document.getElementById('modalAmount').textContent = `${formattedAmount} ${tokenSymbolName}`;
-      
+      document.getElementById('amountDisplay').innerHTML = `${formattedAmount} <span class="text-emerald-400 text-3xl">${symbol}</span>`;
+      document.getElementById('modalAmount').textContent = `${formattedAmount} ${symbol}`;
       document.getElementById('titleDisplay').textContent = currentLink.qrMetaData || "Payment Request";
       document.getElementById('recipientAddress').textContent = currentLink.creator;
       document.getElementById('modalRecipient').textContent = `${currentLink.creator.slice(0,6)}...${currentLink.creator.slice(-4)}`;
@@ -263,29 +269,11 @@
       document.getElementById('loadingState').classList.add('hidden');
       document.getElementById('paymentCard').classList.remove('hidden');
 
-      // بررسی وضعیت اتصال قبلی ولت (در صورت وجود)
-      checkExistingConnection();
-
     } catch (e) {
       console.error("Load Link Error:", e);
       document.getElementById('loadingState').classList.add('hidden');
       document.getElementById('errorDetails').textContent = e.reason || e.message || "Network request failed";
       document.getElementById('errorState').classList.remove('hidden');
-    }
-  }
-
-  async function checkExistingConnection() {
-    if (!window.ethereum) return;
-    try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const accounts = await provider.listAccounts();
-      if (accounts.length > 0) {
-        userAddress = accounts[0].address;
-        signer = await provider.getSigner();
-        updateWalletUIConnected();
-      }
-    } catch (err) {
-      console.error(err);
     }
   }
 
@@ -311,40 +299,36 @@
       userAddress = accounts[0];
       signer = await provider.getSigner();
 
-      updateWalletUIConnected();
+      // Update UI for Connected State with Disconnect button
+      document.getElementById('walletStatusText').textContent = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
+      document.getElementById('walletStatusText').className = "font-mono text-xs font-bold text-emerald-400 mt-0.5";
+      
+      document.getElementById('walletActionContainer').innerHTML = `
+        <button onclick="disconnectWallet()" class="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 font-semibold rounded-xl text-xs transition-all">
+          Disconnect
+        </button>
+      `;
+
+      document.getElementById('mainActionButton').textContent = "Pay Now";
       showToast("Wallet Connected Successfully");
     } catch (e) {
       showToast("Failed to connect wallet");
     }
   }
 
-  function updateWalletUIConnected() {
-    const walletStatusText = document.getElementById('walletStatusText');
-    walletStatusText.textContent = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
-    walletStatusText.className = "font-mono text-xs font-bold text-emerald-400 mt-0.5";
-
-    document.getElementById('connectBtn').classList.add('hidden');
-    document.getElementById('disconnectBtn').classList.remove('hidden');
-
-    const mainBtn = document.getElementById('mainActionButton');
-    mainBtn.textContent = "Pay Now";
-    mainBtn.disabled = false;
-  }
-
   function disconnectWallet() {
     signer = null;
     userAddress = null;
 
-    const walletStatusText = document.getElementById('walletStatusText');
-    walletStatusText.textContent = "Not Connected";
-    walletStatusText.className = "font-mono text-xs font-bold text-gray-400 mt-0.5";
+    // Reset UI to Not Connected state
+    document.getElementById('walletStatusText').textContent = "Not Connected";
+    document.getElementById('walletStatusText').className = "font-mono text-xs font-bold text-gray-400 mt-0.5";
+    
+    document.getElementById('walletActionContainer').innerHTML = `
+      <button onclick="connectWallet()" id="connectBtn" class="px-4 py-2 bg-emerald-500 text-gray-950 font-bold rounded-xl text-xs shadow-md">Connect Wallet</button>
+    `;
 
-    document.getElementById('connectBtn').classList.remove('hidden');
-    document.getElementById('disconnectBtn').classList.add('hidden');
-
-    const mainBtn = document.getElementById('mainActionButton');
-    mainBtn.textContent = "Connect Wallet to Claim";
-
+    document.getElementById('mainActionButton').textContent = "Connect Wallet to Pay";
     showToast("Wallet Disconnected");
   }
 
@@ -398,20 +382,19 @@
         });
       }
       
-      const receipt = await tx.wait();
+      currentTxHash = tx.hash;
+      await tx.wait();
 
       showToast("✅ Payment Successful!", 6000);
 
-      // نمایش هش تراکنش در صفحه
-      const txHash = receipt.hash;
-      document.getElementById('txHashText.textContent').textContent = `${txHash.slice(0, 10)}...${txHash.slice(-8)}`;
-      document.getElementById('txHashText').textContent = txHash;
-      document.getElementById('txExplorerLink').href = BLOCK_EXPLORER_URL + txHash;
+      // Display Transaction Hash Section
+      document.getElementById('txHashText').textContent = `${currentTxHash.slice(0, 10)}...${currentTxHash.slice(-8)}`;
+      // Note: Replace the explorer URL below with the actual Arc Testnet explorer URL if different
+      document.getElementById('txExplorerLink').href = `https://testnet.arcscan.io/tx/${currentTxHash}`;
       document.getElementById('txHashSection').classList.remove('hidden');
 
       actionBtn.innerHTML = `✅ Payment Completed`;
       actionBtn.classList.add('!bg-emerald-600');
-      actionBtn.disabled = true;
 
     } catch (error) {
       console.error(error);
@@ -426,6 +409,13 @@
     if (currentLink) {
       navigator.clipboard.writeText(currentLink.creator);
       showToast("Address copied");
+    }
+  }
+
+  function copyTxHash() {
+    if (currentTxHash) {
+      navigator.clipboard.writeText(currentTxHash);
+      showToast("Transaction hash copied");
     }
   }
 
