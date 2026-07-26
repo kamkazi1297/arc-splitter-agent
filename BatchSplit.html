@@ -121,10 +121,15 @@
 
     <!-- Wallet Hub -->
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mb-8">
-      <button onclick="showConnectModal()" id="connectBtn" class="app-button px-6 py-4 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl flex items-center justify-center gap-2.5 hover:bg-emerald-50 transition-all">
-        <i class="fas fa-wallet text-emerald-600 light:text-emerald-400"></i> 
-        <span id="connectText">Connect Wallet</span>
-      </button>
+      <div class="relative flex items-center">
+        <button onclick="handleWalletClick()" id="connectBtn" class="app-button w-full px-6 py-4 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl flex items-center justify-center gap-2.5 hover:bg-emerald-50 transition-all">
+          <i class="fas fa-wallet text-emerald-600 light:text-emerald-400"></i> 
+          <span id="connectText">Connect Wallet</span>
+        </button>
+        <button onclick="disconnectWallet(event)" id="disconnectBtn" class="hidden absolute right-3 px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-bold transition-all border border-rose-500/20" title="Disconnect Wallet">
+          <i class="fas fa-power-off"></i>
+        </button>
+      </div>
 
       <div class="glass px-6 py-4 rounded-2xl flex items-center justify-between border border-white/10">
         <div class="flex items-center gap-2 text-xs font-semibold text-gray-400">
@@ -172,9 +177,6 @@
               Add Recipients & Shares
             </h3>
             <div class="flex items-center gap-2">
-              <button onclick="distributeRemaining()" class="app-button px-3 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all">
-                <i class="fas fa-balance-scale text-[10px]"></i> Distribute Remaining
-              </button>
               <button onclick="importCSVModal()" class="app-button px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all">
                 <i class="fas fa-file-csv text-cyan-400"></i> Import CSV
               </button>
@@ -186,6 +188,13 @@
 
           <div id="recipientsContainer" class="space-y-3 max-h-80 overflow-y-auto pr-1">
             <!-- Dynamic Recipient Rows injected here -->
+          </div>
+
+          <!-- Distribute Remaining Button Sub-section -->
+          <div>
+            <button onclick="distributeRemaining()" class="app-button w-full py-3 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 transition-all">
+              <i class="fas fa-balance-scale"></i> Distribute Remaining
+            </button>
           </div>
 
           <!-- Total Percentage Validation Bar -->
@@ -358,7 +367,7 @@
 
 <script>
 // ==================== CONFIG & CONSTANTS ====================
-const CONTRACT_ADDRESS = "0x2eC83898bDd1062539a6bea39f61457Df809856E";
+const CONTRACT_ADDRESS = "0x73Da94F0D960Ef8FD49Ed28a94f667aF3C062cB2";
 const NATIVE_TOKEN = "0x0000000000000000000000000000000000000000";
 
 const AVAILABLE_TOKENS = [
@@ -381,7 +390,7 @@ let tokenRows = [
   { token: "0x3600000000000000000000000000000000000000", amount: "" }
 ];
 let recipientRows = [
-  { wallet: "", percentage: "", amount: "" }
+  { wallet: "", percentage: "" }
 ];
 
 // ==================== UTILS & NOTIFICATIONS ====================
@@ -426,6 +435,12 @@ function switchView(view) {
 }
 
 // ==================== WALLET CONNECTION ====================
+function handleWalletClick() {
+  if (!userAddress) {
+    showConnectModal();
+  }
+}
+
 function showConnectModal() {
   if (window.ethereum) {
     window.ethereum.request({ method: 'eth_requestAccounts' }).then(accounts => {
@@ -438,11 +453,28 @@ function showConnectModal() {
   }
 }
 
+function disconnectWallet(event) {
+  event.stopPropagation();
+  userAddress = null;
+  signer = null;
+  updateConnectButton();
+  showToast("Wallet disconnected");
+}
+
 function updateConnectButton() {
   const btn = document.getElementById("connectBtn");
+  const disconnectBtn = document.getElementById("disconnectBtn");
+  const span = document.getElementById("connectText");
+  
   if (userAddress) {
     const short = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
-    btn.innerHTML = `<i class="fas fa-wallet text-emerald-400"></i> <span class="font-bold">${short}</span>`;
+    span.textContent = short;
+    btn.classList.add("pr-16");
+    disconnectBtn.classList.remove("hidden");
+  } else {
+    span.textContent = "Connect Wallet";
+    btn.classList.remove("pr-16");
+    disconnectBtn.classList.add("hidden");
   }
 }
 
@@ -484,11 +516,10 @@ function removeTokenRow(idx) {
 function renderRecipients() {
   const container = document.getElementById("recipientsContainer");
   container.innerHTML = recipientRows.map((row, idx) => `
-    <div class="flex items-center gap-2 bg-white/5 p-3.5 rounded-2xl border border-white/5">
-      <input type="text" value="${row.wallet}" oninput="updateRecipientWallet(${idx}, this.value)" placeholder="Wallet Address (0x...)" class="flex-1 rounded-xl px-3 py-3 font-mono text-xs outline-none">
-      <input type="number" value="${row.percentage}" oninput="updateRecipientPercentage(${idx}, this.value)" placeholder="%" class="w-20 rounded-xl px-3 py-3 text-xs font-bold outline-none">
+    <div class="flex items-center gap-3 bg-white/5 p-3.5 rounded-2xl border border-white/5">
+      <input type="text" value="${row.wallet}" oninput="updateRecipientWallet(${idx}, this.value)" placeholder="Wallet Address (0x...)" class="flex-1 rounded-xl px-4 py-3 font-mono text-xs outline-none">
+      <input type="number" value="${row.percentage}" oninput="updateRecipientPercentage(${idx}, this.value)" placeholder="Percentage %" class="w-24 sm:w-28 rounded-xl px-4 py-3 text-xs sm:text-sm font-bold outline-none">
       <span class="text-xs text-gray-400 font-bold">%</span>
-      <input type="text" value="${row.amount || ''}" readonly placeholder="Amount" class="w-24 rounded-xl px-3 py-3 text-xs font-bold outline-none bg-white/5 text-gray-300">
       <button onclick="removeRecipientRow(${idx})" class="w-10 h-10 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 flex items-center justify-center transition-all"><i class="fas fa-trash text-xs"></i></button>
     </div>
   `).join('');
@@ -497,7 +528,7 @@ function renderRecipients() {
 }
 
 function addRecipientRow() {
-  recipientRows.push({ wallet: "", percentage: "", amount: "" });
+  recipientRows.push({ wallet: "", percentage: "" });
   renderRecipients();
 }
 
@@ -514,17 +545,16 @@ function removeRecipientRow(idx) {
 }
 
 function distributeRemaining() {
+  if (recipientRows.length === 0) return;
   const currentTotal = recipientRows.reduce((sum, r, i) => {
     if (i === recipientRows.length - 1) return sum;
     return sum + (parseFloat(r.percentage) || 0);
   }, 0);
   
   const remaining = Math.max(0, 100 - currentTotal);
-  if (recipientRows.length > 0) {
-    recipientRows[recipientRows.length - 1].percentage = remaining;
-    renderRecipients();
-    showToast(`Remaining ${remaining}% assigned to the last recipient`);
-  }
+  recipientRows[recipientRows.length - 1].percentage = remaining > 0 ? remaining : "";
+  renderRecipients();
+  showToast(`Remaining ${remaining}% assigned to the last recipient`);
 }
 
 function validateTotalPercentage() {
@@ -557,10 +587,9 @@ function renderLiveSummary() {
         <div class="space-y-1 pl-2">
     `;
 
-    recipientRows.forEach((rItem, rIdx) => {
+    recipientRows.forEach(rItem => {
       const p = parseFloat(rItem.percentage) || 0;
       const share = (amt * p) / 100;
-      recipientRows[rIdx].amount = share.toFixed(4);
       const shortWallet = rItem.wallet ? `${rItem.wallet.slice(0,6)}...${rItem.wallet.slice(-4)}` : "0x...";
       html += `<div class="flex justify-between text-gray-300"><span>${shortWallet} (${p}%)</span> <span class="text-white font-bold">${share.toFixed(4)}</span></div>`;
     });
@@ -569,17 +598,6 @@ function renderLiveSummary() {
   });
 
   preview.innerHTML = html || '<p class="text-gray-400 text-center py-4">Add tokens and recipients to see breakdown.</p>';
-  
-  // Update inputs without re-rendering focus loss if desired, or keep simple
-  const amountInputs = document.querySelectorAll('#recipientsContainer input[readonly]');
-  amountInputs.forEach((input, idx) => {
-    if (recipientRows[idx]) {
-      const tItem = tokenRows[0] || { amount: 0 };
-      const amt = parseFloat(tItem.amount) || 0;
-      const p = parseFloat(recipientRows[idx].percentage) || 0;
-      input.value = ((amt * p) / 100).toFixed(4);
-    }
-  });
 }
 
 // ==================== CSV IMPORT ====================
@@ -595,7 +613,7 @@ function processCsvImport() {
   lines.forEach(line => {
     const parts = line.split(/[,;\t]/).map(p => p.trim());
     if (parts.length >= 2 && ethers.isAddress(parts[0])) {
-      newRecipients.push({ wallet: parts[0], percentage: parts[1], amount: "" });
+      newRecipients.push({ wallet: parts[0], percentage: parts[1] });
     }
   });
 
