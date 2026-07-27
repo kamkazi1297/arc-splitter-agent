@@ -52,7 +52,6 @@
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1);
     }
 
-    /* Fixed colors for specific sections so they remain consistent or styled appropriately */
     .preserve-theme {
       color: #f8fafc;
     }
@@ -175,7 +174,7 @@
       .percent-container, .amount-container {
         width: 100% !important;
       }
-      input[type="text"], input[type="number"], input[type="date"] {
+      input[type="text"], input[type="number"], input[type="datetime-local"] {
         font-size: 1rem !important;
         padding: 14px 16px !important;
       }
@@ -251,7 +250,7 @@
             </div>
             <div>
               <label class="block text-gray-400 light:text-slate-600 text-xs font-bold uppercase tracking-wider mb-2">Total Amount</label>
-              <input type="number" id="totalAmount" placeholder="100" class="w-full rounded-2xl px-5 py-4 text-xl sm:text-2xl font-bold outline-none" oninput="onTotalAmountChange()">
+              <input type="number" id="totalAmount" placeholder="100" class="w-full rounded-2xl px-5 py-4 text-sm sm:text-base font-bold outline-none" oninput="onTotalAmountChange()">
             </div>
           </div>
           <div class="mt-4 text-xs text-gray-400 light:text-slate-600 font-semibold flex justify-between items-center bg-white/[0.02] light:bg-black/5 p-3 rounded-xl border border-white/5 light:border-black/5">
@@ -289,8 +288,8 @@
           
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
             <div>
-              <label class="block text-gray-400 light:text-slate-600 text-xs font-bold uppercase tracking-wider mb-2">Start Date</label>
-              <input type="date" id="startDate" class="w-full rounded-2xl px-4 py-3.5 text-xs sm:text-sm font-bold outline-none" onchange="validateStartDate()">
+              <label class="block text-gray-400 light:text-slate-600 text-xs font-bold uppercase tracking-wider mb-2">Start Date & Time</label>
+              <input type="datetime-local" id="startDate" class="w-full rounded-2xl px-4 py-3.5 text-xs sm:text-sm font-bold outline-none" onchange="validateStartDate()">
               <span id="dateErrorMsg" class="text-[11px] text-rose-400 font-bold mt-1.5 block hidden">Warning: Date is in the past!</span>
             </div>
             
@@ -404,7 +403,10 @@
 
     <!-- History View Tab -->
     <div id="viewHistory" class="hidden glass rounded-3xl p-6 sm:p-8 space-y-4">
-      <h3 class="font-bold text-lg mb-4 flex items-center gap-2 preserve-theme"><i class="fas fa-history text-emerald-400"></i> Vesting Schedules History</h3>
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-lg flex items-center gap-2 preserve-theme"><i class="fas fa-history text-emerald-400"></i> Vesting Schedules History</h3>
+        <button onclick="clearHistory()" class="text-xs text-rose-400 hover:underline">Clear History</button>
+      </div>
       <div id="historyList" class="space-y-3 text-xs text-gray-400 font-medium">No vesting plans created yet.</div>
     </div>
 
@@ -434,7 +436,7 @@
 
 <script>
   let provider, signer, userAddress;
-  let historyTransactions = [];
+  let historyTransactions = JSON.parse(localStorage.getItem('arcsplit_history') || '[]');
   
   const VESTING_CONTRACT_ADDRESS = "0x714Ad5eD106F82640DF51ee0C0E1D471Ff0A5D9d";
   
@@ -448,10 +450,13 @@
   ];
 
   window.addEventListener('load', async () => {
-    const today = new Date().toISOString().split('T')[0];
-    document.getElementById('startDate').value = today;
+    const now = new Date();
+    const nowISO = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    document.getElementById('startDate').value = nowISO;
+
     renderRecipients();
     recalculateVesting();
+    renderHistoryList();
 
     if (window.ethereum) {
       try {
@@ -558,13 +563,13 @@
   }
 
   function validateStartDate() {
-    const startDateInput = document.getElementById('startDate').value;
-    const todayStr = new Date().toISOString().split('T')[0];
+    const startDateInput = new Date(document.getElementById('startDate').value);
+    const now = new Date();
     const errorMsg = document.getElementById('dateErrorMsg');
 
-    if (startDateInput < todayStr) {
+    if (startDateInput < now) {
       errorMsg.classList.remove('hidden');
-      showToast("Warning: Selected date is in the past!");
+      showToast("Warning: Selected date/time is in the past!");
     } else {
       errorMsg.classList.add('hidden');
     }
@@ -793,13 +798,14 @@
     }
 
     let calendarList = document.getElementById('calendarUnlockList');
-    let startDateVal = new Date(document.getElementById('startDate').value || new Date());
+    let rawDateVal = document.getElementById('startDate').value;
+    let startDateVal = rawDateVal ? new Date(rawDateVal) : new Date();
+    
     let calHtml = '';
     for(let m = 1; m <= 12; m++) {
-      let unlockDate = new Date(startDateVal);
+      let unlockDate = new Date(startDateVal.getTime());
       unlockDate.setMonth(unlockDate.getMonth() + m);
       
-      // Format to include hours, minutes, and seconds (e.g., YYYY-MM-DD HH:mm:ss)
       let year = unlockDate.getFullYear();
       let month = String(unlockDate.getMonth() + 1).padStart(2, '0');
       let day = String(unlockDate.getDate()).padStart(2, '0');
@@ -928,7 +934,6 @@
       showToast("Smart Contract executed successfully on-chain!");
       switchTab('history');
       
-      // Save to history array & render correctly
       historyTransactions.unshift({
         hash: tx.hash,
         address: recipient.address,
@@ -936,6 +941,7 @@
         duration: getDurationText(),
         timestamp: new Date().toLocaleString()
       });
+      localStorage.setItem('arcsplit_history', JSON.stringify(historyTransactions));
       renderHistoryList();
 
     } catch (error) {
@@ -957,12 +963,19 @@
           <span class="preserve-theme">On-Chain Plan (${item.address.substring(0,6)}...)</span>
           <span class="text-emerald-400">Confirmed</span>
         </div>
-        <div class="text-xs text-gray-400 flex flex-col sm:flex-row sm:justify-between gap-1">
-          <span>Tx: <a href="https://testnet.arcscan.app/tx/${item.hash}" target="_blank" class="text-cyan-400 hover:underline font-mono">${item.hash.substring(0,10)}... <i class="fas fa-external-link-alt text-[10px]"></i></a> | Allocated: ${item.allocated} | Duration: ${item.duration}</span>
+        <div class="text-xs text-gray-400 flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-1">
+          <span>Tx: <a href="https://testnet.arcscan.app/tx/${item.hash}" target="_blank" class="text-cyan-400 hover:underline font-mono">View on Explorer <i class="fas fa-external-link-alt text-[10px]"></i></a> | Allocated: ${item.allocated} | Duration: ${item.duration}</span>
           <span class="text-[10px] text-gray-500">${item.timestamp}</span>
         </div>
       </div>
     `).join('');
+  }
+
+  function clearHistory() {
+    historyTransactions = [];
+    localStorage.removeItem('arcsplit_history');
+    renderHistoryList();
+    showToast("History cleared.");
   }
 
   function exportScheduleData() {
