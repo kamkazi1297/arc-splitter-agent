@@ -49,7 +49,6 @@
     .light .text-gray-400 { color: #475569 !important; }
     .light .text-gray-300 { color: #334155 !important; }
     
-    /* Keep ArcSplit header title and History text white/light-proof if needed or styled specifically */
     .header-title-text, .history-title-text { color: #ffffff !important; }
 
     .wallet-connected-glass {
@@ -409,7 +408,8 @@
     runSimulation();
   }
 
-  async function fetchBalanceWithRetry(retries = 5) {
+  // مدیریت بالانس با ۳ تلاش، تأخیر بین درخواست‌ها و چراغ چشمک‌زن قرمز/سبز
+  async function fetchBalanceWithRetry(retries = 3) {
     const badge = document.getElementById('retryStatusBadge');
     const balanceDisplay = document.getElementById('walletBalanceDisplay');
     const select = document.getElementById('tokenSelect');
@@ -427,8 +427,8 @@
     const selectedSymbol = select.options[select.selectedIndex].text.split(' ')[0];
 
     for (let attempt = 1; attempt <= retries; attempt++) {
-      badge.className = "text-[10px] px-2.5 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 animate-pulse";
-      badge.textContent = `Syncing (Attempt ${attempt}/${retries})...`;
+      badge.className = "text-[10px] px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20 animate-pulse";
+      badge.textContent = `Syncing (${attempt}/${retries})...`;
 
       try {
         const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
@@ -446,12 +446,36 @@
         return;
       } catch (err) {
         console.warn(`Attempt ${attempt} failed to fetch actual balance. Retrying...`, err);
+        
+        if (attempt < retries) {
+          await new Promise(resolve => setTimeout(resolve, 1500));
+        }
+
         if (attempt === retries) {
           balanceDisplay.textContent = `0.00 ${selectedSymbol}`;
           badge.className = "text-[10px] px-2.5 py-1 rounded-full bg-rose-500/10 text-rose-400 border border-rose-500/20";
-          badge.textContent = "Sync Failed (RPC Error)";
+          badge.textContent = "Sync Failed";
         }
       }
+    }
+  }
+
+  // توابع ذخیره‌سازی و خواندن تاریخچه از localStorage
+  function saveHistoryToStorage(historyHtmlContent) {
+    let savedHistories = JSON.parse(localStorage.getItem('arcSplit_history') || '[]');
+    savedHistories.unshift(historyHtmlContent);
+    localStorage.setItem('arcSplit_history', JSON.stringify(savedHistories));
+    loadHistoryFromStorage();
+  }
+
+  function loadHistoryFromStorage() {
+    let savedHistories = JSON.parse(localStorage.getItem('arcSplit_history') || '[]');
+    const historyListElem = document.getElementById('historyList');
+    
+    if (savedHistories.length > 0) {
+      historyListElem.innerHTML = savedHistories.join('');
+    } else {
+      historyListElem.innerHTML = 'No smart splits deployed yet.';
     }
   }
 
@@ -993,8 +1017,8 @@
 
       const explorerUrl = `https://testnet.arcscan.app/tx/${tx.hash}`;
 
-      document.getElementById('historyList').innerHTML = `
-        <div class="glass p-5 rounded-3xl space-y-4">
+      const newHistoryItemHtml = `
+        <div class="glass p-5 rounded-3xl space-y-4 mb-4">
           <div class="flex justify-between items-center pb-3 border-b border-white/10">
             <div>
               <div class="font-bold text-white light:text-slate-900 text-sm">On-Chain Deployed Split</div>
@@ -1015,6 +1039,8 @@
         </div>
       `;
 
+      saveHistoryToStorage(newHistoryItemHtml);
+
       deployBtn.disabled = false;
       deployBtn.innerHTML = originalBtnHtml;
 
@@ -1029,6 +1055,7 @@
   window.addEventListener('load', () => {
     renderRules();
     checkInitialConnection();
+    loadHistoryFromStorage();
   });
 </script>
 </body>
