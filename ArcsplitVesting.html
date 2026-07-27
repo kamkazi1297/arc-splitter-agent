@@ -35,7 +35,7 @@
     .light {
       background: #f1f5f9 !important;
       background-image: none !important;
-      color: #020617 !important;
+      color: #0f172a !important;
     }
 
     .light .glass {
@@ -44,7 +44,10 @@
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
     }
 
-    /* المان‌هایی که باید رنگشان در تمام حالت‌ها ثابت و مشابه دارک‌مود باقی بماند */
+    .light body, .light p, .light span:not(.preserve-fixed-color), .light label {
+      color: #0f172a;
+    }
+
     .preserve-fixed-color {
       color: #f8fafc !important;
     }
@@ -82,6 +85,16 @@
 
     select option { background-color: #0f172a; color: white; padding: 10px; }
     .light select option { background-color: #ffffff; color: #020617; }
+
+    /* حذف فلش‌ها و کادر مربعی پیش‌فرض اعداد در مرورگرها */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+      -webkit-appearance: none; 
+      margin: 0; 
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
   </style>
 </head>
 <body class="text-white min-h-screen selection:bg-emerald-500 selection:text-black">
@@ -97,7 +110,7 @@
       
       <div class="flex items-center gap-3 flex-wrap">
         <div id="walletSection" class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-2xl px-4 py-2.5 text-xs font-bold preserve-fixed-color">
-          <button id="connectWalletBtn" onclick="connectWallet()" class="flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-all">
+          <button id="connectWalletBtn" onclick="connectWallet()" class="flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-all preserve-fixed-color">
             <i class="fas fa-wallet"></i> <span id="walletBtnText">Connect Wallet</span>
           </button>
           <button id="disconnectWalletBtn" onclick="disconnectWallet()" class="hidden text-rose-400 hover:text-rose-300 ml-2 pl-2 border-l border-white/10" title="Disconnect">
@@ -111,7 +124,7 @@
           <button onclick="switchTab('history')" id="tabHistory" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-fixed-color">History</button>
         </div>
         <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl transition-all">
-          <i id="themeIcon" class="fas fa-moon text-lg text-emerald-400"></i>
+          <i class="fas fa-moon text-lg text-emerald-400"></i>
         </button>
       </div>
     </div>
@@ -546,9 +559,9 @@
       
       return `
         <div class="flex items-center gap-2">
-          <input type="text" value="${r.address}" oninput="recipients[${idx}].address=this.value" class="flex-1 rounded-xl px-3 py-2 text-xs font-medium" placeholder="0xBeneficiaryAddress...">
-          <input type="number" value="${currentPercent}" oninput="onPercentInput(${idx}, this.value)" class="w-28 rounded-xl px-3 py-2 text-center text-xs font-bold" placeholder="%" min="0" max="100">
-          <input type="number" value="${currentAmt}" oninput="onAmountInput(${idx}, this.value)" class="w-28 rounded-xl px-3 py-2 text-center text-xs font-bold" placeholder="">
+          <input type="text" value="${r.address}" oninput="recipients[${idx}].address=this.value" class="flex-1 rounded-2xl px-4 py-3.5 text-xs font-medium" placeholder="0xBeneficiaryAddress...">
+          <input type="number" value="${currentPercent}" oninput="onPercentInput(${idx}, this.value)" class="w-28 rounded-2xl px-4 py-3.5 text-center text-xs font-bold" placeholder="%" min="0" max="100">
+          <input type="number" value="${currentAmt}" oninput="onAmountInput(${idx}, this.value)" class="w-28 rounded-2xl px-4 py-3.5 text-center text-xs font-bold" placeholder="">
           <button onclick="recipients.splice(${idx},1); renderRecipients(); recalculateVesting();" class="text-gray-400 hover:text-rose-500 text-xs px-1"><i class="fas fa-times"></i></button>
         </div>
       `;
