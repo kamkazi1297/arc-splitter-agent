@@ -48,7 +48,7 @@
 
     .light .glass {
       background: rgba(255, 255, 255, 0.85);
-      border-color: rgba(0, 0, 0, 0.08);
+      border-color: rgba(0, 0, 0, 0.15); /* کمی تیره‌تر کردن دور کادرها در حالت لایت */
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1);
     }
 
@@ -60,9 +60,16 @@
       color: #0f172a !important;
     }
 
-    .light body, .light h1, .light h3, .light label, .light .text-white {
-      color: #0f172a;
+    /* ثابت ماندن رنگ فونت بخش‌های درخواستی در حالت لایت مود */
+    .light .fixed-light-text,
+    .light #walletSection,
+    .light #tabSplitter,
+    .light #tabCalendar,
+    .light #tabHistory,
+    .light .preserve-theme {
+      color: inherit;
     }
+
     .light .text-gray-400 { color: #475569 !important; }
     .light .text-gray-300 { color: #334155 !important; }
     .light .text-gray-200 { color: #1e293b !important; }
@@ -70,11 +77,11 @@
     select, input {
       background-color: rgba(255, 255, 255, 0.03);
       color: white;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.15); /* تیره‌تر کردن کادرها در دارک مود */
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
     select:hover, input:hover {
-      border-color: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.3);
     }
     select:focus, input:focus {
       border-color: #10b981;
@@ -82,10 +89,16 @@
       outline: none;
     }
 
+    /* یکسان‌سازی اندازه فیلد Asset Token و Total Amount */
+    #tokenSelect, #totalAmount {
+      height: 56px;
+      box-sizing: border-box;
+    }
+
     .light select, .light input {
       background-color: #ffffff;
       color: #0f172a;
-      border: 1px solid #cbd5e1;
+      border: 1px solid #94a3b8; /* تیره‌تر کردن خط دور کادرها در لایت مود */
     }
     .light select:focus, .light input:focus {
       border-color: #10b981;
@@ -187,14 +200,15 @@
   <div class="max-w-7xl mx-auto px-4 py-6 sm:py-8">
     
     <!-- Header Section -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/[0.02] light:bg-white/50 border border-white/10 light:border-slate-300 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
       <div>
         <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight preserve-theme">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Vesting & Cliff Engine</span></h1>
         <p class="text-gray-400 light:text-slate-600 text-xs sm:text-sm font-medium">Schedule token releases over time with Smart Contract integration</p>
       </div>
       
       <div class="flex items-center gap-3 flex-wrap">
-        <div id="walletSection" class="flex items-center gap-2 bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 rounded-2xl px-4 py-2.5 text-xs font-bold preserve-theme">
+        <!-- آدرس ولت با استایل محافظت شده -->
+        <div id="walletSection" class="flex items-center gap-2 bg-white/5 light:bg-black/5 border border-white/15 light:border-slate-300 rounded-2xl px-4 py-2.5 text-xs font-bold preserve-theme">
           <button id="connectWalletBtn" onclick="connectWallet()" class="flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-all">
             <i class="fas fa-wallet"></i> <span id="walletBtnText">Connect Wallet</span>
           </button>
@@ -203,12 +217,12 @@
           </button>
         </div>
 
-        <div class="flex bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 rounded-2xl p-1 text-xs">
+        <div class="flex bg-white/5 light:bg-black/5 border border-white/15 light:border-slate-300 rounded-2xl p-1 text-xs">
           <button onclick="switchTab('splitter')" id="tabSplitter" class="px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400">Configuration</button>
           <button onclick="switchTab('calendar')" id="tabCalendar" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-600">Calendar View</button>
           <button onclick="switchTab('history')" id="tabHistory" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-600">History</button>
         </div>
-        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/10 light:hover:bg-black/10 border border-white/10 light:border-black/10 rounded-2xl transition-all shadow-lg">
+        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/10 light:hover:bg-black/10 border border-white/15 light:border-slate-300 rounded-2xl transition-all shadow-lg">
           <i class="fas fa-moon text-lg text-emerald-400"></i>
         </button>
       </div>
@@ -242,7 +256,7 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-gray-400 light:text-slate-600 text-xs font-bold uppercase tracking-wider mb-2">Asset Token</label>
-              <select id="tokenSelect" class="w-full rounded-2xl px-5 py-4 text-sm sm:text-base font-medium cursor-pointer" onchange="handleTokenChange()">
+              <select id="tokenSelect" class="w-full rounded-2xl px-5 py-3 text-sm sm:text-base font-medium cursor-pointer" onchange="handleTokenChange()">
                 <option value="0x3600000000000000000000000000000000000000">USDC</option>
                 <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
                 <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">CIRBTC</option>
@@ -251,10 +265,10 @@
             </div>
             <div>
               <label class="block text-gray-400 light:text-slate-600 text-xs font-bold uppercase tracking-wider mb-2">Total Amount</label>
-              <input type="number" id="totalAmount" placeholder="100" class="w-full rounded-2xl px-5 py-4 text-xl sm:text-2xl font-bold outline-none" oninput="onTotalAmountChange()">
+              <input type="number" id="totalAmount" placeholder="100" class="w-full rounded-2xl px-5 py-3 text-xl sm:text-2xl font-bold outline-none" oninput="onTotalAmountChange()">
             </div>
           </div>
-          <div class="mt-4 text-xs text-gray-400 light:text-slate-600 font-semibold flex justify-between items-center bg-white/[0.02] light:bg-black/5 p-3 rounded-xl border border-white/5 light:border-black/5">
+          <div class="mt-4 text-xs text-gray-400 light:text-slate-600 font-semibold flex justify-between items-center bg-white/[0.02] light:bg-black/5 p-3 rounded-xl border border-white/10 light:border-slate-300">
             <span>Wallet Balance:</span>
             <span id="walletBalanceDisplay" class="text-emerald-400 font-bold">0.00 (Not Connected)</span>
           </div>
@@ -334,7 +348,7 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6 border-t border-white/5 light:border-black/10">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6 border-t border-white/10 light:border-slate-300">
             <div>
               <label class="block text-gray-400 light:text-slate-600 text-xs font-bold uppercase tracking-wider mb-2">Release Frequency</label>
               <select id="frequencySelect" class="w-full rounded-2xl px-4 py-3.5 text-xs sm:text-sm font-bold cursor-pointer" onchange="recalculateVesting()">
@@ -369,7 +383,7 @@
             </button>
           </div>
 
-          <div class="bg-white/[0.02] light:bg-black/5 border border-white/5 light:border-black/10 rounded-2xl p-4 space-y-2.5 text-xs">
+          <div class="bg-white/[0.02] light:bg-black/5 border border-white/10 light:border-slate-300 rounded-2xl p-4 space-y-2.5 text-xs">
             <div class="flex justify-between"><span class="text-gray-400 font-semibold">Token:</span> <span id="sumToken" class="font-bold">USDC</span></div>
             <div class="flex justify-between"><span class="text-gray-400 font-semibold">Total Amount:</span> <span id="sumTotalAmt" class="font-bold">0</span></div>
             <div class="flex justify-between"><span class="text-gray-400 font-semibold">Cliff Period:</span> <span id="sumCliff" class="font-bold">6 Months</span></div>
@@ -384,7 +398,7 @@
 
           <div>
             <div class="text-[11px] text-gray-400 light:text-slate-600 uppercase tracking-wider font-semibold mb-2">Visual Timeline</div>
-            <div id="visualTimeline" class="flex gap-1 h-6 items-center bg-black/20 light:bg-slate-200 p-1.5 rounded-xl border border-white/5 light:border-slate-300"></div>
+            <div id="visualTimeline" class="flex gap-1 h-6 items-center bg-black/20 light:bg-slate-200 p-1.5 rounded-xl border border-white/10 light:border-slate-300"></div>
           </div>
 
           <button onclick="openConfirmModal()" class="app-button w-full bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 hover:brightness-110 py-5 rounded-2xl text-base font-bold shadow-xl shadow-rose-500/25 transition-all text-white">
@@ -649,12 +663,12 @@
       
       return `
         <div class="recipient-row glass border border-white/15 light:border-slate-300 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-3.5 transition-all">
-          <input type="text" value="${r.address}" oninput="recipients[${idx}].address=this.value" class="address flex-1 w-full bg-black/20 light:bg-white border border-white/10 light:border-slate-300 rounded-xl px-4 py-3.5 text-xs sm:text-sm font-mono outline-none" placeholder="0xBeneficiaryAddress...">
+          <input type="text" value="${r.address}" oninput="recipients[${idx}].address=this.value" class="address flex-1 w-full bg-black/20 light:bg-white border border-white/15 light:border-slate-300 rounded-xl px-4 py-3.5 text-xs sm:text-sm font-mono outline-none" placeholder="0xBeneficiaryAddress...">
           <div class="percent-container w-full sm:w-28">
-            <input type="number" value="${currentPercent}" oninput="onPercentInput(${idx}, this.value)" class="percent w-full bg-black/20 light:bg-white border border-white/10 light:border-slate-300 rounded-xl px-4 py-3.5 text-center text-xs sm:text-sm font-semibold outline-none" placeholder="" min="0" max="100">
+            <input type="number" value="${currentPercent}" oninput="onPercentInput(${idx}, this.value)" class="percent w-full bg-black/20 light:bg-white border border-white/15 light:border-slate-300 rounded-xl px-4 py-3.5 text-center text-xs sm:text-sm font-semibold outline-none" placeholder="" min="0" max="100">
           </div>
           <div class="amount-container w-full sm:w-36">
-            <input type="number" value="${currentAmt}" oninput="onAmountInput(${idx}, this.value)" class="amount w-full bg-black/20 light:bg-white border border-white/10 light:border-slate-300 rounded-xl px-4 py-3.5 text-center text-xs sm:text-sm font-semibold outline-none" placeholder="">
+            <input type="number" value="${currentAmt}" oninput="onAmountInput(${idx}, this.value)" class="amount w-full bg-black/20 light:bg-white border border-white/15 light:border-slate-300 rounded-xl px-4 py-3.5 text-center text-xs sm:text-sm font-semibold outline-none" placeholder="">
           </div>
           <button onclick="recipients.splice(${idx},1); renderRecipients(); recalculateVesting();" class="w-full sm:w-auto text-gray-400 light:text-slate-500 hover:text-rose-400 text-lg px-2 py-1 transition-colors flex items-center justify-center"><i class="fas fa-trash-can"></i></button>
         </div>
@@ -778,7 +792,7 @@
       let p = parseFloat(r.percent) || 0;
       let allocatedAmt = r.amount !== "" ? parseFloat(r.amount) : (totalAmt * p) / 100;
       let portion = (allocatedAmt / 12).toFixed(2);
-      return `<div class="flex justify-between items-center bg-white/[0.02] light:bg-black/5 border border-white/5 light:border-black/5 p-3 rounded-2xl">
+      return `<div class="flex justify-between items-center bg-white/[0.02] light:bg-black/5 border border-white/10 light:border-slate-300 p-3 rounded-2xl">
         <span class="font-bold text-gray-300 light:text-slate-700">${r.address ? r.address.substring(0,6)+'...' : 'No Address'} (${p}%)</span>
         <span class="text-emerald-400 light:text-emerald-600 font-bold">${portion} / mo</span>
       </div>`;
@@ -799,7 +813,6 @@
       let unlockDate = new Date(startDateVal);
       unlockDate.setMonth(unlockDate.getMonth() + m);
       
-      // Format to include hours, minutes, and seconds (e.g., YYYY-MM-DD HH:mm:ss)
       let year = unlockDate.getFullYear();
       let month = String(unlockDate.getMonth() + 1).padStart(2, '0');
       let day = String(unlockDate.getDate()).padStart(2, '0');
@@ -809,7 +822,7 @@
       let fullDateTimeStr = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
 
       let releasePerStep = (totalAmt / 12).toFixed(2);
-      calHtml += `<div class="flex justify-between items-center bg-white/[0.02] light:bg-black/5 border border-white/5 light:border-black/5 p-4 rounded-2xl">
+      calHtml += `<div class="flex justify-between items-center bg-white/[0.02] light:bg-black/5 border border-white/10 light:border-slate-300 p-4 rounded-2xl">
         <span class="font-bold text-cyan-400 light:text-cyan-600">${fullDateTimeStr}</span>
         <span class="font-bold text-emerald-400 light:text-emerald-600">${releasePerStep} (${distMethod})</span>
       </div>`;
@@ -928,7 +941,6 @@
       showToast("Smart Contract executed successfully on-chain!");
       switchTab('history');
       
-      // Save to history array & render correctly
       historyTransactions.unshift({
         hash: tx.hash,
         address: recipient.address,
@@ -952,7 +964,7 @@
     }
 
     historyList.innerHTML = historyTransactions.map(item => `
-      <div class="glass p-4 rounded-2xl space-y-2 border border-white/10 light:border-slate-200">
+      <div class="glass p-4 rounded-2xl space-y-2 border border-white/10 light:border-slate-300">
         <div class="flex justify-between font-bold text-sm">
           <span class="preserve-theme">On-Chain Plan (${item.address.substring(0,6)}...)</span>
           <span class="text-emerald-400">Confirmed</span>
