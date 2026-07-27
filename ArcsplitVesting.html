@@ -31,7 +31,7 @@
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
     
-    /* لایت مود - حفظ رنگ ثابتی که در دارک مود برای عناوین و متون کلیدی بود */
+    /* لایت مود */
     .light {
       background: #f1f5f9 !important;
       background-image: 
@@ -46,7 +46,7 @@
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 1);
     }
 
-    /* ثابت ماندن رنگ فونت هدرها، تب‌ها و متن‌ها مشابه دارک مود */
+    /* ثابت ماندن رنگ فونت‌ها و عناوین در حالت لایت‌مود مشابه دارک‌مود */
     .preserve-fixed-color {
       color: #f8fafc !important;
     }
@@ -130,13 +130,13 @@
       </div>
     </div>
 
-    <!-- Main View: Splitter & Timeline -->
+    <!-- Main View -->
     <div id="viewSplitter" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
       
-      <!-- Left Config Cards (8 Cols) -->
+      <!-- Left Config Cards -->
       <div class="lg:col-span-8 space-y-6">
         
-        <!-- Card 1: Asset با قابلیت انتخاب کاستوم در خود سلکتور -->
+        <!-- Card 1: Asset بدون آدرس در لیست کشویی -->
         <div class="glass rounded-3xl p-6">
           <div class="flex items-center gap-2 mb-4">
             <span class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">1</span>
@@ -146,10 +146,10 @@
             <div>
               <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Asset Token</label>
               <select id="tokenSelect" class="w-full rounded-2xl px-4 py-3.5 text-sm font-medium" onchange="handleTokenChange()">
-                <option value="0x3600000000000000000000000000000000000000">USDC (0x3600...0000)</option>
-                <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC (0x89B5...D72a)</option>
-                <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">CIRBTC (0xf0C4...432BF)</option>
-                <option value="custom">Custom Token Address...</option>
+                <option value="0x3600000000000000000000000000000000000000">USDC</option>
+                <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
+                <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">CIRBTC</option>
+                <option value="custom">Custom Token...</option>
               </select>
             </div>
             <div>
@@ -163,12 +163,12 @@
           </div>
         </div>
 
-        <!-- Card 2: Recipient -->
+        <!-- Card 2: Recipient با قابلیت تنظیم درصد و فیلد شیشه‌ای محاسبه Amount -->
         <div class="glass rounded-3xl p-6">
           <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-2">
               <span class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">2</span>
-              <h3 class="font-bold text-base preserve-fixed-color">Recipients Allocation</h3>
+              <h3 class="font-bold text-base preserve-fixed-color">Recipients Allocation (By Percentage)</h3>
             </div>
             <button onclick="addRecipient()" class="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
               <i class="fas fa-plus"></i> Add Recipient
@@ -253,7 +253,7 @@
 
       </div>
 
-      <!-- Right Summary & Timeline (4 Cols) -->
+      <!-- Right Summary -->
       <div class="lg:col-span-4 space-y-6">
         <div class="glass rounded-3xl p-6 sticky top-6 space-y-5">
           
@@ -267,7 +267,7 @@
           </div>
 
           <div class="bg-black/35 border border-white/10 rounded-2xl p-4 space-y-2 text-xs preserve-fixed-color">
-            <div class="flex justify-between"><span class="text-gray-400 font-semibold">Token Contract:</span> <span id="sumToken" class="font-bold truncate max-w-[150px]">USDC</span></div>
+            <div class="flex justify-between"><span class="text-gray-400 font-semibold">Token:</span> <span id="sumToken" class="font-bold">USDC</span></div>
             <div class="flex justify-between"><span class="text-gray-400 font-semibold">Total Amount:</span> <span id="sumTotalAmt" class="font-bold">0</span></div>
             <div class="flex justify-between"><span class="text-gray-400 font-semibold">Cliff Period:</span> <span id="sumCliff" class="font-bold">6 Months</span></div>
             <div class="flex justify-between"><span class="text-gray-400 font-semibold">Duration:</span> <span id="sumDuration" class="font-bold">12 Months</span></div>
@@ -324,7 +324,7 @@
     </div>
   </div>
 
-  <!-- Toast (رنگ هشدار در لایت و دارک یکنواخت و خوانا) -->
+  <!-- Toast -->
   <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#121228] text-white border border-white/20 px-5 py-3 rounded-2xl shadow-2xl z-50 text-xs font-bold">
     <span id="toastText"></span>
   </div>
@@ -332,16 +332,16 @@
 <script>
   let provider, signer, userAddress;
   
-  // آدرس قرارداد هوشمند اصلی پروژه
   const VESTING_CONTRACT_ADDRESS = "0x714Ad5eD106F82640DF51ee0C0E1D471Ff0A5D9d";
   
-  // ABI استاندارد تابع createVestingSchedule بر اساس کانترکت ارائه شده
+  // اصلاح کامل ABI بر اساس ساختار استاندارد متدهای کانترکت و جلوگیری از خطای گس و ارور کال اکشن
   const VESTING_CONTRACT_ABI = [
+    "function createVestingSchedule(address beneficiary, address token, uint256 startTimestamp, uint256 cliffDuration, uint256 duration, uint256 totalAmount, bool revocable) external payable",
     "function createVestingSchedule(bytes32 scheduleId, address beneficiary, address token, uint256 startTimestamp, uint256 cliffDuration, uint256 duration, uint256 totalAmount, bool revocable, uint8 vestingType, uint256 stepDuration) external payable"
   ];
 
   let recipients = [
-    { address: "", amount: 0 }
+    { address: "", percent: 100 }
   ];
 
   window.addEventListener('load', async () => {
@@ -396,13 +396,11 @@
     showToast("Wallet disconnected.");
   }
 
-  // مدیریت حالت کاستوم در خود سلکتور Asset Token بدون باز شدن فیلد اضافه زیرین
   function handleTokenChange() {
     const select = document.getElementById('tokenSelect');
     if (select.value === 'custom') {
       let customAddr = prompt("Please enter Custom Token Contract Address (0x...):");
       if (customAddr && customAddr.startsWith("0x")) {
-        // افزودن گزینه کاستوم به سلکتور و انتخاب آن
         let opt = document.createElement('option');
         opt.value = customAddr;
         opt.textContent = `Custom (${customAddr.substring(0,6)}...)`;
@@ -417,7 +415,6 @@
     recalculateVesting();
   }
 
-  // دریافت بالانس واقعی توکن انتخابی یا بومی (ETH)
   async function fetchRealTokenBalance() {
     const tokenAddr = document.getElementById('tokenSelect').value;
     const balanceEl = document.getElementById('walletBalanceDisplay');
@@ -435,7 +432,6 @@
         const nativeBal = await provider.getBalance(userAddress);
         rawBalance = parseFloat(ethers.formatEther(nativeBal)).toFixed(4);
       } else {
-        // خواندن بالانس ERC20
         const erc20ABI = ["function balanceOf(address account) view returns (uint256)", "function decimals() view returns (uint8)"];
         const tokenContract = new ethers.Contract(tokenAddr, erc20ABI, provider);
         const [bal, decimals] = await Promise.all([
@@ -485,7 +481,7 @@
       if (unit === 'hours') return num * 3600;
       if (unit === 'days') return num * 86400;
       if (unit === 'weeks') return num * 604800;
-      return num * 30 * 86400; // months
+      return num * 30 * 86400;
     }
     return parseInt(selectVal) * 30 * 86400;
   }
@@ -531,17 +527,25 @@
 
   function renderRecipients() {
     const container = document.getElementById('recipientsContainer');
-    container.innerHTML = recipients.map((r, idx) => `
-      <div class="flex items-center gap-2">
-        <input type="text" value="${r.address}" oninput="recipients[${idx}].address=this.value" class="flex-1 bg-black/20 rounded-xl px-3 py-2 text-xs font-medium" placeholder="0xBeneficiaryAddress...">
-        <input type="number" value="${r.amount || ''}" oninput="recipients[${idx}].amount=parseFloat(this.value)||0; recalculateVesting();" class="w-28 bg-black/25 rounded-xl px-3 py-2 text-center text-xs font-bold" placeholder="Amount">
-        <button onclick="recipients.splice(${idx},1); renderRecipients(); recalculateVesting();" class="text-gray-500 hover:text-rose-400 text-xs px-1"><i class="fas fa-times"></i></button>
-      </div>
-    `).join('');
+    const totalAmt = parseFloat(document.getElementById('totalAmount').value) || 0;
+
+    container.innerHTML = recipients.map((r, idx) => {
+      let calculatedAmount = ((totalAmt * (r.percent || 0)) / 100).toFixed(2);
+      return `
+        <div class="flex items-center gap-2">
+          <input type="text" value="${r.address}" oninput="recipients[${idx}].address=this.value" class="flex-1 bg-black/20 rounded-xl px-3 py-2 text-xs font-medium" placeholder="0xBeneficiaryAddress...">
+          <div class="flex items-center gap-1 bg-black/30 border border-white/10 rounded-xl px-3 py-2 w-28">
+            <input type="number" value="${r.percent}" oninput="recipients[${idx}].percent=parseFloat(this.value)||0; recalculateVesting();" class="w-12 bg-transparent text-center text-xs font-bold outline-none border-none p-0" min="0" max="100">%
+          </div>
+          <input type="text" readonly value="${calculatedAmount}" class="w-24 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-center text-xs font-bold opacity-80 cursor-not-allowed" title="Calculated Amount">
+          <button onclick="recipients.splice(${idx},1); renderRecipients(); recalculateVesting();" class="text-gray-500 hover:text-rose-400 text-xs px-1"><i class="fas fa-times"></i></button>
+        </div>
+      `;
+    }).join('');
   }
 
   function addRecipient() {
-    recipients.push({ address: "", amount: 0 });
+    recipients.push({ address: "", percent: 0 });
     renderRecipients();
   }
 
@@ -567,23 +571,33 @@
 
   function recalculateVesting() {
     const totalAmt = parseFloat(document.getElementById('totalAmount').value) || 0;
-    const tokenAddr = document.getElementById('tokenSelect').value;
+    const tokenSelectVal = document.getElementById('tokenSelect');
+    const tokenSymbol = tokenSelectVal.options[tokenSelectVal.selectedIndex].text;
     const cliffStr = getCliffText();
     const durationStr = getDurationText();
     const freq = document.getElementById('frequencySelect').value;
     const distMethod = document.querySelector('input[name="distMethod"]:checked').value;
 
-    document.getElementById('sumToken').textContent = tokenAddr.substring(0, 8) + '...';
+    document.getElementById('sumToken').textContent = tokenSymbol;
     document.getElementById('sumTotalAmt').textContent = totalAmt.toLocaleString();
     document.getElementById('sumCliff').textContent = cliffStr;
     document.getElementById('sumDuration').textContent = durationStr;
     document.getElementById('sumFreq').textContent = freq;
 
+    // آپدیت مقادیر فیلدهای شیشه ای Amount هر ذینفع بدون از دست رفتن فوکوس کلی
+    const calculatedInputs = document.querySelectorAll('#recipientsContainer input[readonly]');
+    recipients.forEach((r, idx) => {
+      if(calculatedInputs[idx]) {
+        calculatedInputs[idx].value = ((totalAmt * (r.percent || 0)) / 100).toFixed(2);
+      }
+    });
+
     const previewEl = document.getElementById('previewBreakdown');
     previewEl.innerHTML = recipients.map(r => {
-      let portion = ((r.amount || 0) / 12).toFixed(2);
+      let allocatedAmt = (totalAmt * (r.percent || 0)) / 100;
+      let portion = (allocatedAmt / 12).toFixed(2);
       return `<div class="flex justify-between items-center bg-white/[0.02] p-2 rounded-xl">
-        <span class="font-bold">${r.address ? r.address.substring(0,6)+'...' : 'No Address'}</span>
+        <span class="font-bold">${r.address ? r.address.substring(0,6)+'...' : 'No Address'} (${r.percent}%)</span>
         <span class="text-emerald-400 font-bold">${portion} / mo (${distMethod})</span>
       </div>`;
     }).join('');
@@ -623,7 +637,6 @@
     document.getElementById('confirmModal').classList.add('hidden');
   }
 
-  // ارسال تراکنش واقعی به قرارداد هوشمند روی شبکه
   async function executeRealSmartContract() {
     closeConfirmModal();
     if (!signer) {
@@ -632,57 +645,84 @@
     }
 
     try {
-      showToast("Initiating transaction on smart contract...");
+      showToast("Preparing on-chain transaction...");
       
       const contract = new ethers.Contract(VESTING_CONTRACT_ADDRESS, VESTING_CONTRACT_ABI, signer);
       
-      // بررسی و ارسال برای اولین ذینفع به عنوان نمونه تراکنش اصلی قرارداد
       const recipient = recipients[0];
-      if (!recipient || !recipient.address || recipient.amount <= 0) {
-        showToast("Please enter valid recipient and amount.");
+      if (!recipient || !recipient.address || recipient.percent <= 0) {
+        showToast("Please enter valid recipient address and percentage.");
         return;
       }
 
+      const totalAmt = parseFloat(document.getElementById('totalAmount').value) || 0;
+      const allocatedAmt = (totalAmt * recipient.percent) / 100;
       const tokenAddr = document.getElementById('tokenSelect').value;
       const startTimestamp = Math.floor(new Date(document.getElementById('startDate').value).getTime() / 1000);
       const cliffDuration = getCliffSeconds();
       const duration = getDurationSeconds();
-      const totalAmountParsed = ethers.parseUnits(recipient.amount.toString(), 18);
+      const totalAmountParsed = ethers.parseUnits(allocatedAmt.toString(), 18);
       const scheduleId = ethers.keccak256(ethers.toUtf8Bytes(Math.random().toString()));
       const vestingType = document.querySelector('input[name="distMethod"]:checked').value === 'Linear' ? 0 : 1;
       
       let tx;
-      if (tokenAddr === "0x3600000000000000000000000000000000000000" || tokenAddr.startsWith("0x000")) {
-        tx = await contract.createVestingSchedule(
-          scheduleId,
-          recipient.address,
-          ethers.ZeroAddress,
-          startTimestamp,
-          cliffDuration,
-          duration,
-          totalAmountParsed,
-          true,
-          vestingType,
-          3600,
-          { value: totalAmountParsed }
-        );
-      } else {
-        // ابتدا تایید (Approve) توکن در صورت نیاز یا ارسال مستقیم
-        tx = await contract.createVestingSchedule(
-          scheduleId,
-          recipient.address,
-          tokenAddr,
-          startTimestamp,
-          cliffDuration,
-          duration,
-          totalAmountParsed,
-          true,
-          vestingType,
-          3600
-        );
+      // سازگاری با متدهای مختلف اورلود شده در قرارداد هوشمند برای جلوگیری از خطای Revert
+      try {
+        if (tokenAddr === "0x3600000000000000000000000000000000000000" || tokenAddr.startsWith("0x000")) {
+          tx = await contract.createVestingSchedule(
+            scheduleId,
+            recipient.address,
+            ethers.ZeroAddress,
+            startTimestamp,
+            cliffDuration,
+            duration,
+            totalAmountParsed,
+            true,
+            vestingType,
+            3600,
+            { value: totalAmountParsed }
+          );
+        } else {
+          tx = await contract.createVestingSchedule(
+            scheduleId,
+            recipient.address,
+            tokenAddr,
+            startTimestamp,
+            cliffDuration,
+            duration,
+            totalAmountParsed,
+            true,
+            vestingType,
+            3600
+          );
+        }
+      } catch (err1) {
+        // حالت دوم برای امضاهای ساده‌تر کانترکت
+        if (tokenAddr === "0x3600000000000000000000000000000000000000" || tokenAddr.startsWith("0x000")) {
+          tx = await contract.createVestingSchedule(
+            recipient.address,
+            ethers.ZeroAddress,
+            startTimestamp,
+            cliffDuration,
+            duration,
+            totalAmountParsed,
+            true,
+            { value: totalAmountParsed }
+          );
+        } else {
+          tx = await contract.createVestingSchedule(
+            recipient.address,
+            tokenAddr,
+            startTimestamp,
+            cliffDuration,
+            duration,
+            totalAmountParsed,
+            true
+          );
+        }
       }
 
-      showToast("Transaction submitted. Waiting for confirmation...");
+      showToast("Transaction submitted to wallet. Waiting...");
       await tx.wait();
       
       showToast("Smart Contract executed successfully on-chain!");
@@ -691,15 +731,15 @@
       let historyList = document.getElementById('historyList');
       let newItem = `<div class="glass p-4 rounded-2xl space-y-2 preserve-fixed-color">
         <div class="flex justify-between font-bold text-sm">
-          <span>On-Chain Deployed Plan (${recipient.address.substring(0,6)}...)</span>
+          <span>On-Chain Plan (${recipient.address.substring(0,6)}...)</span>
           <span class="text-emerald-400">Confirmed</span>
         </div>
-        <div class="text-xs text-gray-400">Tx Hash: ${tx.hash.substring(0,10)}... | Amount: ${recipient.amount} | Duration: ${getDurationText()}</div>
+        <div class="text-xs text-gray-400">Tx: ${tx.hash.substring(0,10)}... | Allocated: ${allocatedAmt} | Duration: ${getDurationText()}</div>
       </div>`;
       historyList.innerHTML = newItem + (historyList.innerHTML.includes('No vesting') ? '' : historyList.innerHTML);
 
     } catch (error) {
-      console.error(error);
+      console.error("Contract Execution Error:", error);
       showToast("Transaction failed or rejected by user.");
     }
   }
