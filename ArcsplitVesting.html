@@ -48,26 +48,27 @@
 
     .light .glass {
       background: rgba(255, 255, 255, 0.85);
-      border-color: rgba(0, 0, 0, 0.15); /* کمی تیره‌تر کردن دور کادرها در حالت لایت */
+      border-color: rgba(0, 0, 0, 0.15);
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1);
     }
 
-    /* Fixed colors for specific sections so they remain consistent or styled appropriately */
-    .preserve-theme {
-      color: #f8fafc;
-    }
-    .light .preserve-theme {
-      color: #0f172a !important;
-    }
-
-    /* ثابت ماندن رنگ فونت بخش‌های درخواستی در حالت لایت مود */
-    .light .fixed-light-text,
+    /* جلوگیری از تغییر رنگ متون مد نظر در حالت لایت‌مود */
+    .light .lock-dark-color,
     .light #walletSection,
     .light #tabSplitter,
     .light #tabCalendar,
-    .light #tabHistory,
-    .light .preserve-theme {
-      color: inherit;
+    .light #tabHistory {
+      color: #f8fafc !important;
+    }
+
+    /* تنظیم رنگ متن تب‌ها و بخش ولت در حالت دارک و لایت بصورت کنترل شده */
+    #walletSection, #tabSplitter, #tabCalendar, #tabHistory {
+      color: #f8fafc;
+    }
+    .light #walletSection {
+      color: #0f172a !important;
+      background: rgba(0, 0, 0, 0.05) !important;
+      border-color: #94a3b8 !important;
     }
 
     .light .text-gray-400 { color: #475569 !important; }
@@ -77,7 +78,7 @@
     select, input {
       background-color: rgba(255, 255, 255, 0.03);
       color: white;
-      border: 1px solid rgba(255, 255, 255, 0.15); /* تیره‌تر کردن کادرها در دارک مود */
+      border: 1px solid rgba(255, 255, 255, 0.15);
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
     select:hover, input:hover {
@@ -89,7 +90,6 @@
       outline: none;
     }
 
-    /* یکسان‌سازی اندازه فیلد Asset Token و Total Amount */
     #tokenSelect, #totalAmount {
       height: 56px;
       box-sizing: border-box;
@@ -98,7 +98,7 @@
     .light select, .light input {
       background-color: #ffffff;
       color: #0f172a;
-      border: 1px solid #94a3b8; /* تیره‌تر کردن خط دور کادرها در لایت مود */
+      border: 1px solid #94a3b8;
     }
     .light select:focus, .light input:focus {
       border-color: #10b981;
@@ -115,12 +115,6 @@
       color: #0f172a;
     }
 
-    .invalid {
-      border-color: #ef4444 !important;
-      background-color: rgba(239, 68, 68, 0.05) !important;
-      animation: shake 0.3s;
-    }
-
     .percent-container, .amount-container {
       position: relative;
     }
@@ -135,15 +129,6 @@
       pointer-events: none;
       font-size: 0.875rem;
     }
-    .light .percent-container::after {
-      color: #475569;
-    }
-
-    @keyframes shake {
-      0%, 100% { transform: translateX(0); }
-      25% { transform: translateX(-4px); }
-      75% { transform: translateX(4px); }
-    }
 
     .preview-scroll {
       max-height: 280px;
@@ -151,18 +136,12 @@
       scrollbar-width: thin;
       scrollbar-color: rgba(255,255,255,0.2) transparent;
     }
-    .light .preview-scroll {
-      scrollbar-color: rgba(0,0,0,0.2) transparent;
-    }
     .preview-scroll::-webkit-scrollbar {
       width: 5px;
     }
     .preview-scroll::-webkit-scrollbar-thumb {
       background-color: rgba(255,255,255,0.2);
       border-radius: 10px;
-    }
-    .light .preview-scroll::-webkit-scrollbar-thumb {
-      background-color: rgba(0,0,0,0.2);
     }
 
     .app-button {
@@ -185,30 +164,25 @@
       .recipient-row > div, .recipient-row > input {
         width: 100% !important;
       }
-      .percent-container, .amount-container {
-        width: 100% !important;
-      }
-      input[type="text"], input[type="number"], input[type="date"] {
-        font-size: 1rem !important;
-        padding: 14px 16px !important;
-      }
     }
   </style>
 </head>
-<body class="preserve-theme min-h-screen selection:bg-emerald-500 selection:text-black">
+<body class="min-h-screen selection:bg-emerald-500 selection:text-black">
 
   <div class="max-w-7xl mx-auto px-4 py-6 sm:py-8">
     
     <!-- Header Section -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/[0.02] light:bg-white/50 border border-white/10 light:border-slate-300 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
       <div>
-        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight preserve-theme">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Vesting & Cliff Engine</span></h1>
+        <!-- عنوان اصلی با رنگ ثابت در حالت لایت‌مود -->
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white light:text-slate-900">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Vesting & Cliff Engine</span></h1>
+        <!-- زیرعنوان با رنگ ثابت -->
         <p class="text-gray-400 light:text-slate-600 text-xs sm:text-sm font-medium">Schedule token releases over time with Smart Contract integration</p>
       </div>
       
       <div class="flex items-center gap-3 flex-wrap">
-        <!-- آدرس ولت با استایل محافظت شده -->
-        <div id="walletSection" class="flex items-center gap-2 bg-white/5 light:bg-black/5 border border-white/15 light:border-slate-300 rounded-2xl px-4 py-2.5 text-xs font-bold preserve-theme">
+        <!-- آدرس ولت با قابلیت حفظ رنگ مشخص -->
+        <div id="walletSection" class="flex items-center gap-2 bg-white/5 border border-white/15 rounded-2xl px-4 py-2.5 text-xs font-bold text-white">
           <button id="connectWalletBtn" onclick="connectWallet()" class="flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-all">
             <i class="fas fa-wallet"></i> <span id="walletBtnText">Connect Wallet</span>
           </button>
@@ -217,12 +191,13 @@
           </button>
         </div>
 
+        <!-- تب‌ها با متن ثابت در حالت لایت‌مود -->
         <div class="flex bg-white/5 light:bg-black/5 border border-white/15 light:border-slate-300 rounded-2xl p-1 text-xs">
           <button onclick="switchTab('splitter')" id="tabSplitter" class="px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400">Configuration</button>
-          <button onclick="switchTab('calendar')" id="tabCalendar" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-600">Calendar View</button>
-          <button onclick="switchTab('history')" id="tabHistory" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-600">History</button>
+          <button onclick="switchTab('calendar')" id="tabCalendar" class="px-4 py-2 rounded-xl font-bold transition-all text-white light:text-slate-900">Calendar View</button>
+          <button onclick="switchTab('history')" id="tabHistory" class="px-4 py-2 rounded-xl font-bold transition-all text-white light:text-slate-900">History</button>
         </div>
-        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/10 light:hover:bg-black/10 border border-white/15 light:border-slate-300 rounded-2xl transition-all shadow-lg">
+        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/15 border border-white/15 light:border-slate-300 rounded-2xl transition-all shadow-lg">
           <i class="fas fa-moon text-lg text-emerald-400"></i>
         </button>
       </div>
@@ -251,7 +226,7 @@
         <div class="glass rounded-3xl p-6 sm:p-8">
           <div class="flex items-center gap-2 mb-6">
             <span class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">1</span>
-            <h3 class="font-bold text-base preserve-theme">Asset Configuration</h3>
+            <h3 class="font-bold text-base text-white light:text-slate-900">Asset Configuration</h3>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -279,7 +254,7 @@
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
             <div class="flex items-center gap-2">
               <span class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">2</span>
-              <h3 class="font-bold text-base preserve-theme">Recipients Allocation</h3>
+              <h3 class="font-bold text-base text-white light:text-slate-900">Recipients Allocation</h3>
             </div>
             <div class="flex items-center gap-2">
               <button onclick="distributeRemaining()" class="px-3.5 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 light:text-cyan-600 border border-cyan-500/30 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
@@ -298,7 +273,7 @@
         <div class="glass rounded-3xl p-6 sm:p-8">
           <div class="flex items-center gap-2 mb-6">
             <span class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">3</span>
-            <h3 class="font-bold text-base preserve-theme">Schedule & Cliff Parameters</h3>
+            <h3 class="font-bold text-base text-white light:text-slate-900">Schedule & Cliff Parameters</h3>
           </div>
           
           <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
@@ -375,7 +350,7 @@
         <div class="glass rounded-3xl p-6 sm:p-8 space-y-6" style="position: sticky; top: 24px;">
           
           <div class="flex items-center justify-between">
-            <h3 class="font-bold text-base flex items-center gap-2 preserve-theme">
+            <h3 class="font-bold text-base flex items-center gap-2 text-white light:text-slate-900">
               <i class="fas fa-chart-pie text-emerald-400"></i> Vesting Summary
             </h3>
             <button onclick="exportScheduleData()" class="px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 light:text-cyan-600 border border-cyan-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all">
@@ -411,14 +386,14 @@
 
     <!-- Calendar View Tab -->
     <div id="viewCalendar" class="hidden glass rounded-3xl p-6 sm:p-8 space-y-4">
-      <h3 class="font-bold text-lg mb-1 flex items-center gap-2 preserve-theme"><i class="fas fa-calendar-alt text-emerald-400"></i> Detailed Unlock Calendar</h3>
+      <h3 class="font-bold text-lg mb-1 flex items-center gap-2 text-white light:text-slate-900"><i class="fas fa-calendar-alt text-emerald-400"></i> Detailed Unlock Calendar</h3>
       <p class="text-xs text-gray-400 light:text-slate-600 mb-4">All planned token unlocks mapped directly to actual calendar dates.</p>
       <div id="calendarUnlockList" class="space-y-2 text-xs"></div>
     </div>
 
     <!-- History View Tab -->
     <div id="viewHistory" class="hidden glass rounded-3xl p-6 sm:p-8 space-y-4">
-      <h3 class="font-bold text-lg mb-4 flex items-center gap-2 preserve-theme"><i class="fas fa-history text-emerald-400"></i> Vesting Schedules History</h3>
+      <h3 class="font-bold text-lg mb-4 flex items-center gap-2 text-white light:text-slate-900"><i class="fas fa-history text-emerald-400"></i> Vesting Schedules History</h3>
       <div id="historyList" class="space-y-3 text-xs text-gray-400 font-medium">No vesting plans created yet.</div>
     </div>
 
@@ -427,15 +402,15 @@
   <!-- Confirmation Modal -->
   <div id="confirmModal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center z-50 p-4">
     <div class="glass rounded-3xl p-6 sm:p-8 max-w-md w-full border border-white/15 shadow-2xl animate-in fade-in zoom-in duration-200 space-y-4">
-      <h3 class="text-xl font-bold mb-2 preserve-theme">Confirm On-Chain Deployment</h3>
+      <h3 class="text-xl font-bold mb-2 text-white light:text-slate-900">Confirm On-Chain Deployment</h3>
       <p class="text-xs text-gray-400 light:text-slate-600">This action calls the real Vesting Smart Contract function to lock tokens securely.</p>
       <div class="space-y-2 text-xs bg-black/20 light:bg-slate-100 p-4 rounded-2xl border border-white/10 light:border-slate-300">
-        <div class="flex justify-between"><span class="text-gray-400">Recipients Count:</span> <span id="modalRecipCount" class="font-bold preserve-theme">1</span></div>
-        <div class="flex justify-between"><span class="text-gray-400">Total Duration:</span> <span id="modalDuration" class="font-bold preserve-theme">12 Months</span></div>
-        <div class="flex justify-between"><span class="text-gray-400">Cliff Period:</span> <span id="modalCliff" class="font-bold preserve-theme">6 Months</span></div>
+        <div class="flex justify-between"><span class="text-gray-400">Recipients Count:</span> <span id="modalRecipCount" class="font-bold text-white light:text-slate-900">1</span></div>
+        <div class="flex justify-between"><span class="text-gray-400">Total Duration:</span> <span id="modalDuration" class="font-bold text-white light:text-slate-900">12 Months</span></div>
+        <div class="flex justify-between"><span class="text-gray-400">Cliff Period:</span> <span id="modalCliff" class="font-bold text-white light:text-slate-900">6 Months</span></div>
       </div>
       <div class="flex gap-3 pt-2">
-        <button onclick="closeConfirmModal()" class="app-button flex-1 py-3.5 rounded-xl border border-white/15 light:border-slate-300 hover:bg-white/5 light:hover:bg-slate-100 font-semibold text-sm transition-all preserve-theme">Cancel</button>
+        <button onclick="closeConfirmModal()" class="app-button flex-1 py-3.5 rounded-xl border border-white/15 light:border-slate-300 hover:bg-white/5 font-semibold text-sm transition-all text-white light:text-slate-900">Cancel</button>
         <button onclick="executeRealSmartContract()" class="app-button flex-1 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold rounded-xl text-sm transition-all shadow-lg shadow-emerald-500/20">Sign & Deploy</button>
       </div>
     </div>
@@ -648,9 +623,9 @@
     document.getElementById('viewCalendar').classList.toggle('hidden', !isCalendar);
     document.getElementById('viewHistory').classList.toggle('hidden', !isHistory);
     
-    document.getElementById('tabSplitter').className = isSplitter ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-600";
-    document.getElementById('tabCalendar').className = isCalendar ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-600";
-    document.getElementById('tabHistory').className = isHistory ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-600";
+    document.getElementById('tabSplitter').className = isSplitter ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-white light:text-slate-900";
+    document.getElementById('tabCalendar').className = isCalendar ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-white light:text-slate-900";
+    document.getElementById('tabHistory').className = isHistory ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-white light:text-slate-900";
   }
 
   function renderRecipients() {
@@ -794,7 +769,7 @@
       let portion = (allocatedAmt / 12).toFixed(2);
       return `<div class="flex justify-between items-center bg-white/[0.02] light:bg-black/5 border border-white/10 light:border-slate-300 p-3 rounded-2xl">
         <span class="font-bold text-gray-300 light:text-slate-700">${r.address ? r.address.substring(0,6)+'...' : 'No Address'} (${p}%)</span>
-        <span class="text-emerald-400 light:text-emerald-600 font-bold">${portion} / mo</span>
+        <span class="text-emerald-400 font-bold">${portion} / mo</span>
       </div>`;
     }).join('');
 
@@ -823,8 +798,8 @@
 
       let releasePerStep = (totalAmt / 12).toFixed(2);
       calHtml += `<div class="flex justify-between items-center bg-white/[0.02] light:bg-black/5 border border-white/10 light:border-slate-300 p-4 rounded-2xl">
-        <span class="font-bold text-cyan-400 light:text-cyan-600">${fullDateTimeStr}</span>
-        <span class="font-bold text-emerald-400 light:text-emerald-600">${releasePerStep} (${distMethod})</span>
+        <span class="font-bold text-cyan-400">${fullDateTimeStr}</span>
+        <span class="font-bold text-emerald-400">${releasePerStep} (${distMethod})</span>
       </div>`;
     }
     calendarList.innerHTML = calHtml;
@@ -966,7 +941,7 @@
     historyList.innerHTML = historyTransactions.map(item => `
       <div class="glass p-4 rounded-2xl space-y-2 border border-white/10 light:border-slate-300">
         <div class="flex justify-between font-bold text-sm">
-          <span class="preserve-theme">On-Chain Plan (${item.address.substring(0,6)}...)</span>
+          <span class="text-white light:text-slate-900">On-Chain Plan (${item.address.substring(0,6)}...)</span>
           <span class="text-emerald-400">Confirmed</span>
         </div>
         <div class="text-xs text-gray-400 flex flex-col sm:flex-row sm:justify-between gap-1">
