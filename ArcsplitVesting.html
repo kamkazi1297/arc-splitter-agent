@@ -31,35 +31,36 @@
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
     
-    /* تنظیمات لایت مود */
+    /* تنظیمات لایت مود با تیره‌ترین رنگ متن برای خوانایی کامل */
     .light {
-      background: #f8fafc !important;
-      background-image: 
-        radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.04) 0%, transparent 40%),
-        radial-gradient(circle at 90% 80%, rgba(34, 211, 238, 0.04) 0%, transparent 40%) !important;
-      color: #1e293b !important;
+      background: #f1f5f9 !important;
+      background-image: none !important;
+      color: #020617 !important;
     }
 
     .light .glass {
-      background: rgba(255, 255, 255, 0.92);
-      border-color: rgba(0, 0, 0, 0.08);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1);
+      background: #ffffff !important;
+      border-color: rgba(0, 0, 0, 0.12) !important;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
     }
 
-    /* ثبات رنگ متن‌ها در حالت لایت‌مود و دارک‌مود */
     .preserve-fixed-color {
       color: #f8fafc !important;
     }
     .light .preserve-fixed-color {
-      color: #f8fafc !important; 
+      color: #020617 !important; 
     }
     
     .light .text-gray-400 {
-      color: #475569 !important; 
+      color: #334155 !important; 
+    }
+
+    .light h1, .light h3, .light span, .light label, .light div {
+      color: #020617;
     }
 
     .smart-split-gradient {
-      background: linear-gradient(to right, #34d399, #22d3ee);
+      background: linear-gradient(to right, #10b981, #06b6d4);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
@@ -68,7 +69,7 @@
       background-color: rgba(255, 255, 255, 0.03);
       color: white;
       border: 1px solid rgba(255, 255, 255, 0.1);
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: all 0.25s ease;
     }
     select:focus, input:focus {
       border-color: #10b981;
@@ -76,14 +77,14 @@
       outline: none;
     }
     .light select, .light input {
-      background-color: #ffffff;
-      color: #0f172a;
-      border: 1px solid #cbd5e1;
-      font-weight: 600;
+      background-color: #f8fafc !important;
+      color: #020617 !important;
+      border: 1px solid #94a3b8 !important;
+      font-weight: 700;
     }
 
     select option { background-color: #0f172a; color: white; padding: 10px; }
-    .light select option { background-color: #ffffff; color: #0f172a; }
+    .light select option { background-color: #ffffff; color: #020617; }
   </style>
 </head>
 <body class="text-white min-h-screen selection:bg-emerald-500 selection:text-black">
@@ -421,7 +422,6 @@
     recalculateVesting();
   }
 
-  // دریافت موجودی با ۳ بار تلاش مجدد (Retry)
   async function fetchRealTokenBalanceWithRetry(retries = 3, delay = 1500) {
     const tokenAddr = document.getElementById('tokenSelect').value;
     const balanceEl = document.getElementById('walletBalanceDisplay');
@@ -743,8 +743,19 @@
       const vestingType = document.querySelector('input[name="distMethod"]:checked').value === 'Linear' ? 0 : 1;
       
       let tx;
+      const isNative = (tokenAddr === "0x3600000000000000000000000000000000000000" || tokenAddr.startsWith("0x000"));
+
+      if (!isNative) {
+        showToast("Checking Token Allowance...");
+        const erc20ABI = ["function approve(address spender, uint256 amount) returns (bool)"];
+        const tokenContract = new ethers.Contract(tokenAddr, erc20ABI, signer);
+        let approveTx = await tokenContract.approve(VESTING_CONTRACT_ADDRESS, totalAmountParsed);
+        await approveTx.wait();
+        showToast("Token approved successfully. Sending vesting tx...");
+      }
+
       try {
-        if (tokenAddr === "0x3600000000000000000000000000000000000000" || tokenAddr.startsWith("0x000")) {
+        if (isNative) {
           tx = await contract.createVestingSchedule(
             scheduleId,
             recipient.address,
@@ -773,7 +784,7 @@
           );
         }
       } catch (err1) {
-        if (tokenAddr === "0x3600000000000000000000000000000000000000" || tokenAddr.startsWith("0x000")) {
+        if (isNative) {
           tx = await contract.createVestingSchedule(
             recipient.address,
             ethers.ZeroAddress,
@@ -815,7 +826,7 @@
 
     } catch (error) {
       console.error("Contract Execution Error:", error);
-      showToast("Transaction failed or rejected. Make sure you approved tokens first.");
+      showToast("Transaction failed. Check balance, gas, or token approval.");
     }
   }
 
