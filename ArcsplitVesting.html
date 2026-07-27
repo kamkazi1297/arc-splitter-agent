@@ -31,7 +31,7 @@
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
     
-    /* تنظیمات لایت مود با تیره‌ترین رنگ متن برای خوانایی کامل */
+    /* لایت مود */
     .light {
       background: #f1f5f9 !important;
       background-image: none !important;
@@ -44,19 +44,16 @@
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
     }
 
+    /* المان‌هایی که باید رنگشان در تمام حالت‌ها ثابت و مشابه دارک‌مود باقی بماند */
     .preserve-fixed-color {
       color: #f8fafc !important;
     }
     .light .preserve-fixed-color {
-      color: #020617 !important; 
+      color: #f8fafc !important; 
     }
     
     .light .text-gray-400 {
       color: #334155 !important; 
-    }
-
-    .light h1, .light h3, .light span, .light label, .light div {
-      color: #020617;
     }
 
     .smart-split-gradient {
@@ -109,7 +106,7 @@
         </div>
 
         <div class="flex bg-white/5 border border-white/10 rounded-2xl p-1 text-xs">
-          <button onclick="switchTab('splitter')" id="tabSplitter" class="px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400">Configuration</button>
+          <button onclick="switchTab('splitter')" id="tabSplitter" class="px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400 preserve-fixed-color">Configuration</button>
           <button onclick="switchTab('calendar')" id="tabCalendar" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-fixed-color">Calendar View</button>
           <button onclick="switchTab('history')" id="tabHistory" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-fixed-color">History</button>
         </div>
@@ -156,7 +153,7 @@
             </div>
             <div>
               <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Total Amount</label>
-              <input type="number" id="totalAmount" placeholder="e.g. 10000" class="w-full rounded-2xl px-4 py-3.5 text-sm font-bold" oninput="onTotalAmountChange()">
+              <input type="number" id="totalAmount" placeholder="" class="w-full rounded-2xl px-4 py-3.5 text-sm font-bold" oninput="onTotalAmountChange()">
             </div>
           </div>
           <div class="mt-3 text-xs text-gray-400 font-semibold flex justify-between">
@@ -173,7 +170,7 @@
               <h3 class="font-bold text-base preserve-fixed-color">Recipients Allocation</h3>
             </div>
             <div class="flex items-center gap-2">
-              <button onclick="distributeRemaining()" class="px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-600 border border-cyan-500/30 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5" title="Give remaining percentage to the last recipient">
+              <button onclick="distributeRemaining()" class="px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-600 border border-cyan-500/30 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
                 <i class="fas fa-balance-scale"></i> Distribute Remaining
               </button>
               <button onclick="addRecipient()" class="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 border border-emerald-500/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
@@ -209,7 +206,7 @@
                 <option value="custom">Custom...</option>
               </select>
               <div id="customCliffBox" class="hidden grid grid-cols-2 gap-2">
-                <input type="number" id="customCliffNum" value="1" min="1" class="rounded-xl px-2 py-2 text-xs font-bold" oninput="recalculateVesting()">
+                <input type="number" id="customCliffNum" placeholder="" min="1" class="rounded-xl px-2 py-2 text-xs font-bold" oninput="recalculateVesting()">
                 <select id="customCliffUnit" class="rounded-xl px-2 py-2 text-xs font-bold" onchange="recalculateVesting()">
                   <option value="hours">Hours</option>
                   <option value="days">Days</option>
@@ -228,7 +225,7 @@
                 <option value="custom">Custom...</option>
               </select>
               <div id="customDurationBox" class="hidden grid grid-cols-2 gap-2">
-                <input type="number" id="customDurationNum" value="12" min="1" class="rounded-xl px-2 py-2 text-xs font-bold" oninput="recalculateVesting()">
+                <input type="number" id="customDurationNum" placeholder="" min="1" class="rounded-xl px-2 py-2 text-xs font-bold" oninput="recalculateVesting()">
                 <select id="customDurationUnit" class="rounded-xl px-2 py-2 text-xs font-bold" onchange="recalculateVesting()">
                   <option value="hours">Hours</option>
                   <option value="days">Days</option>
@@ -348,7 +345,7 @@
   ];
 
   let recipients = [
-    { address: "", percent: 100, amount: 0 }
+    { address: "", percent: "", amount: "" }
   ];
 
   window.addEventListener('load', async () => {
@@ -534,9 +531,9 @@
     document.getElementById('viewCalendar').classList.toggle('hidden', tab !== 'calendar');
     document.getElementById('viewHistory').classList.toggle('hidden', tab !== 'history');
     
-    document.getElementById('tabSplitter').className = tab === 'splitter' ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-500" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-fixed-color";
-    document.getElementById('tabCalendar').className = tab === 'calendar' ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-500" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-fixed-color";
-    document.getElementById('tabHistory').className = tab === 'history' ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-500" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-fixed-color";
+    document.getElementById('tabSplitter').className = tab === 'splitter' ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400 preserve-fixed-color" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-fixed-color";
+    document.getElementById('tabCalendar').className = tab === 'calendar' ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400 preserve-fixed-color" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-fixed-color";
+    document.getElementById('tabHistory').className = tab === 'history' ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400 preserve-fixed-color" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-fixed-color";
   }
 
   function renderRecipients() {
@@ -544,14 +541,16 @@
     const totalAmt = parseFloat(document.getElementById('totalAmount').value) || 0;
 
     container.innerHTML = recipients.map((r, idx) => {
-      let currentAmt = r.amount !== undefined ? r.amount : ((totalAmt * (r.percent || 0)) / 100).toFixed(2);
+      let currentPercent = r.percent !== "" ? r.percent : "";
+      let currentAmt = r.amount !== "" ? r.amount : (totalAmt > 0 && r.percent !== "" ? ((totalAmt * r.percent) / 100).toFixed(2) : "");
+      
       return `
         <div class="flex items-center gap-2">
-          <input type="text" value="${r.address}" oninput="recipients[${idx}].address=this.value" class="flex-1 bg-black/5 border border-black/10 rounded-xl px-3 py-2 text-xs font-medium" placeholder="0xBeneficiaryAddress...">
-          <div class="flex items-center gap-1 bg-black/5 border border-black/10 rounded-xl px-2 py-2 w-24">
-            <input type="number" value="${r.percent}" oninput="onPercentInput(${idx}, this.value)" class="w-10 bg-transparent text-center text-xs font-bold outline-none border-none p-0" min="0" max="100">%
+          <input type="text" value="${r.address}" oninput="recipients[${idx}].address=this.value" class="flex-1 rounded-xl px-3 py-2 text-xs font-medium" placeholder="0xBeneficiaryAddress...">
+          <div class="flex items-center gap-1 rounded-xl px-2 py-2 w-24 select-none" style="background: inherit; border: 1px solid rgba(255,255,255,0.1);">
+            <input type="number" value="${currentPercent}" oninput="onPercentInput(${idx}, this.value)" class="w-10 bg-transparent text-center text-xs font-bold outline-none border-none p-0" placeholder="" min="0" max="100">%
           </div>
-          <input type="number" value="${currentAmt}" oninput="onAmountInput(${idx}, this.value)" class="w-28 bg-black/5 border border-black/10 rounded-xl px-3 py-2 text-center text-xs font-bold" placeholder="Amount">
+          <input type="number" value="${currentAmt}" oninput="onAmountInput(${idx}, this.value)" class="w-28 rounded-xl px-3 py-2 text-center text-xs font-bold" placeholder="">
           <button onclick="recipients.splice(${idx},1); renderRecipients(); recalculateVesting();" class="text-gray-400 hover:text-rose-500 text-xs px-1"><i class="fas fa-times"></i></button>
         </div>
       `;
@@ -559,27 +558,27 @@
   }
 
   function addRecipient() {
-    recipients.push({ address: "", percent: 0, amount: 0 });
+    recipients.push({ address: "", percent: "", amount: "" });
     renderRecipients();
   }
 
   function onPercentInput(idx, val) {
+    recipients[idx].percent = val;
     const p = parseFloat(val) || 0;
-    recipients[idx].percent = p;
     const totalAmt = parseFloat(document.getElementById('totalAmount').value) || 0;
-    const amt = (totalAmt * p) / 100;
-    recipients[idx].amount = amt;
+    const amt = totalAmt > 0 ? (totalAmt * p) / 100 : "";
+    recipients[idx].amount = amt !== "" ? amt.toFixed(2) : "";
     
     const inputs = document.querySelectorAll('#recipientsContainer input[type="number"]');
     const amtInput = inputs[idx * 2 + 1];
-    if (amtInput) amtInput.value = amt.toFixed(2);
+    if (amtInput) amtInput.value = recipients[idx].amount;
 
     recalculateVesting();
   }
 
   function onAmountInput(idx, val) {
+    recipients[idx].amount = val;
     const amt = parseFloat(val) || 0;
-    recipients[idx].amount = amt;
     const totalAmt = parseFloat(document.getElementById('totalAmount').value) || 0;
     
     if (totalAmt > 0) {
@@ -599,7 +598,7 @@
     
     let sumPercent = 0;
     for (let i = 0; i < recipients.length - 1; i++) {
-      sumPercent += recipients[i].percent || 0;
+      sumPercent += parseFloat(recipients[i].percent) || 0;
     }
 
     let remaining = 100 - sumPercent;
@@ -609,7 +608,7 @@
     recipients[lastIdx].percent = parseFloat(remaining.toFixed(2));
     
     const totalAmt = parseFloat(document.getElementById('totalAmount').value) || 0;
-    recipients[lastIdx].amount = (totalAmt * recipients[lastIdx].percent) / 100;
+    recipients[lastIdx].amount = totalAmt > 0 ? (totalAmt * recipients[lastIdx].percent) / 100 : "";
 
     renderRecipients();
     recalculateVesting();
@@ -619,7 +618,9 @@
   function onTotalAmountChange() {
     const totalAmt = parseFloat(document.getElementById('totalAmount').value) || 0;
     recipients.forEach(r => {
-      r.amount = (totalAmt * (r.percent || 0)) / 100;
+      if (r.percent !== "") {
+        r.amount = ((totalAmt * parseFloat(r.percent)) / 100).toFixed(2);
+      }
     });
     renderRecipients();
     recalculateVesting();
@@ -660,9 +661,9 @@
     document.getElementById('sumDuration').textContent = durationStr;
     document.getElementById('sumFreq').textContent = freq;
 
-    let totalPercent = recipients.reduce((acc, r) => acc + (r.percent || 0), 0);
+    let totalPercent = recipients.reduce((acc, r) => acc + (parseFloat(r.percent) || 0), 0);
     const warningEl = document.getElementById('totalPercentageWarning');
-    if (Math.abs(totalPercent - 100) > 0.01) {
+    if (Math.abs(totalPercent - 100) > 0.01 && totalPercent > 0) {
       warningEl.textContent = `Warning: Total allocation is ${totalPercent}% (Should be 100%)`;
       warningEl.classList.remove('hidden');
     } else {
@@ -671,10 +672,11 @@
 
     const previewEl = document.getElementById('previewBreakdown');
     previewEl.innerHTML = recipients.map(r => {
-      let allocatedAmt = r.amount !== undefined ? r.amount : (totalAmt * (r.percent || 0)) / 100;
+      let p = parseFloat(r.percent) || 0;
+      let allocatedAmt = r.amount !== "" ? parseFloat(r.amount) : (totalAmt * p) / 100;
       let portion = (allocatedAmt / 12).toFixed(2);
       return `<div class="flex justify-between items-center bg-black/5 p-2 rounded-xl">
-        <span class="font-bold">${r.address ? r.address.substring(0,6)+'...' : 'No Address'} (${r.percent}%)</span>
+        <span class="font-bold">${r.address ? r.address.substring(0,6)+'...' : 'No Address'} (${p}%)</span>
         <span class="text-emerald-500 font-bold">${portion} / mo (${distMethod})</span>
       </div>`;
     }).join('');
@@ -727,13 +729,13 @@
       const contract = new ethers.Contract(VESTING_CONTRACT_ADDRESS, VESTING_CONTRACT_ABI, signer);
       
       const recipient = recipients[0];
-      if (!recipient || !recipient.address || recipient.percent <= 0) {
+      if (!recipient || !recipient.address || !recipient.percent) {
         showToast("Please enter valid recipient address and percentage/amount.");
         return;
       }
 
       const totalAmt = parseFloat(document.getElementById('totalAmount').value) || 0;
-      const allocatedAmt = recipient.amount !== undefined ? recipient.amount : (totalAmt * recipient.percent) / 100;
+      const allocatedAmt = recipient.amount !== "" ? parseFloat(recipient.amount) : (totalAmt * parseFloat(recipient.percent)) / 100;
       const tokenAddr = document.getElementById('tokenSelect').value;
       const startTimestamp = Math.floor(new Date(document.getElementById('startDate').value).getTime() / 1000);
       const cliffDuration = getCliffSeconds();
