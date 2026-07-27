@@ -11,13 +11,6 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
     
-    :root {
-      --bg-gradient: linear-gradient(135deg, #080816 0%, #12122c 50%, #0a0a18 100%);
-      --glass-bg: rgba(255, 255, 255, 0.03);
-      --glass-border: rgba(255, 255, 255, 0.08);
-      --glass-glow: rgba(99, 102, 241, 0.1);
-    }
-
     body { 
       font-family: 'Plus Jakarta Sans', system-ui, sans-serif; 
       background: #070711;
@@ -38,146 +31,104 @@
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
     
-    /* لایت‌مود روی کارت‌ها و عناصر داخلی اعمال می‌شود اما پس‌زمینه اصلی ثابت می‌ماند */
-    html.light .glass {
-      background: rgba(255, 255, 255, 0.85);
-      border-color: rgba(0, 0, 0, 0.15);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1);
+    /* لایت مود */
+    .light {
+      background: #f1f5f9 !important;
+      background-image: none !important;
+      color: #090d16 !important;
     }
 
-    /* جلوگیری از سفید شدن متن‌ها در لایت‌مود برای بخش‌های درخواستی */
-    html.light .light-mode-dark-text {
-      color: #0f172a !important;
+    .light .glass {
+      background: #ffffff !important;
+      border-color: rgba(0, 0, 0, 0.12) !important;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
     }
 
-    html.light .light-mode-muted-text {
-      color: #475569 !important;
+    /* مواردی که باید رنگشان در حالت لایت‌مود مانند دراک‌مود ثابت و روشن بماند */
+    .light .preserve-fixed-color,
+    .light #walletBtnText,
+    .light #tabSplitter,
+    .light #tabCalendar,
+    .light #tabHistory,
+    .light h1.preserve-fixed-color,
+    .light p.preserve-fixed-color {
+      color: #f8fafc !important;
     }
 
-    html.light .light-card-bg {
-      background: rgba(0, 0, 0, 0.03) !important;
-      border-color: rgba(0, 0, 0, 0.1) !important;
+    /* بقیه فونت‌ها در حالت لایت‌مود به تیره‌ترین حالت استاندارد (خاکستری بسیار تیره متمایل به سرمه‌ای) */
+    .light body, .light label, .light span:not(.preserve-fixed-color):not(.text-emerald-400):not(.text-cyan-400):not(.text-emerald-500):not(.text-cyan-600) {
+      color: #0f172a;
+    }
+    
+    .light .text-gray-400 {
+      color: #334155 !important; 
+    }
+
+    .smart-split-gradient {
+      background: linear-gradient(to right, #10b981, #06b6d4);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
 
     select, input {
       background-color: rgba(255, 255, 255, 0.03);
       color: white;
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    select:hover, input:hover {
-      border-color: rgba(255, 255, 255, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.25s ease;
     }
     select:focus, input:focus {
       border-color: #10b981;
       box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
       outline: none;
     }
-
-    #tokenSelect, #totalAmount {
-      height: 56px;
-      box-sizing: border-box;
+    .light select, .light input {
+      background-color: #f8fafc !important;
+      color: #0f172a !important;
+      border: 1px solid #64748b !important;
+      font-weight: 700;
     }
 
-    html.light select, html.light input {
-      background-color: #ffffff;
-      color: #0f172a;
-      border: 1px solid #94a3b8;
-    }
-    html.light select:focus, html.light input:focus {
-      border-color: #10b981;
-      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
-    }
+    select option { background-color: #0f172a; color: white; padding: 10px; }
+    .light select option { background-color: #ffffff; color: #0f172a; }
 
-    select option {
-      background-color: #0f172a;
-      color: white;
-      padding: 14px 18px;
+    /* حذف فلش‌ها و کادر مربعی پیش‌فرض اعداد در فیلد درصد و امونت */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+      -webkit-appearance: none; 
+      margin: 0; 
     }
-    html.light select option {
-      background-color: #ffffff;
-      color: #0f172a;
-    }
-
-    .percent-container, .amount-container {
-      position: relative;
-    }
-    .percent-container::after {
-      content: "%";
-      position: absolute;
-      right: 16px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: #64748b;
-      font-weight: 600;
-      pointer-events: none;
-      font-size: 0.875rem;
-    }
-
-    .preview-scroll {
-      max-height: 280px;
-      overflow-y: auto;
-      scrollbar-width: thin;
-      scrollbar-color: rgba(255,255,255,0.2) transparent;
-    }
-    .preview-scroll::-webkit-scrollbar {
-      width: 5px;
-    }
-    .preview-scroll::-webkit-scrollbar-thumb {
-      background-color: rgba(255,255,255,0.2);
-      border-radius: 10px;
-    }
-
-    .app-button {
-      position: relative;
-      overflow: hidden;
-      transition: all 0.25s ease;
-    }
-    .app-button:active {
-      transform: scale(0.98);
-    }
-
-    @media (max-width: 640px) {
-      .max-w-7xl { max-width: 100% !important; padding-left: 12px; padding-right: 12px; }
-      .recipient-row { 
-        flex-direction: column; 
-        gap: 12px; 
-        padding: 16px !important; 
-        align-items: stretch !important;
-      }
-      .recipient-row > div, .recipient-row > input {
-        width: 100% !important;
-      }
+    input[type=number] {
+      -moz-appearance: textfield;
     }
   </style>
 </head>
-<body class="min-h-screen selection:bg-emerald-500 selection:text-black">
+<body class="text-white min-h-screen selection:bg-emerald-500 selection:text-black">
 
   <div class="max-w-7xl mx-auto px-4 py-6 sm:py-8">
     
     <!-- Header Section -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/[0.02] light-card-bg border border-white/10 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/[0.02] border border-white/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
       <div>
-        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight text-white light-mode-dark-text">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Vesting & Cliff Engine</span></h1>
-        <p class="text-gray-400 light-mode-muted-text text-xs sm:text-sm font-medium">Schedule token releases over time with Smart Contract integration</p>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight preserve-fixed-color">ArcSplit <span class="smart-split-gradient">Vesting & Cliff Engine</span></h1>
+        <p class="text-xs sm:text-sm font-semibold preserve-fixed-color opacity-90">Schedule token releases over time with Smart Contract integration</p>
       </div>
       
       <div class="flex items-center gap-3 flex-wrap">
-        <div id="walletSection" class="flex items-center gap-2 bg-white/5 border border-white/15 rounded-2xl px-4 py-2.5 text-xs font-bold text-white light-mode-dark-text">
-          <button id="connectWalletBtn" onclick="connectWallet()" class="flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-all">
-            <i class="fas fa-wallet"></i> <span id="walletBtnText">Connect Wallet</span>
+        <div id="walletSection" class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-2xl px-4 py-2.5 text-xs font-bold preserve-fixed-color">
+          <button id="connectWalletBtn" onclick="connectWallet()" class="flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-all preserve-fixed-color">
+            <i class="fas fa-wallet"></i> <span id="walletBtnText" class="preserve-fixed-color">Connect Wallet</span>
           </button>
           <button id="disconnectWalletBtn" onclick="disconnectWallet()" class="hidden text-rose-400 hover:text-rose-300 ml-2 pl-2 border-l border-white/10" title="Disconnect">
             <i class="fas fa-power-off"></i>
           </button>
         </div>
 
-        <div class="flex bg-white/5 light-card-bg border border-white/15 rounded-2xl p-1 text-xs">
-          <button onclick="switchTab('splitter')" id="tabSplitter" class="px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400">Configuration</button>
-          <button onclick="switchTab('calendar')" id="tabCalendar" class="px-4 py-2 rounded-xl font-bold transition-all text-white light-mode-dark-text">Calendar View</button>
-          <button onclick="switchTab('history')" id="tabHistory" class="px-4 py-2 rounded-xl font-bold transition-all text-white light-mode-dark-text">History</button>
+        <div class="flex bg-white/5 border border-white/10 rounded-2xl p-1 text-xs preserve-fixed-color">
+          <button onclick="switchTab('splitter')" id="tabSplitter" class="px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400 preserve-fixed-color">Configuration</button>
+          <button onclick="switchTab('calendar')" id="tabCalendar" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-fixed-color">Calendar View</button>
+          <button onclick="switchTab('history')" id="tabHistory" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-fixed-color">History</button>
         </div>
-        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 hover:bg-white/15 border border-white/15 rounded-2xl transition-all shadow-lg">
+        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl transition-all">
           <i class="fas fa-moon text-lg text-emerald-400"></i>
         </button>
       </div>
@@ -187,31 +138,31 @@
     <div class="glass rounded-2xl p-4 mb-6 flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-2">
         <i class="fas fa-layer-group text-emerald-400"></i>
-        <span class="text-xs font-bold uppercase text-gray-400 light-mode-muted-text">Quick Templates:</span>
+        <span class="text-xs font-bold uppercase opacity-90">Quick Templates:</span>
       </div>
       <div class="flex flex-wrap gap-2">
-        <button onclick="applyTemplate('founder')" class="app-button px-3.5 py-2 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 text-xs font-bold transition-all">Founder (12M Cliff / 36M Vesting)</button>
-        <button onclick="applyTemplate('employee')" class="app-button px-3.5 py-2 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-400 text-xs font-bold transition-all">Employee (3M Cliff / 12M Vesting)</button>
-        <button onclick="applyTemplate('advisor')" class="app-button px-3.5 py-2 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 text-indigo-400 text-xs font-bold transition-all">Advisor (No Cliff / 24M Vesting)</button>
+        <button onclick="applyTemplate('founder')" class="px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-400 text-xs font-bold transition-all">Founder (12M Cliff / 36M Vesting)</button>
+        <button onclick="applyTemplate('employee')" class="px-3 py-1.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/30 text-cyan-400 text-xs font-bold transition-all">Employee (3M Cliff / 12M Vesting)</button>
+        <button onclick="applyTemplate('advisor')" class="px-3 py-1.5 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 text-indigo-400 text-xs font-bold transition-all">Advisor (No Cliff / 24M Vesting)</button>
       </div>
     </div>
 
     <!-- Main View -->
-    <div id="viewSplitter" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <div id="viewSplitter" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
       
       <!-- Left Config Cards -->
       <div class="lg:col-span-8 space-y-6">
         
         <!-- Card 1: Asset -->
-        <div class="glass rounded-3xl p-6 sm:p-8">
-          <div class="flex items-center gap-2 mb-6">
+        <div class="glass rounded-3xl p-6">
+          <div class="flex items-center gap-2 mb-4">
             <span class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">1</span>
-            <h3 class="font-bold text-base text-white light-mode-dark-text">Asset Configuration</h3>
+            <h3 class="font-bold text-base">Asset Configuration</h3>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label class="block text-gray-400 light-mode-muted-text text-xs font-bold uppercase tracking-wider mb-2">Asset Token</label>
-              <select id="tokenSelect" class="w-full rounded-2xl px-5 py-3 text-sm sm:text-base font-medium cursor-pointer" onchange="handleTokenChange()">
+              <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Asset Token</label>
+              <select id="tokenSelect" class="w-full rounded-2xl px-4 py-3.5 text-sm font-medium" onchange="handleTokenChange()">
                 <option value="0x3600000000000000000000000000000000000000">USDC</option>
                 <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
                 <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">CIRBTC</option>
@@ -219,53 +170,53 @@
               </select>
             </div>
             <div>
-              <label class="block text-gray-400 light-mode-muted-text text-xs font-bold uppercase tracking-wider mb-2">Total Amount</label>
-              <input type="number" id="totalAmount" placeholder="100" class="w-full rounded-2xl px-5 py-3 text-xl sm:text-2xl font-bold outline-none" oninput="onTotalAmountChange()">
+              <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Total Amount</label>
+              <input type="number" id="totalAmount" placeholder="" class="w-full rounded-2xl px-4 py-3.5 text-sm font-bold" oninput="onTotalAmountChange()">
             </div>
           </div>
-          <div class="mt-4 text-xs text-gray-400 light-mode-muted-text font-semibold flex justify-between items-center bg-white/[0.02] light-card-bg p-3 rounded-xl border border-white/10">
+          <div class="mt-3 text-xs text-gray-400 font-semibold flex justify-between">
             <span>Wallet Balance:</span>
-            <span id="walletBalanceDisplay" class="text-emerald-400 font-bold">0.00 (Not Connected)</span>
+            <span id="walletBalanceDisplay" class="text-emerald-500 font-bold">0.00 (Not Connected)</span>
           </div>
         </div>
 
         <!-- Card 2: Recipient -->
-        <div class="glass rounded-3xl p-6 sm:p-8">
-          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+        <div class="glass rounded-3xl p-6">
+          <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-2">
               <span class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">2</span>
-              <h3 class="font-bold text-base text-white light-mode-dark-text">Recipients Allocation</h3>
+              <h3 class="font-bold text-base">Recipients Allocation</h3>
             </div>
             <div class="flex items-center gap-2">
-              <button onclick="distributeRemaining()" class="px-3.5 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
+              <button onclick="distributeRemaining()" class="px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-600 border border-cyan-500/30 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
                 <i class="fas fa-balance-scale"></i> Distribute Remaining
               </button>
-              <button onclick="addRecipient()" class="px-3.5 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
+              <button onclick="addRecipient()" class="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 border border-emerald-500/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
                 <i class="fas fa-plus"></i> Add Recipient
               </button>
             </div>
           </div>
           <div id="recipientsContainer" class="space-y-3"></div>
-          <div id="totalPercentageWarning" class="mt-3 text-xs font-bold text-rose-400 hidden"></div>
+          <div id="totalPercentageWarning" class="mt-3 text-[11px] font-bold text-rose-500 hidden"></div>
         </div>
 
         <!-- Card 3: Schedule -->
-        <div class="glass rounded-3xl p-6 sm:p-8">
-          <div class="flex items-center gap-2 mb-6">
+        <div class="glass rounded-3xl p-6">
+          <div class="flex items-center gap-2 mb-4">
             <span class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">3</span>
-            <h3 class="font-bold text-base text-white light-mode-dark-text">Schedule & Cliff Parameters</h3>
+            <h3 class="font-bold text-base">Schedule & Cliff Parameters</h3>
           </div>
           
-          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
             <div>
-              <label class="block text-gray-400 light-mode-muted-text text-xs font-bold uppercase tracking-wider mb-2">Start Date</label>
-              <input type="date" id="startDate" class="w-full rounded-2xl px-4 py-3.5 text-xs sm:text-sm font-bold outline-none" onchange="validateStartDate()">
-              <span id="dateErrorMsg" class="text-[11px] text-rose-400 font-bold mt-1.5 block hidden">Warning: Date is in the past!</span>
+              <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Start Date</label>
+              <input type="date" id="startDate" class="w-full rounded-2xl px-4 py-3 text-xs font-bold" onchange="validateStartDate()">
+              <span id="dateErrorMsg" class="text-[10px] text-rose-500 font-bold mt-1 hidden">Warning: Date is in the past!</span>
             </div>
             
             <div>
-              <label class="block text-gray-400 light-mode-muted-text text-xs font-bold uppercase tracking-wider mb-2">Cliff Duration</label>
-              <select id="cliffSelect" class="w-full rounded-2xl px-4 py-3.5 text-xs sm:text-sm font-bold mb-2 cursor-pointer" onchange="toggleCustomCliff()">
+              <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Cliff Duration</label>
+              <select id="cliffSelect" class="w-full rounded-2xl px-4 py-3 text-xs font-bold mb-2" onchange="toggleCustomCliff()">
                 <option value="0">No Cliff</option>
                 <option value="1">1 Month</option>
                 <option value="3">3 Months</option>
@@ -273,8 +224,8 @@
                 <option value="custom">Custom...</option>
               </select>
               <div id="customCliffBox" class="hidden grid grid-cols-2 gap-2">
-                <input type="number" id="customCliffNum" placeholder="1" min="1" class="rounded-xl px-3 py-2 text-xs font-bold outline-none" oninput="recalculateVesting()">
-                <select id="customCliffUnit" class="rounded-xl px-2 py-2 text-xs font-bold cursor-pointer" onchange="recalculateVesting()">
+                <input type="number" id="customCliffNum" placeholder="" min="1" class="rounded-xl px-2 py-2 text-xs font-bold" oninput="recalculateVesting()">
+                <select id="customCliffUnit" class="rounded-xl px-2 py-2 text-xs font-bold" onchange="recalculateVesting()">
                   <option value="hours">Hours</option>
                   <option value="days">Days</option>
                   <option value="weeks">Weeks</option>
@@ -284,16 +235,16 @@
             </div>
 
             <div>
-              <label class="block text-gray-400 light-mode-muted-text text-xs font-bold uppercase tracking-wider mb-2">Vesting Duration</label>
-              <select id="durationSelect" class="w-full rounded-2xl px-4 py-3.5 text-xs sm:text-sm font-bold mb-2 cursor-pointer" onchange="toggleCustomDuration()">
+              <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Vesting Duration</label>
+              <select id="durationSelect" class="w-full rounded-2xl px-4 py-3 text-xs font-bold mb-2" onchange="toggleCustomDuration()">
                 <option value="6">6 Months</option>
                 <option value="12" selected>12 Months</option>
                 <option value="24">24 Months</option>
                 <option value="custom">Custom...</option>
               </select>
               <div id="customDurationBox" class="hidden grid grid-cols-2 gap-2">
-                <input type="number" id="customDurationNum" placeholder="12" min="1" class="rounded-xl px-3 py-2 text-xs font-bold outline-none" oninput="recalculateVesting()">
-                <select id="customDurationUnit" class="rounded-xl px-2 py-2 text-xs font-bold cursor-pointer" onchange="recalculateVesting()">
+                <input type="number" id="customDurationNum" placeholder="" min="1" class="rounded-xl px-2 py-2 text-xs font-bold" oninput="recalculateVesting()">
+                <select id="customDurationUnit" class="rounded-xl px-2 py-2 text-xs font-bold" onchange="recalculateVesting()">
                   <option value="hours">Hours</option>
                   <option value="days">Days</option>
                   <option value="weeks">Weeks</option>
@@ -303,10 +254,10 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-6 border-t border-white/10">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-black/10">
             <div>
-              <label class="block text-gray-400 light-mode-muted-text text-xs font-bold uppercase tracking-wider mb-2">Release Frequency</label>
-              <select id="frequencySelect" class="w-full rounded-2xl px-4 py-3.5 text-xs sm:text-sm font-bold cursor-pointer" onchange="recalculateVesting()">
+              <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Release Frequency</label>
+              <select id="frequencySelect" class="w-full rounded-2xl px-4 py-3 text-xs font-bold" onchange="recalculateVesting()">
                 <option value="Hourly">Hourly</option>
                 <option value="Daily">Daily</option>
                 <option value="Weekly">Weekly</option>
@@ -314,10 +265,10 @@
               </select>
             </div>
             <div>
-              <label class="block text-gray-400 light-mode-muted-text text-xs font-bold uppercase tracking-wider mb-2">Distribution Method</label>
-              <div class="flex items-center gap-6 pt-3 text-xs sm:text-sm font-bold">
-                <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="distMethod" value="Equal" checked onchange="recalculateVesting()" class="accent-emerald-500"> Equal Release</label>
-                <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="distMethod" value="Linear" onchange="recalculateVesting()" class="accent-emerald-500"> Linear Vesting</label>
+              <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Distribution Method</label>
+              <div class="flex items-center gap-4 pt-2 text-xs font-bold">
+                <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="distMethod" value="Equal" checked onchange="recalculateVesting()"> Equal Release</label>
+                <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="distMethod" value="Linear" onchange="recalculateVesting()"> Linear Vesting</label>
               </div>
             </div>
           </div>
@@ -327,36 +278,36 @@
 
       <!-- Right Summary -->
       <div class="lg:col-span-4 space-y-6">
-        <div class="glass rounded-3xl p-6 sm:p-8 space-y-6" style="position: sticky; top: 24px;">
+        <div class="glass rounded-3xl p-6 sticky top-6 space-y-5">
           
           <div class="flex items-center justify-between">
-            <h3 class="font-bold text-base flex items-center gap-2 text-white light-mode-dark-text">
-              <i class="fas fa-chart-pie text-emerald-400"></i> Vesting Summary
+            <h3 class="font-bold text-base flex items-center gap-2">
+              <i class="fas fa-chart-pie text-emerald-500"></i> Vesting Summary
             </h3>
-            <button onclick="exportScheduleData()" class="px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all">
+            <button onclick="exportScheduleData()" class="px-3 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-600 border border-cyan-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5">
               <i class="fas fa-download"></i> Export
             </button>
           </div>
 
-          <div class="bg-white/[0.02] light-card-bg border border-white/10 rounded-2xl p-4 space-y-2.5 text-xs">
-            <div class="flex justify-between"><span class="text-gray-400 light-mode-muted-text font-semibold">Token:</span> <span id="sumToken" class="font-bold">USDC</span></div>
-            <div class="flex justify-between"><span class="text-gray-400 light-mode-muted-text font-semibold">Total Amount:</span> <span id="sumTotalAmt" class="font-bold">0</span></div>
-            <div class="flex justify-between"><span class="text-gray-400 light-mode-muted-text font-semibold">Cliff Period:</span> <span id="sumCliff" class="font-bold">6 Months</span></div>
-            <div class="flex justify-between"><span class="text-gray-400 light-mode-muted-text font-semibold">Duration:</span> <span id="sumDuration" class="font-bold">12 Months</span></div>
-            <div class="flex justify-between"><span class="text-gray-400 light-mode-muted-text font-semibold">Frequency:</span> <span id="sumFreq" class="font-bold">Monthly</span></div>
+          <div class="bg-black/5 border border-black/10 rounded-2xl p-4 space-y-2 text-xs">
+            <div class="flex justify-between"><span class="text-gray-400 font-semibold">Token:</span> <span id="sumToken" class="font-bold">USDC</span></div>
+            <div class="flex justify-between"><span class="text-gray-400 font-semibold">Total Amount:</span> <span id="sumTotalAmt" class="font-bold">0</span></div>
+            <div class="flex justify-between"><span class="text-gray-400 font-semibold">Cliff Period:</span> <span id="sumCliff" class="font-bold">6 Months</span></div>
+            <div class="flex justify-between"><span class="text-gray-400 font-semibold">Duration:</span> <span id="sumDuration" class="font-bold">12 Months</span></div>
+            <div class="flex justify-between"><span class="text-gray-400 font-semibold">Frequency:</span> <span id="sumFreq" class="font-bold">Monthly</span></div>
           </div>
 
           <div>
-            <div class="text-[11px] text-gray-400 light-mode-muted-text uppercase tracking-wider font-semibold mb-2">Estimated Release Preview</div>
-            <div id="previewBreakdown" class="space-y-2 max-h-48 overflow-y-auto text-xs preview-scroll pr-1"></div>
+            <div class="text-[11px] text-gray-400 uppercase font-bold mb-2">Estimated Release Preview</div>
+            <div id="previewBreakdown" class="space-y-1.5 max-h-48 overflow-y-auto text-xs"></div>
           </div>
 
           <div>
-            <div class="text-[11px] text-gray-400 light-mode-muted-text uppercase tracking-wider font-semibold mb-2">Visual Timeline</div>
-            <div id="visualTimeline" class="flex gap-1 h-6 items-center bg-black/20 light:bg-slate-200 p-1.5 rounded-xl border border-white/10"></div>
+            <div class="text-[11px] text-gray-400 uppercase font-bold mb-2">Visual Timeline</div>
+            <div id="visualTimeline" class="flex gap-1 h-6 items-center bg-black/5 p-1 rounded-xl"></div>
           </div>
 
-          <button onclick="openConfirmModal()" class="app-button w-full bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 hover:brightness-110 py-5 rounded-2xl text-base font-bold shadow-xl shadow-rose-500/25 transition-all text-white">
+          <button onclick="openConfirmModal()" class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:brightness-110 py-4 rounded-2xl font-bold text-sm shadow-lg shadow-emerald-500/20 text-slate-950">
             Deploy Vesting Contract
           </button>
         </div>
@@ -365,45 +316,44 @@
     </div>
 
     <!-- Calendar View Tab -->
-    <div id="viewCalendar" class="hidden glass rounded-3xl p-6 sm:p-8 space-y-4">
-      <h3 class="font-bold text-lg mb-1 flex items-center gap-2 text-white light-mode-dark-text"><i class="fas fa-calendar-alt text-emerald-400"></i> Detailed Unlock Calendar</h3>
-      <p class="text-xs text-gray-400 light-mode-muted-text mb-4">All planned token unlocks mapped directly to actual calendar dates.</p>
+    <div id="viewCalendar" class="hidden glass rounded-3xl p-6 space-y-4">
+      <h3 class="font-bold text-lg mb-2">Detailed Unlock Calendar</h3>
+      <p class="text-xs text-gray-400">All planned token unlocks mapped directly to actual calendar dates.</p>
       <div id="calendarUnlockList" class="space-y-2 text-xs"></div>
     </div>
 
     <!-- History View Tab -->
-    <div id="viewHistory" class="hidden glass rounded-3xl p-6 sm:p-8 space-y-4">
-      <h3 class="font-bold text-lg mb-4 flex items-center gap-2 text-white light-mode-dark-text"><i class="fas fa-history text-emerald-400"></i> Vesting Schedules History</h3>
-      <div id="historyList" class="space-y-3 text-xs text-gray-400 light-mode-muted-text font-medium">No vesting plans created yet.</div>
+    <div id="viewHistory" class="hidden glass rounded-3xl p-6 space-y-4">
+      <h3 class="font-bold text-lg mb-4">Vesting Schedules History</h3>
+      <div id="historyList" class="space-y-4 text-xs text-gray-400 font-semibold">No vesting plans created yet.</div>
     </div>
 
   </div>
 
   <!-- Confirmation Modal -->
-  <div id="confirmModal" class="hidden fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center z-50 p-4">
-    <div class="glass rounded-3xl p-6 sm:p-8 max-w-md w-full border border-white/15 shadow-2xl animate-in fade-in zoom-in duration-200 space-y-4">
-      <h3 class="text-xl font-bold mb-2 text-white light-mode-dark-text">Confirm On-Chain Deployment</h3>
-      <p class="text-xs text-gray-400 light-mode-muted-text">This action calls the real Vesting Smart Contract function to lock tokens securely.</p>
-      <div class="space-y-2 text-xs bg-black/20 light-card-bg p-4 rounded-2xl border border-white/10">
-        <div class="flex justify-between"><span class="text-gray-400 light-mode-muted-text">Recipients Count:</span> <span id="modalRecipCount" class="font-bold text-white light-mode-dark-text">1</span></div>
-        <div class="flex justify-between"><span class="text-gray-400 light-mode-muted-text">Total Duration:</span> <span id="modalDuration" class="font-bold text-white light-mode-dark-text">12 Months</span></div>
-        <div class="flex justify-between"><span class="text-gray-400 light-mode-muted-text">Cliff Period:</span> <span id="modalCliff" class="font-bold text-white light-mode-dark-text">6 Months</span></div>
+  <div id="confirmModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-4">
+    <div class="glass max-w-md w-full p-6 rounded-3xl space-y-4 border border-black/10">
+      <h3 class="font-extrabold text-lg">Confirm On-Chain Deployment</h3>
+      <p class="text-xs text-gray-400">This action calls the real Vesting Smart Contract function to lock tokens securely.</p>
+      <div class="space-y-2 text-xs bg-black/5 p-4 rounded-2xl">
+        <div class="flex justify-between"><span>Recipients Count:</span> <span id="modalRecipCount" class="font-bold">1</span></div>
+        <div class="flex justify-between"><span>Total Duration:</span> <span id="modalDuration" class="font-bold">12 Months</span></div>
+        <div class="flex justify-between"><span>Cliff Period:</span> <span id="modalCliff" class="font-bold">6 Months</span></div>
       </div>
       <div class="flex gap-3 pt-2">
-        <button onclick="closeConfirmModal()" class="app-button flex-1 py-3.5 rounded-xl border border-white/15 hover:bg-white/5 font-semibold text-sm transition-all text-white light-mode-dark-text">Cancel</button>
-        <button onclick="executeRealSmartContract()" class="app-button flex-1 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold rounded-xl text-sm transition-all shadow-lg shadow-emerald-500/20">Sign & Deploy</button>
+        <button onclick="closeConfirmModal()" class="flex-1 py-3 bg-black/10 hover:bg-black/20 rounded-xl font-bold text-xs">Cancel</button>
+        <button onclick="executeRealSmartContract()" class="flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-black rounded-xl font-bold text-xs">Sign & Deploy</button>
       </div>
     </div>
   </div>
 
   <!-- Toast -->
-  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#121228] border border-white/15 text-white px-5 py-3 rounded-2xl shadow-2xl z-50 text-xs sm:text-sm backdrop-blur-xl animate-in fade-in slide-in-from-bottom-4 duration-300">
+  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#0f172a] text-white border border-white/20 px-5 py-3 rounded-2xl shadow-2xl z-50 text-xs font-bold">
     <span id="toastText"></span>
   </div>
 
 <script>
   let provider, signer, userAddress;
-  let historyTransactions = [];
   
   const VESTING_CONTRACT_ADDRESS = "0x714Ad5eD106F82640DF51ee0C0E1D471Ff0A5D9d";
   
@@ -595,17 +545,13 @@
   }
 
   function switchTab(tab) {
-    const isSplitter = tab === 'splitter';
-    const isCalendar = tab === 'calendar';
-    const isHistory = tab === 'history';
-
-    document.getElementById('viewSplitter').classList.toggle('hidden', !isSplitter);
-    document.getElementById('viewCalendar').classList.toggle('hidden', !isCalendar);
-    document.getElementById('viewHistory').classList.toggle('hidden', !isHistory);
+    document.getElementById('viewSplitter').classList.toggle('hidden', tab !== 'splitter');
+    document.getElementById('viewCalendar').classList.toggle('hidden', tab !== 'calendar');
+    document.getElementById('viewHistory').classList.toggle('hidden', tab !== 'history');
     
-    document.getElementById('tabSplitter').className = isSplitter ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-white light-mode-dark-text";
-    document.getElementById('tabCalendar').className = isCalendar ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-white light-mode-dark-text";
-    document.getElementById('tabHistory').className = isHistory ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-white light-mode-dark-text";
+    document.getElementById('tabSplitter').className = tab === 'splitter' ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400 preserve-fixed-color" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-fixed-color";
+    document.getElementById('tabCalendar').className = tab === 'calendar' ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400 preserve-fixed-color" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-fixed-color";
+    document.getElementById('tabHistory').className = tab === 'history' ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400 preserve-fixed-color" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-fixed-color";
   }
 
   function renderRecipients() {
@@ -617,15 +563,11 @@
       let currentAmt = r.amount !== "" ? r.amount : (totalAmt > 0 && r.percent !== "" ? ((totalAmt * r.percent) / 100).toFixed(2) : "");
       
       return `
-        <div class="recipient-row glass border border-white/15 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-3.5 transition-all">
-          <input type="text" value="${r.address}" oninput="recipients[${idx}].address=this.value" class="address flex-1 w-full bg-black/25 light:bg-white border border-white/15 rounded-xl px-4 py-3.5 text-xs sm:text-sm font-mono outline-none" placeholder="0xBeneficiaryAddress...">
-          <div class="percent-container w-full sm:w-28">
-            <input type="number" value="${currentPercent}" oninput="onPercentInput(${idx}, this.value)" class="percent w-full bg-black/25 light:bg-white border border-white/15 rounded-xl px-4 py-3.5 text-center text-xs sm:text-sm font-semibold outline-none" placeholder="" min="0" max="100">
-          </div>
-          <div class="amount-container w-full sm:w-36">
-            <input type="number" value="${currentAmt}" oninput="onAmountInput(${idx}, this.value)" class="amount w-full bg-black/25 light:bg-white border border-white/15 rounded-xl px-4 py-3.5 text-center text-xs sm:text-sm font-semibold outline-none" placeholder="">
-          </div>
-          <button onclick="recipients.splice(${idx},1); renderRecipients(); recalculateVesting();" class="w-full sm:w-auto text-gray-400 hover:text-rose-400 text-lg px-2 py-1 transition-colors flex items-center justify-center"><i class="fas fa-trash-can"></i></button>
+        <div class="flex items-center gap-2">
+          <input type="text" value="${r.address}" oninput="recipients[${idx}].address=this.value" class="flex-1 rounded-2xl px-4 py-3.5 text-xs font-medium" placeholder="0xBeneficiaryAddress...">
+          <input type="number" value="${currentPercent}" oninput="onPercentInput(${idx}, this.value)" class="w-28 rounded-2xl px-4 py-3.5 text-center text-xs font-bold" placeholder="%" min="0" max="100">
+          <input type="number" value="${currentAmt}" oninput="onAmountInput(${idx}, this.value)" class="w-28 rounded-2xl px-4 py-3.5 text-center text-xs font-bold" placeholder="">
+          <button onclick="recipients.splice(${idx},1); renderRecipients(); recalculateVesting();" class="text-gray-400 hover:text-rose-500 text-xs px-1"><i class="fas fa-times"></i></button>
         </div>
       `;
     }).join('');
@@ -643,8 +585,9 @@
     const amt = totalAmt > 0 ? (totalAmt * p) / 100 : "";
     recipients[idx].amount = amt !== "" ? amt.toFixed(2) : "";
     
-    const inputs = document.querySelectorAll('#recipientsContainer input.amount');
-    if (inputs[idx]) inputs[idx].value = recipients[idx].amount;
+    const inputs = document.querySelectorAll('#recipientsContainer input[type="number"]');
+    const amtInput = inputs[idx * 2 + 1];
+    if (amtInput) amtInput.value = recipients[idx].amount;
 
     recalculateVesting();
   }
@@ -658,8 +601,9 @@
       const p = (amt / totalAmt) * 100;
       recipients[idx].percent = parseFloat(p.toFixed(2));
       
-      const inputs = document.querySelectorAll('#recipientsContainer input.percent');
-      if (inputs[idx]) inputs[idx].value = recipients[idx].percent;
+      const inputs = document.querySelectorAll('#recipientsContainer input[type="number"]');
+      const percentInput = inputs[idx * 2];
+      if (percentInput) percentInput.value = recipients[idx].percent;
     }
 
     recalculateVesting();
@@ -747,9 +691,9 @@
       let p = parseFloat(r.percent) || 0;
       let allocatedAmt = r.amount !== "" ? parseFloat(r.amount) : (totalAmt * p) / 100;
       let portion = (allocatedAmt / 12).toFixed(2);
-      return `<div class="flex justify-between items-center bg-white/[0.02] light-card-bg border border-white/10 p-3 rounded-2xl">
-        <span class="font-bold text-gray-300 light-mode-dark-text">${r.address ? r.address.substring(0,6)+'...' : 'No Address'} (${p}%)</span>
-        <span class="text-emerald-400 font-bold">${portion} / mo</span>
+      return `<div class="flex justify-between items-center bg-black/5 p-2 rounded-xl">
+        <span class="font-bold">${r.address ? r.address.substring(0,6)+'...' : 'No Address'} (${p}%)</span>
+        <span class="text-emerald-500 font-bold">${portion} / mo (${distMethod})</span>
       </div>`;
     }).join('');
 
@@ -757,7 +701,7 @@
     timelineEl.innerHTML = '';
     for(let i=0; i<12; i++) {
       let box = document.createElement('div');
-      box.className = `flex-1 h-full rounded-lg bg-emerald-500/80`;
+      box.className = `flex-1 h-full rounded-sm bg-emerald-500`;
       timelineEl.appendChild(box);
     }
 
@@ -767,19 +711,11 @@
     for(let m = 1; m <= 12; m++) {
       let unlockDate = new Date(startDateVal);
       unlockDate.setMonth(unlockDate.getMonth() + m);
-      
-      let year = unlockDate.getFullYear();
-      let month = String(unlockDate.getMonth() + 1).padStart(2, '0');
-      let day = String(unlockDate.getDate()).padStart(2, '0');
-      let hours = String(unlockDate.getHours()).padStart(2, '0');
-      let minutes = String(unlockDate.getMinutes()).padStart(2, '0');
-      let seconds = String(unlockDate.getSeconds()).padStart(2, '0');
-      let fullDateTimeStr = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
-
+      let dateStr = unlockDate.toISOString().split('T')[0];
       let releasePerStep = (totalAmt / 12).toFixed(2);
-      calHtml += `<div class="flex justify-between items-center bg-white/[0.02] light-card-bg border border-white/10 p-4 rounded-2xl">
-        <span class="font-bold text-cyan-400">${fullDateTimeStr}</span>
-        <span class="font-bold text-emerald-400">${releasePerStep} (${distMethod})</span>
+      calHtml += `<div class="flex justify-between items-center bg-black/5 p-2.5 rounded-xl">
+        <span class="font-bold text-cyan-600">${dateStr}</span>
+        <span class="font-bold text-emerald-500">${releasePerStep} (${distMethod})</span>
       </div>`;
     }
     calendarList.innerHTML = calHtml;
@@ -896,14 +832,15 @@
       showToast("Smart Contract executed successfully on-chain!");
       switchTab('history');
       
-      historyTransactions.unshift({
-        hash: tx.hash,
-        address: recipient.address,
-        allocated: allocatedAmt,
-        duration: getDurationText(),
-        timestamp: new Date().toLocaleString()
-      });
-      renderHistoryList();
+      let historyList = document.getElementById('historyList');
+      let newItem = `<div class="glass p-4 rounded-2xl space-y-2">
+        <div class="flex justify-between font-bold text-sm">
+          <span>On-Chain Plan (${recipient.address.substring(0,6)}...)</span>
+          <span class="text-emerald-500">Confirmed</span>
+        </div>
+        <div class="text-xs text-gray-500">Tx: ${tx.hash.substring(0,10)}... | Allocated: ${allocatedAmt} | Duration: ${getDurationText()}</div>
+      `;
+      historyList.innerHTML = newItem + (historyList.innerHTML.includes('No vesting') ? '' : historyList.innerHTML);
 
     } catch (error) {
       console.error("Contract Execution Error:", error);
@@ -911,48 +848,19 @@
     }
   }
 
-  function renderHistoryList() {
-    let historyList = document.getElementById('historyList');
-    if (historyTransactions.length === 0) {
-      historyList.innerHTML = `No vesting plans created yet.`;
-      return;
-    }
-
-    historyList.innerHTML = historyTransactions.map(item => `
-      <div class="glass p-4 rounded-2xl space-y-2 border border-white/10">
-        <div class="flex justify-between font-bold text-sm">
-          <span class="text-white light-mode-dark-text">On-Chain Plan (${item.address.substring(0,6)}...)</span>
-          <span class="text-emerald-400">Confirmed</span>
-        </div>
-        <div class="text-xs text-gray-400 light-mode-muted-text flex flex-col sm:flex-row sm:justify-between gap-1">
-          <span>Tx: <a href="https://testnet.arcscan.app/tx/${item.hash}" target="_blank" class="text-cyan-400 hover:underline font-mono">${item.hash.substring(0,10)}... <i class="fas fa-external-link-alt text-[10px]"></i></a> | Allocated: ${item.allocated} | Duration: ${item.duration}</span>
-          <span class="text-[10px] text-gray-500">${item.timestamp}</span>
-        </div>
-      </div>
-    `).join('');
-  }
-
   function exportScheduleData() {
     showToast("Vesting Schedule report exported successfully.");
   }
 
-  function showToast(msg, duration = 4000) {
-    const toast = document.getElementById("toast");
-    document.getElementById("toastText").innerHTML = msg;
-    toast.classList.remove("hidden");
-    setTimeout(() => toast.classList.add("hidden"), duration);
+  function showToast(msg) {
+    const t = document.getElementById("toast");
+    document.getElementById("toastText").textContent = msg;
+    t.classList.remove("hidden");
+    setTimeout(() => t.classList.add("hidden"), 3500);
   }
 
   function toggleTheme() {
     document.documentElement.classList.toggle('light');
-    const icon = document.getElementById("themeBtn").querySelector("i");
-    if (icon.classList.contains("fa-moon")) {
-      icon.classList.remove("fa-moon", "text-emerald-400");
-      icon.classList.add("fa-sun", "text-amber-400");
-    } else {
-      icon.classList.remove("fa-sun", "text-amber-400");
-      icon.classList.add("fa-moon", "text-emerald-400");
-    }
   }
 </script>
 </body>
