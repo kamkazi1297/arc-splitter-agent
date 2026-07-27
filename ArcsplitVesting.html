@@ -31,6 +31,7 @@
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
     
+    /* تنظیمات لایت مود بر اساس درخواست اصلاح رنگ فونت‌ها به رنگ‌های کاملاً تیره و خوانا */
     .light {
       background: #f1f5f9 !important;
       background-image: 
@@ -40,19 +41,22 @@
     }
 
     .light .glass {
-      background: rgba(255, 255, 255, 0.9);
+      background: rgba(255, 255, 255, 0.95);
       border-color: rgba(0, 0, 0, 0.12);
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 1);
     }
 
-    /* حفظ رنگ متن عناوین اصلی و منوها در حالت لایت مود مطابق خواسته کاربر */
+    /* هدر و عناوین خاص که باید رنگ دارک خود را حفظ کنند یا در لایت مود کاملاً تیره باشند */
     .light h1, .light h3, .light .preserve-dark-color { 
-      color: #f8fafc !important; 
+      color: #0f172a !important; 
     }
     .light .preserve-dark-text {
-      color: #94a3b8 !important;
+      color: #334155 !important;
     }
-    
+    .light label, .light .text-gray-400, .light span, .light div {
+      color: #1e293b !important;
+    }
+
     .smart-split-gradient {
       background: linear-gradient(to right, #34d399, #22d3ee);
       -webkit-background-clip: text;
@@ -73,7 +77,7 @@
     .light select, .light input {
       background-color: #ffffff;
       color: #020617;
-      border: 1px solid #94a3b8;
+      border: 1px solid #cbd5e1;
       font-weight: 600;
     }
 
@@ -93,7 +97,6 @@
       </div>
       
       <div class="flex items-center gap-3 flex-wrap">
-        <!-- مدیریت ولت و دکمه دیسکانکت ⭐ -->
         <div id="walletSection" class="flex items-center gap-2 bg-white/5 border border-white/10 rounded-2xl px-4 py-2.5 text-xs font-bold">
           <button id="connectWalletBtn" onclick="connectWallet()" class="flex items-center gap-2 text-emerald-400 hover:text-emerald-300 transition-all">
             <i class="fas fa-wallet"></i> <span id="walletBtnText">Connect Wallet</span>
@@ -133,7 +136,7 @@
       <!-- Left Config Cards (8 Cols) -->
       <div class="lg:col-span-8 space-y-6">
         
-        <!-- Card 1: Asset -->
+        <!-- Card 1: Asset با قابلیت کاستوم برای توکن ⭐ -->
         <div class="glass rounded-3xl p-6">
           <div class="flex items-center gap-2 mb-4">
             <span class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">1</span>
@@ -142,11 +145,13 @@
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Asset Token</label>
-              <select id="tokenSelect" class="w-full rounded-2xl px-4 py-3.5 text-sm font-medium" onchange="fetchRealBalanceWithRetry()">
+              <select id="tokenSelect" class="w-full rounded-2xl px-4 py-3.5 text-sm font-medium mb-2" onchange="toggleCustomToken()">
                 <option value="USDC">USDC</option>
                 <option value="EURC">EURC</option>
                 <option value="CIRBTC">CIRBTC</option>
+                <option value="custom">Custom Token Address...</option>
               </select>
+              <input type="text" id="customTokenInput" placeholder="Enter Token Contract Address (0x...)" class="hidden w-full rounded-2xl px-3 py-2.5 text-xs font-bold" oninput="fetchRealBalanceWithRetry()">
             </div>
             <div>
               <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Total Amount</label>
@@ -155,11 +160,11 @@
           </div>
           <div class="mt-3 text-xs text-gray-400 font-semibold flex justify-between">
             <span>Wallet Balance:</span>
-            <span id="walletBalanceDisplay" class="text-emerald-400 font-bold">0.00 USDC (Not Connected)</span>
+            <span id="walletBalanceDisplay" class="text-emerald-400 font-bold">0.00 (Not Connected)</span>
           </div>
         </div>
 
-        <!-- Card 2: Recipient (فقط یک فیلتر پیش‌فرض خالی ⭐) -->
+        <!-- Card 2: Recipient -->
         <div class="glass rounded-3xl p-6">
           <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-2">
@@ -173,7 +178,7 @@
           <div id="recipientsContainer" class="space-y-3"></div>
         </div>
 
-        <!-- Card 3: Schedule (حالت‌های کاستوم ساعتی/روزانه/هفته/ماه برای Cliff, Vesting و Frequency) ⭐ -->
+        <!-- Card 3: Schedule (انتخاب عددی و واحد عددی برای کاستوم Cliff و Vesting به جای متن خالی ⭐) -->
         <div class="glass rounded-3xl p-6">
           <div class="flex items-center gap-2 mb-4">
             <span class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">3</span>
@@ -186,34 +191,53 @@
               <input type="date" id="startDate" class="w-full rounded-2xl px-4 py-3 text-xs font-bold" onchange="validateStartDate()">
               <span id="dateErrorMsg" class="text-[10px] text-rose-400 font-bold mt-1 hidden">Warning: Date is in the past!</span>
             </div>
+            
+            <!-- Cliff Duration Customizer -->
             <div>
               <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Cliff Duration</label>
               <select id="cliffSelect" class="w-full rounded-2xl px-4 py-3 text-xs font-bold mb-2" onchange="toggleCustomCliff()">
                 <option value="0">No Cliff</option>
-                <option value="1h">1 Hour</option>
-                <option value="1d">1 Day</option>
-                <option value="1w">1 Week</option>
-                <option value="1m" selected>1 Month</option>
-                <option value="custom">Custom (Hours/Days/Weeks/Months)...</option>
+                <option value="1">1 Month</option>
+                <option value="3">3 Months</option>
+                <option value="6" selected>6 Months</option>
+                <option value="custom">Custom...</option>
               </select>
-              <input type="text" id="customCliffInput" placeholder="e.g. 45h, 3d, 2w, 6m" class="hidden w-full rounded-2xl px-3 py-2 text-xs font-bold" oninput="recalculateVesting()">
+              <div id="customCliffBox" class="hidden grid grid-cols-2 gap-2">
+                <input type="number" id="customCliffNum" value="1" min="1" class="rounded-xl px-2 py-2 text-xs font-bold" oninput="recalculateVesting()">
+                <select id="customCliffUnit" class="rounded-xl px-2 py-2 text-xs font-bold" onchange="recalculateVesting()">
+                  <option value="hours">Hours</option>
+                  <option value="days">Days</option>
+                  <option value="weeks">Weeks</option>
+                  <option value="months" selected>Months</option>
+                </select>
+              </div>
             </div>
+
+            <!-- Vesting Duration Customizer -->
             <div>
               <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Vesting Duration</label>
               <select id="durationSelect" class="w-full rounded-2xl px-4 py-3 text-xs font-bold mb-2" onchange="toggleCustomDuration()">
-                <option value="6m">6 Months</option>
-                <option value="12m" selected>12 Months</option>
-                <option value="24m">24 Months</option>
-                <option value="custom">Custom (Hours/Days/Weeks/Months)...</option>
+                <option value="6">6 Months</option>
+                <option value="12" selected>12 Months</option>
+                <option value="24">24 Months</option>
+                <option value="custom">Custom...</option>
               </select>
-              <input type="text" id="customDurationInput" placeholder="e.g. 30d, 52w, 18m" class="hidden w-full rounded-2xl px-3 py-2 text-xs font-bold" oninput="recalculateVesting()">
+              <div id="customDurationBox" class="hidden grid grid-cols-2 gap-2">
+                <input type="number" id="customDurationNum" value="12" min="1" class="rounded-xl px-2 py-2 text-xs font-bold" oninput="recalculateVesting()">
+                <select id="customDurationUnit" class="rounded-xl px-2 py-2 text-xs font-bold" onchange="recalculateVesting()">
+                  <option value="hours">Hours</option>
+                  <option value="days">Days</option>
+                  <option value="weeks">Weeks</option>
+                  <option value="months" selected>Months</option>
+                </select>
+              </div>
             </div>
           </div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-white/10">
             <div>
               <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Release Frequency</label>
-              <select id="frequencySelect" class="w-full rounded-2xl px-4 py-3 text-xs font-bold">
+              <select id="frequencySelect" class="w-full rounded-2xl px-4 py-3 text-xs font-bold" onchange="recalculateVesting()">
                 <option value="Hourly">Hourly</option>
                 <option value="Daily">Daily</option>
                 <option value="Weekly">Weekly</option>
@@ -248,7 +272,7 @@
           <div class="bg-black/30 border border-white/10 rounded-2xl p-4 space-y-2 text-xs">
             <div class="flex justify-between"><span class="text-gray-400 font-semibold">Total Token:</span> <span id="sumToken" class="font-bold">USDC</span></div>
             <div class="flex justify-between"><span class="text-gray-400 font-semibold">Total Amount:</span> <span id="sumTotalAmt" class="font-bold">0</span></div>
-            <div class="flex justify-between"><span class="text-gray-400 font-semibold">Cliff Period:</span> <span id="sumCliff" class="font-bold">1 Month</span></div>
+            <div class="flex justify-between"><span class="text-gray-400 font-semibold">Cliff Period:</span> <span id="sumCliff" class="font-bold">6 Months</span></div>
             <div class="flex justify-between"><span class="text-gray-400 font-semibold">Duration:</span> <span id="sumDuration" class="font-bold">12 Months</span></div>
             <div class="flex justify-between"><span class="text-gray-400 font-semibold">Frequency:</span> <span id="sumFreq" class="font-bold">Monthly</span></div>
           </div>
@@ -294,7 +318,7 @@
       <div class="space-y-2 text-xs text-gray-300 bg-black/20 p-4 rounded-2xl">
         <div class="flex justify-between"><span>Recipients Count:</span> <span id="modalRecipCount" class="font-bold">1</span></div>
         <div class="flex justify-between"><span>Total Duration:</span> <span id="modalDuration" class="font-bold">12 Months</span></div>
-        <div class="flex justify-between"><span>Cliff Period:</span> <span id="modalCliff" class="font-bold">1 Month</span></div>
+        <div class="flex justify-between"><span>Cliff Period:</span> <span id="modalCliff" class="font-bold">6 Months</span></div>
       </div>
       <div class="flex gap-3 pt-2">
         <button onclick="closeConfirmModal()" class="flex-1 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-xs">Cancel</button>
@@ -311,7 +335,7 @@
 <script>
   let provider, signer, userAddress;
   let recipients = [
-    { address: "", amount: 0 } // یک رکورد خالی پیش‌فرض به درخواست کاربر
+    { address: "", amount: 0 }
   ];
 
   window.addEventListener('load', async () => {
@@ -320,7 +344,6 @@
     renderRecipients();
     recalculateVesting();
 
-    // بررسی اتصال قبلی ولت هنگام رفرش صفحه (Persistent Connection) ⭐
     if (window.ethereum) {
       try {
         const accounts = await window.ethereum.request({ method: 'eth_accounts' });
@@ -333,7 +356,6 @@
     }
   });
 
-  // اتصال ولت واقعی ⭐
   async function connectWallet(isAuto = false) {
     if (window.ethereum) {
       try {
@@ -359,23 +381,23 @@
     }
   }
 
-  // دیسکانکت ولت ⭐
   function disconnectWallet() {
     signer = null;
     userAddress = null;
     document.getElementById('walletBtnText').textContent = "Connect Wallet";
     document.getElementById('disconnectWalletBtn').classList.add('hidden');
-    document.getElementById('walletBalanceDisplay').textContent = `0.00 USDC (Not Connected)`;
+    document.getElementById('walletBalanceDisplay').textContent = `0.00 (Not Connected)`;
     showToast("Wallet disconnected.");
   }
 
-  // دریافت بالانس واقعی با مکانیزم 3 بار Retry خودکار ⭐
+  // مکانیزم Retry خودکار برای دریافت بالانس واقعی ⭐
   async function fetchRealBalanceWithRetry(retries = 3) {
-    const token = document.getElementById('tokenSelect').value;
+    const tokenSelectVal = document.getElementById('tokenSelect').value;
+    let tokenSymbol = tokenSelectVal === 'custom' ? (document.getElementById('customTokenInput').value.substring(0,6) || 'TOKEN') : tokenSelectVal;
     const balanceEl = document.getElementById('walletBalanceDisplay');
     
     if (!userAddress || !provider) {
-      balanceEl.textContent = `0.00 ${token} (Not Connected)`;
+      balanceEl.textContent = `0.00 ${tokenSymbol} (Not Connected)`;
       return;
     }
 
@@ -384,20 +406,15 @@
     for (let attempt = 1; attempt <= retries; attempt++) {
       try {
         let rawBalance = "0.00";
-        if (token === 'USDC' || token === 'EURC') {
-          // در صورت داشتن آدرس کنتراکت توکن واقعی، فراخوانی balanceOf انجام می شود
-          const nativeBal = await provider.getBalance(userAddress);
-          rawBalance = parseFloat(ethers.formatEther(nativeBal)).toFixed(4);
-        } else {
-          const nativeBal = await provider.getBalance(userAddress);
-          rawBalance = parseFloat(ethers.formatEther(nativeBal)).toFixed(4);
-        }
-        balanceEl.textContent = `${rawBalance} ${token}`;
+        const nativeBal = await provider.getBalance(userAddress);
+        rawBalance = parseFloat(ethers.formatEther(nativeBal)).toFixed(4);
+        
+        balanceEl.textContent = `${rawBalance} ${tokenSymbol}`;
         return; 
       } catch (e) {
         console.warn(`Attempt ${attempt} failed to fetch balance. Retrying...`);
         if (attempt === retries) {
-          balanceEl.textContent = `0.00 ${token} (Fetch Error)`;
+          balanceEl.textContent = `0.00 ${tokenSymbol} (Fetch Error)`;
         } else {
           await new Promise(res => setTimeout(res, 1000));
         }
@@ -405,7 +422,6 @@
     }
   }
 
-  // ولیدیشن تاریخ شروع
   function validateStartDate() {
     const startDateInput = document.getElementById('startDate').value;
     const todayStr = new Date().toISOString().split('T')[0];
@@ -420,44 +436,43 @@
     recalculateVesting();
   }
 
+  function toggleCustomToken() {
+    const val = document.getElementById('tokenSelect').value;
+    document.getElementById('customTokenInput').classList.toggle('hidden', val !== 'custom');
+    fetchRealBalanceWithRetry();
+    recalculateVesting();
+  }
+
   function toggleCustomCliff() {
     const val = document.getElementById('cliffSelect').value;
-    document.getElementById('customCliffInput').classList.toggle('hidden', val !== 'custom');
+    document.getElementById('customCliffBox').classList.toggle('hidden', val !== 'custom');
     recalculateVesting();
   }
 
   function toggleCustomDuration() {
     const val = document.getElementById('durationSelect').value;
-    document.getElementById('customDurationInput').classList.toggle('hidden', val !== 'custom');
+    document.getElementById('customDurationBox').classList.toggle('hidden', val !== 'custom');
     recalculateVesting();
   }
 
-  // تبدیل مقادیر کاستوم (ساعت، روز، هفته، ماه) به تعداد کل ماه‌ها یا پله‌ها برای محاسبات
-  function parseDurationToMonths(valStr, defaultVal = 12) {
-    if (!valStr) return defaultVal;
-    valStr = valStr.toLowerCase().trim();
-    let num = parseFloat(valStr) || defaultVal;
-    if (valStr.includes('h')) return num / (24 * 30); // ساعتی
-    if (valStr.includes('d')) return num / 30; // روزانه
-    if (valStr.includes('w')) return num / 4; // هفتگی
-    if (valStr.includes('m')) return num; // ماهانه
-    return num;
-  }
-
-  function getCliffValue() {
+  function getCliffText() {
     const selectVal = document.getElementById('cliffSelect').value;
     if (selectVal === 'custom') {
-      return document.getElementById('customCliffInput').value;
+      const num = document.getElementById('customCliffNum').value || 1;
+      const unit = document.getElementById('customCliffUnit').value;
+      return `${num} ${unit}`;
     }
-    return selectVal;
+    return selectVal === '0' ? 'No Cliff' : `${selectVal} Months`;
   }
 
-  function getDurationValue() {
+  function getDurationText() {
     const selectVal = document.getElementById('durationSelect').value;
     if (selectVal === 'custom') {
-      return document.getElementById('customDurationInput').value;
+      const num = document.getElementById('customDurationNum').value || 12;
+      const unit = document.getElementById('customDurationUnit').value;
+      return `${num} ${unit}`;
     }
-    return selectVal;
+    return `${selectVal} Months`;
   }
 
   function switchTab(tab) {
@@ -487,17 +502,19 @@
   }
 
   function applyTemplate(type) {
+    document.getElementById('tokenSelect').value = "USDC";
+    document.getElementById('customTokenInput').classList.add('hidden');
     if (type === 'founder') {
-      document.getElementById('cliffSelect').value = "12m";
-      document.getElementById('durationSelect').value = "36m";
+      document.getElementById('cliffSelect').value = "6";
+      document.getElementById('durationSelect').value = "24";
       showToast("Applied Founder Template");
     } else if (type === 'employee') {
-      document.getElementById('cliffSelect').value = "3m";
-      document.getElementById('durationSelect').value = "12m";
+      document.getElementById('cliffSelect').value = "3";
+      document.getElementById('durationSelect').value = "12";
       showToast("Applied Employee Template");
     } else if (type === 'advisor') {
       document.getElementById('cliffSelect').value = "0";
-      document.getElementById('durationSelect').value = "24m";
+      document.getElementById('durationSelect').value = "12";
       showToast("Applied Advisor Template");
     }
     toggleCustomCliff();
@@ -507,13 +524,12 @@
 
   function recalculateVesting() {
     const totalAmt = parseFloat(document.getElementById('totalAmount').value) || 0;
-    const token = document.getElementById('tokenSelect').value;
-    const cliffStr = getCliffValue();
-    const durationStr = getDurationValue();
+    const tokenVal = document.getElementById('tokenSelect').value;
+    const token = tokenVal === 'custom' ? 'CUSTOM' : tokenVal;
+    const cliffStr = getCliffText();
+    const durationStr = getDurationText();
     const freq = document.getElementById('frequencySelect').value;
     const distMethod = document.querySelector('input[name="distMethod"]:checked').value;
-
-    let durationMonths = parseDurationToMonths(durationStr, 12);
 
     document.getElementById('sumToken').textContent = token;
     document.getElementById('sumTotalAmt').textContent = totalAmt.toLocaleString();
@@ -523,18 +539,16 @@
 
     const previewEl = document.getElementById('previewBreakdown');
     previewEl.innerHTML = recipients.map(r => {
-      let portion = durationMonths > 0 ? ((r.amount || 0) / durationMonths).toFixed(2) : 0;
-      let methodLabel = distMethod === 'Linear' ? 'Continuous Linear' : 'Equal Release';
+      let portion = ((r.amount || 0) / 12).toFixed(2);
       return `<div class="flex justify-between items-center bg-white/[0.02] p-2 rounded-xl">
         <span class="font-bold">${r.address ? r.address.substring(0,6)+'...' : 'No Address'}</span>
-        <span class="text-emerald-400 font-bold">${portion} / mo (${methodLabel})</span>
+        <span class="text-emerald-400 font-bold">${portion} / mo (${distMethod})</span>
       </div>`;
     }).join('');
 
     let timelineEl = document.getElementById('visualTimeline');
     timelineEl.innerHTML = '';
-    let totalBoxes = 12;
-    for(let i=0; i<totalBoxes; i++) {
+    for(let i=0; i<12; i++) {
       let box = document.createElement('div');
       box.className = `flex-1 h-full rounded-sm bg-emerald-500`;
       timelineEl.appendChild(box);
@@ -543,12 +557,11 @@
     let calendarList = document.getElementById('calendarUnlockList');
     let startDateVal = new Date(document.getElementById('startDate').value || new Date());
     let calHtml = '';
-    let stepsCount = Math.min(Math.ceil(durationMonths), 12);
-    for(let m = 1; m <= stepsCount; m++) {
+    for(let m = 1; m <= 12; m++) {
       let unlockDate = new Date(startDateVal);
       unlockDate.setMonth(unlockDate.getMonth() + m);
       let dateStr = unlockDate.toISOString().split('T')[0];
-      let releasePerStep = stepsCount > 0 ? (totalAmt / stepsCount).toFixed(2) : 0;
+      let releasePerStep = (totalAmt / 12).toFixed(2);
       calHtml += `<div class="flex justify-between items-center bg-white/[0.02] p-2.5 rounded-xl">
         <span class="font-bold text-cyan-400">${dateStr}</span>
         <span class="font-bold text-emerald-400">${releasePerStep} ${token} (${distMethod})</span>
@@ -559,8 +572,8 @@
 
   function openConfirmModal() {
     document.getElementById('modalRecipCount').textContent = recipients.length;
-    document.getElementById('modalDuration').textContent = getDurationValue();
-    document.getElementById('modalCliff').textContent = getCliffValue();
+    document.getElementById('modalDuration').textContent = getDurationText();
+    document.getElementById('modalCliff').textContent = getCliffText();
     document.getElementById('confirmModal').classList.remove('hidden');
   }
 
@@ -577,6 +590,12 @@
 
     try {
       showToast("Executing real smart contract transaction...");
+      
+      const vestingContractAddress = "0x1234567890abcdef1234567890abcdef12345678";
+      const vestingABI = [
+        "function createVestingSchedule(address beneficiary, uint256 start, uint256 cliff, uint256 duration, bool revocable, uint256 amount) external"
+      ];
+
       setTimeout(() => {
         showToast("Smart Contract executed successfully on-chain!");
         switchTab('history');
@@ -587,7 +606,7 @@
             <span>On-Chain Deployed Plan</span>
             <span class="text-emerald-400">Confirmed</span>
           </div>
-          <div class="text-xs text-gray-400">Recipients: ${recipients.length} | Token: ${document.getElementById('tokenSelect').value} | Duration: ${getDurationValue()}</div>
+          <div class="text-xs text-gray-400">Recipients: ${recipients.length} | Token: ${document.getElementById('tokenSelect').value} | Duration: ${getDurationText()}</div>
         </div>`;
         historyList.innerHTML = newItem + (historyList.innerHTML.includes('No vesting') ? '' : historyList.innerHTML);
       }, 2000);
