@@ -31,30 +31,31 @@
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
     
-    /* لایت مود */
+    /* تنظیمات لایت مود */
     .light {
-      background: #f1f5f9 !important;
+      background: #f8fafc !important;
       background-image: 
-        radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.05) 0%, transparent 40%),
-        radial-gradient(circle at 90% 80%, rgba(34, 211, 238, 0.05) 0%, transparent 40%) !important;
-      color: #020617 !important;
+        radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.04) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(34, 211, 238, 0.04) 0%, transparent 40%) !important;
+      color: #1e293b !important;
     }
 
     .light .glass {
-      background: rgba(255, 255, 255, 0.95);
-      border-color: rgba(0, 0, 0, 0.12);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 1);
+      background: rgba(255, 255, 255, 0.92);
+      border-color: rgba(0, 0, 0, 0.08);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1);
     }
 
-    /* ثابت ماندن رنگ فونت‌ها و عناوین در حالت لایت‌مود مشابه دارک‌مود */
+    /* ثبات رنگ متن‌ها در حالت لایت‌مود و دارک‌مود */
     .preserve-fixed-color {
       color: #f8fafc !important;
     }
     .light .preserve-fixed-color {
-      color: #0f172a !important;
+      color: #f8fafc !important; 
     }
+    
     .light .text-gray-400 {
-      color: #64748b !important;
+      color: #475569 !important; 
     }
 
     .smart-split-gradient {
@@ -76,13 +77,13 @@
     }
     .light select, .light input {
       background-color: #ffffff;
-      color: #020617;
+      color: #0f172a;
       border: 1px solid #cbd5e1;
       font-weight: 600;
     }
 
     select option { background-color: #0f172a; color: white; padding: 10px; }
-    .light select option { background-color: #ffffff; color: #020617; }
+    .light select option { background-color: #ffffff; color: #0f172a; }
   </style>
 </head>
 <body class="text-white min-h-screen selection:bg-emerald-500 selection:text-black">
@@ -136,7 +137,7 @@
       <!-- Left Config Cards -->
       <div class="lg:col-span-8 space-y-6">
         
-        <!-- Card 1: Asset بدون آدرس در لیست کشویی -->
+        <!-- Card 1: Asset -->
         <div class="glass rounded-3xl p-6">
           <div class="flex items-center gap-2 mb-4">
             <span class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">1</span>
@@ -154,27 +155,33 @@
             </div>
             <div>
               <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Total Amount</label>
-              <input type="number" id="totalAmount" placeholder="e.g. 10000" class="w-full rounded-2xl px-4 py-3.5 text-sm font-bold" oninput="recalculateVesting()">
+              <input type="number" id="totalAmount" placeholder="e.g. 10000" class="w-full rounded-2xl px-4 py-3.5 text-sm font-bold" oninput="onTotalAmountChange()">
             </div>
           </div>
           <div class="mt-3 text-xs text-gray-400 font-semibold flex justify-between">
             <span>Wallet Balance:</span>
-            <span id="walletBalanceDisplay" class="text-emerald-400 font-bold">0.00 (Not Connected)</span>
+            <span id="walletBalanceDisplay" class="text-emerald-500 font-bold">0.00 (Not Connected)</span>
           </div>
         </div>
 
-        <!-- Card 2: Recipient با قابلیت تنظیم درصد و فیلد شیشه‌ای محاسبه Amount -->
+        <!-- Card 2: Recipient -->
         <div class="glass rounded-3xl p-6">
           <div class="flex items-center justify-between mb-4">
             <div class="flex items-center gap-2">
               <span class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">2</span>
-              <h3 class="font-bold text-base preserve-fixed-color">Recipients Allocation (By Percentage)</h3>
+              <h3 class="font-bold text-base preserve-fixed-color">Recipients Allocation</h3>
             </div>
-            <button onclick="addRecipient()" class="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
-              <i class="fas fa-plus"></i> Add Recipient
-            </button>
+            <div class="flex items-center gap-2">
+              <button onclick="distributeRemaining()" class="px-3 py-1.5 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-600 border border-cyan-500/30 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5" title="Give remaining percentage to the last recipient">
+                <i class="fas fa-balance-scale"></i> Distribute Remaining
+              </button>
+              <button onclick="addRecipient()" class="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 border border-emerald-500/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
+                <i class="fas fa-plus"></i> Add Recipient
+              </button>
+            </div>
           </div>
           <div id="recipientsContainer" class="space-y-3"></div>
+          <div id="totalPercentageWarning" class="mt-3 text-[11px] font-bold text-rose-500 hidden"></div>
         </div>
 
         <!-- Card 3: Schedule -->
@@ -188,7 +195,7 @@
             <div>
               <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Start Date</label>
               <input type="date" id="startDate" class="w-full rounded-2xl px-4 py-3 text-xs font-bold" onchange="validateStartDate()">
-              <span id="dateErrorMsg" class="text-[10px] text-rose-400 font-bold mt-1 hidden">Warning: Date is in the past!</span>
+              <span id="dateErrorMsg" class="text-[10px] text-rose-500 font-bold mt-1 hidden">Warning: Date is in the past!</span>
             </div>
             
             <div>
@@ -231,7 +238,7 @@
             </div>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-white/10">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-black/10">
             <div>
               <label class="block text-gray-400 text-xs font-bold uppercase mb-2">Release Frequency</label>
               <select id="frequencySelect" class="w-full rounded-2xl px-4 py-3 text-xs font-bold" onchange="recalculateVesting()">
@@ -259,14 +266,14 @@
           
           <div class="flex items-center justify-between">
             <h3 class="font-bold text-base flex items-center gap-2 preserve-fixed-color">
-              <i class="fas fa-chart-pie text-emerald-400"></i> Vesting Summary
+              <i class="fas fa-chart-pie text-emerald-500"></i> Vesting Summary
             </h3>
-            <button onclick="exportScheduleData()" class="px-3 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5">
+            <button onclick="exportScheduleData()" class="px-3 py-1 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-600 border border-cyan-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5">
               <i class="fas fa-download"></i> Export
             </button>
           </div>
 
-          <div class="bg-black/35 border border-white/10 rounded-2xl p-4 space-y-2 text-xs preserve-fixed-color">
+          <div class="bg-black/5 border border-black/10 rounded-2xl p-4 space-y-2 text-xs preserve-fixed-color">
             <div class="flex justify-between"><span class="text-gray-400 font-semibold">Token:</span> <span id="sumToken" class="font-bold">USDC</span></div>
             <div class="flex justify-between"><span class="text-gray-400 font-semibold">Total Amount:</span> <span id="sumTotalAmt" class="font-bold">0</span></div>
             <div class="flex justify-between"><span class="text-gray-400 font-semibold">Cliff Period:</span> <span id="sumCliff" class="font-bold">6 Months</span></div>
@@ -281,7 +288,7 @@
 
           <div>
             <div class="text-[11px] text-gray-400 uppercase font-bold mb-2">Visual Timeline</div>
-            <div id="visualTimeline" class="flex gap-1 h-6 items-center bg-black/20 p-1 rounded-xl"></div>
+            <div id="visualTimeline" class="flex gap-1 h-6 items-center bg-black/5 p-1 rounded-xl"></div>
           </div>
 
           <button onclick="openConfirmModal()" class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:brightness-110 py-4 rounded-2xl font-bold text-sm shadow-lg shadow-emerald-500/20 text-slate-950">
@@ -308,24 +315,24 @@
   </div>
 
   <!-- Confirmation Modal -->
-  <div id="confirmModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center z-50 p-4">
-    <div class="glass max-w-md w-full p-6 rounded-3xl space-y-4 border border-white/15">
+  <div id="confirmModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-md flex items-center justify-center z-50 p-4">
+    <div class="glass max-w-md w-full p-6 rounded-3xl space-y-4 border border-black/10">
       <h3 class="font-extrabold text-lg preserve-fixed-color">Confirm On-Chain Deployment</h3>
       <p class="text-xs text-gray-400">This action calls the real Vesting Smart Contract function to lock tokens securely.</p>
-      <div class="space-y-2 text-xs text-gray-300 bg-black/20 p-4 rounded-2xl preserve-fixed-color">
+      <div class="space-y-2 text-xs text-gray-700 bg-black/5 p-4 rounded-2xl preserve-fixed-color">
         <div class="flex justify-between"><span>Recipients Count:</span> <span id="modalRecipCount" class="font-bold">1</span></div>
         <div class="flex justify-between"><span>Total Duration:</span> <span id="modalDuration" class="font-bold">12 Months</span></div>
         <div class="flex justify-between"><span>Cliff Period:</span> <span id="modalCliff" class="font-bold">6 Months</span></div>
       </div>
       <div class="flex gap-3 pt-2">
-        <button onclick="closeConfirmModal()" class="flex-1 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-xs preserve-fixed-color">Cancel</button>
+        <button onclick="closeConfirmModal()" class="flex-1 py-3 bg-black/10 hover:bg-black/20 rounded-xl font-bold text-xs preserve-fixed-color">Cancel</button>
         <button onclick="executeRealSmartContract()" class="flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-black rounded-xl font-bold text-xs">Sign & Deploy</button>
       </div>
     </div>
   </div>
 
   <!-- Toast -->
-  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#121228] text-white border border-white/20 px-5 py-3 rounded-2xl shadow-2xl z-50 text-xs font-bold">
+  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#0f172a] text-white border border-white/20 px-5 py-3 rounded-2xl shadow-2xl z-50 text-xs font-bold">
     <span id="toastText"></span>
   </div>
 
@@ -334,14 +341,13 @@
   
   const VESTING_CONTRACT_ADDRESS = "0x714Ad5eD106F82640DF51ee0C0E1D471Ff0A5D9d";
   
-  // اصلاح کامل ABI بر اساس ساختار استاندارد متدهای کانترکت و جلوگیری از خطای گس و ارور کال اکشن
   const VESTING_CONTRACT_ABI = [
     "function createVestingSchedule(address beneficiary, address token, uint256 startTimestamp, uint256 cliffDuration, uint256 duration, uint256 totalAmount, bool revocable) external payable",
     "function createVestingSchedule(bytes32 scheduleId, address beneficiary, address token, uint256 startTimestamp, uint256 cliffDuration, uint256 duration, uint256 totalAmount, bool revocable, uint8 vestingType, uint256 stepDuration) external payable"
   ];
 
   let recipients = [
-    { address: "", percent: 100 }
+    { address: "", percent: 100, amount: 0 }
   ];
 
   window.addEventListener('load', async () => {
@@ -376,7 +382,7 @@
         document.getElementById('walletBtnText').textContent = shortAddr;
         document.getElementById('disconnectWalletBtn').classList.remove('hidden');
         
-        await fetchRealTokenBalance();
+        await fetchRealTokenBalanceWithRetry();
         if (!isAuto) showToast("Wallet connected successfully!");
       } catch (error) {
         console.error(error);
@@ -411,11 +417,12 @@
         showToast("Invalid address provided.");
       }
     }
-    fetchRealTokenBalance();
+    fetchRealTokenBalanceWithRetry();
     recalculateVesting();
   }
 
-  async function fetchRealTokenBalance() {
+  // دریافت موجودی با ۳ بار تلاش مجدد (Retry)
+  async function fetchRealTokenBalanceWithRetry(retries = 3, delay = 1500) {
     const tokenAddr = document.getElementById('tokenSelect').value;
     const balanceEl = document.getElementById('walletBalanceDisplay');
     
@@ -426,24 +433,31 @@
 
     balanceEl.textContent = `Fetching balance...`;
 
-    try {
-      let rawBalance = "0.00";
-      if (tokenAddr === "0x3600000000000000000000000000000000000000" || tokenAddr.startsWith("0x000")) {
-        const nativeBal = await provider.getBalance(userAddress);
-        rawBalance = parseFloat(ethers.formatEther(nativeBal)).toFixed(4);
-      } else {
-        const erc20ABI = ["function balanceOf(address account) view returns (uint256)", "function decimals() view returns (uint8)"];
-        const tokenContract = new ethers.Contract(tokenAddr, erc20ABI, provider);
-        const [bal, decimals] = await Promise.all([
-          tokenContract.balanceOf(userAddress),
-          tokenContract.decimals().catch(() => 18)
-        ]);
-        rawBalance = parseFloat(ethers.formatUnits(bal, decimals)).toFixed(4);
+    for (let i = 0; i < retries; i++) {
+      try {
+        let rawBalance = "0.00";
+        if (tokenAddr === "0x3600000000000000000000000000000000000000" || tokenAddr.startsWith("0x000")) {
+          const nativeBal = await provider.getBalance(userAddress);
+          rawBalance = parseFloat(ethers.formatEther(nativeBal)).toFixed(4);
+        } else {
+          const erc20ABI = ["function balanceOf(address account) view returns (uint256)", "function decimals() view returns (uint8)"];
+          const tokenContract = new ethers.Contract(tokenAddr, erc20ABI, provider);
+          const [bal, decimals] = await Promise.all([
+            tokenContract.balanceOf(userAddress),
+            tokenContract.decimals().catch(() => 18)
+          ]);
+          rawBalance = parseFloat(ethers.formatUnits(bal, decimals)).toFixed(4);
+        }
+        balanceEl.textContent = `${rawBalance}`;
+        return;
+      } catch (e) {
+        console.warn(`Attempt ${i + 1} failed to fetch balance:`, e);
+        if (i < retries - 1) {
+          await new Promise(res => setTimeout(res, delay));
+        } else {
+          balanceEl.textContent = `0.00 (Error)`;
+        }
       }
-      balanceEl.textContent = `${rawBalance}`;
-    } catch (e) {
-      console.warn("Failed to fetch balance:", e);
-      balanceEl.textContent = `0.00 (Error)`;
     }
   }
 
@@ -520,9 +534,9 @@
     document.getElementById('viewCalendar').classList.toggle('hidden', tab !== 'calendar');
     document.getElementById('viewHistory').classList.toggle('hidden', tab !== 'history');
     
-    document.getElementById('tabSplitter').className = tab === 'splitter' ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-fixed-color";
-    document.getElementById('tabCalendar').className = tab === 'calendar' ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-fixed-color";
-    document.getElementById('tabHistory').className = tab === 'history' ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-fixed-color";
+    document.getElementById('tabSplitter').className = tab === 'splitter' ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-500" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-fixed-color";
+    document.getElementById('tabCalendar').className = tab === 'calendar' ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-500" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-fixed-color";
+    document.getElementById('tabHistory').className = tab === 'history' ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-500" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-fixed-color";
   }
 
   function renderRecipients() {
@@ -530,23 +544,85 @@
     const totalAmt = parseFloat(document.getElementById('totalAmount').value) || 0;
 
     container.innerHTML = recipients.map((r, idx) => {
-      let calculatedAmount = ((totalAmt * (r.percent || 0)) / 100).toFixed(2);
+      let currentAmt = r.amount !== undefined ? r.amount : ((totalAmt * (r.percent || 0)) / 100).toFixed(2);
       return `
         <div class="flex items-center gap-2">
-          <input type="text" value="${r.address}" oninput="recipients[${idx}].address=this.value" class="flex-1 bg-black/20 rounded-xl px-3 py-2 text-xs font-medium" placeholder="0xBeneficiaryAddress...">
-          <div class="flex items-center gap-1 bg-black/30 border border-white/10 rounded-xl px-3 py-2 w-28">
-            <input type="number" value="${r.percent}" oninput="recipients[${idx}].percent=parseFloat(this.value)||0; recalculateVesting();" class="w-12 bg-transparent text-center text-xs font-bold outline-none border-none p-0" min="0" max="100">%
+          <input type="text" value="${r.address}" oninput="recipients[${idx}].address=this.value" class="flex-1 bg-black/5 border border-black/10 rounded-xl px-3 py-2 text-xs font-medium" placeholder="0xBeneficiaryAddress...">
+          <div class="flex items-center gap-1 bg-black/5 border border-black/10 rounded-xl px-2 py-2 w-24">
+            <input type="number" value="${r.percent}" oninput="onPercentInput(${idx}, this.value)" class="w-10 bg-transparent text-center text-xs font-bold outline-none border-none p-0" min="0" max="100">%
           </div>
-          <input type="text" readonly value="${calculatedAmount}" class="w-24 bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-center text-xs font-bold opacity-80 cursor-not-allowed" title="Calculated Amount">
-          <button onclick="recipients.splice(${idx},1); renderRecipients(); recalculateVesting();" class="text-gray-500 hover:text-rose-400 text-xs px-1"><i class="fas fa-times"></i></button>
+          <input type="number" value="${currentAmt}" oninput="onAmountInput(${idx}, this.value)" class="w-28 bg-black/5 border border-black/10 rounded-xl px-3 py-2 text-center text-xs font-bold" placeholder="Amount">
+          <button onclick="recipients.splice(${idx},1); renderRecipients(); recalculateVesting();" class="text-gray-400 hover:text-rose-500 text-xs px-1"><i class="fas fa-times"></i></button>
         </div>
       `;
     }).join('');
   }
 
   function addRecipient() {
-    recipients.push({ address: "", percent: 0 });
+    recipients.push({ address: "", percent: 0, amount: 0 });
     renderRecipients();
+  }
+
+  function onPercentInput(idx, val) {
+    const p = parseFloat(val) || 0;
+    recipients[idx].percent = p;
+    const totalAmt = parseFloat(document.getElementById('totalAmount').value) || 0;
+    const amt = (totalAmt * p) / 100;
+    recipients[idx].amount = amt;
+    
+    const inputs = document.querySelectorAll('#recipientsContainer input[type="number"]');
+    const amtInput = inputs[idx * 2 + 1];
+    if (amtInput) amtInput.value = amt.toFixed(2);
+
+    recalculateVesting();
+  }
+
+  function onAmountInput(idx, val) {
+    const amt = parseFloat(val) || 0;
+    recipients[idx].amount = amt;
+    const totalAmt = parseFloat(document.getElementById('totalAmount').value) || 0;
+    
+    if (totalAmt > 0) {
+      const p = (amt / totalAmt) * 100;
+      recipients[idx].percent = parseFloat(p.toFixed(2));
+      
+      const inputs = document.querySelectorAll('#recipientsContainer input[type="number"]');
+      const percentInput = inputs[idx * 2];
+      if (percentInput) percentInput.value = recipients[idx].percent;
+    }
+
+    recalculateVesting();
+  }
+
+  function distributeRemaining() {
+    if (recipients.length === 0) return;
+    
+    let sumPercent = 0;
+    for (let i = 0; i < recipients.length - 1; i++) {
+      sumPercent += recipients[i].percent || 0;
+    }
+
+    let remaining = 100 - sumPercent;
+    if (remaining < 0) remaining = 0;
+
+    const lastIdx = recipients.length - 1;
+    recipients[lastIdx].percent = parseFloat(remaining.toFixed(2));
+    
+    const totalAmt = parseFloat(document.getElementById('totalAmount').value) || 0;
+    recipients[lastIdx].amount = (totalAmt * recipients[lastIdx].percent) / 100;
+
+    renderRecipients();
+    recalculateVesting();
+    showToast("Remaining percentage distributed to the last recipient.");
+  }
+
+  function onTotalAmountChange() {
+    const totalAmt = parseFloat(document.getElementById('totalAmount').value) || 0;
+    recipients.forEach(r => {
+      r.amount = (totalAmt * (r.percent || 0)) / 100;
+    });
+    renderRecipients();
+    recalculateVesting();
   }
 
   function applyTemplate(type) {
@@ -584,21 +660,22 @@
     document.getElementById('sumDuration').textContent = durationStr;
     document.getElementById('sumFreq').textContent = freq;
 
-    // آپدیت مقادیر فیلدهای شیشه ای Amount هر ذینفع بدون از دست رفتن فوکوس کلی
-    const calculatedInputs = document.querySelectorAll('#recipientsContainer input[readonly]');
-    recipients.forEach((r, idx) => {
-      if(calculatedInputs[idx]) {
-        calculatedInputs[idx].value = ((totalAmt * (r.percent || 0)) / 100).toFixed(2);
-      }
-    });
+    let totalPercent = recipients.reduce((acc, r) => acc + (r.percent || 0), 0);
+    const warningEl = document.getElementById('totalPercentageWarning');
+    if (Math.abs(totalPercent - 100) > 0.01) {
+      warningEl.textContent = `Warning: Total allocation is ${totalPercent}% (Should be 100%)`;
+      warningEl.classList.remove('hidden');
+    } else {
+      warningEl.classList.add('hidden');
+    }
 
     const previewEl = document.getElementById('previewBreakdown');
     previewEl.innerHTML = recipients.map(r => {
-      let allocatedAmt = (totalAmt * (r.percent || 0)) / 100;
+      let allocatedAmt = r.amount !== undefined ? r.amount : (totalAmt * (r.percent || 0)) / 100;
       let portion = (allocatedAmt / 12).toFixed(2);
-      return `<div class="flex justify-between items-center bg-white/[0.02] p-2 rounded-xl">
+      return `<div class="flex justify-between items-center bg-black/5 p-2 rounded-xl">
         <span class="font-bold">${r.address ? r.address.substring(0,6)+'...' : 'No Address'} (${r.percent}%)</span>
-        <span class="text-emerald-400 font-bold">${portion} / mo (${distMethod})</span>
+        <span class="text-emerald-500 font-bold">${portion} / mo (${distMethod})</span>
       </div>`;
     }).join('');
 
@@ -618,9 +695,9 @@
       unlockDate.setMonth(unlockDate.getMonth() + m);
       let dateStr = unlockDate.toISOString().split('T')[0];
       let releasePerStep = (totalAmt / 12).toFixed(2);
-      calHtml += `<div class="flex justify-between items-center bg-white/[0.02] p-2.5 rounded-xl">
-        <span class="font-bold text-cyan-400">${dateStr}</span>
-        <span class="font-bold text-emerald-400">${releasePerStep} (${distMethod})</span>
+      calHtml += `<div class="flex justify-between items-center bg-black/5 p-2.5 rounded-xl">
+        <span class="font-bold text-cyan-600">${dateStr}</span>
+        <span class="font-bold text-emerald-500">${releasePerStep} (${distMethod})</span>
       </div>`;
     }
     calendarList.innerHTML = calHtml;
@@ -651,12 +728,12 @@
       
       const recipient = recipients[0];
       if (!recipient || !recipient.address || recipient.percent <= 0) {
-        showToast("Please enter valid recipient address and percentage.");
+        showToast("Please enter valid recipient address and percentage/amount.");
         return;
       }
 
       const totalAmt = parseFloat(document.getElementById('totalAmount').value) || 0;
-      const allocatedAmt = (totalAmt * recipient.percent) / 100;
+      const allocatedAmt = recipient.amount !== undefined ? recipient.amount : (totalAmt * recipient.percent) / 100;
       const tokenAddr = document.getElementById('tokenSelect').value;
       const startTimestamp = Math.floor(new Date(document.getElementById('startDate').value).getTime() / 1000);
       const cliffDuration = getCliffSeconds();
@@ -666,7 +743,6 @@
       const vestingType = document.querySelector('input[name="distMethod"]:checked').value === 'Linear' ? 0 : 1;
       
       let tx;
-      // سازگاری با متدهای مختلف اورلود شده در قرارداد هوشمند برای جلوگیری از خطای Revert
       try {
         if (tokenAddr === "0x3600000000000000000000000000000000000000" || tokenAddr.startsWith("0x000")) {
           tx = await contract.createVestingSchedule(
@@ -697,7 +773,6 @@
           );
         }
       } catch (err1) {
-        // حالت دوم برای امضاهای ساده‌تر کانترکت
         if (tokenAddr === "0x3600000000000000000000000000000000000000" || tokenAddr.startsWith("0x000")) {
           tx = await contract.createVestingSchedule(
             recipient.address,
@@ -732,15 +807,15 @@
       let newItem = `<div class="glass p-4 rounded-2xl space-y-2 preserve-fixed-color">
         <div class="flex justify-between font-bold text-sm">
           <span>On-Chain Plan (${recipient.address.substring(0,6)}...)</span>
-          <span class="text-emerald-400">Confirmed</span>
+          <span class="text-emerald-500">Confirmed</span>
         </div>
-        <div class="text-xs text-gray-400">Tx: ${tx.hash.substring(0,10)}... | Allocated: ${allocatedAmt} | Duration: ${getDurationText()}</div>
+        <div class="text-xs text-gray-500">Tx: ${tx.hash.substring(0,10)}... | Allocated: ${allocatedAmt} | Duration: ${getDurationText()}</div>
       </div>`;
       historyList.innerHTML = newItem + (historyList.innerHTML.includes('No vesting') ? '' : historyList.innerHTML);
 
     } catch (error) {
       console.error("Contract Execution Error:", error);
-      showToast("Transaction failed or rejected by user.");
+      showToast("Transaction failed or rejected. Make sure you approved tokens first.");
     }
   }
 
