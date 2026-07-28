@@ -206,7 +206,7 @@
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-6 rounded-3xl">
         <div>
           <h3 class="text-lg font-bold preserve-dark-color">Team Roles</h3>
-          <p class="text-xs preserve-dark-muted">Manage your team roles and associated wallets behind the scenes[cite: 1, 2].</p>
+          <p class="text-xs preserve-dark-muted">Manage your team roles and associated wallets securely behind the scenes[cite: 1, 2].</p>
         </div>
         <div class="flex flex-wrap gap-2.5">
           <button onclick="showImportTeamModal()" class="px-4 py-2.5 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/20 rounded-2xl text-xs font-semibold transition-all">
@@ -354,7 +354,7 @@
     "function decimals() external view returns (uint8)"
   ];
 
-  // Persistent Roles & History Storage (Started without fake pre-filled wallet addresses)
+  // Persistent Roles & History Storage
   let rolesData = JSON.parse(localStorage.getItem('arcRolesData')) || [
     { name: "Founder", wallets: [], description: "Core Leadership", color: "blue", totalReceived: 0, txCount: 0, lastPayment: "Never" },
     { name: "Developer", wallets: [], description: "Engineering Team", color: "emerald", totalReceived: 0, txCount: 0, lastPayment: "Never" },
@@ -366,9 +366,29 @@
   let userAddress = null;
   let historyList = JSON.parse(localStorage.getItem('arcRoleHistory') || '[]');
   let selectedRoleForAnalyticsName = rolesData.length > 0 ? rolesData[0].name : null;
+  let editingRoleIndex = null;
 
   function saveRolesToStorage() {
     localStorage.setItem('arcRolesData', JSON.stringify(rolesData));
+  }
+
+  async function checkAutoConnect() {
+    if (window.ethereum) {
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        if (accounts.length > 0) {
+          provider = new ethers.BrowserProvider(window.ethereum);
+          userAddress = accounts[0];
+          signer = await provider.getSigner();
+
+          const shortAddr = userAddress.substring(0, 6) + '...' + userAddress.substring(userAddress.length - 4);
+          document.getElementById("connectBtn").innerHTML = `<i class="fas fa-wallet text-emerald-400"></i> <span class="font-bold">${shortAddr}</span> <i class="fas fa-power-off text-rose-400 ml-1 text-[10px]"></i>`;
+          updateWalletBalance();
+        }
+      } catch (err) {
+        console.error("Auto-connect error:", err);
+      }
+    }
   }
 
   async function connectRealWallet() {
@@ -393,7 +413,10 @@
   }
 
   async function updateWalletBalance() {
-    if (!provider || !userAddress) return;
+    if (!provider || !userAddress) {
+      document.getElementById("userBalanceDisplay").textContent = "0.00";
+      return;
+    }
     try {
       const tokenAddress = document.getElementById("tokenSelect").value;
       if (tokenAddress === "custom") return;
@@ -410,7 +433,7 @@
       const formatted = ethers.formatUnits(bal, decimals);
       document.getElementById("userBalanceDisplay").textContent = `${parseFloat(formatted).toFixed(2)}`;
     } catch (e) {
-      console.error(e);
+      console.error("Balance fetch error:", e);
       document.getElementById("userBalanceDisplay").textContent = "0.00";
     }
   }
@@ -476,8 +499,9 @@
         <td class="p-3 font-mono text-gray-400 light:text-slate-600">${role.wallets.length} Wallet(s) attached</td>
         <td class="p-3 font-medium text-emerald-400">${role.description}</td>
         <td class="p-3"><span class="px-2.5 py-1 rounded-full ${role.wallets.length > 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'} text-[10px] font-semibold">${role.wallets.length > 0 ? 'Active' : 'No Wallets'}</span></td>
-        <td class="text-right p-3 space-x-2">
-          <button onclick="event.stopPropagation(); deleteRole(${idx})" class="text-rose-400 hover:underline">Delete</button>
+        <td class="text-right p-3 space-x-3">
+          <button onclick="event.stopPropagation(); editRole(${idx})" class="text-sky-400 hover:underline" title="Edit Role"><i class="fas fa-pen-to-square"></i></button>
+          <button onclick="event.stopPropagation(); deleteRole(${idx})" class="text-rose-400 hover:underline" title="Delete Role"><i class="fas fa-trash-can text-rose-400"></i></button>
         </td>
       `;
       tbody.appendChild(tr);
@@ -496,6 +520,7 @@
   }
 
   function showRoleModal() {
+    editingRoleIndex = null;
     document.getElementById("roleModalTitle").textContent = "Create New Role";
     document.getElementById("modalRoleName").value = "";
     document.getElementById("modalRoleWallets").value = "";
@@ -503,7 +528,19 @@
     document.getElementById("roleModal").classList.remove("hidden");
   }
 
+  function editRole(idx) {
+    editingRoleIndex = idx;
+    const role = rolesData[idx];
+    document.getElementById("roleModalTitle").textContent = "Edit Role";
+    document.getElementById("modalRoleName").value = role.name;
+    document.getElementById("modalRoleWallets").value = role.wallets.join(', ');
+    document.getElementById("modalRoleColor").value = role.color;
+    document.getElementById("modalRoleDesc").value = role.description;
+    document.getElementById("roleModal").classList.remove("hidden");
+  }
+
   function hideRoleModal() {
+    editingRoleIndex = null;
     document.getElementById("roleModal").classList.add("hidden");
   }
 
@@ -514,17 +551,43 @@
     const desc = document.getElementById("modalRoleDesc").value.trim();
 
     if (!name) return showToast("Role name required.");
-    if (rolesData.some(r => r.name.toLowerCase() === name.toLowerCase())) {
-      return showToast("Role already exists.");
-    }
-
+    
     const wallets = walletsStr ? walletsStr.split(',').map(w => w.trim()).filter(w => ethers.isAddress(w)) : [];
 
-    rolesData.push({ name, wallets, description: desc || "Team Role", color, totalReceived: 0, txCount: 0, lastPayment: "Never" });
+    // Check for duplicate wallets across other roles
+    let duplicateFound = false;
+    let conflictingWallet = "";
+    wallets.forEach(w => {
+      rolesData.forEach((r, rIdx) => {
+        if (editingRoleIndex !== rIdx && r.wallets.includes(w)) {
+          duplicateFound = true;
+          conflictingWallet = w;
+        }
+      });
+    });
+
+    if (duplicateFound) {
+      const confirmDup = confirm(`آدرس ولت ${conflictingWallet.substring(0,6)}... قبلاً در نقش دیگری ثبت شده است. آیا می‌خواهید این ولت را با این نقش جدید نیز اضافه کنید؟`);
+      if (!confirmDup) return;
+    }
+
+    if (editingRoleIndex !== null) {
+      rolesData[editingRoleIndex].name = name;
+      rolesData[editingRoleIndex].wallets = wallets;
+      rolesData[editingRoleIndex].color = color;
+      rolesData[editingRoleIndex].description = desc || "Team Role";
+      showToast(`Role "${name}" updated successfully.`);
+    } else {
+      if (rolesData.some(r => r.name.toLowerCase() === name.toLowerCase())) {
+        return showToast("Role already exists.");
+      }
+      rolesData.push({ name, wallets, description: desc || "Team Role", color, totalReceived: 0, txCount: 0, lastPayment: "Never" });
+      showToast(`Role "${name}" created successfully.`);
+    }
+
     saveRolesToStorage();
     hideRoleModal();
     renderRolesTable();
-    showToast(`Role "${name}" created successfully.`);
   }
 
   function deleteRole(idx) {
@@ -739,7 +802,6 @@
       showToast(`Transaction submitted! Waiting for confirmation...`, 5000);
       const receipt = await tx.wait();
 
-      // Real Analytics Update
       const parsedAmount = parseFloat(rawAmount);
       document.querySelectorAll('.role-split-row').forEach(row => {
         const roleName = row.querySelector('.role-select').value;
@@ -800,7 +862,8 @@
     });
   }
 
-  window.onload = () => {
+  window.onload = async () => {
+    await checkAutoConnect();
     renderRoleSplitRows();
     updateRoleSplitPreview();
   };
