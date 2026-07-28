@@ -31,6 +31,7 @@
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
     
+    /* Light Mode Overrides */
     .light {
       background: #f1f5f9 !important;
       background-image: 
@@ -45,9 +46,11 @@
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1);
     }
 
-    .light body, .light h1, .light h3, .light label, .light .text-white { color: #0f172a; }
+    .light body, .light h1, .light h3, .light label, .light .text-white, .light span { color: #0f172a; }
     .light .text-gray-400 { color: #475569 !important; }
     .light .text-gray-300 { color: #334155 !important; }
+    .light .text-emerald-400 { color: #059669 !important; }
+    .light .text-cyan-400 { color: #0891b2 !important; }
 
     select, input {
       background-color: rgba(255, 255, 255, 0.03);
@@ -89,8 +92,8 @@
         <!-- Navigation Tabs -->
         <div class="flex bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 rounded-2xl p-1 text-xs">
           <button onclick="switchTab('roles')" id="tabRoles" class="px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400">Role Management</button>
-          <button onclick="switchTab('splitter')" id="tabSplitter" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400">Role Split</button>
-          <button onclick="switchTab('history')" id="tabHistory" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400">History</button>
+          <button onclick="switchTab('splitter')" id="tabSplitter" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-700">Role Split</button>
+          <button onclick="switchTab('history')" id="tabHistory" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-700">History</button>
         </div>
 
         <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/15 border border-white/10 rounded-2xl transition-all">
@@ -103,21 +106,32 @@
       </div>
     </div>
 
-    <!-- Status Bar -->
-    <div id="status" class="glass rounded-2xl p-4 mb-6 text-xs font-medium flex items-center justify-between border-l-4 border-l-emerald-500">
-      <div class="flex items-center gap-3">
-        <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-        <span>Ready • Role-Based Architecture Loaded.</span>
+    <!-- Status Bar & Balance Widget -->
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
+      <div id="status" class="glass rounded-2xl p-4 text-xs font-medium flex items-center justify-between border-l-4 border-l-emerald-500 md:col-span-8">
+        <div class="flex items-center gap-3">
+          <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+          <span>Ready • Role-Based Architecture Loaded.</span>
+        </div>
+        <div id="activeWorkspace" class="text-emerald-400 font-bold">Workspace: Default DAO</div>
       </div>
-      <div id="activeWorkspace" class="text-emerald-400 font-bold">Workspace: Default DAO</div>
+      
+      <!-- Balance Display Card with Auto-Retry Status -->
+      <div class="glass rounded-2xl p-4 text-xs font-medium flex items-center justify-between md:col-span-4 border border-white/5">
+        <div class="flex items-center gap-2">
+          <i class="fas fa-coins text-emerald-400"></i>
+          <span class="text-gray-400 light:text-slate-600">Wallet Balance:</span>
+        </div>
+        <div id="userBalanceDisplay" class="font-bold text-emerald-400">Syncing (Auto-Retry)...</div>
+      </div>
     </div>
 
     <!-- ================= VIEW 1: ROLE MANAGEMENT ================= -->
     <div id="viewRoles" class="space-y-6">
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white/[0.02] border border-white/5 p-6 rounded-3xl">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-6 rounded-3xl">
         <div>
           <h3 class="text-lg font-bold">Team Roles</h3>
-          <p class="text-xs text-gray-400">Manage your team roles and associated wallets behind the scenes.</p>
+          <p class="text-xs text-gray-400 light:text-slate-600">Manage your team roles and associated wallets behind the scenes.</p>
         </div>
         <div class="flex flex-wrap gap-2.5">
           <button onclick="loadDefaultRoles()" class="px-4 py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 rounded-2xl text-xs font-semibold transition-all">
@@ -137,7 +151,7 @@
         <div class="lg:col-span-8 glass rounded-3xl p-6 overflow-x-auto">
           <table class="w-full text-left border-collapse">
             <thead>
-              <tr class="border-b border-white/10 text-gray-400 text-xs uppercase tracking-wider">
+              <tr class="border-b border-white/10 light:border-black/10 text-gray-400 text-xs uppercase tracking-wider">
                 <th class="p-3 font-semibold">Role</th>
                 <th class="p-3 font-semibold">Wallets / Members</th>
                 <th class="p-3 font-semibold">Global Share</th>
@@ -145,7 +159,7 @@
                 <th class="text-right p-3 font-semibold">Actions</th>
               </tr>
             </thead>
-            <tbody id="rolesTableBody" class="text-xs divide-y divide-white/5">
+            <tbody id="rolesTableBody" class="text-xs divide-y divide-white/5 light:divide-black/5">
               <!-- Dynamically Populated -->
             </tbody>
           </table>
@@ -158,16 +172,16 @@
               <i class="fas fa-chart-pie text-emerald-400"></i> Selected Role Analytics
             </h3>
             <div id="selectedRoleAnalytics" class="space-y-4 text-xs">
-              <div class="bg-black/20 p-4 rounded-2xl border border-white/5">
-                <div class="text-gray-400 mb-1">Total Received</div>
+              <div class="bg-black/20 light:bg-slate-100 p-4 rounded-2xl border border-white/5 light:border-black/5">
+                <div class="text-gray-400 light:text-slate-600 mb-1">Total Received</div>
                 <div id="analyticsReceived" class="text-lg font-bold text-emerald-400">0.00 USDC</div>
               </div>
-              <div class="bg-black/20 p-4 rounded-2xl border border-white/5">
-                <div class="text-gray-400 mb-1">Total Transactions</div>
+              <div class="bg-black/20 light:bg-slate-100 p-4 rounded-2xl border border-white/5 light:border-black/5">
+                <div class="text-gray-400 light:text-slate-600 mb-1">Total Transactions</div>
                 <div id="analyticsTxCount" class="text-lg font-bold">0</div>
               </div>
-              <div class="bg-black/20 p-4 rounded-2xl border border-white/5">
-                <div class="text-gray-400 mb-1">Last Payment Received</div>
+              <div class="bg-black/20 light:bg-slate-100 p-4 rounded-2xl border border-white/5 light:border-black/5">
+                <div class="text-gray-400 light:text-slate-600 mb-1">Last Payment Received</div>
                 <div id="analyticsLastPayment" class="text-sm font-semibold">Never</div>
               </div>
             </div>
@@ -190,7 +204,7 @@
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             <div>
-              <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Token</label>
+              <label class="block text-gray-400 light:text-slate-600 text-xs font-semibold uppercase tracking-wider mb-2">Token</label>
               <select id="tokenSelect" class="w-full rounded-2xl px-4 py-3.5 text-sm font-medium outline-none cursor-pointer">
                 <option value="0x3600000000000000000000000000000000000000">USDC</option>
                 <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
@@ -198,12 +212,12 @@
               </select>
             </div>
             <div>
-              <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Amount</label>
+              <label class="block text-gray-400 light:text-slate-600 text-xs font-semibold uppercase tracking-wider mb-2">Amount</label>
               <input type="number" id="totalAmount" value="10000" class="w-full rounded-2xl px-4 py-3.5 text-lg font-bold outline-none" oninput="updateRoleSplitPreview()">
             </div>
           </div>
 
-          <div class="h-px bg-white/5 my-6"></div>
+          <div class="h-px bg-white/5 light:bg-black/10 my-6"></div>
 
           <div class="flex justify-between items-center mb-4">
             <h3 class="font-bold text-base flex items-center gap-2">
@@ -218,13 +232,13 @@
           <div id="roleSplitRows" class="space-y-3 mb-6"></div>
 
           <!-- Total Percentage Counter -->
-          <div class="flex items-center justify-between bg-white/[0.02] border border-white/5 p-4 rounded-2xl mb-6">
+          <div class="flex items-center justify-between bg-white/[0.02] light:bg-slate-100 border border-white/5 light:border-black/5 p-4 rounded-2xl mb-6">
             <span id="rolePercentTotal" class="font-bold text-sm">Total: 0%</span>
             <button onclick="distributeRoleRemaining()" class="text-amber-400 hover:underline text-xs font-semibold">Distribute Remaining</button>
           </div>
 
           <div>
-            <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Transaction Memo</label>
+            <label class="block text-gray-400 light:text-slate-600 text-xs font-semibold uppercase tracking-wider mb-2">Transaction Memo</label>
             <input type="text" id="txMemo" class="w-full rounded-2xl px-4 py-3 text-xs outline-none" placeholder="e.g. July Revenue Distribution">
           </div>
         </div>
@@ -237,14 +251,14 @@
             <i class="fas fa-eye text-emerald-400"></i> Live Role & Wallet Preview
           </h3>
 
-          <div class="mb-6 bg-black/25 border border-white/10 rounded-2xl overflow-hidden p-4">
+          <div class="mb-6 bg-black/25 light:bg-slate-100 border border-white/10 light:border-black/10 rounded-2xl overflow-hidden p-4">
             <div id="rolePreviewContainer" class="preview-scroll space-y-3 text-xs">
               <!-- Preview items generated dynamically -->
             </div>
           </div>
 
           <!-- Error / Validation hints -->
-          <div id="roleValidationBox" class="glass border border-white/10 p-4 rounded-2xl mb-6 space-y-2 text-xs text-gray-400">
+          <div id="roleValidationBox" class="glass border border-white/10 light:border-black/10 p-4 rounded-2xl mb-6 space-y-2 text-xs text-gray-400 light:text-slate-600">
             <div id="valRoleSelected"><i class="fas fa-circle-xmark text-rose-400 mr-2"></i> Role selected</div>
             <div id="valRoleSum"><i class="fas fa-circle-xmark text-rose-400 mr-2"></i> Total shares = 100%</div>
             <div id="valRoleWallet"><i class="fas fa-circle-xmark text-rose-400 mr-2"></i> Wallets configured for roles</div>
@@ -264,7 +278,7 @@
         <i class="fas fa-history text-emerald-400"></i> Role Split History
       </h3>
       <div id="historyContainer" class="space-y-3">
-        <p class="text-gray-400 text-center py-6 text-xs">No role splits executed yet.</p>
+        <p class="text-gray-400 light:text-slate-600 text-center py-6 text-xs">No role splits executed yet.</p>
       </div>
     </div>
 
@@ -278,16 +292,16 @@
       <h3 id="roleModalTitle" class="text-xl font-bold mb-4">Create New Role</h3>
       <div class="space-y-4 text-xs">
         <div>
-          <label class="block text-gray-400 mb-1 font-semibold">Role Name</label>
+          <label class="block text-gray-400 light:text-slate-600 mb-1 font-semibold">Role Name</label>
           <input type="text" id="modalRoleName" class="w-full rounded-xl px-4 py-3 outline-none" placeholder="e.g. Founder, Developer">
         </div>
         <div>
-          <label class="block text-gray-400 mb-1 font-semibold">Wallets (Multiple separated by comma or add rows)</label>
+          <label class="block text-gray-400 light:text-slate-600 mb-1 font-semibold">Wallets (Multiple separated by comma)</label>
           <textarea id="modalRoleWallets" rows="3" class="w-full rounded-xl p-3 outline-none font-mono" placeholder="0x11..., 0x22..."></textarea>
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
-            <label class="block text-gray-400 mb-1 font-semibold">Color Tag</label>
+            <label class="block text-gray-400 light:text-slate-600 mb-1 font-semibold">Color Tag</label>
             <select id="modalRoleColor" class="w-full rounded-xl px-3 py-3 outline-none">
               <option value="blue">Blue (Founder)</option>
               <option value="emerald">Green (Developer)</option>
@@ -296,7 +310,7 @@
             </select>
           </div>
           <div>
-            <label class="block text-gray-400 mb-1 font-semibold">Description</label>
+            <label class="block text-gray-400 light:text-slate-600 mb-1 font-semibold">Description</label>
             <input type="text" id="modalRoleDesc" class="w-full rounded-xl px-3 py-3 outline-none" placeholder="Core Team">
           </div>
         </div>
@@ -312,8 +326,8 @@
   <div id="importModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
     <div class="glass rounded-3xl p-6 sm:p-8 max-w-md w-full border border-white/15 shadow-2xl">
       <h3 class="text-xl font-bold mb-2">Import Team via CSV</h3>
-      <p class="text-xs text-gray-400 mb-4">Format: Role, Wallet (e.g. Founder,0x123...)</p>
-      <textarea id="csvInputText" rows="6" class="w-full bg-black/30 border border-white/15 rounded-2xl p-4 text-xs font-mono outline-none mb-4" placeholder="Founder,0x11...&#10;Developer,0x92..."></textarea>
+      <p class="text-xs text-gray-400 light:text-slate-600 mb-4">Format: Role, Wallet (e.g. Founder,0x123...)</p>
+      <textarea id="csvInputText" rows="6" class="w-full bg-black/30 light:bg-slate-100 border border-white/15 rounded-2xl p-4 text-xs font-mono outline-none mb-4" placeholder="Founder,0x11...&#10;Developer,0x92..."></textarea>
       <div class="flex gap-3">
         <button onclick="hideImportModal()" class="app-button flex-1 py-3 rounded-xl border border-white/15 text-xs">Cancel</button>
         <button onclick="processTeamCSV()" class="app-button flex-1 py-3 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-xl text-xs">Import Team</button>
@@ -325,8 +339,8 @@
   <div id="confirmModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
     <div class="glass rounded-3xl p-6 sm:p-8 max-w-md w-full border border-white/15 shadow-2xl">
       <h3 class="text-xl font-bold mb-3">Confirm Role Split Execution</h3>
-      <p id="confirmModalText" class="text-xs text-gray-400 mb-4">You are sending 10000 USDC across active team roles.</p>
-      <div id="confirmRolesList" class="bg-black/20 p-4 rounded-2xl mb-6 space-y-2 text-xs max-h-40 overflow-y-auto"></div>
+      <p id="confirmModalText" class="text-xs text-gray-400 light:text-slate-600 mb-4">You are sending 10000 USDC across active team roles.</p>
+      <div id="confirmRolesList" class="bg-black/20 light:bg-slate-100 p-4 rounded-2xl mb-6 space-y-2 text-xs max-h-40 overflow-y-auto"></div>
       <div class="flex gap-3">
         <button onclick="hideConfirmModal()" class="app-button flex-1 py-3 rounded-xl border border-white/15 text-xs">Cancel</button>
         <button onclick="executeRoleSplitTx()" class="app-button flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold rounded-xl text-xs">Confirm & Split</button>
@@ -351,14 +365,37 @@
   let provider = null;
   let historyList = JSON.parse(localStorage.getItem('arcRoleHistory') || '[]');
 
+  // --- Automatic Retry Balance Fetcher (3 times max) ---
+  function fetchBalanceWithRetry(retriesLeft = 3) {
+    const balanceEl = document.getElementById("userBalanceDisplay");
+    
+    // Simulate API / RPC call query
+    setTimeout(() => {
+      // Simulate sporadic failure on first attempts to show auto-retry working
+      const isSuccess = retriesLeft === 1 || Math.random() > 0.4;
+      
+      if (isSuccess) {
+        balanceEl.textContent = "24,580.50 USDC";
+        balanceEl.className = "font-bold text-emerald-400";
+      } else if (retriesLeft > 1) {
+        balanceEl.textContent = `Retrying balance... (${4 - retriesLeft}/3)`;
+        balanceEl.className = "font-bold text-amber-400";
+        fetchBalanceWithRetry(retriesLeft - 1);
+      } else {
+        balanceEl.textContent = "12,450.00 USDC (Cached)";
+        balanceEl.className = "font-bold text-cyan-400";
+      }
+    }, 1200);
+  }
+
   function switchTab(tab) {
     document.getElementById('viewRoles').classList.toggle('hidden', tab !== 'roles');
     document.getElementById('viewSplitter').classList.toggle('hidden', tab !== 'splitter');
     document.getElementById('viewHistory').classList.toggle('hidden', tab !== 'history');
 
-    document.getElementById('tabRoles').className = tab === 'roles' ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400";
-    document.getElementById('tabSplitter').className = tab === 'splitter' ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400";
-    document.getElementById('tabHistory').className = tab === 'history' ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400";
+    document.getElementById('tabRoles').className = tab === 'roles' ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-700";
+    document.getElementById('tabSplitter').className = tab === 'splitter' ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-700";
+    document.getElementById('tabHistory').className = tab === 'history' ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-700";
 
     if (tab === 'splitter') {
       renderRoleSplitRows();
@@ -386,17 +423,16 @@
     tbody.innerHTML = "";
     rolesData.forEach((role, idx) => {
       const tr = document.createElement("tr");
-      tr.className = "hover:bg-white/[0.02] cursor-pointer";
+      tr.className = "hover:bg-white/[0.02] light:hover:bg-black/[0.02] cursor-pointer";
       tr.onclick = () => selectRoleAnalytics(role);
       tr.innerHTML = `
-        <td class="p-3 font-bold text-white flex items-center gap-2">
+        <td class="p-3 font-bold flex items-center gap-2">
           <span class="w-2.5 h-2.5 rounded-full bg-${role.color}-400"></span> ${role.name}
         </td>
-        <td class="p-3 font-mono text-gray-400">${role.wallets.length} Wallet(s) attached</td>
+        <td class="p-3 font-mono text-gray-400 light:text-slate-600">${role.wallets.length} Wallet(s) attached</td>
         <td class="p-3 font-medium text-emerald-400">${role.description}</td>
         <td class="p-3"><span class="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-semibold">Active</span></td>
         <td class="text-right p-3 space-x-2">
-          <button onclick="event.stopPropagation(); editRole(${idx})" class="text-sky-400 hover:underline">Edit</button>
           <button onclick="event.stopPropagation(); deleteRole(${idx})" class="text-rose-400 hover:underline">Delete</button>
         </td>
       `;
@@ -499,18 +535,18 @@
     const rowId = 'role_row_' + Math.random().toString(36).substring(2, 7);
     
     const div = document.createElement("div");
-    div.className = "role-split-row glass border border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-3";
+    div.className = "role-split-row glass border border-white/10 light:border-black/10 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-3";
     div.id = rowId;
 
     let options = rolesData.map(r => `<option value="${r.name}" ${r.name === selectedRoleName ? 'selected' : ''}>${r.name}</option>`).join('');
 
     div.innerHTML = `
-      <select class="role-select flex-1 w-full bg-black/20 rounded-xl px-4 py-3 text-xs font-semibold outline-none" onchange="updateRoleSplitPreview()">
+      <select class="role-select flex-1 w-full bg-black/20 light:bg-slate-100 rounded-xl px-4 py-3 text-xs font-semibold outline-none" onchange="updateRoleSplitPreview()">
         <option value="">Select Role...</option>
         ${options}
       </select>
       <div class="relative w-full sm:w-36">
-        <input type="number" class="role-percent w-full bg-black/20 rounded-xl px-4 py-3 text-center text-xs font-bold outline-none" placeholder="Share %" value="${percentage}" oninput="updateRoleSplitPreview()">
+        <input type="number" class="role-percent w-full bg-black/20 light:bg-slate-100 rounded-xl px-4 py-3 text-center text-xs font-bold outline-none" placeholder="Share %" value="${percentage}" oninput="updateRoleSplitPreview()">
         <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">%</span>
       </div>
       <button onclick="document.getElementById('${rowId}').remove(); updateRoleSplitPreview();" class="text-gray-400 hover:text-rose-400 px-2 py-1"><i class="fas fa-trash-can"></i></button>
@@ -540,12 +576,12 @@
         const roleObj = rolesData.find(r => r.name === roleName);
         const amount = (totalAmount * percent) / 100;
         
-        let walletsHTML = roleObj ? roleObj.wallets.map(w => `<div class="text-[10px] text-gray-400 font-mono">↳ Wallet: ${w.substring(0,8)}... (${(amount / roleObj.wallets.length).toFixed(2)})</div>`).join('') : '<span class="text-rose-400">No wallets</span>';
+        let walletsHTML = roleObj ? roleObj.wallets.map(w => `<div class="text-[10px] text-gray-400 light:text-slate-600 font-mono">↳ Wallet: ${w.substring(0,8)}... (${(amount / roleObj.wallets.length).toFixed(2)})</div>`).join('') : '<span class="text-rose-400">No wallets</span>';
 
         const div = document.createElement("div");
-        div.className = "bg-white/[0.02] border border-white/5 p-3 rounded-xl space-y-1";
+        div.className = "bg-white/[0.02] light:bg-slate-50 border border-white/5 light:border-black/5 p-3 rounded-xl space-y-1";
         div.innerHTML = `
-          <div class="flex justify-between font-bold text-white">
+          <div class="flex justify-between font-bold">
             <span>${roleName}</span>
             <span class="text-emerald-400">${percent}% (${amount.toFixed(2)})</span>
           </div>
@@ -598,7 +634,7 @@
       const percent = row.querySelector('.role-percent').value;
       if (roleName) {
         const div = document.createElement("div");
-        div.className = "flex justify-between text-white font-medium";
+        div.className = "flex justify-between font-medium";
         div.innerHTML = `<span>${roleName}</span><span class="text-emerald-400">${percent}%</span>`;
         listContainer.appendChild(div);
       }
@@ -614,14 +650,16 @@
     showToast("Executing Role Split on-chain[cite: 1, 2]...");
     
     setTimeout(() => {
-      showToast("Role Split Completed Successfully! Tx: 0x8a7f...b3c2");
+      const mockHash = "0x" + Array.from({length: 40}, () => Math.floor(Math.random()*16).toString(16)).join('');
+      showToast(`Role Split Completed! Hash: <a href="#" class="underline font-mono text-cyan-300">${mockHash.substring(0,10)}...</a>`, 6000);
+      
       historyList.unshift({
-        date: new Date().toLocaleDateString(),
+        date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString(),
         rolesCount: document.querySelectorAll('.role-split-row').length,
         token: document.getElementById("tokenSelect").selectedOptions[0].text,
         amount: document.getElementById("totalAmount").value,
         status: "Completed",
-        hash: "0x8a7fb3c2..."
+        hash: mockHash
       });
       localStorage.setItem('arcRoleHistory', JSON.stringify(historyList));
       switchTab('history');
@@ -630,16 +668,20 @@
 
   function renderHistory() {
     const container = document.getElementById("historyContainer");
-    container.innerHTML = historyList.length ? "" : "<p class='text-gray-400 text-center py-6 text-xs'>No role splits yet.</p>";
+    container.innerHTML = historyList.length ? "" : "<p class='text-gray-400 light:text-slate-600 text-center py-6 text-xs'>No role splits yet.</p>";
     historyList.forEach(item => {
+      const shortHash = item.hash ? item.hash.substring(0, 12) + '...' : '0x8a7fb3c2...';
       const div = document.createElement("div");
-      div.className = "bg-white/[0.02] border border-white/5 rounded-2xl p-4 text-xs flex justify-between items-center";
+      div.className = "bg-white/[0.02] light:bg-slate-50 border border-white/5 light:border-black/5 rounded-2xl p-4 text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2";
       div.innerHTML = `
         <div>
           <div class="font-bold text-sm text-emerald-400">${item.amount} ${item.token} → ${item.rolesCount} Roles</div>
-          <div class="text-[11px] text-gray-400">${item.date}</div>
+          <div class="text-[11px] text-gray-400 light:text-slate-600">${item.date}</div>
         </div>
-        <span class="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 font-semibold">${item.status}</span>
+        <div class="flex items-center gap-3">
+          <span class="font-mono text-[11px] text-cyan-400 bg-cyan-500/10 px-2 py-1 rounded-lg" title="${item.hash}">Tx: ${shortHash}</span>
+          <span class="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 font-semibold">${item.status}</span>
+        </div>
       `;
       container.appendChild(div);
     });
@@ -649,11 +691,13 @@
     userAddress = "0x71C...9B24";
     document.getElementById("connectBtn").innerHTML = `<i class="fas fa-wallet text-emerald-400"></i> <span class="font-bold">0x71C...9B24</span>`;
     showToast("Wallet Connected.");
+    fetchBalanceWithRetry(3);
   }
 
   window.onload = () => {
     renderRolesTable();
     renderHistory();
+    fetchBalanceWithRetry(3); // Trigger automatic retry balance fetch on load
   };
 </script>
 </body>
