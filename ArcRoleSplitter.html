@@ -107,12 +107,12 @@
       </div>
     </div>
 
-    <!-- Status Bar & Balance Widget (Cleaned of raw contract/router addresses) -->
+    <!-- Status Bar & Balance Widget (Cleaned of all contract & router text) -->
     <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
       <div id="status" class="glass rounded-2xl p-4 text-xs font-medium flex items-center justify-between border-l-4 border-l-emerald-500 md:col-span-8">
         <div class="flex items-center gap-3">
           <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-          <span id="contractStatusText">Connected to Arc Testnet Contract & Router</span>
+          <span id="contractStatusText">Connected to Arc Testnet Network</span>
         </div>
         <div id="activeWorkspace" class="text-emerald-400 font-bold">Arc Network</div>
       </div>
@@ -120,7 +120,7 @@
       <div class="glass rounded-2xl p-4 text-xs font-medium flex items-center justify-between md:col-span-4 border border-white/5">
         <div class="flex items-center gap-2">
           <i class="fas fa-coins text-emerald-400"></i>
-          <span class="text-gray-400 light:text-slate-600">Wallet USDC Balance:</span>
+          <span class="text-gray-400 light:text-slate-600">Wallet Token Balance:</span>
         </div>
         <div id="userBalanceDisplay" class="font-bold text-emerald-400">Connect Wallet</div>
       </div>
@@ -140,7 +140,7 @@
             <div>
               <label class="block text-gray-400 light:text-slate-600 text-xs font-semibold uppercase tracking-wider mb-2">Token</label>
               <select id="tokenSelect" class="w-full rounded-2xl px-4 py-3.5 text-sm font-medium outline-none cursor-pointer" onchange="onTokenSelectionChange(this)">
-                <option value="0x3600000000000000000000000000000000000000">USDC (Primary Network Token)</option>
+                <option value="0x3600000000000000000000000000000000000000">USDC</option>
                 <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
                 <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
                 <option value="custom">➕ Add Custom Token...</option>
@@ -340,7 +340,7 @@
   </div>
 
 <script>
-  // Smart Contract Configuration (Hidden from UI text)
+  // Smart Contract Configuration
   const CONTRACT_ADDRESS = "0x8eb0040b4133Ef4A0641D13f3551Fa5818069Cbe";
   const ROUTER_ADDRESS = "0x1B6525DD699d24250EF3a3E21378597f0999E74C";
 
@@ -358,7 +358,8 @@
     "function decimals() external view returns (uint8)"
   ];
 
-  let rolesData = [
+  // Persistent Roles & History Storage
+  let rolesData = JSON.parse(localStorage.getItem('arcRolesData')) || [
     { name: "Founder", wallets: ["0x1111111111111111111111111111111111111111"], description: "Core Leadership", color: "blue", totalReceived: 25000, txCount: 12, lastPayment: "3 Days Ago" },
     { name: "Developer", wallets: ["0x9222222222222222222222222222222222222222", "0x9333333333333333333333333333333333333333"], description: "Engineering Team", color: "emerald", totalReceived: 45000, txCount: 15, lastPayment: "Yesterday" },
     { name: "Treasury", wallets: ["0x3111111111111111111111111111111111111111"], description: "DAO Reserving", color: "purple", totalReceived: 10000, txCount: 5, lastPayment: "1 Week Ago" }
@@ -368,6 +369,11 @@
   let signer = null;
   let userAddress = null;
   let historyList = JSON.parse(localStorage.getItem('arcRoleHistory') || '[]');
+  let selectedRoleForAnalyticsName = rolesData.length > 0 ? rolesData[0].name : null;
+
+  function saveRolesToStorage() {
+    localStorage.setItem('arcRolesData', JSON.stringify(rolesData));
+  }
 
   async function connectRealWallet() {
     if (!window.ethereum) {
@@ -396,7 +402,14 @@
       const tokenAddress = document.getElementById("tokenSelect").value;
       if (tokenAddress === "custom") return;
       const erc20 = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
-      const decimals = await erc20.decimals();
+      
+      let decimals = 6;
+      try {
+        decimals = await erc20.decimals();
+      } catch (e) {
+        decimals = 18;
+      }
+
       const bal = await erc20.balanceOf(userAddress);
       const formatted = ethers.formatUnits(bal, decimals);
       document.getElementById("userBalanceDisplay").textContent = `${parseFloat(formatted).toFixed(2)}`;
@@ -473,10 +486,14 @@
       `;
       tbody.appendChild(tr);
     });
-    if (rolesData.length > 0) selectRoleAnalytics(rolesData[0]);
+    if (rolesData.length > 0) {
+      let targetRole = rolesData.find(r => r.name === selectedRoleForAnalyticsName) || rolesData[0];
+      selectRoleAnalytics(targetRole);
+    }
   }
 
   function selectRoleAnalytics(role) {
+    selectedRoleForAnalyticsName = role.name;
     document.getElementById("analyticsReceived").textContent = `${role.totalReceived.toLocaleString()} USDC`;
     document.getElementById("analyticsTxCount").textContent = role.txCount;
     document.getElementById("analyticsLastPayment").textContent = role.lastPayment;
@@ -508,6 +525,7 @@
     const wallets = walletsStr ? walletsStr.split(',').map(w => w.trim()).filter(w => ethers.isAddress(w)) : [];
 
     rolesData.push({ name, wallets, description: desc || "Team Role", color, totalReceived: 0, txCount: 0, lastPayment: "Never" });
+    saveRolesToStorage();
     hideRoleModal();
     renderRolesTable();
     showToast(`Role "${name}" created successfully.`);
@@ -516,6 +534,7 @@
   function deleteRole(idx) {
     if (confirm(`Delete role ${rolesData[idx].name}?`)) {
       rolesData.splice(idx, 1);
+      saveRolesToStorage();
       renderRolesTable();
       showToast("Role removed.");
     }
@@ -528,6 +547,7 @@
       { name: "Marketing", wallets: ["0x4444444444444444444444444444444444444444"], description: "Growth & Community", color: "amber", totalReceived: 12000, txCount: 6, lastPayment: "5 Days Ago" },
       { name: "Treasury", wallets: ["0x3111111111111111111111111111111111111111"], description: "DAO Reserving", color: "purple", totalReceived: 50000, txCount: 20, lastPayment: "1 Week Ago" }
     ];
+    saveRolesToStorage();
     renderRolesTable();
     showToast("Default workspace roles loaded.");
   }
@@ -549,6 +569,7 @@
         }
       }
     });
+    saveRolesToStorage();
     hideImportModal();
     renderRolesTable();
     showToast("Team imported successfully.");
@@ -700,7 +721,12 @@
       const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
       const erc20Contract = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
-      const decimals = await erc20Contract.decimals();
+      let decimals = 6;
+      try {
+        decimals = await erc20Contract.decimals();
+      } catch (e) {
+        decimals = 18;
+      }
       const amountWei = ethers.parseUnits(rawAmount, decimals);
 
       const allowance = await erc20Contract.allowance(userAddress, CONTRACT_ADDRESS);
@@ -715,6 +741,22 @@
 
       showToast(`Transaction submitted! Waiting for confirmation...`, 5000);
       const receipt = await tx.wait();
+
+      // Update analytics for roles involved in split
+      const parsedAmount = parseFloat(rawAmount);
+      document.querySelectorAll('.role-split-row').forEach(row => {
+        const roleName = row.querySelector('.role-select').value;
+        const percent = parseFloat(row.querySelector('.role-percent').value) || 0;
+        if (roleName) {
+          let roleObj = rolesData.find(r => r.name === roleName);
+          if (roleObj) {
+            roleObj.totalReceived += (parsedAmount * percent) / 100;
+            roleObj.txCount += 1;
+            roleObj.lastPayment = "Just Now";
+          }
+        }
+      });
+      saveRolesToStorage();
 
       showToast(`Role Split Executed Successfully on-chain! Tx: ${receipt.hash.substring(0,10)}...`, 7000);
 
