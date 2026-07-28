@@ -140,7 +140,7 @@
             <div>
               <label class="block text-gray-400 light:text-slate-600 text-xs font-semibold uppercase tracking-wider mb-2">Token</label>
               <select id="tokenSelect" class="w-full rounded-2xl px-4 py-3.5 text-sm font-medium outline-none cursor-pointer" onchange="onTokenSelectionChange(this)">
-                <option value="0x3600000000000000000000000000000000000000">USDC</option>
+                <option value="0x3600000000000000000000000000000000000000">USDC (Placeholder)</option>
                 <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
                 <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
                 <option value="custom">➕ Add Custom Token...</option>
@@ -237,7 +237,7 @@
         <div class="lg:col-span-4 glass rounded-3xl p-6 flex flex-col justify-between">
           <div>
             <h3 class="font-bold text-sm mb-4 flex items-center gap-2">
-              <i class="fas fa-chart-pie text-emerald-400"></i> Selected Role Analytics
+              <i class="fas fa-chart-pie text-emerald-400"></i> Selected Role Analytics (<span id="analyticsRoleNameTitle" class="text-emerald-400 font-bold">None</span>)
             </h3>
             <div id="selectedRoleAnalytics" class="space-y-4 text-xs">
               <div class="bg-black/20 light:bg-slate-100 p-4 rounded-2xl border border-white/5 light:border-black/5">
@@ -412,7 +412,6 @@
     }
   }
 
-  // Automatic retry mechanism (3 attempts) for fetching wallet balance
   async function updateWalletBalance() {
     if (!provider || !userAddress) {
       document.getElementById("userBalanceDisplay").textContent = "0.00";
@@ -436,14 +435,14 @@
         const bal = await erc20.balanceOf(userAddress);
         const formatted = ethers.formatUnits(bal, decimals);
         document.getElementById("userBalanceDisplay").textContent = `${parseFloat(formatted).toFixed(2)}`;
-        return; // Success, exit retry loop
+        return;
       } catch (e) {
         attempts--;
         if (attempts === 0) {
-          console.error("Balance fetch error after retries:", e);
+          console.warn("Balance fetch skipped:", e);
           document.getElementById("userBalanceDisplay").textContent = "0.00";
         } else {
-          await new Promise(res => setTimeout(res, 1000)); // Wait 1 second before retrying
+          await new Promise(res => setTimeout(res, 1000));
         }
       }
     }
@@ -523,9 +522,11 @@
     }
   }
 
-  // Selected Role Analytics calculated dynamically from history records
+  // Improved case-insensitive analytics calculation
   function selectRoleAnalytics(role) {
     selectedRoleForAnalyticsName = role.name;
+    document.getElementById("analyticsRoleNameTitle").textContent = role.name;
+    
     let totalReceived = 0;
     let txCount = 0;
     let lastPayment = "Never";
@@ -533,8 +534,8 @@
     historyList.forEach(item => {
       if (item.allocations) {
         item.allocations.forEach(alloc => {
-          if (alloc.roleName === role.name) {
-            totalReceived += alloc.amount;
+          if (alloc.roleName && alloc.roleName.trim().toLowerCase() === role.name.trim().toLowerCase()) {
+            totalReceived += Number(alloc.amount) || 0;
             txCount += 1;
             lastPayment = item.date;
           }
@@ -581,23 +582,6 @@
     if (!name) return showToast("Role name required.");
     
     const wallets = walletsStr ? walletsStr.split(',').map(w => w.trim()).filter(w => ethers.isAddress(w)) : [];
-
-    // Check for duplicate wallets across other roles and ask confirmation
-    let duplicateFound = false;
-    let conflictingWallet = "";
-    wallets.forEach(w => {
-      rolesData.forEach((r, rIdx) => {
-        if (editingRoleIndex !== rIdx && r.wallets.includes(w)) {
-          duplicateFound = true;
-          conflictingWallet = w;
-        }
-      });
-    });
-
-    if (duplicateFound) {
-      const confirmDup = confirm(`Wallet address ${conflictingWallet.substring(0,6)}... is already registered in another role. Do you want to add this wallet with this new role anyway?`);
-      if (!confirmDup) return;
-    }
 
     if (editingRoleIndex !== null) {
       rolesData[editingRoleIndex].name = name;
@@ -738,7 +722,7 @@
     
     const walletValEl = document.getElementById("valRoleWallet");
     if (hasEmptyWallet) {
-      walletValEl.innerHTML = `<i class="fas fa-triangle-exclamation text-amber-400 mr-2"></i> <b>Warning:</b> Some selected roles have no wallet addresses. Please add addresses in Role Management.`;
+      walletValEl.innerHTML = `<i class="fas fa-triangle-exclamation text-amber-400 mr-2"></i> <b>Warning:</b> Some selected roles have no wallet addresses.`;
       walletValEl.className = "glass border border-amber-500/30 p-4 rounded-2xl mb-6 space-y-2 text-xs text-amber-300";
     } else {
       walletValEl.innerHTML = `<i class="fas fa-circle-check text-emerald-400 mr-2"></i> All selected roles have valid wallets assigned`;
@@ -817,7 +801,13 @@
       }
       const amountWei = ethers.parseUnits(rawAmount, decimals);
 
-      const allowance = await erc20Contract.allowance(userAddress, CONTRACT_ADDRESS);
+      let allowance = 0n;
+      try {
+        allowance = await erc20Contract.allowance(userAddress, CONTRACT_ADDRESS);
+      } catch (err) {
+        console.warn("Allowance check failed:", err);
+      }
+
       if (allowance < amountWei) {
         showToast("Approving ERC20 token expenditure...");
         const approveTx = await erc20Contract.approve(CONTRACT_ADDRESS, amountWei);
