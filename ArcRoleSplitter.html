@@ -356,9 +356,9 @@
 
   // Persistent Roles & History Storage
   let rolesData = JSON.parse(localStorage.getItem('arcRolesData')) || [
-    { name: "Founder", wallets: [], description: "Core Leadership", color: "blue", totalReceived: 0, txCount: 0, lastPayment: "Never" },
-    { name: "Developer", wallets: [], description: "Engineering Team", color: "emerald", totalReceived: 0, txCount: 0, lastPayment: "Never" },
-    { name: "Treasury", wallets: [], description: "DAO Reserving", color: "purple", totalReceived: 0, txCount: 0, lastPayment: "Never" }
+    { name: "Founder", wallets: [], description: "Core Leadership", color: "blue" },
+    { name: "Developer", wallets: [], description: "Engineering Team", color: "emerald" },
+    { name: "Treasury", wallets: [], description: "DAO Reserving", color: "purple" }
   ];
 
   let provider = null;
@@ -412,29 +412,40 @@
     }
   }
 
+  // Automatic retry mechanism (3 attempts) for fetching wallet balance
   async function updateWalletBalance() {
     if (!provider || !userAddress) {
       document.getElementById("userBalanceDisplay").textContent = "0.00";
       return;
     }
-    try {
-      const tokenAddress = document.getElementById("tokenSelect").value;
-      if (tokenAddress === "custom") return;
-      const erc20 = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
-      
-      let decimals = 18;
-      try {
-        decimals = await erc20.decimals();
-      } catch (e) {
-        decimals = 6;
-      }
 
-      const bal = await erc20.balanceOf(userAddress);
-      const formatted = ethers.formatUnits(bal, decimals);
-      document.getElementById("userBalanceDisplay").textContent = `${parseFloat(formatted).toFixed(2)}`;
-    } catch (e) {
-      console.error("Balance fetch error:", e);
-      document.getElementById("userBalanceDisplay").textContent = "0.00";
+    let attempts = 3;
+    while (attempts > 0) {
+      try {
+        const tokenAddress = document.getElementById("tokenSelect").value;
+        if (tokenAddress === "custom") return;
+        const erc20 = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+        
+        let decimals = 18;
+        try {
+          decimals = await erc20.decimals();
+        } catch (e) {
+          decimals = 6;
+        }
+
+        const bal = await erc20.balanceOf(userAddress);
+        const formatted = ethers.formatUnits(bal, decimals);
+        document.getElementById("userBalanceDisplay").textContent = `${parseFloat(formatted).toFixed(2)}`;
+        return; // Success, exit retry loop
+      } catch (e) {
+        attempts--;
+        if (attempts === 0) {
+          console.error("Balance fetch error after retries:", e);
+          document.getElementById("userBalanceDisplay").textContent = "0.00";
+        } else {
+          await new Promise(res => setTimeout(res, 1000)); // Wait 1 second before retrying
+        }
+      }
     }
   }
 
@@ -512,11 +523,28 @@
     }
   }
 
+  // Selected Role Analytics calculated dynamically from history records
   function selectRoleAnalytics(role) {
     selectedRoleForAnalyticsName = role.name;
-    document.getElementById("analyticsReceived").textContent = `${role.totalReceived.toLocaleString()} USDC`;
-    document.getElementById("analyticsTxCount").textContent = role.txCount;
-    document.getElementById("analyticsLastPayment").textContent = role.lastPayment;
+    let totalReceived = 0;
+    let txCount = 0;
+    let lastPayment = "Never";
+
+    historyList.forEach(item => {
+      if (item.allocations) {
+        item.allocations.forEach(alloc => {
+          if (alloc.roleName === role.name) {
+            totalReceived += alloc.amount;
+            txCount += 1;
+            lastPayment = item.date;
+          }
+        });
+      }
+    });
+
+    document.getElementById("analyticsReceived").textContent = `${totalReceived.toLocaleString()} USDC`;
+    document.getElementById("analyticsTxCount").textContent = txCount;
+    document.getElementById("analyticsLastPayment").textContent = lastPayment;
   }
 
   function showRoleModal() {
@@ -554,7 +582,7 @@
     
     const wallets = walletsStr ? walletsStr.split(',').map(w => w.trim()).filter(w => ethers.isAddress(w)) : [];
 
-    // Check for duplicate wallets across other roles
+    // Check for duplicate wallets across other roles and ask confirmation
     let duplicateFound = false;
     let conflictingWallet = "";
     wallets.forEach(w => {
@@ -567,7 +595,7 @@
     });
 
     if (duplicateFound) {
-      const confirmDup = confirm(`آدرس ولت ${conflictingWallet.substring(0,6)}... قبلاً در نقش دیگری ثبت شده است. آیا می‌خواهید این ولت را با این نقش جدید نیز اضافه کنید؟`);
+      const confirmDup = confirm(`Wallet address ${conflictingWallet.substring(0,6)}... is already registered in another role. Do you want to add this wallet with this new role anyway?`);
       if (!confirmDup) return;
     }
 
@@ -581,7 +609,7 @@
       if (rolesData.some(r => r.name.toLowerCase() === name.toLowerCase())) {
         return showToast("Role already exists.");
       }
-      rolesData.push({ name, wallets, description: desc || "Team Role", color, totalReceived: 0, txCount: 0, lastPayment: "Never" });
+      rolesData.push({ name, wallets, description: desc || "Team Role", color });
       showToast(`Role "${name}" created successfully.`);
     }
 
@@ -612,7 +640,7 @@
         if (existing) {
           if (!existing.wallets.includes(wallet)) existing.wallets.push(wallet);
         } else {
-          rolesData.push({ name: roleName, wallets: [wallet], description: "Imported Role", color: "emerald", totalReceived: 0, txCount: 0, lastPayment: "Never" });
+          rolesData.push({ name: roleName, wallets: [wallet], description: "Imported Role", color: "emerald" });
         }
       }
     });
@@ -652,7 +680,7 @@
         <input type="number" class="role-percent w-full bg-black/20 light:bg-slate-100 rounded-xl px-4 py-3 text-center text-xs font-bold outline-none" placeholder="Share %" value="${percentage}" oninput="updateRoleSplitPreview()">
         <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">%</span>
       </div>
-      <button onclick="document.getElementById('${rowId}').remove(); updateRoleSplitPreview();" class="text-gray-400 hover:text-rose-400 px-2 py-1"><i class="fas fa-trash-can"></i></button>
+      <button onclick="document.getElementById('${rowId}').remove(); updateRoleSplitPreview();" class="text-gray-400 hover:text-rose-400 px-2 py-1"><i class="fas fa-trash-can text-rose-400"></i></button>
     `;
     container.appendChild(div);
     updateRoleSplitPreview();
@@ -803,29 +831,29 @@
       const receipt = await tx.wait();
 
       const parsedAmount = parseFloat(rawAmount);
+      let splitAllocations = [];
       document.querySelectorAll('.role-split-row').forEach(row => {
         const roleName = row.querySelector('.role-select').value;
         const percent = parseFloat(row.querySelector('.role-percent').value) || 0;
         if (roleName) {
-          let roleObj = rolesData.find(r => r.name === roleName);
-          if (roleObj) {
-            roleObj.totalReceived += (parsedAmount * percent) / 100;
-            roleObj.txCount += 1;
-            roleObj.lastPayment = "Just Now";
-          }
+          splitAllocations.push({
+            roleName: roleName,
+            percent: percent,
+            amount: (parsedAmount * percent) / 100
+          });
         }
       });
-      saveRolesToStorage();
 
       showToast(`Role Split Executed Successfully on-chain! Tx: ${receipt.hash.substring(0,10)}...`, 7000);
 
       historyList.unshift({
         date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString(),
-        rolesCount: document.querySelectorAll('.role-split-row').length,
+        rolesCount: splitAllocations.length,
         token: document.getElementById("tokenSelect").selectedOptions[0].text,
         amount: rawAmount,
         status: "Completed",
-        hash: receipt.hash
+        hash: receipt.hash,
+        allocations: splitAllocations
       });
       localStorage.setItem('arcRoleHistory', JSON.stringify(historyList));
 
