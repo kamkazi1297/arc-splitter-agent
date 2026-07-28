@@ -107,7 +107,7 @@
       </div>
     </div>
 
-    <!-- Status Bar & Balance Widget (Cleaned of all contract & router text) -->
+    <!-- Status Bar & Balance Widget -->
     <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
       <div id="status" class="glass rounded-2xl p-4 text-xs font-medium flex items-center justify-between border-l-4 border-l-emerald-500 md:col-span-8">
         <div class="flex items-center gap-3">
@@ -122,7 +122,7 @@
           <i class="fas fa-coins text-emerald-400"></i>
           <span class="text-gray-400 light:text-slate-600">Wallet Token Balance:</span>
         </div>
-        <div id="userBalanceDisplay" class="font-bold text-emerald-400">Connect Wallet</div>
+        <div id="userBalanceDisplay" class="font-bold text-emerald-400">0.00</div>
       </div>
     </div>
 
@@ -190,7 +190,7 @@
           <div id="roleValidationBox" class="glass border border-white/10 light:border-black/10 p-4 rounded-2xl mb-6 space-y-2 text-xs text-gray-400 light:text-slate-600">
             <div id="valRoleSelected"><i class="fas fa-circle-xmark text-rose-400 mr-2"></i> Role selected</div>
             <div id="valRoleSum"><i class="fas fa-circle-xmark text-rose-400 mr-2"></i> Total shares = 100%</div>
-            <div id="valRoleWallet"><i class="fas fa-circle-xmark text-rose-400 mr-2"></i> Contract Mapped On-chain</div>
+            <div id="valRoleWallet"><i class="fas fa-circle-xmark text-rose-400 mr-2"></i> Wallet Addresses Assigned</div>
           </div>
 
           <button onclick="openConfirmModal()" id="executeSplitBtn" disabled class="app-button w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:brightness-110 py-4 rounded-2xl text-base font-bold text-gray-950 shadow-xl opacity-50 cursor-not-allowed">
@@ -209,9 +209,6 @@
           <p class="text-xs preserve-dark-muted">Manage your team roles and associated wallets behind the scenes[cite: 1, 2].</p>
         </div>
         <div class="flex flex-wrap gap-2.5">
-          <button onclick="loadDefaultRoles()" class="px-4 py-2.5 bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 rounded-2xl text-xs font-semibold transition-all">
-            <i class="fas fa-wand-magic-sparkles mr-1.5"></i> Default Roles
-          </button>
           <button onclick="showImportTeamModal()" class="px-4 py-2.5 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/20 rounded-2xl text-xs font-semibold transition-all">
             <i class="fas fa-file-csv mr-1.5"></i> Import CSV
           </button>
@@ -228,7 +225,7 @@
               <tr class="border-b border-white/10 light:border-black/10 text-gray-400 text-xs uppercase tracking-wider">
                 <th class="p-3 font-semibold">Role</th>
                 <th class="p-3 font-semibold">Wallets / Members</th>
-                <th class="p-3 font-semibold">Global Share</th>
+                <th class="p-3 font-semibold">Description</th>
                 <th class="p-3 font-semibold">Status</th>
                 <th class="text-right p-3 font-semibold">Actions</th>
               </tr>
@@ -306,7 +303,7 @@
       </div>
       <div class="flex gap-3 mt-6">
         <button onclick="hideRoleModal()" class="app-button flex-1 py-3 rounded-xl border border-white/15 font-semibold text-xs">Cancel</button>
-        <button onclick="saveRole()" class="app-button flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold rounded-xl text-xs">Create Role</button>
+        <button onclick="saveRole()" class="app-button flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold rounded-xl text-xs">Save Role</button>
       </div>
     </div>
   </div>
@@ -342,7 +339,6 @@
 <script>
   // Smart Contract Configuration
   const CONTRACT_ADDRESS = "0x8eb0040b4133Ef4A0641D13f3551Fa5818069Cbe";
-  const ROUTER_ADDRESS = "0x1B6525DD699d24250EF3a3E21378597f0999E74C";
 
   const CONTRACT_ABI = [
     "function splitBundleTokens(address[] calldata tokens, uint256[] calldata amounts) external",
@@ -358,11 +354,11 @@
     "function decimals() external view returns (uint8)"
   ];
 
-  // Persistent Roles & History Storage
+  // Persistent Roles & History Storage (Started without fake pre-filled wallet addresses)
   let rolesData = JSON.parse(localStorage.getItem('arcRolesData')) || [
-    { name: "Founder", wallets: ["0x1111111111111111111111111111111111111111"], description: "Core Leadership", color: "blue", totalReceived: 25000, txCount: 12, lastPayment: "3 Days Ago" },
-    { name: "Developer", wallets: ["0x9222222222222222222222222222222222222222", "0x9333333333333333333333333333333333333333"], description: "Engineering Team", color: "emerald", totalReceived: 45000, txCount: 15, lastPayment: "Yesterday" },
-    { name: "Treasury", wallets: ["0x3111111111111111111111111111111111111111"], description: "DAO Reserving", color: "purple", totalReceived: 10000, txCount: 5, lastPayment: "1 Week Ago" }
+    { name: "Founder", wallets: [], description: "Core Leadership", color: "blue", totalReceived: 0, txCount: 0, lastPayment: "Never" },
+    { name: "Developer", wallets: [], description: "Engineering Team", color: "emerald", totalReceived: 0, txCount: 0, lastPayment: "Never" },
+    { name: "Treasury", wallets: [], description: "DAO Reserving", color: "purple", totalReceived: 0, txCount: 0, lastPayment: "Never" }
   ];
 
   let provider = null;
@@ -403,11 +399,11 @@
       if (tokenAddress === "custom") return;
       const erc20 = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
       
-      let decimals = 6;
+      let decimals = 18;
       try {
         decimals = await erc20.decimals();
       } catch (e) {
-        decimals = 18;
+        decimals = 6;
       }
 
       const bal = await erc20.balanceOf(userAddress);
@@ -479,7 +475,7 @@
         </td>
         <td class="p-3 font-mono text-gray-400 light:text-slate-600">${role.wallets.length} Wallet(s) attached</td>
         <td class="p-3 font-medium text-emerald-400">${role.description}</td>
-        <td class="p-3"><span class="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-semibold">Active</span></td>
+        <td class="p-3"><span class="px-2.5 py-1 rounded-full ${role.wallets.length > 0 ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'} text-[10px] font-semibold">${role.wallets.length > 0 ? 'Active' : 'No Wallets'}</span></td>
         <td class="text-right p-3 space-x-2">
           <button onclick="event.stopPropagation(); deleteRole(${idx})" class="text-rose-400 hover:underline">Delete</button>
         </td>
@@ -540,18 +536,6 @@
     }
   }
 
-  function loadDefaultRoles() {
-    rolesData = [
-      { name: "Founder", wallets: ["0x1111111111111111111111111111111111111111"], description: "Core Team", color: "blue", totalReceived: 25000, txCount: 12, lastPayment: "3 Days Ago" },
-      { name: "Developer", wallets: ["0x9222222222222222222222222222222222222222"], description: "Engineering", color: "emerald", totalReceived: 30000, txCount: 10, lastPayment: "Yesterday" },
-      { name: "Marketing", wallets: ["0x4444444444444444444444444444444444444444"], description: "Growth & Community", color: "amber", totalReceived: 12000, txCount: 6, lastPayment: "5 Days Ago" },
-      { name: "Treasury", wallets: ["0x3111111111111111111111111111111111111111"], description: "DAO Reserving", color: "purple", totalReceived: 50000, txCount: 20, lastPayment: "1 Week Ago" }
-    ];
-    saveRolesToStorage();
-    renderRolesTable();
-    showToast("Default workspace roles loaded.");
-  }
-
   function showImportTeamModal() { document.getElementById("importModal").classList.remove("hidden"); }
   function hideImportModal() { document.getElementById("importModal").classList.add("hidden"); }
 
@@ -594,7 +578,7 @@
     div.className = "role-split-row glass border border-white/10 light:border-black/10 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-3";
     div.id = rowId;
 
-    let options = rolesData.map(r => `<option value="${r.name}" ${r.name === selectedRoleName ? 'selected' : ''}>${r.name}</option>`).join('');
+    let options = rolesData.map(r => `<option value="${r.name}" ${r.name === selectedRoleName ? 'selected' : ''}>${r.name} ${r.wallets.length === 0 ? '(No Wallets!)' : ''}</option>`).join('');
 
     div.innerHTML = `
       <select class="role-select flex-1 w-full bg-black/20 light:bg-slate-100 rounded-xl px-4 py-3 text-xs font-semibold outline-none" onchange="updateRoleSplitPreview()">
@@ -620,6 +604,7 @@
     let totalPercent = 0;
     let selectedRolesSet = new Set();
     let validCount = 0;
+    let hasEmptyWallet = false;
 
     rows.forEach(row => {
       const roleName = row.querySelector('.role-select').value;
@@ -630,9 +615,13 @@
         selectedRolesSet.add(roleName);
         validCount++;
         const roleObj = rolesData.find(r => r.name === roleName);
-        const amount = (totalAmount * percent) / 100;
         
-        let walletsHTML = roleObj ? roleObj.wallets.map(w => `<div class="text-[10px] text-gray-400 light:text-slate-600 font-mono">↳ Wallet: ${w.substring(0,8)}... (${(amount / roleObj.wallets.length).toFixed(2)})</div>`).join('') : '<span class="text-rose-400">No wallets</span>';
+        if (!roleObj || roleObj.wallets.length === 0) {
+          hasEmptyWallet = true;
+        }
+
+        const amount = (totalAmount * percent) / 100;
+        let walletsHTML = roleObj && roleObj.wallets.length > 0 ? roleObj.wallets.map(w => `<div class="text-[10px] text-gray-400 light:text-slate-600 font-mono">↳ Wallet: ${w.substring(0,8)}... (${(amount / roleObj.wallets.length).toFixed(2)})</div>`).join('') : '<span class="text-rose-400 font-bold">⚠️ Warning: No wallet address added to this role!</span>';
 
         const div = document.createElement("div");
         div.className = "bg-white/[0.02] light:bg-slate-50 border border-white/5 light:border-black/5 p-3 rounded-xl space-y-1";
@@ -655,9 +644,17 @@
     
     document.getElementById("valRoleSelected").innerHTML = validCount > 0 ? `<i class="fas fa-circle-check text-emerald-400 mr-2"></i> ${validCount} Role(s) selected` : `<i class="fas fa-circle-xmark text-rose-400 mr-2"></i> Role selected`;
     document.getElementById("valRoleSum").innerHTML = is100 ? `<i class="fas fa-circle-check text-emerald-400 mr-2"></i> Total shares = 100%` : `<i class="fas fa-circle-xmark text-rose-400 mr-2"></i> Total shares = ${totalPercent}%`;
-    document.getElementById("valRoleWallet").innerHTML = `<i class="fas fa-circle-check text-emerald-400 mr-2"></i> Contract Mapped On-chain`;
+    
+    const walletValEl = document.getElementById("valRoleWallet");
+    if (hasEmptyWallet) {
+      walletValEl.innerHTML = `<i class="fas fa-triangle-exclamation text-amber-400 mr-2"></i> <b>Warning:</b> Some selected roles have no wallet addresses. Please add addresses in Role Management.`;
+      walletValEl.className = "glass border border-amber-500/30 p-4 rounded-2xl mb-6 space-y-2 text-xs text-amber-300";
+    } else {
+      walletValEl.innerHTML = `<i class="fas fa-circle-check text-emerald-400 mr-2"></i> All selected roles have valid wallets assigned`;
+      walletValEl.className = "glass border border-white/10 light:border-black/10 p-4 rounded-2xl mb-6 space-y-2 text-xs text-gray-400 light:text-slate-600";
+    }
 
-    if (validCount > 0 && is100) {
+    if (validCount > 0 && is100 && !hasEmptyWallet) {
       executeBtn.disabled = false;
       executeBtn.classList.remove("opacity-50", "cursor-not-allowed");
     } else {
@@ -721,11 +718,11 @@
       const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
       const erc20Contract = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
-      let decimals = 6;
+      let decimals = 18;
       try {
         decimals = await erc20Contract.decimals();
       } catch (e) {
-        decimals = 18;
+        decimals = 6;
       }
       const amountWei = ethers.parseUnits(rawAmount, decimals);
 
@@ -742,7 +739,7 @@
       showToast(`Transaction submitted! Waiting for confirmation...`, 5000);
       const receipt = await tx.wait();
 
-      // Update analytics for roles involved in split
+      // Real Analytics Update
       const parsedAmount = parseFloat(rawAmount);
       document.querySelectorAll('.role-split-row').forEach(row => {
         const roleName = row.querySelector('.role-select').value;
