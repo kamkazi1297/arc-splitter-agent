@@ -87,7 +87,7 @@
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
       <div>
         <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight preserve-dark-color">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Role-Based Engine</span></h1>
-        <p class="text-xs sm:text-sm font-medium preserve-dark-muted">Manage team roles and split assets securely on-chain[cite: 1, 2].</p>
+        <p class="text-xs sm:text-sm font-medium preserve-dark-muted">Manage team roles and split assets securely on-chain.</p>
       </div>
       
       <div class="flex items-center gap-3 flex-wrap">
@@ -140,14 +140,14 @@
             <div>
               <label class="block text-gray-400 light:text-slate-600 text-xs font-semibold uppercase tracking-wider mb-2">Token</label>
               <select id="tokenSelect" class="w-full rounded-2xl px-4 py-3.5 text-sm font-medium outline-none cursor-pointer" onchange="onTokenSelectionChange(this)">
-                <option value="0x3600000000000000000000000000000000000000">USDC</option>
+                <option value="0x3600000000000000000000000000000000000000">USDC (Placeholder)</option>
                 <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
                 <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
                 <option value="custom">➕ Add Custom Token...</option>
               </select>
             </div>
             <div>
-              <label class="block text-gray-400 light:text-slate-600 text-xs font-semibold uppercase tracking-wider mb-2">Amount</label>
+              <label class="block text-gray-400 light:text-slate-600 text-xs font-semibold uppercase tracking-wider mb-2">Total Amount</label>
               <input type="number" id="totalAmount" value="100" class="w-full rounded-2xl px-4 py-3.5 text-lg font-bold outline-none" oninput="updateRoleSplitPreview()">
             </div>
           </div>
@@ -156,7 +156,7 @@
 
           <div class="flex justify-between items-center mb-4">
             <h3 class="font-bold text-base flex items-center gap-2">
-              <i class="fas fa-users-gear text-emerald-400"></i> Step 2: Role Allocations
+              <i class="fas fa-users-gear text-emerald-400"></i> Step 2: Role Allocations (Share % & Amount)
             </h3>
             <button onclick="addRoleRecipientRow()" class="px-3.5 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-semibold">
               <i class="fas fa-plus"></i> Add Role
@@ -206,7 +206,7 @@
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-6 rounded-3xl">
         <div>
           <h3 class="text-lg font-bold preserve-dark-color">Team Roles</h3>
-          <p class="text-xs preserve-dark-muted">Manage your team roles and associated wallets securely behind the scenes[cite: 1, 2].</p>
+          <p class="text-xs preserve-dark-muted">Manage your team roles and associated wallets securely behind the scenes.</p>
         </div>
         <div class="flex flex-wrap gap-2.5">
           <button onclick="showImportTeamModal()" class="px-4 py-2.5 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/20 rounded-2xl text-xs font-semibold transition-all">
@@ -522,7 +522,6 @@
     }
   }
 
-  // Improved case-insensitive analytics calculation
   function selectRoleAnalytics(role) {
     selectedRoleForAnalyticsName = role.name;
     document.getElementById("analyticsRoleNameTitle").textContent = role.name;
@@ -660,13 +659,43 @@
         <option value="">Select Role...</option>
         ${options}
       </select>
-      <div class="relative w-full sm:w-36">
-        <input type="number" class="role-percent w-full bg-black/20 light:bg-slate-100 rounded-xl px-4 py-3 text-center text-xs font-bold outline-none" placeholder="Share %" value="${percentage}" oninput="updateRoleSplitPreview()">
+      <div class="relative w-full sm:w-28">
+        <input type="number" class="role-percent w-full bg-black/20 light:bg-slate-100 rounded-xl px-4 py-3 text-center text-xs font-bold outline-none" placeholder="Share %" value="${percentage}" oninput="onRolePercentInput(this)">
         <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">%</span>
+      </div>
+      <div class="relative w-full sm:w-32">
+        <input type="number" class="role-amount w-full bg-black/20 light:bg-slate-100 rounded-xl px-4 py-3 text-center text-xs font-bold outline-none" placeholder="Amount" value="" oninput="onRoleAmountInput(this)">
+        <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">Amt</span>
       </div>
       <button onclick="document.getElementById('${rowId}').remove(); updateRoleSplitPreview();" class="text-gray-400 hover:text-rose-400 px-2 py-1"><i class="fas fa-trash-can text-rose-400"></i></button>
     `;
     container.appendChild(div);
+    updateRoleSplitPreview();
+  }
+
+  function onRolePercentInput(percentInput) {
+    const row = percentInput.closest('.role-split-row');
+    const amountInput = row.querySelector('.role-amount');
+    const totalAmount = parseFloat(document.getElementById("totalAmount").value) || 0;
+    const percent = parseFloat(percentInput.value) || 0;
+    
+    const calculatedAmount = (totalAmount * percent) / 100;
+    amountInput.value = totalAmount > 0 && !isNaN(percent) ? calculatedAmount.toFixed(2) : '';
+    updateRoleSplitPreview();
+  }
+
+  function onRoleAmountInput(amountInput) {
+    const row = amountInput.closest('.role-split-row');
+    const percentInput = row.querySelector('.role-percent');
+    const totalAmount = parseFloat(document.getElementById("totalAmount").value) || 0;
+    const amount = parseFloat(amountInput.value) || 0;
+
+    if (totalAmount > 0 && !isNaN(amount)) {
+      const calculatedPercent = (amount / totalAmount) * 100;
+      percentInput.value = calculatedPercent.toFixed(2);
+    } else {
+      percentInput.value = '';
+    }
     updateRoleSplitPreview();
   }
 
@@ -683,8 +712,17 @@
 
     rows.forEach(row => {
       const roleName = row.querySelector('.role-select').value;
-      const percent = parseFloat(row.querySelector('.role-percent').value) || 0;
+      const percentInput = row.querySelector('.role-percent');
+      const amountInput = row.querySelector('.role-amount');
+      
+      const percent = parseFloat(percentInput.value) || 0;
       totalPercent += percent;
+
+      // Auto-sync amounts when totalAmount changes
+      if (totalAmount > 0 && percentInput.value !== '') {
+        const calculatedAmount = (totalAmount * percent) / 100;
+        amountInput.value = calculatedAmount.toFixed(2);
+      }
 
       if (roleName) {
         selectedRolesSet.add(roleName);
@@ -744,8 +782,9 @@
     let currentSum = Array.from(rows).reduce((acc, r) => acc + (parseFloat(r.querySelector('.role-percent').value) || 0), 0);
     let remaining = 100 - (currentSum - (parseFloat(rows[rows.length-1].querySelector('.role-percent').value) || 0));
     if (remaining > 0) {
-      rows[rows.length - 1].querySelector('.role-percent').value = remaining.toFixed(2);
-      updateRoleSplitPreview();
+      const lastRowPercentInput = rows[rows.length - 1].querySelector('.role-percent');
+      lastRowPercentInput.value = remaining.toFixed(2);
+      onRolePercentInput(lastRowPercentInput);
     }
   }
 
@@ -760,10 +799,11 @@
     document.querySelectorAll('.role-split-row').forEach(row => {
       const roleName = row.querySelector('.role-select').value;
       const percent = row.querySelector('.role-percent').value;
+      const amount = row.querySelector('.role-amount').value;
       if (roleName) {
         const div = document.createElement("div");
         div.className = "flex justify-between font-medium";
-        div.innerHTML = `<span>${roleName}</span><span class="text-emerald-400">${percent}%</span>`;
+        div.innerHTML = `<span>${roleName}</span><span class="text-emerald-400">${percent}% (${amount})</span>`;
         listContainer.appendChild(div);
       }
     });
@@ -785,7 +825,7 @@
     executeBtn.disabled = true;
     executeBtn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Submitting to Contract...`;
 
-    showToast("Preparing transaction on-chain via Web3[cite: 1, 2]...");
+    showToast("Preparing transaction on-chain via Web3...");
 
     try {
       const tokenAddress = document.getElementById("tokenSelect").value;
