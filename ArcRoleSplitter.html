@@ -46,8 +46,16 @@
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1);
     }
 
-    .light body, .light h1, .light h3, .light label, .light .text-white, .light span { color: #0f172a; }
-    .light .text-gray-400 { color: #475569 !important; }
+    /* Fixed Font Colors in Light Mode for specified elements */
+    .light .preserve-dark-color {
+      color: #f8fafc !important;
+    }
+    .light .preserve-dark-muted {
+      color: #94a3b8 !important;
+    }
+
+    .light body, .light h3:not(.preserve-dark-color), .light label, .light .text-white:not(.preserve-dark-color) { color: #0f172a; }
+    .light .text-gray-400:not(.preserve-dark-muted) { color: #475569 !important; }
     .light .text-gray-300 { color: #334155 !important; }
     .light .text-emerald-400 { color: #059669 !important; }
     .light .text-cyan-400 { color: #0891b2 !important; }
@@ -84,23 +92,23 @@
     <!-- Header Section -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
       <div>
-        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Role-Based Engine</span></h1>
-        <p class="text-gray-400 light:text-slate-600 text-xs sm:text-sm font-medium">Manage team roles and split assets securely on-chain[cite: 1, 2].</p>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400 preserve-dark-color">Role-Based Engine</span></h1>
+        <p class="text-gray-400 light:text-slate-600 text-xs sm:text-sm font-medium preserve-dark-muted">Manage team roles and split assets securely on-chain[cite: 1, 2].</p>
       </div>
       
       <div class="flex items-center gap-3 flex-wrap">
         <!-- Navigation Tabs -->
         <div class="flex bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 rounded-2xl p-1 text-xs">
-          <button onclick="switchTab('roles')" id="tabRoles" class="px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400">Role Management</button>
-          <button onclick="switchTab('splitter')" id="tabSplitter" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-700">Role Split</button>
-          <button onclick="switchTab('history')" id="tabHistory" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-700">History</button>
+          <button onclick="switchTab('roles')" id="tabRoles" class="px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400 preserve-dark-color">Role Management</button>
+          <button onclick="switchTab('splitter')" id="tabSplitter" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-700 preserve-dark-muted">Role Split</button>
+          <button onclick="switchTab('history')" id="tabHistory" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-700 preserve-dark-muted">History</button>
         </div>
 
         <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/15 border border-white/10 rounded-2xl transition-all">
           <i class="fas fa-moon text-lg text-emerald-400"></i>
         </button>
 
-        <button onclick="showConnectModal()" id="connectBtn" class="app-button px-5 py-2.5 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl text-xs flex items-center gap-2">
+        <button onclick="handleWalletAction()" id="connectBtn" class="app-button px-5 py-2.5 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl text-xs flex items-center gap-2">
           <i class="fas fa-wallet text-emerald-500"></i> <span id="connectText">Connect Wallet</span>
         </button>
       </div>
@@ -369,9 +377,7 @@
   function fetchBalanceWithRetry(retriesLeft = 3) {
     const balanceEl = document.getElementById("userBalanceDisplay");
     
-    // Simulate API / RPC call query
     setTimeout(() => {
-      // Simulate sporadic failure on first attempts to show auto-retry working
       const isSuccess = retriesLeft === 1 || Math.random() > 0.4;
       
       if (isSuccess) {
@@ -393,9 +399,9 @@
     document.getElementById('viewSplitter').classList.toggle('hidden', tab !== 'splitter');
     document.getElementById('viewHistory').classList.toggle('hidden', tab !== 'history');
 
-    document.getElementById('tabRoles').className = tab === 'roles' ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-700";
-    document.getElementById('tabSplitter').className = tab === 'splitter' ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-700";
-    document.getElementById('tabHistory').className = tab === 'history' ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-700";
+    document.getElementById('tabRoles').className = tab === 'roles' ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400 preserve-dark-color" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-700 preserve-dark-muted";
+    document.getElementById('tabSplitter').className = tab === 'splitter' ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400 preserve-dark-color" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-700 preserve-dark-muted";
+    document.getElementById('tabHistory').className = tab === 'history' ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400 preserve-dark-color" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-700 preserve-dark-muted";
 
     if (tab === 'splitter') {
       renderRoleSplitRows();
@@ -651,7 +657,9 @@
     
     setTimeout(() => {
       const mockHash = "0x" + Array.from({length: 40}, () => Math.floor(Math.random()*16).toString(16)).join('');
-      showToast(`Role Split Completed! Hash: <a href="#" class="underline font-mono text-cyan-300">${mockHash.substring(0,10)}...</a>`, 6000);
+      const explorerLink = `https://testnet.arcscan.app/tx/${mockHash}`;
+      
+      showToast(`Role Split Completed! Hash: <a href="${explorerLink}" target="_blank" class="underline font-mono text-cyan-300">${mockHash.substring(0,10)}...</a>`, 7000);
       
       historyList.unshift({
         date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString(),
@@ -671,15 +679,18 @@
     container.innerHTML = historyList.length ? "" : "<p class='text-gray-400 light:text-slate-600 text-center py-6 text-xs'>No role splits yet.</p>";
     historyList.forEach(item => {
       const shortHash = item.hash ? item.hash.substring(0, 12) + '...' : '0x8a7fb3c2...';
+      const explorerLink = item.hash ? `https://testnet.arcscan.app/tx/${item.hash}` : 'https://testnet.arcscan.app/';
+      
       const div = document.createElement("div");
-      div.className = "bg-white/[0.02] light:bg-slate-50 border border-white/5 light:border-black/5 rounded-2xl p-4 text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2";
+      // Updated history card background to be more prominent (darker) in light mode
+      div.className = "bg-white/[0.02] light:bg-slate-200 border border-white/5 light:border-slate-300 rounded-2xl p-4 text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2";
       div.innerHTML = `
         <div>
           <div class="font-bold text-sm text-emerald-400">${item.amount} ${item.token} → ${item.rolesCount} Roles</div>
           <div class="text-[11px] text-gray-400 light:text-slate-600">${item.date}</div>
         </div>
         <div class="flex items-center gap-3">
-          <span class="font-mono text-[11px] text-cyan-400 bg-cyan-500/10 px-2 py-1 rounded-lg" title="${item.hash}">Tx: ${shortHash}</span>
+          <a href="${explorerLink}" target="_blank" rel="noopener noreferrer" class="font-mono text-[11px] text-cyan-500 light:text-cyan-700 bg-cyan-500/10 light:bg-slate-300 px-2 py-1 rounded-lg hover:underline" title="View on Explorer">Tx: ${shortHash} <i class="fas fa-external-link-alt text-[9px] ml-1"></i></a>
           <span class="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 font-semibold">${item.status}</span>
         </div>
       `;
@@ -687,17 +698,27 @@
     });
   }
 
-  function showConnectModal() {
-    userAddress = "0x71C...9B24";
-    document.getElementById("connectBtn").innerHTML = `<i class="fas fa-wallet text-emerald-400"></i> <span class="font-bold">0x71C...9B24</span>`;
-    showToast("Wallet Connected.");
-    fetchBalanceWithRetry(3);
+  function handleWalletAction() {
+    if (userAddress) {
+      // Disconnect
+      userAddress = null;
+      document.getElementById("connectBtn").innerHTML = `<i class="fas fa-wallet text-emerald-500"></i> <span id="connectText">Connect Wallet</span>`;
+      document.getElementById("userBalanceDisplay").textContent = "Disconnected";
+      document.getElementById("userBalanceDisplay").className = "font-bold text-rose-400";
+      showToast("Wallet Disconnected.");
+    } else {
+      // Connect
+      userAddress = "0x71C...9B24";
+      document.getElementById("connectBtn").innerHTML = `<i class="fas fa-wallet text-emerald-400"></i> <span class="font-bold">0x71C...9B24</span> <i class="fas fa-power-off text-rose-400 ml-1 text-[10px]" title="Click to Disconnect"></i>`;
+      showToast("Wallet Connected.");
+      fetchBalanceWithRetry(3);
+    }
   }
 
   window.onload = () => {
     renderRolesTable();
     renderHistory();
-    fetchBalanceWithRetry(3); // Trigger automatic retry balance fetch on load
+    fetchBalanceWithRetry(3);
   };
 </script>
 </body>
