@@ -920,53 +920,52 @@
 
   try {
     const tokenAddress = document.getElementById("tokenSelect").value;
-    const isNative = tokenAddress === "0x0000000000000000000000000000000000000000";
     const rawAmount = document.getElementById("totalAmount").value || "10";
 
     let decimals = 6;
-    if (!isNative) {
-      try {
-        const erc20 = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
-        decimals = await erc20.decimals();
-      } catch(e) {}
-    }
+    const erc20 = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+    try { decimals = await erc20.decimals(); } catch(e) {}
 
     const totalAmountWei = ethers.parseUnits(rawAmount, decimals);
 
     let walletsArr = [];
     let sharesBps = [];
 
-    document.querySelectorAll('.role-split-row').forEach(row => {
+    document.querySelectorAll('.role-split-row').forEach((row, index) => {
       const roleName = row.querySelector('.role-select').value;
       const percent = parseFloat(row.querySelector('.role-percent').value) || 0;
+      console.log(`Row ${index}: ${roleName} - ${percent}%`);
+
       if (roleName && percent > 0) {
         const role = rolesData.find(r => r.name === roleName);
         if (role && role.wallets.length > 0) {
-          const bpsForThisRole = Math.round(percent * 100);
-          const perWallet = Math.floor(bpsForThisRole / role.wallets.length);
+          const bpsForRole = Math.round(percent * 100);
+          const perWalletBps = Math.floor(bpsForRole / role.wallets.length);
           role.wallets.forEach(w => {
             if (ethers.isAddress(w)) {
               walletsArr.push(w);
-              sharesBps.push(perWallet);
+              sharesBps.push(perWalletBps);
             }
           });
         }
       }
     });
 
-    // تنظیم دقیق bps
+    // تنظیم نهایی bps
     if (sharesBps.length > 0) {
       let sum = sharesBps.reduce((a, b) => a + b, 0);
-      sharesBps[sharesBps.length-1] += (10000 - sum);
+      sharesBps[sharesBps.length - 1] += (10000 - sum);
     }
+
+    console.log("Wallets:", walletsArr.length);
+    console.log("SharesBps:", sharesBps);
+    console.log("Sum BPS:", sharesBps.reduce((a, b) => a + b, 0));
 
     const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
-    if (!isNative) {
-      const erc20 = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
-      showToast("Approving...");
-      await (await erc20.approve(CONTRACT_ADDRESS, totalAmountWei * 10n)).wait();
-    }
+    // Approve
+    const approveTx = await erc20.approve(CONTRACT_ADDRESS, totalAmountWei * 10n);
+    await approveTx.wait();
 
     const params = {
       token: tokenAddress,
@@ -977,24 +976,18 @@
       batchId: Math.floor(Date.now() / 1000),
       deadline: Math.floor(Date.now() / 1000) + 7200,
       nonce: 0,
-      baseGas: 100000,           // افزایش gas
+      baseGas: 100000,
       maxGasPriceLimit: 0
     };
 
-    showToast("Executing...");
-    
-    // ارسال با gas limit دستی
-    const tx = await contract.splitByPercentage(params, { gasLimit: 800000 });
-
+    const tx = await contract.splitByPercentage(params, { gasLimit: 1000000 });
     const receipt = await tx.wait();
-    showToast(`✅ Success! Hash: ${receipt.hash.slice(0,12)}...`, 10000);
 
-    switchTab('history');
-    updateWalletBalance();
+    showToast(`✅ SUCCESS! Hash: ${receipt.hash.slice(0,12)}...`, 10000);
 
   } catch (err) {
-    console.error(err);
-    showToast("❌ " + (err.shortMessage || err.message || "Failed"));
+    console.error("Full Error:", err);
+    showToast("❌ " + (err.shortMessage || err.message));
   } finally {
     executeBtn.innerHTML = originalText;
     executeBtn.disabled = false;
