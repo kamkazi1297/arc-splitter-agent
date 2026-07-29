@@ -977,19 +977,26 @@
 
       const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
+            // === Approve بخش جدید و قوی‌تر ===
       if (!isNative) {
         const erc20Contract = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
+        
+        showToast("Checking & Approving token...");
+        
         let allowance = 0n;
         try {
           allowance = await erc20Contract.allowance(userAddress, CONTRACT_ADDRESS);
-        } catch (err) {
-          console.warn("Allowance check failed:", err);
-        }
+        } catch (e) {}
 
-        if (allowance < calculatedTotalAmountWei) {
-          showToast("Approving ERC20 token expenditure...");
-          const approveTx = await erc20Contract.approve(CONTRACT_ADDRESS, calculatedTotalAmountWei);
+        if (allowance < totalAmountWei) {
+          const approveTx = await erc20Contract.approve(
+            CONTRACT_ADDRESS, 
+            totalAmountWei * 2n   // 2 برابر مقدار برای اطمینان
+          );
           await approveTx.wait();
+          showToast("Token Approved Successfully");
+        } else {
+          showToast("Already Approved");
         }
       }
 
