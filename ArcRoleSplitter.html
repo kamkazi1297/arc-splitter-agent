@@ -971,11 +971,8 @@
         }
       });
 
-      if (walletsArr.length === 0) {
-        showToast("No valid wallets found in selected roles.");
-        executeBtn.innerHTML = originalBtnText;
-        executeBtn.disabled = false;
-        return;
+      if (walletsArr.length === 0 || walletsArr.length !== amountsArr.length) {
+        throw new Error("Wallet and amount arrays mismatch or empty");
       }
 
       const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
@@ -998,14 +995,14 @@
 
       const params = {
         token: tokenAddress,
-        totalChunkAmount: calculatedTotalAmountWei,
+        totalChunkAmount: totalAmountWei,
         wallets: walletsArr,
         amounts: amountsArr,
         tokenToNativeRatio: ethers.parseUnits("1", 18),
         batchId: Math.floor(Date.now() / 1000),
-        deadline: Math.floor(Date.now() / 1000) + 3600,
-        nonce: 0, 
-        baseGas: 0,
+        deadline: Math.floor(Date.now() / 1000) + 7200,   // 2 ساعت
+        nonce: 0,
+        baseGas: 30000,           // ← مهم
         maxGasPriceLimit: 0
       };
 
