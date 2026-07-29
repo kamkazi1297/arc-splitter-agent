@@ -83,7 +83,6 @@
       padding-bottom: 24px;
     }
 
-    /* Batch Manager UI Styles */
     .progress-bar-fill { transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
     .fade-in { animation: fadeIn 0.4s ease forwards; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -111,7 +110,7 @@
           <i class="fas fa-moon text-lg text-emerald-400"></i>
         </button>
 
-        <button onclick="connectRealWallet()" id="connectBtn" class="app-button px-5 py-2.5 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl text-xs flex items-center gap-2 shadow-lg">
+        <button onclick="toggleConnection()" id="connectBtn" class="app-button px-5 py-2.5 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl text-xs flex items-center gap-2 shadow-lg">
           <i class="fas fa-wallet text-emerald-500"></i> <span id="connectText">Connect Wallet</span>
         </button>
       </div>
@@ -179,7 +178,7 @@
                 <option value="0x3600000000000000000000000000000000000000" selected>USDC (Arc Testnet)</option>
                 <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC (Arc Testnet)</option>
                 <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC (Arc Testnet)</option>
-                
+                <option value="0x0000000000000000000000000000000000000000">Native ARC (0x00...)</option>
                 <option value="custom">➕ Add Custom Token...</option>
               </select>
             </div>
@@ -207,10 +206,6 @@
             <button onclick="distributeRoleRemaining()" class="text-amber-400 hover:underline text-xs font-semibold">Distribute Remaining</button>
           </div>
 
-          <div>
-            <label class="block text-gray-400 light:text-slate-600 text-xs font-semibold uppercase tracking-wider mb-2">Transaction Memo</label>
-            <input type="text" id="txMemo" class="w-full rounded-2xl px-4 py-3 text-xs outline-none" placeholder="e.g. Enterprise On-chain Distribution">
-          </div>
         </div>
       </div>
 
@@ -279,7 +274,7 @@
             <div id="selectedRoleAnalytics" class="space-y-4 text-xs">
               <div class="bg-black/20 light:bg-slate-100 p-4 rounded-2xl border border-white/5 light:border-black/5">
                 <div class="text-gray-400 light:text-slate-600 mb-1">Total Received</div>
-                <div id="analyticsReceived" class="text-lg font-bold text-emerald-400">0.00 USDC</div>
+                <div id="analyticsReceived" class="text-base font-bold text-emerald-400">0.00</div>
               </div>
               <div class="bg-black/20 light:bg-slate-100 p-4 rounded-2xl border border-white/5 light:border-black/5">
                 <div class="text-gray-400 light:text-slate-600 mb-1">Total Transactions</div>
@@ -291,7 +286,7 @@
               </div>
             </div>
           </div>
-          <p class="text-[11px] text-gray-500 mt-4">* Analytics update dynamically upon successful role split execution.</p>
+          <p class="text-[11px] text-gray-500 mt-4">* Analytics update dynamically across all used tokens.</p>
         </div>
       </div>
     </div>
@@ -364,7 +359,7 @@
       <div id="confirmRolesList" class="bg-black/20 light:bg-slate-100 p-4 rounded-2xl mb-6 space-y-2 text-xs max-h-40 overflow-y-auto"></div>
       <div class="flex gap-3">
         <button onclick="hideConfirmModal()" class="app-button flex-1 py-3 rounded-xl border border-white/15 text-xs">Cancel</button>
-        <button onclick="executeRoleSplitTx()" class="app-button flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold rounded-xl text-xs">Confirm & Split on-chain</button>
+        <button onclick="executeRoleSplitTx()" class="app-button flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold rounded-xl text-xs">Confirm & Split</button>
       </div>
     </div>
   </div>
@@ -397,7 +392,7 @@
     "function decimals() external view returns (uint8)"
   ];
 
-  const BATCH_SIZE = 100; // Block Gas Limit prevention threshold
+  const BATCH_SIZE = 100;
 
   let rolesData = JSON.parse(localStorage.getItem('arcRolesData')) || [
     { name: "Founder", wallets: [], description: "Core Leadership", color: "blue" },
@@ -472,6 +467,20 @@
     });
   }
 
+  // اضافه شدن قابلیت توگل (قطع و وصل کردن کیف پول)
+  async function toggleConnection() {
+    if (userAddress) {
+      userAddress = null;
+      signer = null;
+      document.getElementById("connectBtn").innerHTML = `<i class="fas fa-wallet text-emerald-500"></i> <span id="connectText">Connect Wallet</span>`;
+      document.getElementById("userBalanceDisplay").textContent = "0.00";
+      document.getElementById("contractStatusText").textContent = "Ready to connect to Arc Testnet Network";
+      showToast("Wallet disconnected locally.");
+    } else {
+      await connectRealWallet();
+    }
+  }
+
   async function connectRealWallet() {
     if (!window.ethereum) {
       return showToast("MetaMask or Web3 Wallet not found! Please install it.");
@@ -533,23 +542,26 @@
         const tokenAddress = document.getElementById("tokenSelect").value;
         if (tokenAddress === "custom") return;
 
-        if (tokenAddress === "0x0000000000000000000000000000000000000000") {
+        // تشخیص اتوماتیک Native Token
+        const isUSDC = tokenAddress.toLowerCase() === "0x3600000000000000000000000000000000000000".toLowerCase();
+        
+        if (tokenAddress === "0x0000000000000000000000000000000000000000" || isUSDC) {
           const bal = await provider.getBalance(userAddress);
           const formatted = ethers.formatUnits(bal, 18);
-          document.getElementById("userBalanceDisplay").textContent = `${parseFloat(formatted).toFixed(2)}`;
+          document.getElementById("userBalanceDisplay").textContent = `${parseFloat(formatted).toFixed(4)}`;
           return;
         } else {
           const erc20 = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
           let decimals = 18;
           try {
-            decimals = await erc20.decimals();
+            decimals = Number(await erc20.decimals());
           } catch (e) {
             decimals = 6;
           }
 
           const bal = await erc20.balanceOf(userAddress);
           const formatted = ethers.formatUnits(bal, decimals);
-          document.getElementById("userBalanceDisplay").textContent = `${parseFloat(formatted).toFixed(2)}`;
+          document.getElementById("userBalanceDisplay").textContent = `${parseFloat(formatted).toFixed(4)}`;
           return;
         }
       } catch (e) {
@@ -643,11 +655,12 @@
     }
   }
 
+  // حل مشکل Analytics (نمایش تمامی توکن‌ها برای یک نقش)
   function selectRoleAnalytics(role) {
     selectedRoleForAnalyticsName = role.name;
     document.getElementById("analyticsRoleNameTitle").textContent = role.name;
     
-    let totalReceived = 0;
+    let totalsByToken = {};
     let txCount = 0;
     let lastPayment = "Never";
 
@@ -655,15 +668,19 @@
       if (item.allocations) {
         item.allocations.forEach(alloc => {
           if (alloc.roleName && alloc.roleName.trim().toLowerCase() === role.name.trim().toLowerCase()) {
-            totalReceived += Number(alloc.amount) || 0;
+            const sym = item.token || 'USDC';
+            totalsByToken[sym] = (totalsByToken[sym] || 0) + Number(alloc.amount);
             txCount += 1;
-            lastPayment = item.date;
+            if (lastPayment === "Never") lastPayment = item.date;
           }
         });
       }
     });
 
-    document.getElementById("analyticsReceived").textContent = `${totalReceived.toLocaleString()} USDC`;
+    let receivedText = Object.keys(totalsByToken).map(sym => `${totalsByToken[sym].toLocaleString(undefined, {maximumFractionDigits: 4})} ${sym}`).join(' | ');
+    if (!receivedText) receivedText = "0.00";
+
+    document.getElementById("analyticsReceived").textContent = receivedText;
     document.getElementById("analyticsTxCount").textContent = txCount;
     document.getElementById("analyticsLastPayment").textContent = lastPayment;
   }
@@ -910,7 +927,7 @@
 
   function openConfirmModal() {
     const totalAmount = document.getElementById("totalAmount").value;
-    const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
+    const symbol = document.getElementById("tokenSelect").selectedOptions[0].text.split(' ')[0];
     document.getElementById("confirmModalText").textContent = `You are splitting ${totalAmount} ${symbol} on-chain:`;
     
     const listContainer = document.getElementById("confirmRolesList");
@@ -941,24 +958,47 @@
       if (!signer) return;
     }
 
-    const tokenAddress = document.getElementById("tokenSelect").value;
+    const tokenSelect = document.getElementById("tokenSelect");
+    const tokenAddress = tokenSelect.value;
+    const tokenSymbol = tokenSelect.selectedOptions[0].text.split(' ')[0]; // Gets USDC, EURC, etc.
     const rawAmount = parseFloat(document.getElementById("totalAmount").value) || 0;
+    
+    // تشخیص توکن بومی شبکه (ARC یا USDC با توجه به صبحت کاربر)
     const isUSDC = tokenAddress.toLowerCase() === "0x3600000000000000000000000000000000000000".toLowerCase();
     const isNative = tokenAddress === "0x0000000000000000000000000000000000000000" || isUSDC;
     const finalTokenAddress = isNative ? "0x0000000000000000000000000000000000000000" : tokenAddress;
 
+    // --- رفع مشکل تعداد اعشار توکن‌های غیربومی (Revert شدن بخاطر Decimals اشتباه) ---
+    let contractDecimals = 18;
+    if (!isNative) {
+      try {
+        const erc20 = new ethers.Contract(finalTokenAddress, ERC20_ABI, provider);
+        contractDecimals = Number(await erc20.decimals());
+      } catch (e) {
+        console.warn("Could not fetch decimals, defaulting to 18", e);
+        contractDecimals = 18; // پیش فرض
+      }
+    }
+
     let flatWallets = [];
     let flatAmounts = [];
+    let historyAllocations = [];
 
     document.querySelectorAll('.role-split-row').forEach(row => {
       const roleName = row.querySelector('.role-select').value;
       const percent = parseFloat(row.querySelector('.role-percent').value) || 0;
+      
       if (roleName && percent > 0) {
         const role = rolesData.find(r => r.name === roleName);
         if (role && role.wallets.length > 0) {
           const totalForRole = (rawAmount * percent) / 100;
-          const amountPerWalletStr = (totalForRole / role.wallets.length).toFixed(18);
-          const amountWei = ethers.parseUnits(amountPerWalletStr, 18);
+          
+          // برای نمایش داینامیک در تب Roles ذخیره می‌کنیم
+          historyAllocations.push({ roleName: roleName, amount: totalForRole });
+
+          // تنظیم تعداد اعشار دقیق برای جلوگیری از CALL_EXCEPTION / Revert
+          const amountPerWalletStr = (totalForRole / role.wallets.length).toFixed(contractDecimals);
+          const amountWei = ethers.parseUnits(amountPerWalletStr, contractDecimals);
 
           role.wallets.forEach(w => {
             if (ethers.isAddress(w)) {
@@ -987,7 +1027,8 @@
       currentIndex: 0,
       totalWallets: flatWallets.length,
       rawAmount: rawAmount,
-      tokenSymbol: isUSDC ? "USDC" : (isNative ? "ARC" : "TOKEN")
+      tokenSymbol: tokenSymbol,
+      allocations: historyAllocations // ذخیره مقادیر توزیع برای بخش آنالیز
     };
 
     localStorage.setItem('arcPendingBatch', JSON.stringify(batchData));
@@ -1040,7 +1081,7 @@
         const erc20 = new ethers.Contract(data.token, ERC20_ABI, signer);
         let sumWei = 0n;
         data.chunks.forEach(c => c.amounts.forEach(a => sumWei += BigInt(a)));
-        await (await erc20.approve(CONTRACT_ADDRESS, sumWei * 2n)).wait();
+        await (await erc20.approve(CONTRACT_ADDRESS, sumWei)).wait();
       }
 
       while (data.currentIndex < data.chunks.length) {
@@ -1079,7 +1120,8 @@
             rolesCount: data.totalWallets,
             date: new Date().toLocaleString(),
             hash: receipt.hash,
-            status: "Success"
+            status: "Success",
+            allocations: data.allocations // لاگ کردن برای بخش Analytics
           });
           localStorage.setItem('arcRoleHistory', JSON.stringify(historyList));
         }
