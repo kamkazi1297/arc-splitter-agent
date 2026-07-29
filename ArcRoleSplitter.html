@@ -100,10 +100,17 @@
       </div>
       
       <div class="flex items-center gap-3 flex-wrap">
-        <div class="flex bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 rounded-2xl p-1 text-xs">
+        <div class="flex bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 rounded-2xl p-1 text-xs relative">
           <button onclick="switchTab('splitter')" id="tabSplitter" class="px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400 preserve-dark-color">Role Split</button>
           <button onclick="switchTab('roles')" id="tabRoles" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted">Role Management</button>
           <button onclick="switchTab('history')" id="tabHistory" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted">History</button>
+          <button onclick="switchTab('pending')" id="tabPending" class="relative px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted">
+            Pending
+            <span id="pendingBadge" class="hidden absolute top-1 right-1 flex h-2.5 w-2.5">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+            </span>
+          </button>
         </div>
 
         <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/15 border border-white/10 rounded-2xl transition-all" aria-label="Toggle Theme">
@@ -138,27 +145,6 @@
         </div>
         <div id="userBalanceDisplay" class="font-bold text-emerald-400">0.00</div>
       </div>
-    </div>
-
-    <!-- ================= BATCH MANAGER (RESUME SECTION) ================= -->
-    <div id="batchManagerContainer" class="hidden glass rounded-3xl p-6 mb-8 border border-amber-500/30 bg-amber-500/5 fade-in">
-      <div class="flex justify-between items-center mb-4">
-        <h3 class="font-bold text-amber-400 flex items-center gap-2 text-sm"><i class="fas fa-triangle-exclamation"></i> Incomplete Transaction Batch Found</h3>
-        <button onclick="clearBatch()" class="text-xs text-gray-400 hover:text-rose-400 transition-colors">Discard Batch</button>
-      </div>
-      <p class="text-xs text-gray-400 light:text-slate-600 mb-4">A previous multi-wallet batch transaction was interrupted or rejected. You can resume sending the remaining portions instantly.</p>
-      
-      <div class="w-full bg-black/30 rounded-full h-3 mb-2 overflow-hidden border border-white/5">
-        <div id="batchProgressBar" class="bg-gradient-to-r from-amber-400 to-emerald-400 h-3 rounded-full progress-bar-fill" style="width: 0%"></div>
-      </div>
-      <div class="flex justify-between text-[11px] text-gray-400 mb-5">
-        <span id="batchProgressText">Completed: 0 / 0</span>
-        <span id="batchRemainingText">Remaining: 0 Wallets</span>
-      </div>
-
-      <button onclick="resumeBatchTx()" id="resumeBatchBtn" class="app-button w-full sm:w-auto px-6 py-3 bg-amber-500 hover:bg-amber-600 text-black font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg">
-        <i class="fas fa-play"></i> Resume Remaining Batches
-      </button>
     </div>
 
     <!-- ================= VIEW 1: ROLE SPLIT ================= -->
@@ -268,9 +254,19 @@
 
         <div class="lg:col-span-4 glass rounded-3xl p-6 flex flex-col justify-between">
           <div>
-            <h3 class="font-bold text-sm mb-4 flex items-center gap-2">
-              <i class="fas fa-chart-pie text-emerald-400"></i> Selected Role Analytics (<span id="analyticsRoleNameTitle" class="text-emerald-400 font-bold">None</span>)
-            </h3>
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-bold text-sm flex items-center gap-2">
+                <i class="fas fa-chart-pie text-emerald-400"></i> Selected Role Analytics (<span id="analyticsRoleNameTitle" class="text-emerald-400 font-bold">None</span>)
+              </h3>
+              <select id="analyticsTokenFilter" onchange="updateRoleAnalytics()" class="bg-black/20 light:bg-white/50 border border-white/5 light:border-black/10 rounded-xl px-2 py-1 text-[10px] font-bold outline-none cursor-pointer">
+                <option value="ALL">All Tokens</option>
+                <option value="USDC">USDC</option>
+                <option value="EURC">EURC</option>
+                <option value="cirBTC">cirBTC</option>
+                <option value="ARC">ARC</option>
+              </select>
+            </div>
+            
             <div id="selectedRoleAnalytics" class="space-y-4 text-xs">
               <div class="bg-black/20 light:bg-slate-100 p-4 rounded-2xl border border-white/5 light:border-black/5">
                 <div class="text-gray-400 light:text-slate-600 mb-1">Total Received</div>
@@ -286,7 +282,7 @@
               </div>
             </div>
           </div>
-          <p class="text-[11px] text-gray-500 mt-4">* Analytics update dynamically across all used tokens.</p>
+          <p class="text-[11px] text-gray-500 mt-4">* Select a specific token from the dropdown to filter analytics.</p>
         </div>
       </div>
     </div>
@@ -298,6 +294,19 @@
       </h3>
       <div id="historyContainer" class="space-y-3">
         <p class="text-gray-400 light:text-slate-600 text-center py-6 text-xs">No role splits executed yet.</p>
+      </div>
+    </div>
+
+    <!-- ================= VIEW 4: PENDING BATCHES ================= -->
+    <div id="viewPending" class="hidden space-y-6">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="font-bold text-lg flex items-center gap-2 preserve-dark-color">
+          <i class="fas fa-hourglass-half text-amber-400"></i> Pending & Incomplete Batches
+        </h3>
+        <p class="text-xs text-gray-400 preserve-dark-muted">Transactions that failed or were interrupted can be safely resumed here.</p>
+      </div>
+      <div id="pendingContainer" class="space-y-4">
+        <!-- Rendered dynamically -->
       </div>
     </div>
 
@@ -438,7 +447,7 @@
           
           setupWalletListeners();
           updateWalletBalance();
-          checkPendingBatches();
+          renderPendingBatches();
         }
       } catch (err) {
         console.error("Auto-connect error:", err);
@@ -467,7 +476,6 @@
     });
   }
 
-  // اضافه شدن قابلیت توگل (قطع و وصل کردن کیف پول)
   async function toggleConnection() {
     if (userAddress) {
       userAddress = null;
@@ -500,7 +508,7 @@
       
       setupWalletListeners();
       updateWalletBalance();
-      checkPendingBatches();
+      renderPendingBatches();
     } catch (err) {
       console.error(err);
       showToast("Wallet connection rejected or failed.");
@@ -542,7 +550,6 @@
         const tokenAddress = document.getElementById("tokenSelect").value;
         if (tokenAddress === "custom") return;
 
-        // تشخیص اتوماتیک Native Token
         const isUSDC = tokenAddress.toLowerCase() === "0x3600000000000000000000000000000000000000".toLowerCase();
         
         if (tokenAddress === "0x0000000000000000000000000000000000000000" || isUSDC) {
@@ -596,10 +603,15 @@
     document.getElementById('viewSplitter').classList.toggle('hidden', tab !== 'splitter');
     document.getElementById('viewRoles').classList.toggle('hidden', tab !== 'roles');
     document.getElementById('viewHistory').classList.toggle('hidden', tab !== 'history');
+    document.getElementById('viewPending').classList.toggle('hidden', tab !== 'pending');
 
-    document.getElementById('tabSplitter').className = tab === 'splitter' ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400 preserve-dark-color" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted";
-    document.getElementById('tabRoles').className = tab === 'roles' ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400 preserve-dark-color" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted";
-    document.getElementById('tabHistory').className = tab === 'history' ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400 preserve-dark-color" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted";
+    const activeClass = "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400 preserve-dark-color";
+    const inactiveClass = "relative px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted";
+    
+    document.getElementById('tabSplitter').className = tab === 'splitter' ? activeClass : inactiveClass;
+    document.getElementById('tabRoles').className = tab === 'roles' ? activeClass : inactiveClass;
+    document.getElementById('tabHistory').className = tab === 'history' ? activeClass : inactiveClass;
+    document.getElementById('tabPending').className = tab === 'pending' ? activeClass : inactiveClass;
 
     if (tab === 'splitter') {
       renderRoleSplitRows();
@@ -608,6 +620,8 @@
       renderRolesTable();
     } else if (tab === 'history') {
       renderHistory();
+    } else if (tab === 'pending') {
+      renderPendingBatches();
     }
   }
 
@@ -655,10 +669,10 @@
     }
   }
 
-  // حل مشکل Analytics (نمایش تمامی توکن‌ها برای یک نقش)
-  function selectRoleAnalytics(role) {
-    selectedRoleForAnalyticsName = role.name;
-    document.getElementById("analyticsRoleNameTitle").textContent = role.name;
+  function updateRoleAnalytics() {
+    if (!selectedRoleForAnalyticsName) return;
+    const roleName = selectedRoleForAnalyticsName;
+    const tokenFilter = document.getElementById("analyticsTokenFilter").value;
     
     let totalsByToken = {};
     let txCount = 0;
@@ -667,11 +681,13 @@
     historyList.forEach(item => {
       if (item.allocations) {
         item.allocations.forEach(alloc => {
-          if (alloc.roleName && alloc.roleName.trim().toLowerCase() === role.name.trim().toLowerCase()) {
+          if (alloc.roleName && alloc.roleName.trim().toLowerCase() === roleName.trim().toLowerCase()) {
             const sym = item.token || 'USDC';
-            totalsByToken[sym] = (totalsByToken[sym] || 0) + Number(alloc.amount);
-            txCount += 1;
-            if (lastPayment === "Never") lastPayment = item.date;
+            if (tokenFilter === "ALL" || tokenFilter === sym) {
+              totalsByToken[sym] = (totalsByToken[sym] || 0) + Number(alloc.amount);
+              txCount += 1;
+              if (lastPayment === "Never") lastPayment = item.date;
+            }
           }
         });
       }
@@ -683,6 +699,12 @@
     document.getElementById("analyticsReceived").textContent = receivedText;
     document.getElementById("analyticsTxCount").textContent = txCount;
     document.getElementById("analyticsLastPayment").textContent = lastPayment;
+  }
+
+  function selectRoleAnalytics(role) {
+    selectedRoleForAnalyticsName = role.name;
+    document.getElementById("analyticsRoleNameTitle").textContent = role.name;
+    updateRoleAnalytics();
   }
 
   function showRoleModal() {
@@ -960,23 +982,22 @@
 
     const tokenSelect = document.getElementById("tokenSelect");
     const tokenAddress = tokenSelect.value;
-    const tokenSymbol = tokenSelect.selectedOptions[0].text.split(' ')[0]; // Gets USDC, EURC, etc.
+    const tokenSymbol = tokenSelect.selectedOptions[0].text.split(' ')[0];
     const rawAmount = parseFloat(document.getElementById("totalAmount").value) || 0;
     
-    // تشخیص توکن بومی شبکه (ARC یا USDC با توجه به صبحت کاربر)
     const isUSDC = tokenAddress.toLowerCase() === "0x3600000000000000000000000000000000000000".toLowerCase();
     const isNative = tokenAddress === "0x0000000000000000000000000000000000000000" || isUSDC;
     const finalTokenAddress = isNative ? "0x0000000000000000000000000000000000000000" : tokenAddress;
 
-    // --- رفع مشکل تعداد اعشار توکن‌های غیربومی (Revert شدن بخاطر Decimals اشتباه) ---
+    // خواندن دقیق اعشار توکن برای رفع مشکل CALL_EXCEPTION هنگام تبدیل مقادیر
     let contractDecimals = 18;
     if (!isNative) {
       try {
-        const erc20 = new ethers.Contract(finalTokenAddress, ERC20_ABI, provider);
+        const erc20 = new ethers.Contract(finalTokenAddress, ERC20_ABI, signer);
         contractDecimals = Number(await erc20.decimals());
       } catch (e) {
         console.warn("Could not fetch decimals, defaulting to 18", e);
-        contractDecimals = 18; // پیش فرض
+        contractDecimals = 18;
       }
     }
 
@@ -993,10 +1014,8 @@
         if (role && role.wallets.length > 0) {
           const totalForRole = (rawAmount * percent) / 100;
           
-          // برای نمایش داینامیک در تب Roles ذخیره می‌کنیم
           historyAllocations.push({ roleName: roleName, amount: totalForRole });
 
-          // تنظیم تعداد اعشار دقیق برای جلوگیری از CALL_EXCEPTION / Revert
           const amountPerWalletStr = (totalForRole / role.wallets.length).toFixed(contractDecimals);
           const amountWei = ethers.parseUnits(amountPerWalletStr, contractDecimals);
 
@@ -1020,7 +1039,10 @@
       });
     }
 
+    const batchId = Date.now();
     const batchData = {
+      id: batchId,
+      date: new Date().toLocaleString(),
       token: finalTokenAddress,
       isNative: isNative,
       chunks: chunks,
@@ -1028,50 +1050,85 @@
       totalWallets: flatWallets.length,
       rawAmount: rawAmount,
       tokenSymbol: tokenSymbol,
-      allocations: historyAllocations // ذخیره مقادیر توزیع برای بخش آنالیز
+      allocations: historyAllocations
     };
 
-    localStorage.setItem('arcPendingBatch', JSON.stringify(batchData));
-    checkPendingBatches();
-    await resumeBatchTx();
+    let pendingBatches = JSON.parse(localStorage.getItem('arcPendingBatches') || '[]');
+    pendingBatches.push(batchData);
+    localStorage.setItem('arcPendingBatches', JSON.stringify(pendingBatches));
+
+    renderPendingBatches();
+    switchTab('pending');
+    await resumeBatchTx(batchId);
   }
 
-  function checkPendingBatches() {
-    const data = JSON.parse(localStorage.getItem('arcPendingBatch'));
-    const container = document.getElementById("batchManagerContainer");
+  function renderPendingBatches() {
+    let batches = JSON.parse(localStorage.getItem('arcPendingBatches') || '[]');
+    const container = document.getElementById("pendingContainer");
+    const badge = document.getElementById("pendingBadge");
     
-    if (data && data.currentIndex < data.chunks.length) {
-      container.classList.remove("hidden");
-      const done = data.currentIndex * BATCH_SIZE;
-      const pct = (data.currentIndex / data.chunks.length) * 100;
-      
-      document.getElementById("batchProgressBar").style.width = `${pct}%`;
-      document.getElementById("batchProgressText").innerText = `Batches: ${data.currentIndex} / ${data.chunks.length}`;
-      document.getElementById("batchRemainingText").innerText = `Remaining: ~${data.totalWallets - done} Wallets`;
-      
-      document.getElementById("executeSplitBtn").disabled = true;
-      document.getElementById("executeSplitBtn").classList.add("opacity-50", "cursor-not-allowed");
+    if (batches.length > 0) {
+      badge.classList.remove('hidden');
     } else {
-      container.classList.add("hidden");
-      document.getElementById("executeSplitBtn").disabled = false;
-      document.getElementById("executeSplitBtn").classList.remove("opacity-50", "cursor-not-allowed");
-      localStorage.removeItem('arcPendingBatch');
+      badge.classList.add('hidden');
     }
+
+    if (batches.length === 0) {
+      container.innerHTML = `<p class="text-gray-400 light:text-slate-600 text-center py-6 text-xs">No pending or incomplete transactions.</p>`;
+      return;
+    }
+
+    container.innerHTML = "";
+    batches.forEach(b => {
+      const pct = (b.currentIndex / b.chunks.length) * 100;
+      const div = document.createElement('div');
+      div.className = "glass rounded-3xl p-5 mb-4 border border-amber-500/30 bg-amber-500/5 fade-in";
+      div.innerHTML = `
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
+          <div>
+            <h3 class="font-bold text-amber-400 flex items-center gap-2 text-sm"><i class="fas fa-triangle-exclamation"></i> Incomplete Batch: ${b.rawAmount} ${b.tokenSymbol}</h3>
+            <span class="text-[10px] text-gray-400">Created: ${b.date}</span>
+          </div>
+          <button onclick="discardBatch(${b.id})" class="text-xs text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 px-3 py-1.5 rounded-lg transition-colors">Discard Batch</button>
+        </div>
+        
+        <p class="text-xs text-gray-300 light:text-slate-600 mb-3">Splitting to ${b.totalWallets} total wallets in ${b.chunks.length} batches.</p>
+        
+        <div class="w-full bg-black/30 rounded-full h-2.5 mb-2 overflow-hidden border border-white/5">
+          <div class="bg-gradient-to-r from-amber-400 to-emerald-400 h-full rounded-full progress-bar-fill" style="width: ${pct}%"></div>
+        </div>
+        <div class="flex justify-between text-[11px] text-gray-400 mb-5">
+          <span>Completed: ${b.currentIndex} / ${b.chunks.length} Batches</span>
+          <span>Remaining: ${b.totalWallets - (b.currentIndex * BATCH_SIZE) < 0 ? 0 : b.totalWallets - (b.currentIndex * BATCH_SIZE)} Wallets</span>
+        </div>
+
+        <button onclick="resumeBatchTx(${b.id})" id="resume_btn_${b.id}" class="app-button w-full sm:w-auto px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-black font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg">
+          <i class="fas fa-play"></i> Resume Remaining
+        </button>
+      `;
+      container.appendChild(div);
+    });
   }
 
-  function clearBatch() {
-    localStorage.removeItem('arcPendingBatch');
-    checkPendingBatches();
-    showToast("Batch progress discarded.");
+  function discardBatch(id) {
+    let batches = JSON.parse(localStorage.getItem('arcPendingBatches') || '[]');
+    batches = batches.filter(b => b.id !== id);
+    localStorage.setItem('arcPendingBatches', JSON.stringify(batches));
+    renderPendingBatches();
+    showToast("Batch discarded.");
   }
 
-  async function resumeBatchTx() {
-    const data = JSON.parse(localStorage.getItem('arcPendingBatch'));
-    if (!data) return;
+  async function resumeBatchTx(batchId) {
+    let batches = JSON.parse(localStorage.getItem('arcPendingBatches') || '[]');
+    let bIndex = batches.findIndex(x => x.id === batchId);
+    if (bIndex === -1) return;
+    let data = batches[bIndex];
 
-    const btn = document.getElementById("resumeBatchBtn");
-    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Processing Blockchain Batch...`;
-    btn.disabled = true;
+    const btn = document.getElementById(`resume_btn_${batchId}`);
+    if (btn) {
+      btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Processing Blockchain Batch...`;
+      btn.disabled = true;
+    }
 
     try {
       const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
@@ -1079,9 +1136,16 @@
       if (!data.isNative && data.currentIndex === 0) {
         showToast("Requesting Token Allowance Approval...");
         const erc20 = new ethers.Contract(data.token, ERC20_ABI, signer);
+        
         let sumWei = 0n;
         data.chunks.forEach(c => c.amounts.forEach(a => sumWei += BigInt(a)));
-        await (await erc20.approve(CONTRACT_ADDRESS, sumWei)).wait();
+
+        // بجای درخواست به اندازه دقیق، از MaxUint256 استفاده می‌کنیم که احتمال خطا یا نیاز به تایید مجدد را از بین می‌برد
+        const currentAllowance = await erc20.allowance(userAddress, CONTRACT_ADDRESS);
+        if (currentAllowance < sumWei) {
+            const txApprove = await erc20.approve(CONTRACT_ADDRESS, ethers.MaxUint256);
+            await txApprove.wait();
+        }
       }
 
       while (data.currentIndex < data.chunks.length) {
@@ -1110,8 +1174,11 @@
         const receipt = await tx.wait();
 
         data.currentIndex++;
-        localStorage.setItem('arcPendingBatch', JSON.stringify(data));
-        checkPendingBatches();
+        
+        // ذخیره لحظه‌ای پیشرفت تراکنش
+        batches[bIndex] = data;
+        localStorage.setItem('arcPendingBatches', JSON.stringify(batches));
+        renderPendingBatches();
 
         if (data.currentIndex >= data.chunks.length) {
           historyList.unshift({
@@ -1121,23 +1188,29 @@
             date: new Date().toLocaleString(),
             hash: receipt.hash,
             status: "Success",
-            allocations: data.allocations // لاگ کردن برای بخش Analytics
+            allocations: data.allocations
           });
           localStorage.setItem('arcRoleHistory', JSON.stringify(historyList));
         }
       }
 
       showToast("✅ All Batch Transactions Completed Successfully!", 6000);
-      clearBatch();
-      switchTab('history');
+      
+      // پس از موفقیت، آن را از لیست Pending پاک می‌کنیم
+      batches.splice(bIndex, 1);
+      localStorage.setItem('arcPendingBatches', JSON.stringify(batches));
+      
+      renderPendingBatches();
+      if(batches.length === 0) switchTab('history');
       updateWalletBalance();
 
     } catch (err) {
       console.error("Batch Error:", err);
       showToast("❌ Transaction halted or rejected. You can resume later.");
-    } finally {
-      btn.innerHTML = `<i class="fas fa-play"></i> Resume Remaining Batches`;
-      btn.disabled = false;
+      if (btn) {
+        btn.innerHTML = `<i class="fas fa-play"></i> Resume Remaining`;
+        btn.disabled = false;
+      }
     }
   }
 
@@ -1169,6 +1242,11 @@
     await checkAutoConnect();
     renderRoleSplitRows();
     updateRoleSplitPreview();
+    
+    // پاک کردن batch قدیمی که سیستم سابق می‌ساخت تا اختلالی ایجاد نکند
+    if (localStorage.getItem('arcPendingBatch')) {
+      localStorage.removeItem('arcPendingBatch');
+    }
   };
 </script>
 </body>
