@@ -92,7 +92,23 @@
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
       <div>
         <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight preserve-dark-color">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Role-Based Engine</span></h1>
-@@ -112,7 +111,6 @@
+        <p class="text-xs sm:text-sm font-medium preserve-dark-muted">Manage team roles and split assets securely on-chain.</p>
+      </div>
+
+      <div class="flex items-center gap-3 flex-wrap">
+        <div class="flex bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 rounded-2xl p-1 text-xs">
+          <button onclick="switchTab('splitter')" id="tabSplitter" class="px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400 preserve-dark-color">Role Split</button>
+          <button onclick="switchTab('roles')" id="tabRoles" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted">Role Management</button>
+          <button onclick="switchTab('history')" id="tabHistory" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted">History</button>
+        </div>
+
+        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/15 border border-white/10 rounded-2xl transition-all" aria-label="Toggle Theme">
+          <i class="fas fa-moon text-lg text-emerald-400"></i>
+        </button>
+
+        <button onclick="connectRealWallet()" id="connectBtn" class="app-button px-5 py-2.5 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl text-xs flex items-center gap-2 shadow-lg">
+          <i class="fas fa-wallet text-emerald-500"></i> <span id="connectText">Connect Wallet</span>
+        </button>
       </div>
     </div>
 
@@ -100,20 +116,37 @@
     <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
       <div id="status" class="glass rounded-2xl p-4 text-xs font-medium flex items-center justify-between border-l-4 border-l-emerald-500 md:col-span-8">
         <div class="flex items-center gap-3">
-@@ -136,12 +134,9 @@
+          <div id="statusIndicator" class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+          <span id="contractStatusText">Ready to connect to Arc Testnet Network</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <button onclick="switchNetworkToArc()" id="networkSwitchBtn" class="hidden px-3 py-1 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 rounded-lg text-[11px] font-bold transition-all">
+            Switch to Arc Testnet
+          </button>
+          <div id="activeWorkspace" class="text-emerald-400 font-bold">Arc Network</div>
+        </div>
+      </div>
+
+      <div class="glass rounded-2xl p-4 text-xs font-medium flex items-center justify-between md:col-span-4 border border-white/5">
+        <div class="flex items-center gap-2">
+          <i class="fas fa-coins text-emerald-400"></i>
+          <span class="text-gray-400 light:text-slate-600">Wallet Token Balance:</span>
+        </div>
+        <div id="userBalanceDisplay" class="font-bold text-emerald-400">0.00</div>
       </div>
     </div>
 
     <!-- ================= VIEW 1: ROLE SPLIT ================= -->
     <div id="viewSplitter" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-      
+
       <div class="lg:col-span-7 space-y-6">
         <div class="glass rounded-3xl p-6 sm:p-8">
-          
+
           <h3 class="font-bold text-base mb-4 flex items-center gap-2">
             <i class="fas fa-layer-group text-emerald-400"></i> Step 1: Select Token & Amount
           </h3>
-@@ -150,7 +145,6 @@
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
             <div>
               <label class="block text-gray-400 light:text-slate-600 text-xs font-semibold uppercase tracking-wider mb-2">Token</label>
               <select id="tokenSelect" class="w-full rounded-2xl px-4 py-3.5 text-sm font-medium outline-none cursor-pointer" onchange="onTokenSelectionChange(this)">
@@ -121,16 +154,30 @@
                 <option value="0x3600000000000000000000000000000000000000" selected>USDC (Arc Testnet)</option>
                 <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC (Arc Testnet)</option>
                 <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC (Arc Testnet)</option>
-@@ -160,7 +154,7 @@
+                <option value="0x0000000000000000000000000000000000000000">Native ARC (0x00...)</option>
+                <option value="custom">➕ Add Custom Token...</option>
+              </select>
             </div>
             <div>
               <label class="block text-gray-400 light:text-slate-600 text-xs font-semibold uppercase tracking-wider mb-2">Total Amount</label>
               <input type="number" id="totalAmount" value="100" min="0" step="any" class="w-full rounded-2xl px-4 py-3.5 text-lg font-bold outline-none" oninput="updateRoleSplitPreview()">
-              <input type="number" id="totalAmount" value="10" min="0" step="any" class="w-full rounded-2xl px-4 py-3.5 text-lg font-bold outline-none" oninput="updateRoleSplitPreview()">
             </div>
           </div>
 
-@@ -181,11 +175,6 @@
+          <div class="h-px bg-white/5 light:bg-black/10 my-6"></div>
+
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="font-bold text-base flex items-center gap-2">
+              <i class="fas fa-users-gear text-emerald-400"></i> Step 2: Role Allocations ( % & Amount)
+            </h3>
+            <button onclick="addRoleRecipientRow()" class="px-3.5 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-semibold transition-all">
+              <i class="fas fa-plus mr-1"></i> Add Role
+            </button>
+          </div>
+
+          <div id="roleSplitRows" class="space-y-3 mb-6"></div>
+
+          <div class="flex items-center justify-between bg-white/[0.02] light:bg-slate-100 border border-white/5 light:border-black/5 p-4 rounded-2xl mb-6">
             <span id="rolePercentTotal" class="font-bold text-sm">Total: 0%</span>
             <button onclick="distributeRoleRemaining()" class="text-amber-400 hover:underline text-xs font-semibold">Distribute Remaining</button>
           </div>
@@ -142,7 +189,13 @@
         </div>
       </div>
 
-@@ -199,137 +188,13 @@
+      <div class="lg:col-span-5 space-y-6">
+        <div class="glass rounded-3xl p-6 sm:p-8 sticky top-6">
+          <h3 class="font-bold text-base mb-4 flex items-center gap-2">
+            <i class="fas fa-eye text-emerald-400"></i> Live Role & Wallet Preview
+          </h3>
+
+          <div class="mb-6 bg-black/25 light:bg-slate-100 border border-white/10 light:border-black/10 rounded-2xl overflow-hidden p-4">
             <div id="rolePreviewContainer" class="preview-scroll space-y-3 text-xs"></div>
           </div>
 
@@ -280,7 +333,19 @@
   </div>
 
   <div id="confirmModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
-@@ -349,20 +214,10 @@
+    <div class="glass rounded-3xl p-6 sm:p-8 max-w-md w-full border border-white/15 shadow-2xl">
+      <h3 class="text-xl font-bold mb-3">Confirm On-Chain Role Split</h3>
+      <p id="confirmModalText" class="text-xs text-gray-400 light:text-slate-600 mb-4">You are triggering smart contract split function.</p>
+      <div id="confirmRolesList" class="bg-black/20 light:bg-slate-100 p-4 rounded-2xl mb-6 space-y-2 text-xs max-h-40 overflow-y-auto"></div>
+      <div class="flex gap-3">
+        <button onclick="hideConfirmModal()" class="app-button flex-1 py-3 rounded-xl border border-white/15 text-xs">Cancel</button>
+        <button onclick="executeRoleSplitTx()" class="app-button flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold rounded-xl text-xs">Confirm & Split on-chain</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#121228] border border-white/15 text-white px-5 py-3 rounded-2xl shadow-2xl z-50 text-xs backdrop-blur-xl transition-all">
+    <span id="toastText"></span>
   </div>
 
 <script>
@@ -298,18 +363,19 @@
   const CONTRACT_ABI = [
     "function splitByAmount(tuple(address token, uint256 totalChunkAmount, address[] wallets, uint256[] amounts, uint256 tokenToNativeRatio, uint256 batchId, uint256 deadline, uint256 nonce, uint256 baseGas, uint64 maxGasPriceLimit) params) external payable",
     "function splitByPercentage(tuple(address token, uint256 totalChunkAmount, address[] wallets, uint16[] sharesBps, uint256 tokenToNativeRatio, uint256 batchId, uint256 deadline, uint256 nonce, uint256 baseGas, uint64 maxGasPriceLimit) params) external payable"
-    "function splitByAmount(tuple(address token, uint256 totalChunkAmount, address[] wallets, uint256[] amounts, uint256 tokenToNativeRatio, uint256 batchId, uint256 deadline, uint256 nonce, uint256 baseGas, uint64 maxGasPriceLimit) params) external payable"
   ];
 
   const ERC20_ABI = [
-@@ -373,545 +228,42 @@
+    "function approve(address spender, uint256 amount) external returns (bool)",
+    "function allowance(address owner, address spender) external view returns (uint256)",
+    "function balanceOf(address account) external view returns (uint256)",
+    "function decimals() external view returns (uint8)"
   ];
 
   let rolesData = JSON.parse(localStorage.getItem('arcRolesData')) || [
     { name: "Founder", wallets: [], description: "Core Leadership", color: "blue" },
     { name: "Developer", wallets: [], description: "Engineering Team", color: "emerald" },
     { name: "Treasury", wallets: [], description: "DAO Reserving", color: "purple" }
-    { name: "Founder", wallets: [], description: "Core Leadership", color: "blue" }
   ];
 
   let provider = null;
@@ -347,7 +413,7 @@
           const shortAddr = userAddress.substring(0, 6) + '...' + userAddress.substring(userAddress.length - 4);
           document.getElementById("connectBtn").innerHTML = `<i class="fas fa-wallet text-emerald-400"></i> <span class="font-bold">${shortAddr}</span> <i class="fas fa-power-off text-rose-400 ml-1 text-[10px]"></i>`;
           document.getElementById("contractStatusText").textContent = "Connected to Arc Network";
-          
+
           setupWalletListeners();
           updateWalletBalance();
         }
@@ -359,7 +425,7 @@
 
   function setupWalletListeners() {
     if (!window.ethereum) return;
-    
+
     window.ethereum.removeAllListeners('accountsChanged');
     window.ethereum.removeAllListeners('chainChanged');
 
@@ -395,7 +461,7 @@
       document.getElementById("connectBtn").innerHTML = `<i class="fas fa-wallet text-emerald-400"></i> <span class="font-bold">${shortAddr}</span> <i class="fas fa-power-off text-rose-400 ml-1 text-[10px]"></i>`;
       document.getElementById("contractStatusText").textContent = "Connected to Arc Network";
       showToast("Wallet Connected Successfully via Web3!");
-      
+
       setupWalletListeners();
       updateWalletBalance();
     } catch (err) {
@@ -504,17 +570,9 @@
     } else if (tab === 'history') {
       renderHistory();
     }
-    if (!window.ethereum) return showToast("MetaMask not found");
-    provider = new ethers.BrowserProvider(window.ethereum);
-    const accounts = await provider.send("eth_requestAccounts", []);
-    userAddress = accounts[0];
-    signer = await provider.getSigner();
-    document.getElementById("connectBtn").innerHTML = `<i class="fas fa-wallet text-emerald-400"></i> Connected`;
-    showToast("Wallet Connected");
   }
 
   function showToast(msg, duration = 4000) {
-  function showToast(msg) {
     const toast = document.getElementById("toast");
     document.getElementById("toastText").innerHTML = msg;
     toast.classList.remove("hidden");
@@ -561,7 +619,7 @@
   function selectRoleAnalytics(role) {
     selectedRoleForAnalyticsName = role.name;
     document.getElementById("analyticsRoleNameTitle").textContent = role.name;
-    
+
     let totalReceived = 0;
     let txCount = 0;
     let lastPayment = "Never";
@@ -615,7 +673,7 @@
     const desc = document.getElementById("modalRoleDesc").value.trim();
 
     if (!name) return showToast("Role name required.");
-    
+
     const wallets = walletsStr ? walletsStr.split(',').map(w => w.trim()).filter(w => ethers.isAddress(w)) : [];
 
     if (editingRoleIndex !== null) {
@@ -683,7 +741,7 @@
   function addRoleRecipientRow(selectedRoleName = "", percentage = "") {
     const container = document.getElementById("roleSplitRows");
     const rowId = 'role_row_' + Math.random().toString(36).substring(2, 7);
-    
+
     const div = document.createElement("div");
     div.className = "role-split-row glass border border-white/10 light:border-black/10 rounded-2xl p-4 flex flex-col sm:flex-row items-center gap-3";
     div.id = rowId;
@@ -714,7 +772,7 @@
     const amountInput = row.querySelector('.role-amount');
     const totalAmount = parseFloat(document.getElementById("totalAmount").value) || 0;
     const percent = parseFloat(percentInput.value) || 0;
-    
+
     const calculatedAmount = (totalAmount * percent) / 100;
     amountInput.value = totalAmount > 0 && !isNaN(percent) ? calculatedAmount.toFixed(4).replace(/\.?0+$/, '') : '';
     updateRoleSplitPreview();
@@ -750,7 +808,7 @@
       const roleName = row.querySelector('.role-select').value;
       const percentInput = row.querySelector('.role-percent');
       const amountInput = row.querySelector('.role-amount');
-      
+
       const percent = parseFloat(percentInput.value) || 0;
       totalPercent += percent;
 
@@ -763,7 +821,7 @@
         selectedRolesSet.add(roleName);
         validCount++;
         const roleObj = rolesData.find(r => r.name === roleName);
-        
+
         if (!roleObj || roleObj.wallets.length === 0) {
           hasEmptyWallet = true;
         }
@@ -789,10 +847,10 @@
 
     const is100 = Math.abs(totalPercent - 100) < 0.001;
     const executeBtn = document.getElementById("executeSplitBtn");
-    
+
     document.getElementById("valRoleSelected").innerHTML = validCount > 0 ? `<i class="fas fa-circle-check text-emerald-400 mr-2"></i> ${validCount} Role(s) selected` : `<i class="fas fa-circle-xmark text-rose-400 mr-2"></i> Role selected`;
     document.getElementById("valRoleSum").innerHTML = is100 ? `<i class="fas fa-circle-check text-emerald-400 mr-2"></i> Total shares = 100%` : `<i class="fas fa-circle-xmark text-rose-400 mr-2"></i> Total shares = ${totalPercent.toFixed(2)}%`;
-    
+
     const walletValEl = document.getElementById("valRoleWallet");
     if (hasEmptyWallet) {
       walletValEl.innerHTML = `<i class="fas fa-triangle-exclamation text-amber-400 mr-2"></i> <b>Warning:</b> Some selected roles have no wallet addresses.`;
@@ -821,17 +879,16 @@
       lastRowPercentInput.value = remaining.toFixed(2);
       onRolePercentInput(lastRowPercentInput);
     }
-    setTimeout(() => toast.classList.add("hidden"), 4000);
   }
 
   function openConfirmModal() {
     const totalAmount = document.getElementById("totalAmount").value;
     const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
     document.getElementById("confirmModalText").textContent = `You are splitting ${totalAmount} ${symbol} on-chain:`;
-    
+
     const listContainer = document.getElementById("confirmRolesList");
     listContainer.innerHTML = "";
-    
+
     document.querySelectorAll('.role-split-row').forEach(row => {
       const roleName = row.querySelector('.role-select').value;
       const percent = row.querySelector('.role-percent').value;
@@ -848,9 +905,6 @@
   }
 
   function hideConfirmModal() { document.getElementById("confirmModal").classList.add("hidden"); }
-  function hideConfirmModal() {
-    document.getElementById("confirmModal").classList.add("hidden");
-  }
 
   async function executeRoleSplitTx() {
     hideConfirmModal();
@@ -858,27 +912,67 @@
       await connectRealWallet();
       if (!signer) return;
     }
-    if (!signer) await connectRealWallet();
 
     const executeBtn = document.getElementById("executeSplitBtn");
     const originalBtnText = executeBtn.innerHTML;
-@@ -935,7 +287,6 @@
+    executeBtn.disabled = true;
+    executeBtn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Submitting to Contract...`;
+
+    showToast("Preparing transaction on-chain via Web3...");
+    executeBtn.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i> Submitting...`;
+
+    try {
+      const tokenAddress = document.getElementById("tokenSelect").value;
+      const isNative = (tokenAddress === "0x0000000000000000000000000000000000000000");
+      const rawAmount = document.getElementById("totalAmount").value;
+
+      let decimals = 6; 
+      let decimals = 6;
+      if (!isNative) {
+        const erc20Contract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+        try {
+          decimals = await erc20Contract.decimals();
+        } catch (e) {
+          decimals = 6;
+        }
+        const erc20 = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+        try { decimals = await erc20.decimals(); } catch(e) { decimals = 6; }
+      } else {
+        decimals = 18; // Default native decimal for calculations
+        decimals = 18;
+      }
+
+      const totalAmountWei = ethers.parseUnits(rawAmount, decimals);
 
       let walletsArr = [];
       let amountsArr = [];
       let splitAllocations = [];
+      let calculatedTotalAmountWei = 0n;
 
       document.querySelectorAll('.role-split-row').forEach(row => {
         const roleName = row.querySelector('.role-select').value;
-@@ -944,60 +295,50 @@
+        const percent = parseFloat(row.querySelector('.role-percent').value) || 0;
+
         if (roleName && percent > 0) {
           const roleObj = rolesData.find(r => r.name === roleName);
           if (roleObj && roleObj.wallets.length > 0) {
-            
+
+            const percentBps = BigInt(Math.round(percent * 100));
+            const roleAmountWei = (totalAmountWei * percentBps) / 10000n;
             const roleAmountWei = (totalAmountWei * BigInt(Math.round(percent * 100))) / 10000n;
             const amountPerWalletWei = roleAmountWei / BigInt(roleObj.wallets.length);
-
             
+            roleObj.wallets.forEach(w => {
+              walletsArr.push(w);
+              amountsArr.push(amountPerWalletWei);
+              calculatedTotalAmountWei += amountPerWalletWei;
+            });
+            
+            splitAllocations.push({
+              roleName: roleName,
+              percent: percent,
+              amount: parseFloat(ethers.formatUnits(roleAmountWei, decimals))
+
             roleObj.wallets.forEach(wallet => {
               if (ethers.isAddress(wallet)) {
                 walletsArr.push(wallet);
@@ -900,7 +994,6 @@
       if (totalCalculated !== totalAmountWei) {
         console.warn("Total mismatch:", totalCalculated, totalAmountWei);
       }
-      if (walletsArr.length === 0) throw new Error("No valid wallets");
 
       const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
@@ -908,13 +1001,8 @@
       if (!isNative) {
         const erc20 = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
         const allowance = await erc20.allowance(userAddress, CONTRACT_ADDRESS);
-        let allowance = 0n;
-        try {
-          allowance = await erc20.allowance(userAddress, CONTRACT_ADDRESS);
-        } catch (e) {}
         if (allowance < totalAmountWei) {
           showToast("Approving token...");
-          showToast("Approving...");
           const tx = await erc20.approve(CONTRACT_ADDRESS, totalAmountWei);
           await tx.wait();
         }
@@ -929,19 +1017,17 @@
         tokenToNativeRatio: ethers.parseUnits("1", 18),
         batchId: Math.floor(Date.now() / 1000),
         deadline: Math.floor(Date.now() / 1000) + 7200,   // 2 ساعت
-        deadline: Math.floor(Date.now() / 1000) + 7200,
         nonce: 0,
         baseGas: 30000,           // ← مهم
-        baseGas: 35000,
         maxGasPriceLimit: 0
       };
 
       showToast("Sending transaction...");
-      showToast("Sending to contract...");
 
       let tx;
       if (isNative) {
-@@ -1006,127 +347,47 @@
+        tx = await contract.splitByAmount(params, { value: totalAmountWei });
+      } else {
         tx = await contract.splitByAmount(params);
       }
 
@@ -954,14 +1040,10 @@
       executeBtn.disabled = false;
       switchTab('history');
       updateWalletBalance();
-      await tx.wait();
-      showToast("Transaction Successful!");
 
     } catch (err) {
       console.error(err);
       showToast(`Error: ${err.shortMessage || err.message || err}`);
-      showToast("Error: " + (err.shortMessage || err.message));
-    } finally {
       executeBtn.innerHTML = originalBtnText;
       executeBtn.disabled = false;
     }
@@ -1006,7 +1088,7 @@
       };
 
       showToast("Executing Split on-chain...");
-      
+
       let tx;
       if (isNative) {
         tx = await contract.splitByAmount(params, { value: calculatedTotalAmountWei });
@@ -1018,7 +1100,6 @@
       const receipt = await tx.wait();
 
       showToast(`Role Split Executed Successfully on-chain! Tx: ${receipt.hash.substring(0,10)}...`, 7000);
-  }
 
       const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
       historyList.unshift({
@@ -1031,24 +1112,6 @@
         allocations: splitAllocations
       });
       localStorage.setItem('arcRoleHistory', JSON.stringify(historyList));
-  function addRoleRecipientRow() {
-    const container = document.getElementById("roleSplitRows");
-    const rowId = 'row_' + Math.random().toString(36).substring(2);
-    const div = document.createElement("div");
-    div.className = "role-split-row glass border border-white/10 rounded-2xl p-4 flex gap-3";
-    div.id = rowId;
-    div.innerHTML = `
-      <select class="role-select flex-1 rounded-xl px-4 py-3 text-sm" onchange="updateRoleSplitPreview()">
-        <option value="">Select Role</option>
-        <option value="Founder">Founder</option>
-        <option value="Developer">Developer</option>
-      </select>
-      <input type="number" class="role-percent w-28 rounded-xl px-4 py-3 text-center" value="100" oninput="updateRoleSplitPreview()">
-      <button onclick="this.closest('.role-split-row').remove(); updateRoleSplitPreview()" class="text-red-400">×</button>
-    `;
-    container.appendChild(div);
-    updateRoleSplitPreview();
-  }
 
       executeBtn.innerHTML = originalBtnText;
       switchTab('history');
@@ -1059,8 +1122,6 @@
       executeBtn.innerHTML = originalBtnText;
       executeBtn.disabled = false;
     }
-  function updateRoleSplitPreview() {
-    document.getElementById("executeSplitBtn").disabled = false;
   }
 
   function renderHistory() {
@@ -1069,7 +1130,7 @@
     historyList.forEach(item => {
       const shortHash = item.hash ? item.hash.substring(0, 12) + '...' : '0x8a7fb3c2...';
       const explorerLink = item.hash ? `https://testnet.arcscan.app/tx/${item.hash}` : 'https://testnet.arcscan.app/';
-      
+
       const div = document.createElement("div");
       div.className = "bg-white/[0.02] light:bg-slate-300 border border-white/5 light:border-slate-400 rounded-2xl p-4 text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2";
       div.innerHTML = `
@@ -1084,8 +1145,6 @@
       `;
       container.appendChild(div);
     });
-  function switchTab(tab) {
-    document.getElementById('viewSplitter').classList.toggle('hidden', tab !== 'splitter');
   }
 
   window.onload = async () => {
@@ -1093,8 +1152,7 @@
     await checkAutoConnect();
     renderRoleSplitRows();
     updateRoleSplitPreview();
-  window.onload = () => {
-    addRoleRecipientRow();
   };
 </script>
 </body>
+</html>
