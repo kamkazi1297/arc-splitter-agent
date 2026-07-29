@@ -361,9 +361,9 @@
   };
 
   const CONTRACT_ABI = [
-    "function splitByAmount(tuple(address token, uint256 totalChunkAmount, address[] wallets, uint256[] amounts, uint256 tokenToNativeRatio, uint256 batchId, uint256 deadline, uint256 nonce, uint256 baseGas, uint64 maxGasPriceLimit) params) external payable",
-    "function splitByPercentage(tuple(address token, uint256 totalChunkAmount, address[] wallets, uint16[] sharesBps, uint256 tokenToNativeRatio, uint256 batchId, uint256 deadline, uint256 nonce, uint256 baseGas, uint64 maxGasPriceLimit) params) external payable"
-  ];
+  "function splitByPercentage(tuple(address token, uint256 totalChunkAmount, address[] wallets, uint16[] sharesBps, uint256 tokenToNativeRatio, uint256 batchId, uint256 deadline, uint256 nonce, uint256 baseGas, uint64 maxGasPriceLimit) params) external payable",
+  "function splitByAmount(tuple(address token, uint256 totalChunkAmount, address[] wallets, uint256[] amounts, uint256 tokenToNativeRatio, uint256 batchId, uint256 deadline, uint256 nonce, uint256 baseGas, uint64 maxGasPriceLimit) params) external payable"
+];
 
   const ERC20_ABI = [
     "function approve(address spender, uint256 amount) external returns (bool)",
@@ -934,7 +934,7 @@
     const totalAmountWei = ethers.parseUnits(rawAmount, decimals);
 
     let walletsArr = [];
-    let amountsArr = [];
+    let sharesBps = [];
 
     document.querySelectorAll('.role-split-row').forEach(row => {
       const roleName = row.querySelector('.role-select').value;
@@ -942,19 +942,14 @@
       if (roleName && percent > 0) {
         const role = rolesData.find(r => r.name === roleName);
         if (role && role.wallets.length > 0) {
-          const share = (totalAmountWei * BigInt(Math.round(percent * 100))) / 10000n;
-          const perWallet = share / BigInt(role.wallets.length);
-          role.wallets.forEach(w => {
-            if (ethers.isAddress(w)) {
-              walletsArr.push(w);
-              amountsArr.push(perWallet);
-            }
+          const bpsPerWallet = Math.round((percent * 100) / role.wallets.length);
+          role.wallets.forEach(() => {
+            walletsArr.push(role.wallets[0]); // فعلاً اولین والت
+            sharesBps.push(bpsPerWallet);
           });
         }
       }
     });
-
-    if (walletsArr.length === 0) throw new Error("No wallets found");
 
     const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
@@ -968,7 +963,7 @@
       token: tokenAddress,
       totalChunkAmount: totalAmountWei,
       wallets: walletsArr,
-      amounts: amountsArr,
+      sharesBps: sharesBps,
       tokenToNativeRatio: ethers.parseUnits("1", 18),
       batchId: Math.floor(Date.now() / 1000),
       deadline: Math.floor(Date.now() / 1000) + 3600,
@@ -977,21 +972,18 @@
       maxGasPriceLimit: 0
     };
 
-    showToast("Executing on-chain...");
-
-    let tx = isNative 
-      ? await contract.splitByAmount(params, {value: totalAmountWei})
-      : await contract.splitByAmount(params);
+    showToast("Executing Split...");
+    const tx = await contract.splitByPercentage(params);
 
     const receipt = await tx.wait();
-    showToast(`✅ Success! Hash: ${receipt.hash.slice(0,10)}...`, 7000);
+    showToast(`✅ Success! Tx: ${receipt.hash.slice(0,12)}...`, 7000);
 
     switchTab('history');
     updateWalletBalance();
 
   } catch (err) {
     console.error(err);
-    showToast("❌ " + (err.shortMessage || err.message || "Transaction failed"));
+    showToast("❌ " + (err.message || "Failed"));
   } finally {
     executeBtn.innerHTML = originalText;
     executeBtn.disabled = false;
