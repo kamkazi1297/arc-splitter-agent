@@ -3,1137 +3,763 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-  <title>ArcRoleSplitter V3.0 - Professional Multi-Token Batch Split</title>
+  <title>ArcSplit - Enterprise Token Batch Splitter</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
     
-    :root {
-      --bg-gradient: linear-gradient(135deg, #080816 0%, #12122c 50%, #0a0a18 100%);
-      --glass-bg: rgba(18, 18, 38, 0.65);
-      --glass-border: rgba(255, 255, 255, 0.07);
-    }
-
     body { 
       font-family: 'Plus Jakarta Sans', system-ui, sans-serif; 
-      background: #05050a;
+      background: #070711;
       background-image: 
-        radial-gradient(circle at 15% 25%, rgba(16, 185, 129, 0.07) 0%, transparent 45%),
-        radial-gradient(circle at 85% 75%, rgba(34, 211, 238, 0.07) 0%, transparent 45%),
-        radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.04) 0%, transparent 60%);
+        radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(34, 211, 238, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.05) 0%, transparent 50%);
       color: #f8fafc;
       min-height: 100vh;
       overflow-x: hidden;
-      scroll-behavior: smooth;
     }
-
-    .font-mono { font-family: 'JetBrains Mono', monospace; }
     
     .glass {
-      background: rgba(20, 20, 35, 0.4);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-      transition: all 0.3s ease;
+      background: rgba(18, 18, 38, 0.70);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
     
-    .glass:hover {
-      border-color: rgba(255, 255, 255, 0.1);
-    }
-
     .light {
-      background: #f8fafc !important;
+      background: #f1f5f9 !important;
       background-image: 
-        radial-gradient(circle at 15% 25%, rgba(16, 185, 129, 0.06) 0%, transparent 45%),
-        radial-gradient(circle at 85% 75%, rgba(34, 211, 238, 0.06) 0%, transparent 45%) !important;
+        radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(34, 211, 238, 0.05) 0%, transparent 40%) !important;
       color: #0f172a !important;
     }
 
     .light .glass {
-      background: rgba(255, 255, 255, 0.7);
-      border-color: rgba(0, 0, 0, 0.05);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.03), inset 0 1px 0 rgba(255, 255, 255, 1);
+      background: rgba(255, 255, 255, 0.88);
+      border-color: rgba(0, 0, 0, 0.08);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1);
     }
 
-    .light body, .light h1, .light h3, .light label, .light .text-white { color: #0f172a; }
-    .light .text-gray-400 { color: #64748b !important; }
-    .light .text-gray-300 { color: #475569 !important; }
+    .light .preserve-dark-color { color: #f8fafc !important; }
+    .light .preserve-dark-muted { color: #94a3b8 !important; }
+
+    .light body, .light label, .light .text-white:not(.preserve-dark-color) { color: #0f172a; }
+    .light .text-gray-400:not(.preserve-dark-muted) { color: #475569 !important; }
+    .light .text-gray-300 { color: #334155 !important; }
+    .light .text-emerald-400 { color: #059669 !important; }
+    .light .text-cyan-400 { color: #0891b2 !important; }
 
     select, input, textarea {
-      background-color: rgba(0, 0, 0, 0.2);
+      background-color: rgba(255, 255, 255, 0.03);
       color: white;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      transition: all 0.25s ease;
     }
-    
-    select:hover, input:hover, textarea:hover { border-color: rgba(255, 255, 255, 0.2); }
     select:focus, input:focus, textarea:focus {
       border-color: #10b981;
-      background-color: rgba(16, 185, 129, 0.02);
-      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.18);
       outline: none;
     }
-
     .light select, .light input, .light textarea {
-      background-color: #f1f5f9;
+      background-color: #ffffff;
       color: #0f172a;
       border: 1px solid #cbd5e1;
     }
-    .light select:focus, .light input:focus, .light textarea:focus {
-      border-color: #10b981;
-      background-color: #ffffff;
-      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
-    }
-
-    select option { background-color: #0f172a; color: white; padding: 14px; }
+    select option { background-color: #0f172a; color: white; }
     .light select option { background-color: #ffffff; color: #0f172a; }
 
-    .app-button {
-      position: relative;
-      overflow: hidden;
-      transition: all 0.2s ease;
-      transform: translateY(0);
-    }
-    .app-button:hover { transform: translateY(-1px); }
-    .app-button:active { transform: translateY(1px); }
+    .app-button { transition: all 0.25s ease; }
+    .app-button:active:not(:disabled) { transform: scale(0.98); }
+    .preview-scroll { max-height: 320px; overflow-y: auto; scrollbar-width: thin; }
     
-    .receipt-container {
-      background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0) 100%);
-      border-top: 2px dashed rgba(255,255,255,0.1);
-    }
-    .light .receipt-container {
-      background: linear-gradient(180deg, rgba(0,0,0,0.02) 0%, rgba(0,0,0,0) 100%);
-      border-top: 2px dashed rgba(0,0,0,0.1);
-    }
-
-    /* Custom Scrollbar */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: rgba(16, 185, 129, 0.3); border-radius: 10px; }
-    ::-webkit-scrollbar-thumb:hover { background: rgba(16, 185, 129, 0.6); }
-
-    @media (max-width: 640px) {
-      .max-w-7xl { max-width: 100% !important; padding-left: 16px; padding-right: 16px; }
-    }
+    body.tg-webapp { padding-bottom: 24px; }
+    .progress-bar-fill { transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+    .fade-in { animation: fadeIn 0.4s ease forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
-<body class="text-white selection:bg-emerald-500/30 selection:text-emerald-200">
+<body class="text-white min-h-screen selection:bg-emerald-500 selection:text-black">
 
-  <div class="max-w-7xl mx-auto px-4 py-8 sm:py-10">
+  <div class="max-w-7xl mx-auto px-4 py-6 sm:py-8">
     
-    <!-- Header -->
-    <header class="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 glass p-5 sm:p-6 rounded-3xl">
-      <div class="flex items-center gap-4">
-        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-          <i class="fas fa-layer-group text-gray-900 text-xl"></i>
-        </div>
-        <div>
-          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Arc<span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">RoleSplitter</span></h1>
-          <p class="text-gray-400 light:text-slate-500 text-xs sm:text-sm font-medium mt-0.5">Enterprise-Grade Multi-Token Distribution V3.0</p>
-        </div>
+    <!-- Header Section -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight preserve-dark-color">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Batch Engine</span></h1>
+        <p class="text-xs sm:text-sm font-medium preserve-dark-muted">Distribute assets to multiple wallets efficiently with auto-batching.</p>
       </div>
       
-      <div class="flex items-center gap-3 w-full md:w-auto">
-        <button onclick="switchView('splitter')" id="navSplitterBtn" class="flex-1 md:flex-none px-5 py-3 rounded-xl bg-emerald-500 text-gray-950 font-bold text-sm transition-all shadow-lg shadow-emerald-500/20 hover:shadow-emerald-500/40">AdHoc Split</button>
-        <button onclick="switchView('history')" id="navHistoryBtn" class="flex-1 md:flex-none px-5 py-3 rounded-xl bg-white/5 light:bg-black/5 hover:bg-white/10 text-sm font-semibold transition-all">History</button>
-        <button onclick="toggleTheme()" id="themeBtn" class="w-12 h-12 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/10 rounded-xl transition-all">
+      <div class="flex items-center gap-3 flex-wrap">
+        <div class="flex bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 rounded-2xl p-1 text-xs relative">
+          <button onclick="switchTab('batch')" id="tabBatch" class="px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400 preserve-dark-color">Batch Split</button>
+          <button onclick="switchTab('history')" id="tabHistory" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted">History</button>
+          <button onclick="switchTab('pending')" id="tabPending" class="relative px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted">
+            Pending
+            <span id="pendingBadge" class="hidden absolute top-1 right-1 flex h-2.5 w-2.5">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+            </span>
+          </button>
+        </div>
+
+        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/15 border border-white/10 rounded-2xl transition-all" aria-label="Toggle Theme">
           <i class="fas fa-moon text-lg text-emerald-400"></i>
         </button>
-      </div>
-    </header>
 
-    <!-- Network & Wallet Connect -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-      <div class="relative group">
-        <div class="absolute -inset-0.5 bg-gradient-to-r from-emerald-500 to-cyan-500 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-500"></div>
-        <button onclick="handleWalletClick()" id="connectBtn" class="relative app-button w-full px-6 py-4 bg-white/10 light:bg-slate-900 backdrop-blur-xl border border-white/10 light:border-slate-700 text-white font-bold rounded-2xl flex items-center justify-center gap-3 hover:bg-white/15 transition-all">
-          <i class="fas fa-wallet text-emerald-400 text-lg"></i> 
-          <span id="connectText" class="tracking-wide">Connect Web3 Wallet</span>
+        <button onclick="toggleConnection()" id="connectBtn" class="app-button px-5 py-2.5 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl text-xs flex items-center gap-2 shadow-lg">
+          <i class="fas fa-wallet text-emerald-500"></i> <span id="connectText">Connect Wallet</span>
         </button>
-        <button onclick="disconnectWallet(event)" id="disconnectBtn" class="hidden absolute right-4 top-1/2 -translate-y-1/2 px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-bold transition-all border border-rose-500/20 z-10" title="Disconnect">
-          <i class="fas fa-power-off"></i>
-        </button>
-      </div>
-
-      <div class="glass px-6 py-4 rounded-2xl flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-            <i class="fas fa-network-wired text-emerald-400"></i>
-          </div>
-          <div>
-            <div class="text-[10px] text-gray-400 uppercase tracking-wider font-bold mb-0.5">Connected Network</div>
-            <div class="text-sm font-semibold">Arc Testnet</div>
-          </div>
-        </div>
-        <span class="w-3 h-3 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)] animate-pulse"></span>
       </div>
     </div>
 
-    <!-- Token Balances Widget -->
-    <div id="walletBalancesBox" class="glass rounded-3xl p-6 mb-8 hidden border border-emerald-500/20 relative overflow-hidden">
-      <div class="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl -translate-y-1/2 translate-x-1/2 pointer-events-none"></div>
+    <!-- Status Bar & Balance Widget -->
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
+      <div id="status" class="glass rounded-2xl p-4 text-xs font-medium flex items-center justify-between border-l-4 border-l-emerald-500 md:col-span-8">
+        <div class="flex items-center gap-3">
+          <div id="statusIndicator" class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+          <span id="contractStatusText">Ready to connect to Arc Testnet</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <button onclick="switchNetworkToArc()" id="networkSwitchBtn" class="hidden px-3 py-1 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 rounded-lg text-[11px] font-bold transition-all">
+            Switch to Arc Testnet
+          </button>
+          <div id="activeWorkspace" class="text-emerald-400 font-bold">Arc Network</div>
+        </div>
+      </div>
       
-      <div class="flex justify-between items-center mb-5 relative z-10">
+      <div class="glass rounded-2xl p-4 text-xs font-medium flex items-center justify-between md:col-span-4 border border-white/5">
         <div class="flex items-center gap-2">
           <i class="fas fa-coins text-emerald-400"></i>
-          <span class="text-sm font-bold uppercase tracking-wider">Available Assets</span>
+          <span class="text-gray-400 light:text-slate-600">Wallet Token Balance:</span>
         </div>
-        <button onclick="fetchAndRenderBalancesWithRetry()" class="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-bold flex items-center gap-2 transition-all">
-          <i class="fas fa-rotate text-emerald-400"></i> Refresh
-        </button>
-      </div>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 relative z-10" id="balancesContainer">
-        <!-- Balances injected here -->
+        <div id="userBalanceDisplay" class="font-bold text-emerald-400">0.00</div>
       </div>
     </div>
 
-    <!-- Main Splitter Area -->
-    <div id="splitViewContainer" class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
-      
-      <!-- Left Column: Inputs -->
+    <!-- ================= VIEW 1: BATCH SPLIT ================= -->
+    <div id="viewBatch" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
       <div class="lg:col-span-7 space-y-6">
-        
-        <!-- Step 1: Tokens -->
         <div class="glass rounded-3xl p-6 sm:p-8">
-          <div class="flex justify-between items-center mb-6">
-            <h3 class="text-lg font-bold flex items-center gap-3">
-              <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-400 to-emerald-600 text-gray-900 flex items-center justify-center text-sm font-bold shadow-lg">1</div> 
-              Select Assets to Split
-            </h3>
-            <button onclick="addTokenRow()" class="app-button px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-xl text-xs font-bold flex items-center gap-2 transition-all">
-              <i class="fas fa-plus"></i> Add Asset
-            </button>
-          </div>
-          <div id="tokensContainer" class="space-y-4"></div>
-        </div>
-
-        <!-- Step 2: Recipients -->
-        <div class="glass rounded-3xl p-6 sm:p-8">
-          <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-            <h3 class="text-lg font-bold flex items-center gap-3">
-              <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-400 to-blue-500 text-gray-900 flex items-center justify-center text-sm font-bold shadow-lg">2</div> 
-              Recipients & Shares
-            </h3>
-            <div class="flex items-center gap-2">
-              <button onclick="importCSVModal()" class="app-button px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all">
-                <i class="fas fa-file-csv text-cyan-400"></i> Import CSV
-              </button>
-              <button onclick="addRecipientRow()" class="app-button px-4 py-2 bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 rounded-xl text-xs font-bold flex items-center gap-2 transition-all">
-                <i class="fas fa-user-plus"></i> Add User
-              </button>
-            </div>
-          </div>
-
-          <div class="bg-black/20 light:bg-slate-100/50 rounded-2xl p-2 mb-4">
-            <div id="recipientsContainer" class="space-y-3 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar"></div>
-          </div>
-
-          <div class="flex flex-col sm:flex-row items-center gap-4 mt-5">
-            <button onclick="distributeRemaining()" class="app-button w-full sm:w-1/2 py-3.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all">
-              <i class="fas fa-magic text-amber-400"></i> Auto-Fill Remaining %
-            </button>
-            <div class="w-full sm:w-1/2 p-3.5 rounded-xl border flex justify-between items-center bg-black/20" id="totalPercentageWrapper">
-              <span class="text-xs text-gray-400 font-bold uppercase tracking-wider">Total Share:</span>
-              <span id="totalPercentageBadge" class="text-sm font-mono font-bold">100% (10000 BPS)</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Step 3: Meta Data -->
-        <div class="glass rounded-3xl p-6 sm:p-8">
-          <h3 class="text-lg font-bold flex items-center gap-3 mb-6">
-            <div class="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-400 to-fuchsia-500 text-gray-900 flex items-center justify-center text-sm font-bold shadow-lg">3</div> 
-            Metadata & Templates
-          </h3>
-          <div class="mb-5">
-            <label class="block text-gray-400 text-xs font-bold uppercase tracking-wider mb-2 ml-1">Memo / Reference Note</label>
-            <input type="text" id="batchMemo" class="w-full rounded-xl p-4 text-sm outline-none font-mono" placeholder="e.g. Q3 Marketing Team Payout...">
-          </div>
-          <div class="flex gap-3">
-            <button onclick="openSaveTemplateModal()" class="app-button flex-1 py-3 bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 border border-violet-500/20 rounded-xl text-xs font-bold flex justify-center items-center gap-2 transition-all">
-              <i class="fas fa-save"></i> Save Template 
-            </button>
-            <button onclick="openLoadTemplateModal()" class="app-button flex-1 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold flex justify-center items-center gap-2 transition-all">
-              <i class="fas fa-folder-open text-gray-400"></i> Load Template
-            </button>
-          </div>
-        </div>
-
-      </div>
-
-      <!-- Right Column: Live Summary / Receipt -->
-      <div class="lg:col-span-5 relative">
-        <div class="glass rounded-3xl p-6 sm:p-8 sticky top-8 flex flex-col h-[calc(100vh-4rem)] max-h-[850px]">
           
-          <div class="text-center mb-6">
-            <div class="inline-block px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-full text-[10px] font-bold uppercase tracking-widest mb-3">Live Receipt Preview</div>
-            <h3 class="text-2xl font-mono font-bold">Transaction Summary</h3>
+          <div class="flex justify-between items-center mb-4">
+             <h3 class="font-bold text-base flex items-center gap-2">
+               <i class="fas fa-layer-group text-emerald-400"></i> Step 1: Token & Split Mode
+             </h3>
           </div>
 
-          <div class="grid grid-cols-2 gap-3 mb-6">
-            <div class="bg-black/30 light:bg-slate-200/50 p-4 rounded-2xl flex flex-col items-center justify-center border border-white/5">
-              <div class="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-1">Total Assets</div>
-              <div id="summaryAssetCount" class="text-3xl font-mono font-light text-white">0</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+            <div>
+              <label class="block text-gray-400 light:text-slate-600 text-xs font-semibold uppercase tracking-wider mb-2">Select Token</label>
+              <select id="tokenSelect" class="w-full rounded-2xl px-4 py-3.5 text-sm font-medium outline-none cursor-pointer" onchange="onTokenSelectionChange(this)">
+                <option value="0x3600000000000000000000000000000000000000" selected>USDC (Arc Testnet)</option>
+                <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC (Arc Testnet)</option>
+                <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC (Arc Testnet)</option>
+                <option value="custom">➕ Add Custom Token...</option>
+              </select>
             </div>
-            <div class="bg-black/30 light:bg-slate-200/50 p-4 rounded-2xl flex flex-col items-center justify-center border border-white/5">
-              <div class="text-gray-400 text-[10px] font-bold uppercase tracking-widest mb-1">Total Recipients</div>
-              <div id="summaryRecipientCount" class="text-3xl font-mono font-light text-white">0</div>
+            <div>
+              <label class="block text-gray-400 light:text-slate-600 text-xs font-semibold uppercase tracking-wider mb-2">Split Mode</label>
+              <select id="splitMode" class="w-full rounded-2xl px-4 py-3.5 text-sm font-medium outline-none cursor-pointer" onchange="updateBatchPreview()">
+                <option value="amount" selected>Split by Exact Amounts</option>
+                <option value="percentage">Split by Percentages (%)</option>
+              </select>
             </div>
           </div>
 
-          <div class="flex-1 receipt-container rounded-2xl p-4 overflow-y-auto custom-scrollbar mb-6">
-            <div id="liveBreakdownPreview" class="space-y-5 font-mono text-xs">
-              <!-- Injected dynamically -->
-            </div>
+          <div id="totalAmountContainer" class="hidden mb-6">
+              <label class="block text-gray-400 light:text-slate-600 text-xs font-semibold uppercase tracking-wider mb-2">Total Distributable Amount (For Percentages)</label>
+              <input type="number" id="totalAmountInput" value="100" min="0" step="any" class="w-full rounded-2xl px-4 py-3.5 text-lg font-bold outline-none" oninput="updateBatchPreview()">
           </div>
 
-          <div class="mt-auto pt-4">
-            <button id="executeBatchBtn" onclick="prepareBatchExecution()" class="app-button w-full bg-emerald-500 hover:bg-emerald-400 text-gray-950 py-4 sm:py-5 rounded-2xl text-base font-extrabold shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.5)] transition-all flex justify-center items-center gap-3">
-              <i class="fas fa-paper-plane"></i> Execute AdHoc Split
-            </button>
-            <p class="text-center text-[10px] text-gray-500 mt-3 font-mono">Powered by ArcRoleSplitterV30 Smart Contract</p>
-          </div>
+          <div class="h-px bg-white/5 light:bg-black/10 my-6"></div>
 
-        </div>
-      </div>
-
-    </div>
-
-    <!-- History View -->
-    <div id="historyViewContainer" class="hidden space-y-6">
-      <div class="glass rounded-3xl p-6 sm:p-8">
-        <div class="flex justify-between items-center border-b border-white/10 pb-5 mb-5">
-          <h3 class="text-xl font-bold flex items-center gap-3">
-            <i class="fas fa-history text-emerald-400"></i> Transaction History
+          <h3 class="font-bold text-base flex items-center gap-2 mb-4">
+            <i class="fas fa-users-gear text-emerald-400"></i> Step 2: Recipients Data (CSV / Text)
           </h3>
-          <button onclick="clearHistory()" class="text-xs text-rose-400 hover:text-rose-300 bg-rose-500/10 px-3 py-1.5 rounded-lg transition-all">Clear All</button>
+          <p class="text-[11px] text-gray-400 light:text-slate-600 mb-3">Format: <code>WalletAddress, Amount_Or_Percentage</code> (e.g. 0x123..., 50)</p>
+          
+          <textarea id="batchDataInput" rows="8" class="w-full font-mono text-xs rounded-2xl px-4 py-4 outline-none resize-y" placeholder="0x1111111111111111111111111111111111111111, 150.5&#10;0x2222222222222222222222222222222222222222, 50" oninput="updateBatchPreview()"></textarea>
+          
+          <div class="flex items-center justify-between mt-3 text-xs">
+              <button onclick="document.getElementById('batchDataInput').value = ''; updateBatchPreview();" class="text-rose-400 hover:underline">Clear Data</button>
+              <span id="dataStatusCount" class="text-gray-400">0 Valid Entries</span>
+          </div>
+
         </div>
-        <div id="historyTableContainer" class="overflow-x-auto custom-scrollbar"></div>
+      </div>
+
+      <div class="lg:col-span-5 space-y-6">
+        <div class="glass rounded-3xl p-6 sm:p-8 sticky top-6">
+          <h3 class="font-bold text-base mb-4 flex items-center gap-2">
+            <i class="fas fa-eye text-emerald-400"></i> Live Batch Preview
+          </h3>
+
+          <div class="mb-6 bg-black/25 light:bg-slate-100 border border-white/10 light:border-black/10 rounded-2xl overflow-hidden p-4">
+            <div id="batchPreviewContainer" class="preview-scroll space-y-3 text-xs"></div>
+          </div>
+
+          <div id="batchValidationBox" class="glass border border-white/10 light:border-black/10 p-4 rounded-2xl mb-6 space-y-2 text-xs text-gray-400 light:text-slate-600">
+            <div id="valValidWallets"><i class="fas fa-circle-xmark text-rose-400 mr-2"></i> No valid wallets parsed</div>
+            <div id="valSumCheck"><i class="fas fa-circle-xmark text-rose-400 mr-2"></i> Total amount validation</div>
+          </div>
+
+          <button onclick="openConfirmModal()" id="executeBatchBtn" disabled class="app-button w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:brightness-110 py-4 rounded-2xl text-base font-bold text-gray-950 shadow-xl opacity-50 cursor-not-allowed">
+            Execute Batch Split
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= VIEW 2: HISTORY ================= -->
+    <div id="viewHistory" class="hidden glass rounded-3xl p-6 sm:p-8">
+      <h3 class="font-bold text-lg mb-6 flex items-center gap-2">
+        <i class="fas fa-history text-emerald-400"></i> Batch History
+      </h3>
+      <div id="historyContainer" class="space-y-3">
+        <p class="text-gray-400 light:text-slate-600 text-center py-6 text-xs">No batches executed yet.</p>
+      </div>
+    </div>
+
+    <!-- ================= VIEW 3: PENDING BATCHES ================= -->
+    <div id="viewPending" class="hidden space-y-6">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="font-bold text-lg flex items-center gap-2 preserve-dark-color">
+          <i class="fas fa-hourglass-half text-amber-400"></i> Pending & Incomplete Batches
+        </h3>
+        <p class="text-xs text-gray-400 preserve-dark-muted">Transactions that failed or were interrupted can be safely resumed here.</p>
+      </div>
+      <div id="pendingContainer" class="space-y-4">
       </div>
     </div>
 
   </div>
 
-  <!-- Modals -->
-  <!-- 1. Confirmation Modal -->
-  <div id="confirmModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 transition-opacity">
-    <div class="glass rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-emerald-500/30 shadow-2xl shadow-emerald-500/10">
-      <div class="text-center mb-6">
-        <div class="w-16 h-16 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 border border-emerald-500/30">
-          <i class="fas fa-shield-check"></i>
-        </div>
-        <h2 class="text-2xl font-bold text-white mb-2">Sign Transaction</h2>
-        <p class="text-xs text-gray-400">Review assets before broadcasting to network</p>
-      </div>
-
-      <div id="confirmAssetsSummary" class="bg-black/40 border border-white/10 rounded-2xl p-5 space-y-3 max-h-48 overflow-y-auto font-mono text-sm mb-6">
-      </div>
-
-      <div id="progressBox" class="hidden flex-col items-center justify-center py-4 space-y-4">
-        <i class="fas fa-circle-notch fa-spin text-3xl text-emerald-400"></i>
-        <span id="progressStepText" class="text-sm font-mono text-emerald-400 text-center">Initiating Web3 Request...</span>
-        
-        <div id="txHashResultBox" class="hidden w-full bg-black/50 p-3 rounded-xl border border-white/10 text-xs font-mono text-center">
-          <span class="text-gray-400 block mb-1">Transaction Hash:</span>
-          <a id="txHashLink" href="#" target="_blank" class="text-cyan-400 hover:text-cyan-300 underline block truncate"></a>
-        </div>
-      </div>
-
-      <div class="flex gap-3" id="confirmModalActions">
-        <button onclick="hideConfirmModal()" class="app-button flex-1 py-3.5 rounded-xl border border-white/10 hover:bg-white/5 font-bold text-sm text-gray-300">Cancel</button>
-        <button onclick="executeConfirmedBatch()" class="app-button flex-1 py-3.5 bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-extrabold rounded-xl text-sm shadow-lg shadow-emerald-500/20 flex justify-center items-center gap-2">
-          <i class="fas fa-check-circle"></i> Confirm & Send
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 2. CSV Modal -->
-  <div id="csvModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-    <div class="glass rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-white/10">
-      <h3 class="text-xl font-bold mb-2">Import Addresses (CSV)</h3>
-      <p class="text-xs text-gray-400 mb-4 font-mono bg-white/5 p-2 rounded-lg">Format: <code class="text-cyan-400">0xAddress, Percentage</code></p>
-      <textarea id="csvTextArea" rows="6" class="w-full bg-black/40 border border-white/10 rounded-2xl p-4 font-mono text-xs outline-none focus:border-cyan-500 mb-4" placeholder="0x123..., 40&#10;0x456..., 60"></textarea>
+  <!-- ================= MODALS ================= -->
+  <div id="confirmModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+    <div class="glass rounded-3xl p-6 sm:p-8 max-w-md w-full border border-white/15 shadow-2xl">
+      <h3 class="text-xl font-bold mb-3">Confirm Batch Split</h3>
+      <p id="confirmModalText" class="text-xs text-gray-400 light:text-slate-600 mb-4">You are triggering smart contract split function.</p>
+      <div id="confirmBatchSummary" class="bg-black/20 light:bg-slate-100 p-4 rounded-2xl mb-6 space-y-2 text-xs"></div>
       <div class="flex gap-3">
-        <button onclick="hideCsvModal()" class="app-button flex-1 py-3 rounded-xl border border-white/10 hover:bg-white/5 text-sm font-bold">Cancel</button>
-        <button onclick="processCsvImport()" class="app-button flex-1 py-3 bg-cyan-500 hover:bg-cyan-400 text-gray-950 font-bold rounded-xl text-sm shadow-lg shadow-cyan-500/20">Import Data</button>
+        <button onclick="hideConfirmModal()" class="app-button flex-1 py-3 rounded-xl border border-white/15 text-xs">Cancel</button>
+        <button onclick="executeBatchSplitTx()" class="app-button flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold rounded-xl text-xs">Confirm & Send</button>
       </div>
     </div>
   </div>
 
-  <!-- 3. Templates Modals -->
-  <div id="templateModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-    <div class="glass rounded-3xl p-6 sm:p-8 max-w-md w-full border border-white/10">
-      <h3 class="text-xl font-bold mb-4">Save Configuration</h3>
-      <input type="text" id="templateNameInput" placeholder="e.g. Monthly Dev Payroll" class="w-full rounded-xl p-4 text-sm outline-none font-mono mb-5 border-white/10 bg-black/40">
-      <div class="flex gap-3">
-        <button onclick="hideTemplateModal()" class="app-button flex-1 py-3 rounded-xl border border-white/10 text-sm font-bold">Cancel</button>
-        <button onclick="saveTemplateAction()" class="app-button flex-1 py-3 bg-violet-500 hover:bg-violet-400 text-white font-bold rounded-xl text-sm shadow-lg shadow-violet-500/20">Save</button>
-      </div>
-    </div>
-  </div>
-
-  <div id="loadTemplateModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-    <div class="glass rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-white/10">
-      <h3 class="text-xl font-bold mb-4">Load Template</h3>
-      <div id="templateListContainer" class="space-y-3 max-h-72 overflow-y-auto custom-scrollbar mb-5 pr-2"></div>
-      <button onclick="hideLoadTemplateModal()" class="app-button w-full py-3 bg-white/5 hover:bg-white/10 rounded-xl font-bold text-sm">Close</button>
-    </div>
-  </div>
-
-  <!-- Details Modal -->
-  <div id="detailsModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-    <div class="glass rounded-3xl p-6 sm:p-8 max-w-2xl w-full border border-white/10">
-      <div class="flex justify-between items-center border-b border-white/10 pb-4 mb-4">
-        <h3 class="text-xl font-bold">Split Execution Details</h3>
-        <button onclick="hideDetailsModal()" class="text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
-      </div>
-      <div id="detailsContent" class="bg-black/30 p-5 rounded-2xl font-mono text-xs space-y-4 max-h-96 overflow-y-auto custom-scrollbar mb-5 border border-white/5"></div>
-      <button onclick="hideDetailsModal()" class="app-button w-full py-3 bg-white/10 rounded-xl font-bold text-sm">Close Window</button>
-    </div>
-  </div>
-
-  <!-- Toast Notification -->
-  <div id="toast" class="hidden fixed bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 border border-emerald-500/30 text-white px-6 py-4 rounded-2xl shadow-2xl shadow-emerald-500/20 flex items-center gap-3 z-[100] text-sm font-medium backdrop-blur-xl transition-all">
-    <i class="fas fa-info-circle text-emerald-400 text-lg"></i>
+  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#121228] border border-white/15 text-white px-5 py-3 rounded-2xl shadow-2xl z-50 text-xs backdrop-blur-xl transition-all">
     <span id="toastText"></span>
   </div>
 
 <script>
-// ==========================================
-// CONFIGURATION & ABI
-// ==========================================
-const CONTRACT_ADDRESS = "0xf2073671b726b96DC1c99D001BBF6e60EE1f187F";
-const NATIVE_TOKEN = "0x0000000000000000000000000000000000000000";
+  // Smart Contract Configuration based on ArcRoleSplitterV30
+  const CONTRACT_ADDRESS = "0xf2073671b726b96DC1c99D001BBF6e60EE1f187F";
+  const ARC_TESTNET_PARAMS = {
+    chainId: "5042002",
+    chainName: "Arc Testnet",
+    nativeCurrency: { name: "Arc", symbol: "ARC", decimals: 6 },
+    rpcUrls: ["https://rpc.testnet.arc.network"],
+    blockExplorerUrls: ["https://testnet.arcscan.app"]
+  };
 
-const AVAILABLE_TOKENS = [
-  { address: "0x3600000000000000000000000000000000000000", symbol: "USDC", decimals: 6, logo: "fa-dollar-sign", color: "text-blue-400" },
-  { address: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a", symbol: "EURC", decimals: 6, logo: "fa-euro-sign", color: "text-indigo-400" },
-  { address: "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF", symbol: "cirBTC", decimals: 8, logo: "fa-bitcoin", color: "text-amber-400" },
-  { address: NATIVE_TOKEN, symbol: "Native", decimals: 18, logo: "fa-ethereum", color: "text-gray-200" }
-];
+  const CONTRACT_ABI = [
+    "function splitByPercentage(tuple(address token, uint256 totalChunkAmount, address[] wallets, uint16[] sharesBps, uint256 tokenToNativeRatio, uint256 batchId, uint256 deadline, uint256 nonce, uint256 baseGas, uint64 maxGasPriceLimit) params) external payable",
+    "function splitByAmount(tuple(address token, uint256 totalChunkAmount, address[] wallets, uint256[] amounts, uint256 tokenToNativeRatio, uint256 batchId, uint256 deadline, uint256 nonce, uint256 baseGas, uint64 maxGasPriceLimit) params) external payable"
+  ];
 
-const contractAbi = [
-  "function splitBundleAdHoc(address[] tokens, uint256[] amounts, address[] wallets, uint256[] sharesBps) external payable"
-];
+  const ERC20_ABI = [
+    "function approve(address spender, uint256 amount) external returns (bool)",
+    "function allowance(address owner, address spender) external view returns (uint256)",
+    "function balanceOf(address account) external view returns (uint256)",
+    "function decimals() external view returns (uint8)"
+  ];
 
-// Added 'allowance' for gas optimization!
-const erc20Abi = [
-  "function balanceOf(address account) view returns (uint256)",
-  "function allowance(address owner, address spender) view returns (uint256)",
-  "function approve(address spender, uint256 amount) returns (bool)"
-];
+  const BATCH_SIZE = 100;
 
-// ==========================================
-// STATE MANAGEMENT
-// ==========================================
-let signer = null;
-let userAddress = null;
-let tokenRows = [{ token: "0x3600000000000000000000000000000000000000", amount: "" }];
-let recipientRows = [{ wallet: "", percentage: "" }];
-
-// ==========================================
-// UTILITIES
-// ==========================================
-function showToast(msg, type='info', duration = 4000) {
-  const toast = document.getElementById("toast");
-  const icon = toast.querySelector("i");
+  let provider = null;
+  let signer = null;
+  let userAddress = null;
+  let historyList = JSON.parse(localStorage.getItem('arcBatchHistory') || '[]');
   
-  if(type === 'error') {
-    toast.className = "fixed bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 border border-rose-500/50 text-white px-6 py-4 rounded-2xl shadow-2xl shadow-rose-500/20 flex items-center gap-3 z-[100] text-sm font-medium transition-all";
-    icon.className = "fas fa-exclamation-triangle text-rose-400 text-lg";
-  } else {
-    toast.className = "fixed bottom-8 left-1/2 -translate-x-1/2 bg-gray-900 border border-emerald-500/30 text-white px-6 py-4 rounded-2xl shadow-2xl shadow-emerald-500/20 flex items-center gap-3 z-[100] text-sm font-medium transition-all";
-    icon.className = "fas fa-check-circle text-emerald-400 text-lg";
-  }
+  // Parsed data holder
+  let parsedBatchData = { wallets: [], amountsOrBps: [], totalRawAmount: 0, isValid: false, isPercentageMode: false };
 
-  document.getElementById("toastText").innerHTML = msg;
-  toast.classList.remove("hidden");
-  toast.style.transform = "translate(-50%, 0)";
-  toast.style.opacity = "1";
-  
-  setTimeout(() => {
-    toast.style.transform = "translate(-50%, 20px)";
-    toast.style.opacity = "0";
-    setTimeout(() => toast.classList.add("hidden"), 300);
-  }, duration);
-}
-
-function toggleTheme() {
-  const isLight = document.documentElement.classList.toggle('light');
-  localStorage.setItem('theme', isLight ? 'light' : 'dark');
-  const icon = document.getElementById("themeBtn").querySelector("i");
-  if (isLight) {
-    icon.classList.replace("fa-moon", "fa-sun");
-    icon.classList.replace("text-emerald-400", "text-amber-500");
-  } else {
-    icon.classList.replace("fa-sun", "fa-moon");
-    icon.classList.replace("text-amber-500", "text-emerald-400");
-  }
-}
-
-function switchView(view) {
-  const splitter = document.getElementById("splitViewContainer");
-  const history = document.getElementById("historyViewContainer");
-  const sBtn = document.getElementById("navSplitterBtn");
-  const hBtn = document.getElementById("navHistoryBtn");
-
-  if (view === 'splitter') {
-    splitter.classList.remove("hidden");
-    history.classList.add("hidden");
-    sBtn.className = "flex-1 md:flex-none px-5 py-3 rounded-xl bg-emerald-500 text-gray-950 font-bold text-sm transition-all shadow-lg shadow-emerald-500/20";
-    hBtn.className = "flex-1 md:flex-none px-5 py-3 rounded-xl bg-white/5 light:bg-black/5 hover:bg-white/10 text-sm font-semibold transition-all";
-  } else {
-    splitter.classList.add("hidden");
-    history.classList.remove("hidden");
-    hBtn.className = "flex-1 md:flex-none px-5 py-3 rounded-xl bg-emerald-500 text-gray-950 font-bold text-sm transition-all shadow-lg shadow-emerald-500/20";
-    sBtn.className = "flex-1 md:flex-none px-5 py-3 rounded-xl bg-white/5 light:bg-black/5 hover:bg-white/10 text-sm font-semibold transition-all";
-    renderHistoryTable();
-  }
-}
-
-// ==========================================
-// WEB3 CONNECTION
-// ==========================================
-async function handleWalletClick() {
-  if (!userAddress) await connectWallet();
-}
-
-async function connectWallet() {
-  if (window.ethereum) {
-    try {
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      userAddress = accounts[0];
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      signer = await provider.getSigner();
-      localStorage.setItem("arcWalletConnected", "true");
-      updateConnectButton();
-      fetchAndRenderBalancesWithRetry();
-      showToast("Wallet Connected Successfully"); 
-      
-      // Listen for account change
-      window.ethereum.on('accountsChanged', (newAccs) => {
-        if(newAccs.length > 0) {
-          userAddress = newAccs[0];
-          updateConnectButton();
-          fetchAndRenderBalancesWithRetry();
-        } else disconnectWallet(new Event('click'));
-      });
-      
-    } catch(err) {
-      showToast("Connection Rejected or Failed", 'error');
-    }
-  } else {
-    showToast("MetaMask / Web3 provider not detected", 'error');
-  }
-}
-
-function disconnectWallet(event) {
-  event.stopPropagation();
-  userAddress = null;
-  signer = null;
-  localStorage.removeItem("arcWalletConnected");
-  updateConnectButton();
-  document.getElementById("walletBalancesBox").classList.add("hidden");
-  showToast("Wallet Disconnected");
-}
-
-function updateConnectButton() {
-  const btn = document.getElementById("connectBtn");
-  const disconnectBtn = document.getElementById("disconnectBtn");
-  const span = document.getElementById("connectText");
-  const icon = btn.querySelector("i");
-  
-  if (userAddress) {
-    span.textContent = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
-    span.classList.add("font-mono");
-    icon.classList.replace("fa-wallet", "fa-user-astronaut");
-    btn.classList.add("pr-16", "border-emerald-500/50");
-    disconnectBtn.classList.remove("hidden");
-  } else {
-    span.textContent = "Connect Web3 Wallet";
-    span.classList.remove("font-mono");
-    icon.classList.replace("fa-user-astronaut", "fa-wallet");
-    btn.classList.remove("pr-16", "border-emerald-500/50");
-    disconnectBtn.classList.add("hidden");
-  }
-}
-
-async function autoConnectWallet() {
-  if (window.ethereum && localStorage.getItem("arcWalletConnected") === "true") {
-    try {
-      const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-      if (accounts.length > 0) {
-        userAddress = accounts[0];
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        signer = await provider.getSigner();
-        updateConnectButton();
-        fetchAndRenderBalancesWithRetry();
-      }
-    } catch (e) {
-      localStorage.removeItem("arcWalletConnected");
+  function initTelegramWebApp() {
+    if (window.Telegram && window.Telegram.WebApp) {
+      const tg = window.Telegram.WebApp;
+      tg.ready(); tg.expand();
+      document.body.classList.add("tg-webapp");
+      if (tg.colorScheme === "light") document.documentElement.classList.add("light");
     }
   }
-}
 
-async function fetchAndRenderBalancesWithRetry(maxRetries = 2) {
-  if (!signer || !userAddress) return;
-  const container = document.getElementById("balancesContainer");
-  document.getElementById("walletBalancesBox").classList.remove("hidden");
+  async function checkAutoConnect() {
+    if (window.ethereum) {
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        if (accounts.length > 0) {
+          provider = new ethers.BrowserProvider(window.ethereum);
+          userAddress = accounts[0];
+          signer = await provider.getSigner();
 
-  container.innerHTML = '<div class="col-span-4 text-center py-4 text-emerald-400 text-xs font-mono"><i class="fas fa-spinner fa-spin mr-2"></i>Fetching Balances...</div>';
-
-  let success = false;
-  for(let i=0; i<maxRetries; i++) {
-    try {
-      let html = "";
-      const provider = signer.provider;
-
-      for (const t of AVAILABLE_TOKENS) {
-        let bal = 0n;
-        if (t.address === NATIVE_TOKEN) {
-          bal = await provider.getBalance(userAddress);
-        } else {
-          const erc20 = new ethers.Contract(t.address, erc20Abi, provider);
-          bal = await erc20.balanceOf(userAddress);
+          const shortAddr = userAddress.substring(0, 6) + '...' + userAddress.substring(userAddress.length - 4);
+          document.getElementById("connectBtn").innerHTML = `<i class="fas fa-wallet text-emerald-400"></i> <span class="font-bold">${shortAddr}</span> <i class="fas fa-power-off text-rose-400 ml-1 text-[10px]"></i>`;
+          document.getElementById("contractStatusText").textContent = "Connected to Arc Network";
+          
+          setupWalletListeners();
+          updateWalletBalance();
+          renderPendingBatches();
         }
-        const formatted = parseFloat(ethers.formatUnits(bal, t.decimals)).toFixed(t.decimals === 18 ? 4 : 2);
-        html += `
-          <div class="bg-black/40 border border-white/5 p-3 rounded-2xl flex flex-col items-start hover:border-emerald-500/30 transition-colors">
-            <div class="flex items-center gap-2 mb-2">
-              <i class="fab ${t.logo} ${t.color} text-sm"></i>
-              <span class="font-bold text-xs text-gray-300">${t.symbol}</span>
-            </div>
-            <span class="text-white font-mono text-sm">${formatted}</span>
-          </div>
-        `;
+      } catch (err) {}
+    }
+  }
+
+  function setupWalletListeners() {
+    if (!window.ethereum) return;
+    window.ethereum.removeAllListeners('accountsChanged');
+    window.ethereum.removeAllListeners('chainChanged');
+    window.ethereum.on('accountsChanged', (accounts) => {
+      if (accounts.length === 0) location.reload(); else checkAutoConnect();
+    });
+    window.ethereum.on('chainChanged', () => window.location.reload());
+  }
+
+  async function toggleConnection() {
+    if (userAddress) {
+      userAddress = null; signer = null;
+      document.getElementById("connectBtn").innerHTML = `<i class="fas fa-wallet text-emerald-500"></i> <span id="connectText">Connect Wallet</span>`;
+      document.getElementById("userBalanceDisplay").textContent = "0.00";
+      document.getElementById("contractStatusText").textContent = "Ready to connect to Arc Testnet Network";
+      showToast("Wallet disconnected locally.");
+    } else {
+      await connectRealWallet();
+    }
+  }
+
+  async function connectRealWallet() {
+    if (!window.ethereum) return showToast("MetaMask or Web3 Wallet not found!");
+    try {
+      if (!provider) provider = new ethers.BrowserProvider(window.ethereum);
+      const accounts = await provider.send("eth_requestAccounts", []);
+      userAddress = accounts[0]; signer = await provider.getSigner();
+      checkAutoConnect();
+      showToast("Wallet Connected Successfully via Web3!");
+    } catch (err) {
+      showToast("Wallet connection rejected or failed.");
+    }
+  }
+
+  async function switchNetworkToArc() {
+    if (!window.ethereum) return;
+    try {
+      await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: ARC_TESTNET_PARAMS.chainId }] });
+    } catch (error) {
+      if (error.code === 4902) {
+        await window.ethereum.request({ method: "wallet_addEthereumChain", params: [ARC_TESTNET_PARAMS] });
       }
-      container.innerHTML = html;
-      success = true;
-      break;
-    } catch (e) {
-      await new Promise(r => setTimeout(r, 1000));
     }
   }
-  if(!success) container.innerHTML = `<div class="col-span-4 text-rose-400 text-xs text-center font-mono">Failed to fetch. Try again.</div>`;
-}
 
-// ==========================================
-// UI RENDERERS (TOKENS & RECIPIENTS)
-// ==========================================
-function renderTokens() {
-  const container = document.getElementById("tokensContainer");
-  const selectedTokens = tokenRows.map(r => r.token);
-
-  container.innerHTML = tokenRows.map((row, idx) => {
-    const availableOptions = AVAILABLE_TOKENS.filter(t => t.address === row.token || !selectedTokens.includes(t.address));
-    return `
-      <div class="flex flex-col sm:flex-row items-center gap-3 bg-black/20 p-2 pl-4 rounded-2xl border border-white/5 focus-within:border-emerald-500/50 transition-colors">
-        <select onchange="updateTokenRowToken(${idx}, this.value)" class="w-full sm:flex-1 bg-transparent border-none py-3 text-sm font-bold outline-none cursor-pointer">
-          ${availableOptions.map(t => `<option value="${t.address}" ${t.address === row.token ? 'selected' : ''}>${t.symbol}</option>`).join('')}
-        </select>
-        <div class="w-full sm:w-auto flex items-center gap-2">
-          <input type="number" step="any" min="0" value="${row.amount}" oninput="updateTokenRowAmount(${idx}, this.value)" placeholder="0.00" class="w-full sm:w-36 bg-black/30 rounded-xl px-4 py-3 text-sm font-mono font-bold outline-none border border-white/10">
-          <button onclick="removeTokenRow(${idx})" class="w-12 h-12 shrink-0 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 flex items-center justify-center transition-all border border-rose-500/20"><i class="fas fa-times"></i></button>
-        </div>
-      </div>
-    `;
-  }).join('');
-  renderLiveSummary();
-}
-
-function addTokenRow() {
-  const unselected = AVAILABLE_TOKENS.find(t => !tokenRows.some(r => r.token === t.address));
-  if (!unselected) return showToast("All available assets selected", 'error');
-  if (tokenRows.length >= 4) return showToast("Max 4 tokens allowed per batch", 'error');
-  tokenRows.push({ token: unselected.address, amount: "" });
-  renderTokens();
-}
-
-function updateTokenRowToken(idx, val) { tokenRows[idx].token = val; renderTokens(); }
-function updateTokenRowAmount(idx, val) { tokenRows[idx].amount = val; renderLiveSummary(); }
-function removeTokenRow(idx) {
-  if (tokenRows.length <= 1) return showToast("At least one token is required", 'error');
-  tokenRows.splice(idx, 1);
-  renderTokens();
-}
-
-function renderRecipients() {
-  const container = document.getElementById("recipientsContainer");
-  container.innerHTML = recipientRows.map((row, idx) => `
-    <div class="flex flex-col sm:flex-row items-center gap-2 bg-black/30 p-2 pl-4 rounded-xl border border-white/5 hover:border-cyan-500/30 transition-colors group">
-      <div class="w-6 h-6 rounded-full bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-[10px] font-bold shrink-0">${idx+1}</div>
-      <input type="text" value="${row.wallet}" oninput="updateRecipientWallet(${idx}, this.value)" placeholder="0x... Wallet Address" class="w-full sm:flex-1 bg-transparent border-none py-2 font-mono text-xs outline-none">
-      <div class="w-full sm:w-auto flex items-center gap-2">
-        <div class="relative w-full sm:w-28">
-          <input type="number" step="0.01" value="${row.percentage}" oninput="updateRecipientPercentage(${idx}, this.value)" placeholder="0" class="w-full bg-black/40 rounded-lg pl-3 pr-8 py-2 text-sm font-mono font-bold outline-none border border-white/10">
-          <span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-500 font-bold">%</span>
-        </div>
-        <button onclick="removeRecipientRow(${idx})" class="w-10 h-10 shrink-0 rounded-lg text-gray-500 hover:bg-rose-500/20 hover:text-rose-400 flex items-center justify-center transition-all opacity-50 group-hover:opacity-100"><i class="fas fa-trash-alt text-xs"></i></button>
-      </div>
-    </div>
-  `).join('');
-  validateTotalPercentage();
-  renderLiveSummary();
-}
-
-function addRecipientRow() {
-  if(recipientRows.length >= 150) return showToast("Max 150 recipients", 'error');
-  recipientRows.push({ wallet: "", percentage: "" });
-  renderRecipients();
-}
-
-function updateRecipientWallet(idx, val) { recipientRows[idx].wallet = val.trim(); renderLiveSummary(); }
-function updateRecipientPercentage(idx, val) { 
-  recipientRows[idx].percentage = val; 
-  validateTotalPercentage(); 
-  renderLiveSummary(); 
-}
-function removeRecipientRow(idx) {
-  if (recipientRows.length <= 1) return showToast("At least one recipient required", 'error');
-  recipientRows.splice(idx, 1);
-  renderRecipients();
-}
-
-function distributeRemaining() {
-  if (recipientRows.length === 0) return;
-  const currentTotal = recipientRows.reduce((sum, r, i) => i === recipientRows.length - 1 ? sum : sum + (parseFloat(r.percentage) || 0), 0);
-  const remaining = Math.max(0, 100 - currentTotal);
-  recipientRows[recipientRows.length - 1].percentage = remaining > 0 ? parseFloat(remaining.toFixed(2)).toString() : "";
-  renderRecipients();
-  showToast(`Auto-filled remaining ${remaining.toFixed(2)}% to the last user`);
-}
-
-function validateTotalPercentage() {
-  const total = recipientRows.reduce((sum, r) => sum + (parseFloat(r.percentage) || 0), 0);
-  const badge = document.getElementById("totalPercentageBadge");
-  const wrapper = document.getElementById("totalPercentageWrapper");
-  
-  // Exact BPS match calculation (handling float precision)
-  const bps = Math.round(total * 100); 
-  
-  if (bps === 10000) {
-    wrapper.className = "w-full sm:w-1/2 p-3.5 rounded-xl border flex justify-between items-center bg-emerald-500/10 border-emerald-500/30";
-    badge.className = "text-sm font-mono font-bold text-emerald-400";
-    badge.textContent = "100.00% Valid";
-  } else {
-    wrapper.className = "w-full sm:w-1/2 p-3.5 rounded-xl border flex justify-between items-center bg-rose-500/10 border-rose-500/30";
-    badge.className = "text-sm font-mono font-bold text-rose-400";
-    badge.textContent = `${total.toFixed(2)}% (Needs 100%)`;
-  }
-}
-
-// ==========================================
-// RECEIPT / SUMMARY RENDERER
-// ==========================================
-function renderLiveSummary() {
-  document.getElementById("summaryAssetCount").textContent = tokenRows.filter(t => t.amount > 0).length;
-  document.getElementById("summaryRecipientCount").textContent = recipientRows.filter(r => r.wallet.length > 10).length;
-
-  const preview = document.getElementById("liveBreakdownPreview");
-  let html = "";
-
-  const validTokens = tokenRows.filter(t => parseFloat(t.amount) > 0);
-  
-  if(validTokens.length === 0) {
-    preview.innerHTML = '<div class="text-center text-gray-500 italic py-10">Awaiting inputs...</div>';
-    return;
-  }
-
-  validTokens.forEach((tItem, i) => {
-    const tokenObj = AVAILABLE_TOKENS.find(t => t.address === tItem.token);
-    const amt = parseFloat(tItem.amount);
-    
-    html += `
-      <div class="mb-4 bg-black/20 p-4 rounded-xl border border-white/5">
-        <div class="flex justify-between items-end border-b border-white/10 pb-2 mb-3">
-          <div class="text-xs text-gray-400 uppercase tracking-widest font-bold">Asset ${i+1}</div>
-          <div class="text-lg font-bold text-cyan-400 flex items-center gap-1"><i class="fab ${tokenObj.logo} text-xs"></i> ${amt} ${tokenObj.symbol}</div>
-        </div>
-        <div class="space-y-2">
-    `;
-
-    recipientRows.forEach((rItem, ri) => {
-      if(!rItem.wallet) return;
-      const p = parseFloat(rItem.percentage) || 0;
-      const share = (amt * p) / 100;
-      const shortWallet = rItem.wallet.length > 10 ? `${rItem.wallet.slice(0,6)}...${rItem.wallet.slice(-4)}` : "Invalid";
+  async function updateWalletBalance() {
+    if (!provider || !userAddress) return;
+    try {
+      const tokenAddress = document.getElementById("tokenSelect").value;
+      if (tokenAddress === "custom") return;
+      const isUSDC = tokenAddress.toLowerCase() === "0x3600000000000000000000000000000000000000".toLowerCase();
       
-      html += `
-        <div class="flex justify-between items-center text-[11px]">
-          <span class="text-gray-400 flex items-center gap-2">
-            <span class="w-4 text-center text-gray-600">#${ri+1}</span>
-            <span class="font-mono bg-white/5 px-2 py-0.5 rounded">${shortWallet}</span>
-            <span class="text-emerald-500/70">${p}%</span>
-          </span>
-          <span class="text-white font-bold">${share.toFixed(6).replace(/\.?0+$/, '')}</span>
-        </div>
-      `;
-    });
-
-    html += '</div></div>';
-  });
-
-  preview.innerHTML = html;
-}
-
-// ==========================================
-// IMPORT & TEMPLATES
-// ==========================================
-function importCSVModal() { document.getElementById("csvModal").classList.remove("hidden"); }
-function hideCsvModal() { document.getElementById("csvModal").classList.add("hidden"); }
-
-function processCsvImport() {
-  const text = document.getElementById("csvTextArea").value.trim();
-  if (!text) return showToast("Please paste CSV data", 'error');
-  const lines = text.split("\n");
-  let newRecipients = [];
-
-  lines.forEach(line => {
-    const parts = line.split(/[,;\t]/).map(p => p.trim());
-    if (parts.length >= 2 && ethers.isAddress(parts[0])) {
-      newRecipients.push({ wallet: parts[0], percentage: parts[1] });
-    }
-  });
-
-  if (newRecipients.length > 0) {
-    recipientRows = newRecipients.slice(0, 150); 
-    renderRecipients();
-    hideCsvModal();
-    showToast(`Imported ${newRecipients.length} valid addresses`);
-    document.getElementById("csvTextArea").value = "";
-  } else {
-    showToast("No valid Ethereum addresses found", 'error');
-  }
-}
-
-function openSaveTemplateModal() { document.getElementById("templateModal").classList.remove("hidden"); }
-function hideTemplateModal() { document.getElementById("templateModal").classList.add("hidden"); }
-
-function saveTemplateAction() {
-  const name = document.getElementById("templateNameInput").value.trim();
-  if (!name) return showToast("Enter template name", 'error');
-  const templates = JSON.parse(localStorage.getItem("arcSplitTemplates") || "[]");
-  templates.push({ name, tokens: tokenRows, recipients: recipientRows });
-  localStorage.setItem("arcSplitTemplates", JSON.stringify(templates));
-  hideTemplateModal();
-  document.getElementById("templateNameInput").value = "";
-  showToast("Template saved securely locally");
-}
-
-function openLoadTemplateModal() {
-  const templates = JSON.parse(localStorage.getItem("arcSplitTemplates") || "[]");
-  const container = document.getElementById("templateListContainer");
-  if (templates.length === 0) {
-    container.innerHTML = '<div class="text-center py-6 text-gray-500 italic">No saved templates.</div>';
-  } else {
-    container.innerHTML = templates.map((t, idx) => `
-      <div class="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-black/40 rounded-xl border border-white/5 hover:border-white/10 transition-colors gap-3">
-        <div>
-          <div class="font-bold text-white text-sm mb-1">${t.name}</div>
-          <div class="text-[10px] text-gray-400 font-mono"><span class="text-cyan-400">${t.tokens.length}</span> Tokens | <span class="text-emerald-400">${t.recipients.length}</span> Users</div>
-        </div>
-        <div class="flex gap-2">
-            <button onclick="loadTemplate(${idx})" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white font-bold rounded-lg text-xs transition-colors">Load</button>
-            <button onclick="deleteTemplate(${idx})" class="px-3 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-lg transition-colors"><i class="fas fa-trash"></i></button>
-        </div>
-      </div>
-    `).join('');
-  }
-  document.getElementById("loadTemplateModal").classList.remove("hidden");
-}
-
-function hideLoadTemplateModal() { document.getElementById("loadTemplateModal").classList.add("hidden"); }
-
-function loadTemplate(idx) {
-  const templates = JSON.parse(localStorage.getItem("arcSplitTemplates") || "[]");
-  const t = templates[idx];
-  if (t) {
-    tokenRows = t.tokens;
-    recipientRows = t.recipients;
-    renderTokens();
-    renderRecipients();
-    hideLoadTemplateModal();
-    showToast("Template Loaded successfully");
-  }
-}
-function deleteTemplate(idx) {
-    const templates = JSON.parse(localStorage.getItem("arcSplitTemplates") || "[]");
-    templates.splice(idx, 1);
-    localStorage.setItem("arcSplitTemplates", JSON.stringify(templates));
-    openLoadTemplateModal(); // refresh
-}
-
-// ==========================================
-// SMART CONTRACT EXECUTION LOGIC (V3.0)
-// ==========================================
-function prepareBatchExecution() {
-  if (!userAddress) return showToast("Please connect your wallet first", 'error');
-
-  const totalBps = recipientRows.reduce((sum, r) => sum + Math.round((parseFloat(r.percentage) || 0) * 100), 0);
-  if (totalBps !== 10000) return showToast("Total percentage must be EXACTLY 100%", 'error');
-  
-  // Validation
-  for (let t of tokenRows) {
-      if(!t.amount || parseFloat(t.amount) <= 0) return showToast("Token amounts must be greater than 0", 'error');
-  }
-  for (let r of recipientRows) {
-    if (!ethers.isAddress(r.wallet)) return showToast("Invalid address detected: " + r.wallet, 'error');
-  }
-
-  // Populate Summary
-  const summary = document.getElementById("confirmAssetsSummary");
-  summary.innerHTML = tokenRows.map(t => {
-    const symbol = AVAILABLE_TOKENS.find(x => x.address === t.token)?.symbol || "TOKEN";
-    return `
-        <div class="flex justify-between items-center p-2 border-b border-white/5 last:border-0">
-            <span class="text-gray-400 text-xs">${symbol}</span> 
-            <span class="font-bold text-white">${t.amount}</span>
-        </div>`;
-  }).join('');
-  
-  summary.innerHTML += `
-    <div class="mt-3 pt-3 border-t border-emerald-500/20 flex justify-between items-center">
-        <span class="text-gray-400 text-xs">Total Recipients</span>
-        <span class="font-bold text-emerald-400">${recipientRows.length} Users</span>
-    </div>`;
-
-  document.getElementById("progressBox").classList.add("hidden");
-  document.getElementById("confirmModalActions").classList.remove("hidden");
-  
-  const modal = document.getElementById("confirmModal");
-  modal.classList.remove("hidden");
-  setTimeout(() => modal.classList.add("opacity-100"), 10);
-}
-
-function hideConfirmModal() { 
-  const modal = document.getElementById("confirmModal");
-  modal.classList.remove("opacity-100");
-  setTimeout(() => modal.classList.add("hidden"), 300);
-}
-
-async function executeConfirmedBatch() {
-  const progressBox = document.getElementById("progressBox");
-  const progressText = document.getElementById("progressStepText");
-  const txHashBox = document.getElementById("txHashResultBox");
-  const txHashLink = document.getElementById("txHashLink");
-
-  progressBox.classList.remove("hidden");
-  document.getElementById("confirmModalActions").classList.add("hidden");
-  txHashBox.classList.add("hidden");
-
-  try {
-    const contract = new ethers.Contract(CONTRACT_ADDRESS, contractAbi, signer);
-
-    const tokens = tokenRows.map(t => t.token);
-    const amounts = tokenRows.map(t => {
-      const dec = AVAILABLE_TOKENS.find(x => x.address === t.token)?.decimals || 18;
-      return ethers.parseUnits(t.amount.toString(), dec);
-    });
-
-    const wallets = recipientRows.map(r => r.wallet);
-    // Convert % to BPS (exact math)
-    const sharesBps = recipientRows.map(r => Math.round((parseFloat(r.percentage)) * 100));
-
-    let totalNativeValue = 0n;
-    
-    // Gas Optimized Allowance Check Logic
-    for (let i = 0; i < tokens.length; i++) {
-      if (tokens[i] === NATIVE_TOKEN) {
-        totalNativeValue += amounts[i];
+      if (tokenAddress === "0x0000000000000000000000000000000000000000" || isUSDC) {
+        const bal = await provider.getBalance(userAddress);
+        document.getElementById("userBalanceDisplay").textContent = `${parseFloat(ethers.formatUnits(bal, 18)).toFixed(4)}`;
       } else {
-        progressText.textContent = `Checking allowance for Token #${i+1}...`;
-        const erc20 = new ethers.Contract(tokens[i], erc20Abi, signer);
+        const erc20 = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+        const decimals = await erc20.decimals().catch(() => 6);
+        const bal = await erc20.balanceOf(userAddress);
+        document.getElementById("userBalanceDisplay").textContent = `${parseFloat(ethers.formatUnits(bal, decimals)).toFixed(4)}`;
+      }
+    } catch (e) {}
+  }
+
+  function onTokenSelectionChange(selectEl) {
+    if (selectEl.value === 'custom') {
+      const customAddr = prompt("Enter Custom Token Contract Address (0x...):");
+      if (customAddr && ethers.isAddress(customAddr)) {
+        const opt = document.createElement('option');
+        opt.value = customAddr; opt.textContent = `Custom (${customAddr.substring(0, 6)}...${customAddr.substring(customAddr.length - 4)})`;
+        selectEl.insertBefore(opt, selectEl.lastElementChild);
+        selectEl.value = customAddr;
+      } else {
+        selectEl.value = "0x3600000000000000000000000000000000000000";
+      }
+    }
+    updateWalletBalance();
+  }
+
+  function switchTab(tab) {
+    document.getElementById('viewBatch').classList.toggle('hidden', tab !== 'batch');
+    document.getElementById('viewHistory').classList.toggle('hidden', tab !== 'history');
+    document.getElementById('viewPending').classList.toggle('hidden', tab !== 'pending');
+
+    const activeClass = "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400 preserve-dark-color";
+    const inactiveClass = "relative px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted";
+    
+    document.getElementById('tabBatch').className = tab === 'batch' ? activeClass : inactiveClass;
+    document.getElementById('tabHistory').className = tab === 'history' ? activeClass : inactiveClass;
+    document.getElementById('tabPending').className = tab === 'pending' ? activeClass : inactiveClass;
+
+    if (tab === 'history') renderHistory();
+    if (tab === 'pending') renderPendingBatches();
+  }
+
+  function showToast(msg, duration = 4000) {
+    const toast = document.getElementById("toast");
+    document.getElementById("toastText").innerHTML = msg;
+    toast.classList.remove("hidden");
+    setTimeout(() => toast.classList.add("hidden"), duration);
+  }
+
+  function toggleTheme() {
+    document.documentElement.classList.toggle('light');
+    const btnIcon = document.querySelector("#themeBtn i");
+    btnIcon.className = document.documentElement.classList.contains('light') ? "fas fa-sun text-lg text-amber-500" : "fas fa-moon text-lg text-emerald-400";
+  }
+
+  // --- PARSING & PREVIEW ENGINE ---
+  function updateBatchPreview() {
+    const mode = document.getElementById("splitMode").value;
+    const isPercentageMode = (mode === 'percentage');
+    document.getElementById("totalAmountContainer").classList.toggle('hidden', !isPercentageMode);
+    
+    const rawData = document.getElementById("batchDataInput").value;
+    const lines = rawData.split('\n');
+    const previewContainer = document.getElementById("batchPreviewContainer");
+    previewContainer.innerHTML = "";
+    
+    parsedBatchData = { wallets: [], amountsOrBps: [], totalRawAmount: 0, isValid: false, isPercentageMode };
+    let invalidCount = 0;
+    let totalPercentage = 0;
+    let baseAmount = parseFloat(document.getElementById("totalAmountInput").value) || 0;
+
+    lines.forEach(line => {
+      if(!line.trim()) return;
+      // split by comma, tab, or space
+      const parts = line.split(/[, \t]+/).map(p => p.trim()).filter(p => p.length > 0);
+      if (parts.length >= 2) {
+        const wallet = parts[0];
+        const val = parseFloat(parts[1]);
+        if (ethers.isAddress(wallet) && !isNaN(val) && val > 0) {
+          parsedBatchData.wallets.push(wallet);
+          parsedBatchData.amountsOrBps.push(val);
+          
+          if (isPercentageMode) {
+            totalPercentage += val;
+          } else {
+            parsedBatchData.totalRawAmount += val;
+          }
+
+          const dispAmount = isPercentageMode ? `${val}% (${((baseAmount * val)/100).toFixed(4)})` : val.toString();
+          previewContainer.innerHTML += `<div class="flex justify-between border-b border-white/5 light:border-black/5 pb-1">
+            <span class="font-mono text-gray-400">${wallet.substring(0,8)}...${wallet.substring(38)}</span>
+            <span class="font-bold text-emerald-400">${dispAmount}</span>
+          </div>`;
+        } else {
+          invalidCount++;
+        }
+      } else {
+        invalidCount++;
+      }
+    });
+
+    if (isPercentageMode) parsedBatchData.totalRawAmount = baseAmount;
+    
+    document.getElementById("dataStatusCount").textContent = `${parsedBatchData.wallets.length} Valid Entries`;
+    
+    // Validations
+    const valWalletsEl = document.getElementById("valValidWallets");
+    if (parsedBatchData.wallets.length > 0 && invalidCount === 0) {
+      valWalletsEl.innerHTML = `<i class="fas fa-circle-check text-emerald-400 mr-2"></i> All parsed lines are valid wallets`;
+    } else if (parsedBatchData.wallets.length > 0 && invalidCount > 0) {
+      valWalletsEl.innerHTML = `<i class="fas fa-triangle-exclamation text-amber-400 mr-2"></i> Found ${parsedBatchData.wallets.length} valid, ignored ${invalidCount} invalid rows`;
+    } else {
+      valWalletsEl.innerHTML = `<i class="fas fa-circle-xmark text-rose-400 mr-2"></i> No valid wallets parsed`;
+      previewContainer.innerHTML = "<span class='text-gray-500 italic'>Awaiting input...</span>";
+    }
+
+    const valSumEl = document.getElementById("valSumCheck");
+    let isSumValid = false;
+    
+    if (isPercentageMode) {
+      isSumValid = Math.abs(totalPercentage - 100) < 0.001;
+      valSumEl.innerHTML = isSumValid 
+        ? `<i class="fas fa-circle-check text-emerald-400 mr-2"></i> Total shares = 100%` 
+        : `<i class="fas fa-circle-xmark text-rose-400 mr-2"></i> Total shares = ${totalPercentage.toFixed(2)}% (Must be 100%)`;
+    } else {
+      isSumValid = parsedBatchData.totalRawAmount > 0;
+      valSumEl.innerHTML = isSumValid
+        ? `<i class="fas fa-circle-check text-emerald-400 mr-2"></i> Total Amount: ${parsedBatchData.totalRawAmount}`
+        : `<i class="fas fa-circle-xmark text-rose-400 mr-2"></i> Total Amount is 0`;
+    }
+
+    const executeBtn = document.getElementById("executeBatchBtn");
+    parsedBatchData.isValid = (parsedBatchData.wallets.length > 0 && isSumValid);
+    
+    if (parsedBatchData.isValid) {
+      executeBtn.disabled = false;
+      executeBtn.classList.remove("opacity-50", "cursor-not-allowed");
+    } else {
+      executeBtn.disabled = true;
+      executeBtn.classList.add("opacity-50", "cursor-not-allowed");
+    }
+  }
+
+  function openConfirmModal() {
+    const symbol = document.getElementById("tokenSelect").selectedOptions[0].text.split(' ')[0];
+    document.getElementById("confirmModalText").textContent = `You are about to split ${parsedBatchData.totalRawAmount} ${symbol} across ${parsedBatchData.wallets.length} wallets.`;
+    document.getElementById("confirmBatchSummary").innerHTML = `
+      <div><strong>Mode:</strong> ${parsedBatchData.isPercentageMode ? 'Percentage Split' : 'Exact Amount Split'}</div>
+      <div><strong>Total Wallets:</strong> ${parsedBatchData.wallets.length}</div>
+      <div><strong>Estimated Batches:</strong> ${Math.ceil(parsedBatchData.wallets.length / BATCH_SIZE)}</div>
+    `;
+    document.getElementById("confirmModal").classList.remove("hidden");
+  }
+  function hideConfirmModal() { document.getElementById("confirmModal").classList.add("hidden"); }
+
+  // ================= BATCH EXECUTION & SMART CONTRACT =================
+  async function executeBatchSplitTx() {
+    hideConfirmModal();
+    if (!signer) {
+      await connectRealWallet();
+      if (!signer) return;
+    }
+
+    const tokenSelect = document.getElementById("tokenSelect");
+    const tokenAddress = tokenSelect.value;
+    const tokenSymbol = tokenSelect.selectedOptions[0].text.split(' ')[0];
+    const isUSDC = tokenAddress.toLowerCase() === "0x3600000000000000000000000000000000000000".toLowerCase();
+    const isNative = tokenAddress === "0x0000000000000000000000000000000000000000" || isUSDC;
+    const finalTokenAddress = isNative ? "0x0000000000000000000000000000000000000000" : tokenAddress;
+
+    let contractDecimals = 18;
+    if (!isNative) {
+      try {
+        const erc20 = new ethers.Contract(finalTokenAddress, ERC20_ABI, signer);
+        contractDecimals = Number(await erc20.decimals());
+      } catch (e) { contractDecimals = 18; }
+    }
+
+    let flatWallets = parsedBatchData.wallets;
+    let flatValuesStr = [];
+    
+    if (parsedBatchData.isPercentageMode) {
+       // Values are percentages (e.g. 50 -> 5000 bps)
+       flatValuesStr = parsedBatchData.amountsOrBps.map(v => Math.round(v * 100).toString());
+    } else {
+       // Values are raw amounts, need to parse to Wei based on decimals
+       flatValuesStr = parsedBatchData.amountsOrBps.map(v => ethers.parseUnits(v.toString(), contractDecimals).toString());
+    }
+
+    let chunks = [];
+    for (let i = 0; i < flatWallets.length; i += BATCH_SIZE) {
+      chunks.push({
+        wallets: flatWallets.slice(i, i + BATCH_SIZE),
+        values: flatValuesStr.slice(i, i + BATCH_SIZE)
+      });
+    }
+
+    const batchId = Date.now();
+    const batchData = {
+      id: batchId,
+      date: new Date().toLocaleString(),
+      token: finalTokenAddress,
+      isNative: isNative,
+      isPercentage: parsedBatchData.isPercentageMode,
+      chunks: chunks,
+      currentIndex: 0,
+      totalWallets: flatWallets.length,
+      rawAmount: parsedBatchData.totalRawAmount,
+      tokenSymbol: tokenSymbol
+    };
+
+    let pendingBatches = JSON.parse(localStorage.getItem('arcPendingBatches') || '[]');
+    pendingBatches.push(batchData);
+    localStorage.setItem('arcPendingBatches', JSON.stringify(pendingBatches));
+
+    renderPendingBatches();
+    switchTab('pending');
+    await resumeBatchTx(batchId);
+  }
+
+  function renderPendingBatches() {
+    let batches = JSON.parse(localStorage.getItem('arcPendingBatches') || '[]');
+    const container = document.getElementById("pendingContainer");
+    document.getElementById("pendingBadge").classList.toggle('hidden', batches.length === 0);
+
+    if (batches.length === 0) {
+      container.innerHTML = `<p class="text-gray-400 light:text-slate-600 text-center py-6 text-xs">No pending or incomplete transactions.</p>`;
+      return;
+    }
+
+    container.innerHTML = "";
+    batches.forEach(b => {
+      const pct = (b.currentIndex / b.chunks.length) * 100;
+      container.innerHTML += `
+        <div class="glass rounded-3xl p-5 mb-4 border border-amber-500/30 bg-amber-500/5 fade-in">
+          <div class="flex justify-between items-center mb-4">
+            <div>
+              <h3 class="font-bold text-amber-400 text-sm"><i class="fas fa-triangle-exclamation"></i> Resumable Batch: ${b.rawAmount} ${b.tokenSymbol}</h3>
+              <span class="text-[10px] text-gray-400">Mode: ${b.isPercentage ? 'Percentage BPS' : 'Exact Amount'} | ${b.date}</span>
+            </div>
+            <button onclick="discardBatch(${b.id})" class="text-xs text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 px-3 py-1.5 rounded-lg transition-colors">Discard</button>
+          </div>
+          <div class="w-full bg-black/30 rounded-full h-2.5 mb-2 overflow-hidden border border-white/5">
+            <div class="bg-gradient-to-r from-amber-400 to-emerald-400 h-full rounded-full" style="width: ${pct}%"></div>
+          </div>
+          <div class="flex justify-between text-[11px] text-gray-400 mb-5">
+            <span>Completed: ${b.currentIndex} / ${b.chunks.length}</span>
+            <span>Wallets Remaining: ${Math.max(0, b.totalWallets - (b.currentIndex * BATCH_SIZE))}</span>
+          </div>
+          <button onclick="resumeBatchTx(${b.id})" id="resume_btn_${b.id}" class="app-button w-full sm:w-auto px-6 py-2.5 bg-amber-500 hover:bg-amber-600 text-black font-bold rounded-xl text-xs flex items-center justify-center gap-2">
+            <i class="fas fa-play"></i> Resume Remaining Batch
+          </button>
+        </div>`;
+    });
+  }
+
+  function discardBatch(id) {
+    let batches = JSON.parse(localStorage.getItem('arcPendingBatches') || '[]');
+    localStorage.setItem('arcPendingBatches', JSON.stringify(batches.filter(b => b.id !== id)));
+    renderPendingBatches();
+  }
+
+  async function resumeBatchTx(batchId) {
+    let batches = JSON.parse(localStorage.getItem('arcPendingBatches') || '[]');
+    let bIndex = batches.findIndex(x => x.id === batchId);
+    if (bIndex === -1) return;
+    let data = batches[bIndex];
+
+    const btn = document.getElementById(`resume_btn_${batchId}`);
+    if (btn) { btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Processing...`; btn.disabled = true; }
+
+    try {
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+      if (!data.isNative && data.currentIndex === 0 && !data.isPercentage) {
+        const erc20 = new ethers.Contract(data.token, ERC20_ABI, signer);
+        let sumWei = 0n;
+        data.chunks.forEach(c => c.values.forEach(a => sumWei += BigInt(a)));
         
         const currentAllowance = await erc20.allowance(userAddress, CONTRACT_ADDRESS);
-        
-        if (currentAllowance < amounts[i]) {
-            progressText.textContent = `Please sign Approval for Token #${i+1}...`;
-            const txApprove = await erc20.approve(CONTRACT_ADDRESS, amounts[i]);
-            progressText.textContent = `Waiting for Approval confirmation...`;
+        if (currentAllowance < sumWei) {
+            showToast("Requesting Token Allowance...");
+            const txApprove = await erc20.approve(CONTRACT_ADDRESS, ethers.MaxUint256);
             await txApprove.wait();
         }
       }
-    }
 
-    progressText.textContent = "Please sign AdHoc Split transaction...";
-    
-    // Execute Batch
-    const tx = await contract.splitBundleAdHoc(tokens, amounts, wallets, sharesBps, {
-        value: totalNativeValue
+      while (data.currentIndex < data.chunks.length) {
+        const chunk = data.chunks[data.currentIndex];
+        
+        let chunkSumWei = 0n;
+        if (!data.isPercentage) {
+           chunk.values.forEach(a => chunkSumWei += BigInt(a));
+        } else {
+           // For percentage, totalChunkAmount is the full raw amount of the batch translated to wei
+           let decimals = 18;
+           if (!data.isNative) {
+             const erc20 = new ethers.Contract(data.token, ERC20_ABI, provider);
+             try { decimals = await erc20.decimals(); } catch(e){}
+           }
+           chunkSumWei = ethers.parseUnits(data.rawAmount.toString(), decimals);
+        }
+
+        const baseParams = {
+          token: data.token,
+          totalChunkAmount: chunkSumWei,
+          wallets: chunk.wallets,
+          tokenToNativeRatio: ethers.parseUnits("1", 18),
+          batchId: Math.floor(Date.now() / 1000) + data.currentIndex,
+          deadline: Math.floor(Date.now() / 1000) + 7200,
+          nonce: 0,
+          baseGas: 0,
+          maxGasPriceLimit: 0
+        };
+
+        const txOptions = { gasLimit: 3000000 };
+        if (data.isNative) txOptions.value = chunkSumWei;
+
+        showToast(`Sending Batch ${data.currentIndex + 1} of ${data.chunks.length}...`);
+        
+        let tx;
+        if (data.isPercentage) {
+          const params = { ...baseParams, sharesBps: chunk.values };
+          tx = await contract.splitByPercentage(params, txOptions);
+        } else {
+          const params = { ...baseParams, amounts: chunk.values };
+          tx = await contract.splitByAmount(params, txOptions);
+        }
+        
+        const receipt = await tx.wait();
+        data.currentIndex++;
+        batches[bIndex] = data;
+        localStorage.setItem('arcPendingBatches', JSON.stringify(batches));
+        renderPendingBatches();
+
+        if (data.currentIndex >= data.chunks.length) {
+          historyList.unshift({
+            amount: data.rawAmount,
+            token: data.tokenSymbol,
+            walletsCount: data.totalWallets,
+            date: new Date().toLocaleString(),
+            hash: receipt.hash,
+            mode: data.isPercentage ? 'Percentage' : 'Amount'
+          });
+          localStorage.setItem('arcBatchHistory', JSON.stringify(historyList));
+        }
+      }
+
+      showToast("✅ All Batch Transactions Completed Successfully!", 6000);
+      batches.splice(bIndex, 1);
+      localStorage.setItem('arcPendingBatches', JSON.stringify(batches));
+      
+      renderPendingBatches();
+      if(batches.length === 0) switchTab('history');
+      updateWalletBalance();
+      document.getElementById('batchDataInput').value = ''; updateBatchPreview();
+    } catch (err) {
+      console.error(err);
+      showToast("❌ Transaction halted. You can resume later.");
+      if (btn) { btn.innerHTML = `<i class="fas fa-play"></i> Resume`; btn.disabled = false; }
+    }
+  }
+
+  function renderHistory() {
+    const container = document.getElementById("historyContainer");
+    container.innerHTML = historyList.length ? "" : "<p class='text-gray-400 light:text-slate-600 text-center py-6 text-xs'>No batch splits executed yet.</p>";
+    historyList.forEach(item => {
+      const shortHash = item.hash ? item.hash.substring(0, 12) + '...' : '0x...';
+      const explorerLink = item.hash ? `https://testnet.arcscan.app/tx/${item.hash}` : '#';
+      
+      container.innerHTML += `
+        <div class="bg-white/[0.02] light:bg-slate-300 border border-white/5 light:border-slate-400 rounded-2xl p-4 text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2">
+          <div>
+            <div class="font-bold text-sm text-emerald-400">${item.amount} ${item.token} → ${item.walletsCount} Wallets (${item.mode})</div>
+            <div class="text-[11px] text-gray-400">${item.date}</div>
+          </div>
+          <a href="${explorerLink}" target="_blank" class="font-mono text-[11px] text-cyan-500 bg-cyan-500/10 px-2 py-1 rounded-lg hover:underline">Tx: ${shortHash}</a>
+        </div>
+      `;
     });
-
-    txHashLink.href = "https://testnet.arcscan.app/tx/" + tx.hash;
-    txHashLink.textContent = tx.hash.slice(0,10) + "..." + tx.hash.slice(-8);
-    txHashBox.classList.remove("hidden");
-
-    progressText.innerHTML = "Transaction submitted! <br><span class='text-xs text-gray-400 mt-2 block'>Waiting for network confirmation...</span>";
-    
-    const receipt = await tx.wait();
-    
-    if(receipt.status === 1) {
-        saveToHistory({
-        date: new Date().toLocaleString(),
-        recipientsCount: recipientRows.length,
-        assetsCount: tokenRows.length,
-        memo: document.getElementById("batchMemo").value || "AdHoc Multi-Token Distribution",
-        txHash: tx.hash,
-        tokens: tokenRows,
-        recipients: recipientRows
-        });
-
-        confetti({ particleCount: 250, spread: 100, origin: { y: 0.5 }, colors: ['#10b981', '#06b6d4', '#f59e0b'] });
-        showToast("Batch Split Completed Successfully!");
-        fetchAndRenderBalancesWithRetry();
-
-        setTimeout(() => {
-        hideConfirmModal();
-        switchView('history');
-        }, 3000);
-    } else {
-        throw new Error("Transaction reverted by the EVM");
-    }
-
-  } catch (err) {
-    console.error(err);
-    // Parse error for better UX
-    let errMsg = "Transaction Failed or Rejected";
-    if(err.code === "ACTION_REJECTED") errMsg = "User rejected the transaction.";
-    else if(err.info && err.info.error && err.info.error.message) errMsg = err.info.error.message;
-    
-    showToast(errMsg, 'error', 6000);
-    progressBox.classList.add("hidden");
-    document.getElementById("confirmModalActions").classList.remove("hidden");
-  }
-}
-
-// ==========================================
-// HISTORY MANAGEMENT
-// ==========================================
-function saveToHistory(record) {
-  const history = JSON.parse(localStorage.getItem("arcSplitHistory") || "[]");
-  history.unshift(record);
-  localStorage.setItem("arcSplitHistory", JSON.stringify(history));
-}
-
-function renderHistoryTable() {
-  const history = JSON.parse(localStorage.getItem("arcSplitHistory") || "[]");
-  const container = document.getElementById("historyTableContainer");
-
-  if (history.length === 0) {
-    container.innerHTML = '<div class="text-center py-16 bg-black/20 rounded-2xl border border-white/5 text-gray-500 font-mono text-sm">No transaction history found on this device.</div>';
-    return;
   }
 
-  container.innerHTML = `
-    <table class="w-full text-left text-xs font-mono whitespace-nowrap">
-      <thead class="bg-black/40 text-gray-400 uppercase tracking-wider">
-        <tr>
-          <th class="p-4 rounded-tl-2xl font-bold">Details / Date</th>
-          <th class="p-4 font-bold">Metrics</th>
-          <th class="p-4 font-bold">Status</th>
-          <th class="p-4 rounded-tr-2xl text-right font-bold">Actions</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-white/5">
-        ${history.map((h, idx) => `
-          <tr class="hover:bg-white/[0.02] transition-colors group">
-            <td class="p-4">
-              <div class="font-bold text-white text-sm mb-1 truncate max-w-[200px] sm:max-w-xs">${h.memo}</div>
-              <div class="text-[10px] text-gray-500">${h.date}</div>
-            </td>
-            <td class="p-4">
-                <div class="flex gap-3">
-                    <span class="bg-cyan-500/10 text-cyan-400 px-2 py-1 rounded-lg border border-cyan-500/20">${h.assetsCount} Assets</span>
-                    <span class="bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded-lg border border-emerald-500/20">${h.recipientsCount} Users</span>
-                </div>
-            </td>
-            <td class="p-4"><span class="px-3 py-1 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center w-max gap-1"><i class="fas fa-check-circle"></i> Success</span></td>
-            <td class="p-4 text-right space-x-2">
-              <button onclick="viewDetails(${idx})" class="px-3 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-sky-400 transition-colors">View</button>
-              <button onclick="duplicateBatch(${idx})" class="px-3 py-2 bg-violet-500/20 hover:bg-violet-500/30 text-violet-400 rounded-xl border border-violet-500/30 transition-colors">Copy Config</button>
-            </td>
-          </tr>
-        `).join('')}
-      </tbody>
-    </table>
-  `;
-}
-
-function viewDetails(idx) {
-  const history = JSON.parse(localStorage.getItem("arcSplitHistory") || "[]");
-  const h = history[idx];
-  const content = document.getElementById("detailsContent");
-
-  content.innerHTML = `
-    <div class="mb-4">
-        <div class="text-[10px] text-gray-500 uppercase mb-1">Memo / Reference</div>
-        <div class="font-bold text-sm text-cyan-400">${h.memo}</div>
-        <div class="text-[10px] text-gray-500 mt-1">${h.date}</div>
-    </div>
-    
-    <div class="mb-4 p-3 bg-black/40 rounded-xl border border-white/5">
-        <div class="text-[10px] text-gray-500 uppercase mb-2">Block Explorer</div>
-        <a href="https://testnet.arcscan.app/tx/${h.txHash}" target="_blank" class="text-emerald-400 hover:text-emerald-300 underline break-all flex items-center gap-2"><i class="fas fa-external-link-alt"></i> ${h.txHash}</a>
-    </div>
-
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-            <div class="text-[10px] text-gray-500 uppercase mb-2 border-b border-white/10 pb-1">Assets Included</div>
-            <div class="space-y-1">
-                ${h.tokens.map(t => {
-                    const sym = AVAILABLE_TOKENS.find(x => x.address === t.token)?.symbol || "TOKEN";
-                    return `<div class="flex justify-between"><span class="text-gray-400">${sym}</span><span class="text-white">${t.amount}</span></div>`;
-                }).join('')}
-            </div>
-        </div>
-        <div>
-            <div class="text-[10px] text-gray-500 uppercase mb-2 border-b border-white/10 pb-1">Recipients Breakdown</div>
-            <div class="space-y-1">
-                ${h.recipients.map(r => `<div class="flex justify-between"><span class="text-gray-400">${r.wallet.slice(0,6)}...${r.wallet.slice(-4)}</span><span class="text-white">${r.percentage}%</span></div>`).join('')}
-            </div>
-        </div>
-    </div>
-  `;
-  document.getElementById("detailsModal").classList.remove("hidden");
-}
-
-function hideDetailsModal() { document.getElementById("detailsModal").classList.add("hidden"); }
-
-function duplicateBatch(idx) {
-  const history = JSON.parse(localStorage.getItem("arcSplitHistory") || "[]");
-  const h = history[idx];
-  tokenRows = h.tokens;
-  recipientRows = h.recipients;
-  renderTokens();
-  renderRecipients();
-  switchView('splitter');
-  showToast("Configuration copied to AdHoc Form");
-}
-
-function clearHistory() {
-  if (confirm("Are you sure you want to clear all local transaction history?")) {
-    localStorage.removeItem("arcSplitHistory");
-    renderHistoryTable();
-    showToast("History wiped successfully");
-  }
-}
-
-// ==========================================
-// INIT
-// ==========================================
-window.addEventListener('load', async () => {
-  if (localStorage.getItem('theme') === 'light') toggleTheme();
-  renderTokens();
-  renderRecipients();
-  await autoConnectWallet();
-});
+  window.onload = async () => {
+    initTelegramWebApp();
+    await checkAutoConnect();
+    updateBatchPreview();
+  };
 </script>
 </body>
 </html>
