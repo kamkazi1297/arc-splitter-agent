@@ -82,6 +82,11 @@
     body.tg-webapp {
       padding-bottom: 24px;
     }
+
+    /* Batch Manager UI Styles */
+    .progress-bar-fill { transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+    .fade-in { animation: fadeIn 0.4s ease forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
 <body class="text-white min-h-screen selection:bg-emerald-500 selection:text-black">
@@ -92,7 +97,7 @@
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
       <div>
         <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight preserve-dark-color">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Role-Based Engine</span></h1>
-        <p class="text-xs sm:text-sm font-medium preserve-dark-muted">Manage team roles and split assets securely on-chain.</p>
+        <p class="text-xs sm:text-sm font-medium preserve-dark-muted">Manage team roles and split assets securely on-chain with auto batching.</p>
       </div>
       
       <div class="flex items-center gap-3 flex-wrap">
@@ -136,6 +141,27 @@
       </div>
     </div>
 
+    <!-- ================= BATCH MANAGER (RESUME SECTION) ================= -->
+    <div id="batchManagerContainer" class="hidden glass rounded-3xl p-6 mb-8 border border-amber-500/30 bg-amber-500/5 fade-in">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="font-bold text-amber-400 flex items-center gap-2 text-sm"><i class="fas fa-triangle-exclamation"></i> Incomplete Transaction Batch Found</h3>
+        <button onclick="clearBatch()" class="text-xs text-gray-400 hover:text-rose-400 transition-colors">Discard Batch</button>
+      </div>
+      <p class="text-xs text-gray-400 light:text-slate-600 mb-4">A previous multi-wallet batch transaction was interrupted or rejected. You can resume sending the remaining portions instantly.</p>
+      
+      <div class="w-full bg-black/30 rounded-full h-3 mb-2 overflow-hidden border border-white/5">
+        <div id="batchProgressBar" class="bg-gradient-to-r from-amber-400 to-emerald-400 h-3 rounded-full progress-bar-fill" style="width: 0%"></div>
+      </div>
+      <div class="flex justify-between text-[11px] text-gray-400 mb-5">
+        <span id="batchProgressText">Completed: 0 / 0</span>
+        <span id="batchRemainingText">Remaining: 0 Wallets</span>
+      </div>
+
+      <button onclick="resumeBatchTx()" id="resumeBatchBtn" class="app-button w-full sm:w-auto px-6 py-3 bg-amber-500 hover:bg-amber-600 text-black font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg">
+        <i class="fas fa-play"></i> Resume Remaining Batches
+      </button>
+    </div>
+
     <!-- ================= VIEW 1: ROLE SPLIT ================= -->
     <div id="viewSplitter" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
       
@@ -150,7 +176,6 @@
             <div>
               <label class="block text-gray-400 light:text-slate-600 text-xs font-semibold uppercase tracking-wider mb-2">Token</label>
               <select id="tokenSelect" class="w-full rounded-2xl px-4 py-3.5 text-sm font-medium outline-none cursor-pointer" onchange="onTokenSelectionChange(this)">
-                <!-- Updated Tokens based on your contracts -->
                 <option value="0x3600000000000000000000000000000000000000" selected>USDC (Arc Testnet)</option>
                 <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC (Arc Testnet)</option>
                 <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC (Arc Testnet)</option>
@@ -351,7 +376,7 @@
 <script>
   // Smart Contract & Network Configuration
   const CONTRACT_ADDRESS = "0xf2073671b726b96DC1c99D001BBF6e60EE1f187F";
-  const ARC_TESTNET_CHAIN_ID_HEX = "5042002"; // Placeholder Chain ID for Arc Testnet / Custom EVM
+  const ARC_TESTNET_CHAIN_ID_HEX = "5042002";
   const ARC_TESTNET_PARAMS = {
     chainId: "5042002",
     chainName: "Arc Testnet",
@@ -361,9 +386,9 @@
   };
 
   const CONTRACT_ABI = [
-  "function splitByPercentage(tuple(address token, uint256 totalChunkAmount, address[] wallets, uint16[] sharesBps, uint256 tokenToNativeRatio, uint256 batchId, uint256 deadline, uint256 nonce, uint256 baseGas, uint64 maxGasPriceLimit) params) external payable",
-  "function splitByAmount(tuple(address token, uint256 totalChunkAmount, address[] wallets, uint256[] amounts, uint256 tokenToNativeRatio, uint256 batchId, uint256 deadline, uint256 nonce, uint256 baseGas, uint64 maxGasPriceLimit) params) external payable"
-];
+    "function splitByPercentage(tuple(address token, uint256 totalChunkAmount, address[] wallets, uint16[] sharesBps, uint256 tokenToNativeRatio, uint256 batchId, uint256 deadline, uint256 nonce, uint256 baseGas, uint64 maxGasPriceLimit) params) external payable",
+    "function splitByAmount(tuple(address token, uint256 totalChunkAmount, address[] wallets, uint256[] amounts, uint256 tokenToNativeRatio, uint256 batchId, uint256 deadline, uint256 nonce, uint256 baseGas, uint64 maxGasPriceLimit) params) external payable"
+  ];
 
   const ERC20_ABI = [
     "function approve(address spender, uint256 amount) external returns (bool)",
@@ -371,6 +396,8 @@
     "function balanceOf(address account) external view returns (uint256)",
     "function decimals() external view returns (uint8)"
   ];
+
+  const BATCH_SIZE = 100; // Block Gas Limit prevention threshold
 
   let rolesData = JSON.parse(localStorage.getItem('arcRolesData')) || [
     { name: "Founder", wallets: [], description: "Core Leadership", color: "blue" },
@@ -416,6 +443,7 @@
           
           setupWalletListeners();
           updateWalletBalance();
+          checkPendingBatches();
         }
       } catch (err) {
         console.error("Auto-connect error:", err);
@@ -425,7 +453,6 @@
 
   function setupWalletListeners() {
     if (!window.ethereum) return;
-    
     window.ethereum.removeAllListeners('accountsChanged');
     window.ethereum.removeAllListeners('chainChanged');
 
@@ -464,6 +491,7 @@
       
       setupWalletListeners();
       updateWalletBalance();
+      checkPendingBatches();
     } catch (err) {
       console.error(err);
       showToast("Wallet connection rejected or failed.");
@@ -507,7 +535,7 @@
 
         if (tokenAddress === "0x0000000000000000000000000000000000000000") {
           const bal = await provider.getBalance(userAddress);
-          const formatted = ethers.formatUnits(bal, 18); // Default Native decimals
+          const formatted = ethers.formatUnits(bal, 18);
           document.getElementById("userBalanceDisplay").textContent = `${parseFloat(formatted).toFixed(2)}`;
           return;
         } else {
@@ -527,7 +555,6 @@
       } catch (e) {
         attempts--;
         if (attempts === 0) {
-          console.warn("Balance fetch skipped:", e);
           document.getElementById("userBalanceDisplay").textContent = "0.00";
         } else {
           await new Promise(res => setTimeout(res, 1000));
@@ -906,32 +933,22 @@
 
   function hideConfirmModal() { document.getElementById("confirmModal").classList.add("hidden"); }
 
+  // ================= BATCH ENGINE & EXECUTION LOGIC =================
   async function executeRoleSplitTx() {
-  hideConfirmModal();
-  if (!signer) {
-    await connectRealWallet();
-    if (!signer) return;
-  }
+    hideConfirmModal();
+    if (!signer) {
+      await connectRealWallet();
+      if (!signer) return;
+    }
 
-  const executeBtn = document.getElementById("executeSplitBtn");
-  const originalText = executeBtn.innerHTML;
-  executeBtn.disabled = true;
-  executeBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Sending...`;
-
-  try {
-    let tokenAddress = document.getElementById("tokenSelect").value;
-    
-    // تشخیص اینکه آیا توکن انتخابی USDC (کوین بومی شبکه) است یا Native واقعی
+    const tokenAddress = document.getElementById("tokenSelect").value;
+    const rawAmount = parseFloat(document.getElementById("totalAmount").value) || 0;
     const isUSDC = tokenAddress.toLowerCase() === "0x3600000000000000000000000000000000000000".toLowerCase();
     const isNative = tokenAddress === "0x0000000000000000000000000000000000000000" || isUSDC;
+    const finalTokenAddress = isNative ? "0x0000000000000000000000000000000000000000" : tokenAddress;
 
-    // تعیین تعداد اعشار صحیح (USDC شش اعشار و کوین‌های بومی استاندارد ۱۸ اعشار)
-    const decimals = 18; 
-    const rawAmount = document.getElementById("totalAmount").value || "5";
-    const totalAmountWei = ethers.parseUnits(rawAmount, decimals);
-
-    let walletsArr = [];
-    let sharesBps = [];
+    let flatWallets = [];
+    let flatAmounts = [];
 
     document.querySelectorAll('.role-split-row').forEach(row => {
       const roleName = row.querySelector('.role-select').value;
@@ -939,87 +956,149 @@
       if (roleName && percent > 0) {
         const role = rolesData.find(r => r.name === roleName);
         if (role && role.wallets.length > 0) {
-          const bpsForRole = Math.round(percent * 100);
-          const perWallet = Math.floor(bpsForRole / role.wallets.length);
+          const totalForRole = (rawAmount * percent) / 100;
+          const amountPerWalletStr = (totalForRole / role.wallets.length).toFixed(18);
+          const amountWei = ethers.parseUnits(amountPerWalletStr, 18);
+
           role.wallets.forEach(w => {
             if (ethers.isAddress(w)) {
-              walletsArr.push(w);
-              sharesBps.push(perWallet);
+              flatWallets.push(w);
+              flatAmounts.push(amountWei.toString());
             }
           });
         }
       }
     });
 
-    if (sharesBps.length > 0) {
-      let sum = sharesBps.reduce((a, b) => a + b, 0);
-      sharesBps[sharesBps.length - 1] += (10000 - sum);
+    if (flatWallets.length === 0) return showToast("No valid target wallets found.");
+
+    let chunks = [];
+    for (let i = 0; i < flatWallets.length; i += BATCH_SIZE) {
+      chunks.push({
+        wallets: flatWallets.slice(i, i + BATCH_SIZE),
+        amounts: flatAmounts.slice(i, i + BATCH_SIZE)
+      });
     }
 
-    const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-
-    // Approve فقط برای توکن‌های استاندارد ERC20 غیر بومی انجام شود
-    if (!isNative) {
-      const erc20 = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
-      showToast("Approving...");
-      await (await erc20.approve(CONTRACT_ADDRESS, totalAmountWei * 10n)).wait();
-    } else {
-      showToast("Native Token / USDC - No approve needed");
-    }
-
-    // قرارداد هوشمند کوین بومی را با آدرس صفر (0x00...00) می‌شناسد
-    const finalTokenAddress = isNative 
-      ? "0x0000000000000000000000000000000000000000" 
-      : tokenAddress;
-
-    const params = {
+    const batchData = {
       token: finalTokenAddress,
-      totalChunkAmount: totalAmountWei,
-      wallets: walletsArr,
-      sharesBps: sharesBps,
-      tokenToNativeRatio: ethers.parseUnits("1", 18),
-      batchId: Math.floor(Date.now() / 1000),
-      deadline: Math.floor(Date.now() / 1000) + 7200,
-      nonce: 0,
-      baseGas: 0, // صفر کردن baseGas برای جلوگیری از کسر مبلغ توسط قرارداد
-      maxGasPriceLimit: 0
+      isNative: isNative,
+      chunks: chunks,
+      currentIndex: 0,
+      totalWallets: flatWallets.length,
+      rawAmount: rawAmount,
+      tokenSymbol: isUSDC ? "USDC" : (isNative ? "ARC" : "TOKEN")
     };
 
-    showToast("Executing Split...");
-    
-    // تنظیم آپشن‌های تراکنش (ارسال مقدار value برای توکن/کوین بومی)
-    const txOptions = { gasLimit: 1500000 };
-    if (isNative) {
-      txOptions.value = totalAmountWei;
-    }
-
-    const tx = await contract.splitByPercentage(params, txOptions);
-    const receipt = await tx.wait();
-
-    showToast(`✅ SUCCESS! Tx: ${receipt.hash.slice(0,12)}...`, 10000);
-
-    // ذخیره در تاریخچه
-    historyList.unshift({
-      amount: rawAmount,
-      token: isUSDC ? "USDC" : (tokenAddress === "0x0000000000000000000000000000000000000000" ? "ARC" : "TOKEN"),
-      rolesCount: walletsArr.length,
-      date: new Date().toLocaleString(),
-      hash: receipt.hash,
-      status: "Success"
-    });
-    localStorage.setItem('arcRoleHistory', JSON.stringify(historyList));
-
-    switchTab('history');
-    updateWalletBalance();
-
-  } catch (err) {
-    console.error("Full Error:", err);
-    showToast("❌ " + (err.shortMessage || err.message || "Failed"));
-  } finally {
-    executeBtn.innerHTML = originalText;
-    executeBtn.disabled = false;
+    localStorage.setItem('arcPendingBatch', JSON.stringify(batchData));
+    checkPendingBatches();
+    await resumeBatchTx();
   }
-}
+
+  function checkPendingBatches() {
+    const data = JSON.parse(localStorage.getItem('arcPendingBatch'));
+    const container = document.getElementById("batchManagerContainer");
+    
+    if (data && data.currentIndex < data.chunks.length) {
+      container.classList.remove("hidden");
+      const done = data.currentIndex * BATCH_SIZE;
+      const pct = (data.currentIndex / data.chunks.length) * 100;
+      
+      document.getElementById("batchProgressBar").style.width = `${pct}%`;
+      document.getElementById("batchProgressText").innerText = `Batches: ${data.currentIndex} / ${data.chunks.length}`;
+      document.getElementById("batchRemainingText").innerText = `Remaining: ~${data.totalWallets - done} Wallets`;
+      
+      document.getElementById("executeSplitBtn").disabled = true;
+      document.getElementById("executeSplitBtn").classList.add("opacity-50", "cursor-not-allowed");
+    } else {
+      container.classList.add("hidden");
+      document.getElementById("executeSplitBtn").disabled = false;
+      document.getElementById("executeSplitBtn").classList.remove("opacity-50", "cursor-not-allowed");
+      localStorage.removeItem('arcPendingBatch');
+    }
+  }
+
+  function clearBatch() {
+    localStorage.removeItem('arcPendingBatch');
+    checkPendingBatches();
+    showToast("Batch progress discarded.");
+  }
+
+  async function resumeBatchTx() {
+    const data = JSON.parse(localStorage.getItem('arcPendingBatch'));
+    if (!data) return;
+
+    const btn = document.getElementById("resumeBatchBtn");
+    btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Processing Blockchain Batch...`;
+    btn.disabled = true;
+
+    try {
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+      if (!data.isNative && data.currentIndex === 0) {
+        showToast("Requesting Token Allowance Approval...");
+        const erc20 = new ethers.Contract(data.token, ERC20_ABI, signer);
+        let sumWei = 0n;
+        data.chunks.forEach(c => c.amounts.forEach(a => sumWei += BigInt(a)));
+        await (await erc20.approve(CONTRACT_ADDRESS, sumWei * 2n)).wait();
+      }
+
+      while (data.currentIndex < data.chunks.length) {
+        const chunk = data.chunks[data.currentIndex];
+        let chunkSumWei = 0n;
+        chunk.amounts.forEach(a => chunkSumWei += BigInt(a));
+
+        const params = {
+          token: data.token,
+          totalChunkAmount: chunkSumWei,
+          wallets: chunk.wallets,
+          amounts: chunk.amounts,
+          tokenToNativeRatio: ethers.parseUnits("1", 18),
+          batchId: Math.floor(Date.now() / 1000) + data.currentIndex,
+          deadline: Math.floor(Date.now() / 1000) + 7200,
+          nonce: 0,
+          baseGas: 0,
+          maxGasPriceLimit: 0
+        };
+
+        const txOptions = { gasLimit: 3000000 };
+        if (data.isNative) txOptions.value = chunkSumWei;
+
+        showToast(`Sending Batch ${data.currentIndex + 1} of ${data.chunks.length}...`);
+        const tx = await contract.splitByAmount(params, txOptions);
+        const receipt = await tx.wait();
+
+        data.currentIndex++;
+        localStorage.setItem('arcPendingBatch', JSON.stringify(data));
+        checkPendingBatches();
+
+        if (data.currentIndex >= data.chunks.length) {
+          historyList.unshift({
+            amount: data.rawAmount,
+            token: data.tokenSymbol,
+            rolesCount: data.totalWallets,
+            date: new Date().toLocaleString(),
+            hash: receipt.hash,
+            status: "Success"
+          });
+          localStorage.setItem('arcRoleHistory', JSON.stringify(historyList));
+        }
+      }
+
+      showToast("✅ All Batch Transactions Completed Successfully!", 6000);
+      clearBatch();
+      switchTab('history');
+      updateWalletBalance();
+
+    } catch (err) {
+      console.error("Batch Error:", err);
+      showToast("❌ Transaction halted or rejected. You can resume later.");
+    } finally {
+      btn.innerHTML = `<i class="fas fa-play"></i> Resume Remaining Batches`;
+      btn.disabled = false;
+    }
+  }
+
   function renderHistory() {
     const container = document.getElementById("historyContainer");
     container.innerHTML = historyList.length ? "" : "<p class='text-gray-400 light:text-slate-600 text-center py-6 text-xs'>No role splits yet.</p>";
@@ -1031,7 +1110,7 @@
       div.className = "bg-white/[0.02] light:bg-slate-300 border border-white/5 light:border-slate-400 rounded-2xl p-4 text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2";
       div.innerHTML = `
         <div>
-          <div class="font-bold text-sm text-emerald-400">${item.amount} ${item.token} → ${item.rolesCount} Roles</div>
+          <div class="font-bold text-sm text-emerald-400">${item.amount} ${item.token} → ${item.rolesCount} Wallets Split</div>
           <div class="text-[11px] text-gray-400 light:text-slate-600">${item.date}</div>
         </div>
         <div class="flex items-center gap-3">
