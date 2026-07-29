@@ -919,11 +919,14 @@
   executeBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Sending...`;
 
   try {
-    let tokenAddress = document.getElementById("tokenSelect").value;
+    let selectedToken = document.getElementById("tokenSelect").value;
     
-    // USDC رو به عنوان Native扱 کن
-    const isUSDC = tokenAddress.toLowerCase() === "0x3600000000000000000000000000000000000000".toLowerCase();
-    const isNative = tokenAddress === "0x0000000000000000000000000000000000000000" || isUSDC;
+    // تشخیص اینکه آیا توکن انتخابی بومی (USDC نیتیو یا آدرس صفر) است
+    const isUSDC = selectedToken.toLowerCase() === "0x3600000000000000000000000000000000000000".toLowerCase();
+    const isNative = selectedToken === "0x0000000000000000000000000000000000000000" || isUSDC;
+
+    // اگر USDC یا توکن نیتیو باشد، باید آدرس صفر (ZeroAddress) به کانترکت ارسال شود
+    const contractTokenAddress = isNative ? ethers.ZeroAddress : selectedToken;
 
     const rawAmount = document.getElementById("totalAmount").value || "5";
     const totalAmountWei = ethers.parseUnits(rawAmount, 6);
@@ -956,17 +959,22 @@
 
     const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
-    // Approve فقط برای توکن‌های غیر USDC
+    // تنظیمات ارسال تراکنش
+    let txOptions = { gasLimit: 1500000 };
+
     if (!isNative) {
-      const erc20 = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
+      // برای توکن‌های ERC20 غیربومی مثل EURC
+      const erc20 = new ethers.Contract(selectedToken, ERC20_ABI, signer);
       showToast("Approving...");
       await (await erc20.approve(CONTRACT_ADDRESS, totalAmountWei * 10n)).wait();
-    } else if (isUSDC) {
-      showToast("USDC - No approve needed");
+    } else {
+      // برای توکن بومی شبکه (USDC)، مقدار باید همراه تراکنش در msg.value ارسال شود
+      txOptions.value = totalAmountWei;
+      showToast("Preparing Native USDC Transfer...");
     }
 
     const params = {
-      token: tokenAddress,
+      token: contractTokenAddress, // ارسال آدرس صفر برای USDC نیتیو
       totalChunkAmount: totalAmountWei,
       wallets: walletsArr,
       sharesBps: sharesBps,
@@ -979,7 +987,8 @@
     };
 
     showToast("Executing Split...");
-    const tx = await contract.splitByPercentage(params, { gasLimit: 1500000 });
+    // پاس دادن txOptions که حاوی value است برای توکن نیتیو
+    const tx = await contract.splitByPercentage(params, txOptions);
     const receipt = await tx.wait();
 
     showToast(`✅ SUCCESS! Tx: ${receipt.hash.slice(0,12)}...`, 10000);
