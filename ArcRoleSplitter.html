@@ -919,14 +919,11 @@
   executeBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Sending...`;
 
   try {
-    let selectedToken = document.getElementById("tokenSelect").value;
+    let tokenAddress = document.getElementById("tokenSelect").value;
     
-    // تشخیص اینکه آیا توکن انتخابی بومی (USDC نیتیو یا آدرس صفر) است
-    const isUSDC = selectedToken.toLowerCase() === "0x3600000000000000000000000000000000000000".toLowerCase();
-    const isNative = selectedToken === "0x0000000000000000000000000000000000000000" || isUSDC;
-
-    // اگر USDC یا توکن نیتیو باشد، باید آدرس صفر (ZeroAddress) به کانترکت ارسال شود
-    const contractTokenAddress = isNative ? ethers.ZeroAddress : selectedToken;
+    // تشخیص اینکه آیا توکن انتخابی USDC (کوین بومی شبکه) است یا Native واقعی
+    const isUSDC = tokenAddress.toLowerCase() === "0x3600000000000000000000000000000000000000".toLowerCase();
+    const isNative = tokenAddress === "0x0000000000000000000000000000000000000000" || isUSDC;
 
     const rawAmount = document.getElementById("totalAmount").value || "5";
     const totalAmountWei = ethers.parseUnits(rawAmount, 6);
@@ -959,27 +956,22 @@
 
     const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
-    // تنظیمات ارسال تراکنش
-    let txOptions = { gasLimit: 1500000 };
-
+    // Approve فقط برای توکن‌های استاندارد ERC20 غیر بومی انجام شود
     if (!isNative) {
       const erc20 = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
       showToast("Approving...");
       await (await erc20.approve(CONTRACT_ADDRESS, totalAmountWei * 10n)).wait();
-    } else if (isUSDC) {
-      showToast("USDC (Native) - No approve needed");
+    } else {
+      showToast("Native Token / USDC - No approve needed");
     }
 
-    const finalTokenAddress = isNative 
-      ? "0x0000000000000000000000000000000000000000" 
-      : tokenAddress;
-
+    // بسیار مهم: قرارداد هوشمند کوین بومی را با آدرس صفر (0x00...00) می‌شناسد
     const finalTokenAddress = isNative 
       ? "0x0000000000000000000000000000000000000000" 
       : tokenAddress;
 
     const params = {
-      token: finalTokenAddress, // 🔴 استفاده از آدرس صفر برای کوین بومی
+      token: finalTokenAddress,
       totalChunkAmount: totalAmountWei,
       wallets: walletsArr,
       sharesBps: sharesBps,
@@ -992,11 +984,28 @@
     };
 
     showToast("Executing Split...");
-    // پاس دادن txOptions که حاوی value است برای توکن نیتیو
+    
+    // تنظیم آپشن‌های تراکنش (اگر بومی/USDC باشد، مقدار value ارسال می‌شود)
+    const txOptions = { gasLimit: 1500000 };
+    if (isNative) {
+      txOptions.value = totalAmountWei;
+    }
+
     const tx = await contract.splitByPercentage(params, txOptions);
     const receipt = await tx.wait();
 
     showToast(`✅ SUCCESS! Tx: ${receipt.hash.slice(0,12)}...`, 10000);
+
+    // ذخیره در تاریخچه
+    historyList.unshift({
+      amount: rawAmount,
+      token: isUSDC ? "USDC" : (tokenAddress === "0x0000000000000000000000000000000000000000" ? "ARC" : "TOKEN"),
+      rolesCount: walletsArr.length,
+      date: new Date().toLocaleString(),
+      hash: receipt.hash,
+      status: "Success"
+    });
+    localStorage.setItem('arcRoleHistory', JSON.stringify(historyList));
 
     switchTab('history');
     updateWalletBalance();
