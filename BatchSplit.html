@@ -51,8 +51,6 @@
     .light body, .light label, .light .text-white:not(.preserve-dark-color) { color: #0f172a; }
     .light .text-gray-400:not(.preserve-dark-muted) { color: #475569 !important; }
     .light .text-gray-300 { color: #334155 !important; }
-    .light .text-emerald-400 { color: #059669 !important; }
-    .light .text-cyan-400 { color: #0891b2 !important; }
 
     select, input, textarea {
       background-color: rgba(255, 255, 255, 0.03);
@@ -78,8 +76,14 @@
     .app-button:active:not(:disabled) { transform: scale(0.98); }
     
     .progress-bar-fill { transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
-    .fade-in { animation: fadeIn 0.4s ease forwards; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    
+    /* Table Styling for History */
+    .history-table th { padding: 12px 16px; text-transform: uppercase; letter-spacing: 0.05em; font-size: 10px; font-weight: 700; color: #94a3b8; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .light .history-table th { border-bottom: 1px solid rgba(0,0,0,0.1); }
+    .history-table td { padding: 16px; font-size: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+    .light .history-table td { border-bottom: 1px solid rgba(0,0,0,0.05); }
+    .history-table tr:hover td { background-color: rgba(255,255,255,0.02); }
+    .light .history-table tr:hover td { background-color: rgba(0,0,0,0.02); }
   </style>
 </head>
 <body class="text-white min-h-screen selection:bg-emerald-500 selection:text-black">
@@ -96,7 +100,7 @@
       <div class="flex items-center gap-3 flex-wrap">
         <div class="flex bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 rounded-2xl p-1 text-xs relative">
           <button onclick="switchTab('splitter')" id="tabSplitter" class="px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400 preserve-dark-color">Batch Split</button>
-          <button onclick="switchTab('history')" id="tabHistory" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted">History & Templates</button>
+          <button onclick="switchTab('history')" id="tabHistory" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted">History</button>
           <button onclick="switchTab('pending')" id="tabPending" class="relative px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted">
             Pending
             <span id="pendingBadge" class="hidden absolute top-1 right-1 flex h-2.5 w-2.5">
@@ -131,7 +135,7 @@
       
       <div class="lg:col-span-7 space-y-6">
         
-        <!-- Tokens Section -->
+        <!-- Step 1: Tokens -->
         <div class="glass rounded-3xl p-6 sm:p-8 space-y-5">
           <div class="flex justify-between items-center">
             <h3 class="text-base sm:text-lg font-bold flex items-center gap-2">
@@ -145,7 +149,7 @@
           <div id="tokensContainer" class="space-y-3"></div>
         </div>
 
-        <!-- Recipients Section -->
+        <!-- Step 2: Recipients -->
         <div class="glass rounded-3xl p-6 sm:p-8 space-y-5">
           <div class="flex justify-between items-center">
             <h3 class="text-base sm:text-lg font-bold flex items-center gap-2">
@@ -176,6 +180,33 @@
           </div>
         </div>
 
+        <!-- Step 3: Memo & Templates -->
+        <div class="glass rounded-3xl p-6 sm:p-8 space-y-5">
+          <div class="flex justify-between items-center">
+            <h3 class="text-base sm:text-lg font-bold flex items-center gap-2">
+              <span class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">3</span> 
+              Memo & Template Options
+            </h3>
+          </div>
+          
+          <div class="space-y-4">
+            <input type="text" id="distributionMemo" class="w-full bg-black/20 light:bg-slate-100 rounded-xl px-4 py-3 text-xs font-medium outline-none" placeholder="Distribution Memo / Note (e.g. Q3 Marketing Split)" oninput="updatePreview()">
+            
+            <div class="flex flex-col sm:flex-row gap-3">
+              <button onclick="saveTemplate()" class="app-button flex-1 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all">
+                <i class="fas fa-save text-emerald-400"></i> Save as Template
+              </button>
+              
+              <div class="flex-1 relative">
+                <select id="templateSelector" onchange="loadTemplate(this.value)" class="w-full bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl px-4 py-3 text-xs font-semibold outline-none cursor-pointer appearance-none">
+                  <option value="">Open Template...</option>
+                </select>
+                <i class="fas fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 text-[10px] pointer-events-none"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       <div class="lg:col-span-5 space-y-6">
@@ -196,6 +227,11 @@
               <div id="summaryRecipientCount" class="text-xl font-extrabold text-emerald-400">0</div>
             </div>
           </div>
+          
+          <div class="bg-white/5 p-4 rounded-2xl border border-white/5 text-left">
+             <div class="text-gray-400 text-xs mb-1">Memo:</div>
+             <div id="summaryMemo" class="text-sm font-semibold truncate text-gray-200">No memo provided</div>
+          </div>
 
           <button onclick="prepareBatchExecution()" id="executeBatchBtn" disabled class="app-button w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:brightness-110 py-4 sm:py-5 rounded-2xl text-base sm:text-lg font-bold shadow-xl shadow-emerald-500/25 transition-all text-gray-950 opacity-50 cursor-not-allowed">
             Execute Multi-Token Split
@@ -205,14 +241,30 @@
 
     </div>
 
-    <!-- ================= VIEW 2: HISTORY & TEMPLATES ================= -->
+    <!-- ================= VIEW 2: HISTORY (PROFESSIONAL TABLE) ================= -->
     <div id="viewHistory" class="hidden glass rounded-3xl p-6 sm:p-8 space-y-6">
       <div class="flex justify-between items-center border-b border-white/10 pb-4">
-        <h3 class="text-xl font-bold">Batch Split History</h3>
-        <button onclick="clearHistory()" class="text-xs text-rose-400 hover:underline">Clear History</button>
+        <h3 class="text-xl font-bold">Transaction History</h3>
+        <button onclick="clearHistory()" class="text-xs text-rose-400 hover:underline"><i class="fas fa-trash-alt mr-1"></i>Clear History</button>
       </div>
-      <div id="historyTableContainer" class="space-y-3">
-         <p class="text-gray-400 light:text-slate-600 text-center py-6 text-xs">No multi-token splits executed yet.</p>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left history-table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Memo</th>
+              <th>Assets / Wallets</th>
+              <th>Status</th>
+              <th>Explorer</th>
+            </tr>
+          </thead>
+          <tbody id="historyTableBody">
+            <!-- Rendered dynamically -->
+          </tbody>
+        </table>
+      </div>
+      <div id="emptyHistoryState" class="hidden text-gray-400 text-center py-8 text-sm">
+        No transaction history available.
       </div>
     </div>
 
@@ -251,22 +303,24 @@
 
 <script>
   // ================= CONTRACT & NETWORK SETTINGS =================
-  const CONTRACT_ADDRESS = "0xf2073671b726b96DC1c99D001BBF6e60EE1f187F"; // ArcRoleSplitter Contract from Source 1
+  const CONTRACT_ADDRESS = "0xf2073671b726b96DC1c99D001BBF6e60EE1f187F"; 
+  
+  // FIX: This is the Native USDC address you provided. 
+  // It will skip standard ERC20 'allowance' checks and send via msg.value.
+  const NATIVE_TOKEN = "0x3600000000000000000000000000000000000000"; 
+
   const ARC_TESTNET_PARAMS = {
-    chainId: "5042002", // Hex format chainId for Arc Testnet
+    chainId: "5042002", 
     chainName: "Arc Testnet",
-    nativeCurrency: { name: "Arc", symbol: "ARC", decimals: 18 },
+    nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 6 },
     rpcUrls: ["https://rpc.testnet.arc.network"],
     blockExplorerUrls: ["https://testnet.arcscan.app"]
   };
 
-  const NATIVE_TOKEN = "0x0000000000000000000000000000000000000000";
-
   const AVAILABLE_TOKENS = [
-    { address: "0x3600000000000000000000000000000000000000", symbol: "USDC (Arc)", decimals: 6 },
-    { address: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a", symbol: "EURC (Arc)", decimals: 6 },
-    { address: "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF", symbol: "cirBTC (Arc)", decimals: 18 },
-    { address: NATIVE_TOKEN, symbol: "Native ARC", decimals: 18 }
+    { address: NATIVE_TOKEN, symbol: "Native USDC", decimals: 6 },
+    { address: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a", symbol: "EURC (ERC20)", decimals: 6 },
+    { address: "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF", symbol: "cirBTC (ERC20)", decimals: 18 }
   ];
 
   const CONTRACT_ABI = [
@@ -279,16 +333,15 @@
     "function decimals() external view returns (uint8)"
   ];
 
-  const BATCH_SIZE = 100; // Limits wallets per batch to avoid Block Gas Limit
+  const BATCH_SIZE = 100; 
   
   // ================= STATE =================
   let provider = null;
   let signer = null;
   let userAddress = null;
 
-  let tokenRows = [];
-  let recipientRows = [];
   let historyList = JSON.parse(localStorage.getItem('arcBatchHistory') || '[]');
+  let templatesList = JSON.parse(localStorage.getItem('arcTemplates') || '[]');
 
   // ================= INIT =================
   window.onload = async () => {
@@ -297,6 +350,7 @@
     addRecipientRow();
     await checkAutoConnect();
     renderPendingBatches();
+    updateTemplateDropdown();
   };
 
   // ================= WALLET & CONNECTION =================
@@ -330,7 +384,6 @@
         updateWalletUI();
         showToast("Wallet Connected Successfully!");
         
-        // Auto-switch to ARC Testnet
         try {
           await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: ARC_TESTNET_PARAMS.chainId }] });
         } catch (e) {
@@ -450,6 +503,50 @@
     showToast("CSV Imported Successfully.");
   }
 
+  // ================= TEMPLATES LOGIC =================
+  function saveTemplate() {
+    const memo = document.getElementById("distributionMemo").value.trim() || `Template ${templatesList.length + 1}`;
+    let tokens = [];
+    document.querySelectorAll('#tokensContainer > div').forEach(row => {
+      tokens.push({ address: row.querySelector('.token-select').value, amount: row.querySelector('.token-amount').value });
+    });
+    let recipients = [];
+    document.querySelectorAll('.recipient-row').forEach(row => {
+      recipients.push({ wallet: row.querySelector('.rec-wallet').value, percentage: row.querySelector('.rec-percent').value });
+    });
+    
+    templatesList.push({ id: Date.now(), memo, tokens, recipients });
+    localStorage.setItem('arcTemplates', JSON.stringify(templatesList));
+    updateTemplateDropdown();
+    showToast("Template saved successfully.");
+  }
+
+  function updateTemplateDropdown() {
+    const select = document.getElementById("templateSelector");
+    select.innerHTML = `<option value="">Open Template...</option>`;
+    templatesList.forEach(t => {
+      select.innerHTML += `<option value="${t.id}">${t.memo}</option>`;
+    });
+  }
+
+  function loadTemplate(id) {
+    if (!id) return;
+    const template = templatesList.find(t => t.id == id);
+    if (!template) return;
+    
+    document.getElementById("distributionMemo").value = template.memo;
+    
+    document.getElementById("tokensContainer").innerHTML = "";
+    template.tokens.forEach(t => addTokenRow(t.address, t.amount));
+    
+    document.getElementById("recipientsContainer").innerHTML = "";
+    template.recipients.forEach(r => addRecipientRow(r.wallet, r.percentage));
+    
+    updatePreview();
+    document.getElementById("templateSelector").value = ""; 
+    showToast("Template loaded.");
+  }
+
   // ================= LIVE PREVIEW =================
   function updatePreview() {
     let tokensCount = document.querySelectorAll('#tokensContainer > div').length;
@@ -465,6 +562,8 @@
       totalPercentage += p;
     });
 
+    const memoVal = document.getElementById("distributionMemo").value.trim();
+    document.getElementById("summaryMemo").textContent = memoVal ? memoVal : "No memo provided";
     document.getElementById("summaryAssetCount").textContent = tokensCount;
     document.getElementById("summaryRecipientCount").textContent = recipientsCount;
 
@@ -487,8 +586,7 @@
   function prepareBatchExecution() {
     if (!signer) return showToast("Please connect your wallet first.");
 
-    // Gather Tokens
-    tokenRows = [];
+    let tokenRows = [];
     document.querySelectorAll('#tokensContainer > div').forEach(row => {
       const addr = row.querySelector('.token-select').value;
       const amt = parseFloat(row.querySelector('.token-amount').value) || 0;
@@ -497,15 +595,13 @@
 
     if(tokenRows.length === 0) return showToast("Please specify at least one valid token amount.");
 
-    // Gather Recipients
-    recipientRows = [];
+    let recipientRows = [];
     document.querySelectorAll('.recipient-row').forEach(row => {
       const w = row.querySelector('.rec-wallet').value.trim();
       const p = parseFloat(row.querySelector('.rec-percent').value) || 0;
       if (w && p > 0) recipientRows.push({ wallet: w, percentage: p });
     });
 
-    // Chunking Wallets
     let chunks = [];
     for (let i = 0; i < recipientRows.length; i += BATCH_SIZE) {
       chunks.push(recipientRows.slice(i, i + BATCH_SIZE));
@@ -515,6 +611,7 @@
     const batchData = {
       id: batchId,
       date: new Date().toLocaleString(),
+      memo: document.getElementById("distributionMemo").value.trim() || "Multi-Token Batch",
       tokens: tokenRows,
       chunks: chunks,
       currentIndex: 0,
@@ -550,7 +647,7 @@
       div.innerHTML = `
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 gap-2">
           <div>
-            <h3 class="font-bold text-amber-400 flex items-center gap-2 text-sm"><i class="fas fa-triangle-exclamation"></i> Multi-Token Batch</h3>
+            <h3 class="font-bold text-amber-400 flex items-center gap-2 text-sm"><i class="fas fa-triangle-exclamation"></i> ${b.memo}</h3>
             <span class="text-[10px] text-gray-400">Created: ${b.date} | Tokens: ${b.tokens.length}</span>
           </div>
           <button onclick="discardBatch(${b.id})" class="text-xs text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 px-3 py-1.5 rounded-lg transition-colors">Discard Batch</button>
@@ -614,38 +711,45 @@
           chunkBpsSum += bps;
         });
 
-        // Calculate absolute token amounts for this exact chunk (prevent revert if BPS sum != 10000 in chunk)
         let tokenAddresses = [];
         let tokenAmountsWei = [];
         let nativeValue = 0n;
 
         for (const t of data.tokens) {
-          const isNative = t.address === NATIVE_TOKEN;
-          let decimals = 18;
+          // FIX: Identifying Native Token correctly and skipping allowance
+          const isNative = (t.address.toLowerCase() === NATIVE_TOKEN.toLowerCase());
+          let decimals = 6; // default fallback
           
           if (!isNative) {
             try {
               const erc20 = new ethers.Contract(t.address, ERC20_ABI, signer);
               decimals = Number(await erc20.decimals());
-            } catch (e) { decimals = 18; }
+            } catch (e) {
+              console.warn("Decimals fetch failed for", t.address, "defaulting to 18");
+              decimals = 18; 
+            }
           }
 
-          // Total amount for THIS chunk based on its percentage slice
           let chunkTokenAmount = (t.amount * chunkBpsSum) / 10000;
           let amtWei = ethers.parseUnits(chunkTokenAmount.toFixed(decimals), decimals);
           
           tokenAddresses.push(t.address);
           tokenAmountsWei.push(amtWei.toString());
 
-          if (isNative) nativeValue += amtWei;
-          else {
-            // Check Allowance for ERC20
-            const erc20 = new ethers.Contract(t.address, ERC20_ABI, signer);
-            const allowance = await erc20.allowance(userAddress, CONTRACT_ADDRESS);
-            if (allowance < amtWei) {
-              showToast(`Requesting Approval for token...`);
-              const txApprove = await erc20.approve(CONTRACT_ADDRESS, ethers.MaxUint256);
-              await txApprove.wait();
+          if (isNative) {
+            nativeValue += amtWei;
+          } else {
+            // ERC20 Logic - wrapped in try/catch to prevent silent failures
+            try {
+                const erc20 = new ethers.Contract(t.address, ERC20_ABI, signer);
+                const allowance = await erc20.allowance(userAddress, CONTRACT_ADDRESS);
+                if (allowance < amtWei) {
+                  showToast(`Requesting Approval for ERC20 token...`);
+                  const txApprove = await erc20.approve(CONTRACT_ADDRESS, ethers.MaxUint256);
+                  await txApprove.wait();
+                }
+            } catch (allowanceError) {
+                throw new Error(`Approval failed for ${t.address}. Ensure it's a valid ERC20 contract.`);
             }
           }
         }
@@ -655,7 +759,6 @@
         const txOptions = { gasLimit: 5000000 };
         if (nativeValue > 0n) txOptions.value = nativeValue;
 
-        // Calling multi-token bundle split
         const tx = await contract.splitBundleAdHoc(tokenAddresses, tokenAmountsWei, chunkWallets, chunkSharesBps, txOptions);
         const receipt = await tx.wait();
 
@@ -666,7 +769,9 @@
 
         if (data.currentIndex >= data.chunks.length) {
           historyList.unshift({
+            id: Date.now(),
             date: new Date().toLocaleString(),
+            memo: data.memo,
             hash: receipt.hash,
             tokensCount: data.tokens.length,
             rolesCount: data.totalWallets,
@@ -676,7 +781,7 @@
         }
       }
 
-      showToast("✅ All Multi-Token Batch Transactions Completed Successfully!", 6000);
+      showToast("✅ All Transactions Completed Successfully!", 6000);
       
       batches.splice(bIndex, 1);
       localStorage.setItem('arcPendingMultiBatches', JSON.stringify(batches));
@@ -686,7 +791,7 @@
 
     } catch (err) {
       console.error("Batch Error:", err);
-      showToast("❌ Transaction halted or rejected. You can resume later.");
+      showToast("❌ Transaction halted or rejected. Check console for details.");
       if (btn) {
         btn.innerHTML = `<i class="fas fa-play"></i> Resume Remaining`;
         btn.disabled = false;
@@ -694,32 +799,42 @@
     }
   }
 
-  // ================= HISTORY =================
+  // ================= HISTORY (PROFESSIONAL TABLE) =================
   function renderHistory() {
-    const container = document.getElementById("historyTableContainer");
-    container.innerHTML = historyList.length ? "" : "<p class='text-gray-400 light:text-slate-600 text-center py-6 text-xs'>No multi-token splits yet.</p>";
+    const tbody = document.getElementById("historyTableBody");
+    const emptyState = document.getElementById("emptyHistoryState");
+    
+    if (historyList.length === 0) {
+      tbody.innerHTML = "";
+      emptyState.classList.remove("hidden");
+      return;
+    }
+    
+    emptyState.classList.add("hidden");
+    tbody.innerHTML = "";
+    
     historyList.forEach(item => {
       const shortHash = item.hash ? item.hash.substring(0, 12) + '...' : '0x...';
       const explorerLink = item.hash ? `https://testnet.arcscan.app/tx/${item.hash}` : '#';
       
-      const div = document.createElement("div");
-      div.className = "bg-white/[0.02] light:bg-slate-300 border border-white/5 light:border-slate-400 rounded-2xl p-4 text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2";
-      div.innerHTML = `
-        <div>
-          <div class="font-bold text-sm text-emerald-400">${item.tokensCount} Tokens → ${item.rolesCount} Wallets</div>
-          <div class="text-[11px] text-gray-400 light:text-slate-600">${item.date}</div>
-        </div>
-        <div class="flex items-center gap-3">
-          <a href="${explorerLink}" target="_blank" rel="noopener noreferrer" class="font-mono text-[11px] text-cyan-500 light:text-cyan-700 bg-cyan-500/10 light:bg-slate-300 px-2 py-1 rounded-lg hover:underline">Tx: ${shortHash}</a>
-          <span class="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 font-semibold">${item.status}</span>
-        </div>
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td class="whitespace-nowrap">${item.date}</td>
+        <td class="font-medium text-emerald-400">${item.memo || '-'}</td>
+        <td>
+           <span class="bg-cyan-500/10 text-cyan-400 px-2 py-1 rounded-md text-[10px] font-bold">${item.tokensCount} Tokens</span> 
+           <i class="fas fa-arrow-right text-[10px] mx-1 text-gray-500"></i>
+           <span class="bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded-md text-[10px] font-bold">${item.rolesCount} Wallets</span>
+        </td>
+        <td><span class="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 font-semibold text-[10px]"><i class="fas fa-check-circle mr-1"></i>${item.status}</span></td>
+        <td><a href="${explorerLink}" target="_blank" class="font-mono text-[11px] text-cyan-400 hover:text-cyan-300 hover:underline transition-colors">${shortHash} <i class="fas fa-external-link-alt text-[9px] ml-1"></i></a></td>
       `;
-      container.appendChild(div);
+      tbody.appendChild(tr);
     });
   }
 
   function clearHistory() {
-    if(confirm("Are you sure you want to clear history?")) {
+    if(confirm("Are you sure you want to completely clear the transaction history?")) {
       historyList = [];
       localStorage.setItem('arcBatchHistory', '[]');
       renderHistory();
