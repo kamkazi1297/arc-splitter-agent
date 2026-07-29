@@ -919,8 +919,9 @@
   executeBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Sending...`;
 
   try {
-    const tokenAddress = document.getElementById("tokenSelect").value;
+    let tokenAddress = document.getElementById("tokenSelect").value;
     
+    // USDC رو به عنوان Native扱 کن
     const isUSDC = tokenAddress.toLowerCase() === "0x3600000000000000000000000000000000000000".toLowerCase();
     const isNative = tokenAddress === "0x0000000000000000000000000000000000000000" || isUSDC;
 
@@ -955,13 +956,13 @@
 
     const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
-    // Approve فقط اگر USDC نباشد
+    // Approve فقط برای توکن‌های غیر USDC
     if (!isNative) {
       const erc20 = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
       showToast("Approving...");
       await (await erc20.approve(CONTRACT_ADDRESS, totalAmountWei * 10n)).wait();
     } else if (isUSDC) {
-      showToast("USDC detected - No approve needed");
+      showToast("USDC - No approve needed");
     }
 
     const params = {
@@ -977,15 +978,18 @@
       maxGasPriceLimit: 0
     };
 
-    showToast("Executing...");
+    showToast("Executing Split...");
     const tx = await contract.splitByPercentage(params, { gasLimit: 1500000 });
     const receipt = await tx.wait();
 
-    showToast(`✅ SUCCESS! Hash: ${receipt.hash.slice(0,12)}...`, 10000);
+    showToast(`✅ SUCCESS! Tx: ${receipt.hash.slice(0,12)}...`, 10000);
+
+    switchTab('history');
+    updateWalletBalance();
 
   } catch (err) {
     console.error("Full Error:", err);
-    showToast("❌ Reverted - Check console");
+    showToast("❌ " + (err.shortMessage || err.message || "Failed"));
   } finally {
     executeBtn.innerHTML = originalText;
     executeBtn.disabled = false;
