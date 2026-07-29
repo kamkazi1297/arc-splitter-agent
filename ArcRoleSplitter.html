@@ -936,31 +936,28 @@
     let walletsArr = [];
     let sharesBps = [];
 
-    // ساخت آرایه‌ها
     document.querySelectorAll('.role-split-row').forEach(row => {
       const roleName = row.querySelector('.role-select').value;
       const percent = parseFloat(row.querySelector('.role-percent').value) || 0;
-      
       if (roleName && percent > 0) {
         const role = rolesData.find(r => r.name === roleName);
         if (role && role.wallets.length > 0) {
-          const roleBps = Math.round(percent * 100); // مثلاً 25% = 2500
-          const perWalletBps = Math.floor(roleBps / role.wallets.length);
-          
-          role.wallets.forEach(wallet => {
-            if (ethers.isAddress(wallet)) {
-              walletsArr.push(wallet);
-              sharesBps.push(perWalletBps);
+          const bpsForThisRole = Math.round(percent * 100);
+          const perWallet = Math.floor(bpsForThisRole / role.wallets.length);
+          role.wallets.forEach(w => {
+            if (ethers.isAddress(w)) {
+              walletsArr.push(w);
+              sharesBps.push(perWallet);
             }
           });
         }
       }
     });
 
-    // تنظیم آخرین سهم برای دقیق 10000
+    // تنظیم دقیق bps
     if (sharesBps.length > 0) {
-      let currentSum = sharesBps.reduce((a, b) => a + b, 0);
-      sharesBps[sharesBps.length - 1] += (10000 - currentSum);
+      let sum = sharesBps.reduce((a, b) => a + b, 0);
+      sharesBps[sharesBps.length-1] += (10000 - sum);
     }
 
     const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
@@ -968,7 +965,7 @@
     if (!isNative) {
       const erc20 = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
       showToast("Approving...");
-      await (await erc20.approve(CONTRACT_ADDRESS, totalAmountWei * 5n)).wait();
+      await (await erc20.approve(CONTRACT_ADDRESS, totalAmountWei * 10n)).wait();
     }
 
     const params = {
@@ -978,17 +975,19 @@
       sharesBps: sharesBps,
       tokenToNativeRatio: ethers.parseUnits("1", 18),
       batchId: Math.floor(Date.now() / 1000),
-      deadline: Math.floor(Date.now() / 1000) + 3600,
+      deadline: Math.floor(Date.now() / 1000) + 7200,
       nonce: 0,
-      baseGas: 60000,
+      baseGas: 100000,           // افزایش gas
       maxGasPriceLimit: 0
     };
 
-    showToast("Executing Percentage Split...");
-    const tx = await contract.splitByPercentage(params);
-    const receipt = await tx.wait();
+    showToast("Executing...");
+    
+    // ارسال با gas limit دستی
+    const tx = await contract.splitByPercentage(params, { gasLimit: 800000 });
 
-    showToast(`✅ Success! Tx Hash: ${receipt.hash.slice(0,12)}...`, 8000);
+    const receipt = await tx.wait();
+    showToast(`✅ Success! Hash: ${receipt.hash.slice(0,12)}...`, 10000);
 
     switchTab('history');
     updateWalletBalance();
