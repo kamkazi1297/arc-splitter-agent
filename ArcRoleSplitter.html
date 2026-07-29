@@ -925,8 +925,10 @@
     const isUSDC = tokenAddress.toLowerCase() === "0x3600000000000000000000000000000000000000".toLowerCase();
     const isNative = tokenAddress === "0x0000000000000000000000000000000000000000" || isUSDC;
 
+    // تعیین تعداد اعشار صحیح (USDC شش اعشار و کوین‌های بومی استاندارد ۱۸ اعشار)
+    const decimals = isUSDC ? 6 : 18; 
     const rawAmount = document.getElementById("totalAmount").value || "5";
-    const totalAmountWei = ethers.parseUnits(rawAmount, 6);
+    const totalAmountWei = ethers.parseUnits(rawAmount, decimals);
 
     let walletsArr = [];
     let sharesBps = [];
@@ -965,7 +967,7 @@
       showToast("Native Token / USDC - No approve needed");
     }
 
-    // بسیار مهم: قرارداد هوشمند کوین بومی را با آدرس صفر (0x00...00) می‌شناسد
+    // قرارداد هوشمند کوین بومی را با آدرس صفر (0x00...00) می‌شناسد
     const finalTokenAddress = isNative 
       ? "0x0000000000000000000000000000000000000000" 
       : tokenAddress;
@@ -979,13 +981,13 @@
       batchId: Math.floor(Date.now() / 1000),
       deadline: Math.floor(Date.now() / 1000) + 7200,
       nonce: 0,
-      baseGas: 150000,
+      baseGas: 0, // صفر کردن baseGas برای جلوگیری از کسر مبلغ توسط قرارداد
       maxGasPriceLimit: 0
     };
 
     showToast("Executing Split...");
     
-    // تنظیم آپشن‌های تراکنش (اگر بومی/USDC باشد، مقدار value ارسال می‌شود)
+    // تنظیم آپشن‌های تراکنش (ارسال مقدار value برای توکن/کوین بومی)
     const txOptions = { gasLimit: 1500000 };
     if (isNative) {
       txOptions.value = totalAmountWei;
