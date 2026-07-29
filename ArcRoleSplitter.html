@@ -936,39 +936,38 @@
     let walletsArr = [];
     let sharesBps = [];
 
-    let totalBps = 0;
-
+    // ساخت آرایه‌ها
     document.querySelectorAll('.role-split-row').forEach(row => {
       const roleName = row.querySelector('.role-select').value;
-      const percentInput = parseFloat(row.querySelector('.role-percent').value) || 0;
+      const percent = parseFloat(row.querySelector('.role-percent').value) || 0;
       
-      if (roleName && percentInput > 0) {
+      if (roleName && percent > 0) {
         const role = rolesData.find(r => r.name === roleName);
         if (role && role.wallets.length > 0) {
-          const bpsForRole = Math.round(percentInput * 100);
-          const bpsPerWallet = Math.floor(bpsForRole / role.wallets.length);
+          const roleBps = Math.round(percent * 100); // مثلاً 25% = 2500
+          const perWalletBps = Math.floor(roleBps / role.wallets.length);
           
           role.wallets.forEach(wallet => {
             if (ethers.isAddress(wallet)) {
               walletsArr.push(wallet);
-              sharesBps.push(bpsPerWallet);
-              totalBps += bpsPerWallet;
+              sharesBps.push(perWalletBps);
             }
           });
         }
       }
     });
 
-    // آخرین والت bps رو تنظیم کن تا دقیق 10000 بشه
+    // تنظیم آخرین سهم برای دقیق 10000
     if (sharesBps.length > 0) {
-      sharesBps[sharesBps.length - 1] += (10000 - totalBps);
+      let currentSum = sharesBps.reduce((a, b) => a + b, 0);
+      sharesBps[sharesBps.length - 1] += (10000 - currentSum);
     }
 
     const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
     if (!isNative) {
       const erc20 = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
-      showToast("Approving USDC...");
+      showToast("Approving...");
       await (await erc20.approve(CONTRACT_ADDRESS, totalAmountWei * 5n)).wait();
     }
 
@@ -985,25 +984,23 @@
       maxGasPriceLimit: 0
     };
 
-    showToast("Executing on Arc Testnet...");
-    
+    showToast("Executing Percentage Split...");
     const tx = await contract.splitByPercentage(params);
     const receipt = await tx.wait();
 
-    showToast(`✅ Transaction Successful! Hash: ${receipt.hash.slice(0,12)}...`, 8000);
+    showToast(`✅ Success! Tx Hash: ${receipt.hash.slice(0,12)}...`, 8000);
 
     switchTab('history');
     updateWalletBalance();
 
   } catch (err) {
     console.error(err);
-    showToast("❌ " + (err.shortMessage || err.message || "Transaction reverted"));
+    showToast("❌ " + (err.shortMessage || err.message || "Failed"));
   } finally {
     executeBtn.innerHTML = originalText;
     executeBtn.disabled = false;
   }
 }
-
   function renderHistory() {
     const container = document.getElementById("historyContainer");
     container.innerHTML = historyList.length ? "" : "<p class='text-gray-400 light:text-slate-600 text-center py-6 text-xs'>No role splits yet.</p>";
