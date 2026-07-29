@@ -79,7 +79,6 @@
     
     .preview-scroll { max-height: 320px; overflow-y: auto; scrollbar-width: thin; }
     
-    /* Telegram WebApp specific adjustments */
     body.tg-webapp {
       padding-bottom: 24px;
     }
@@ -151,9 +150,11 @@
             <div>
               <label class="block text-gray-400 light:text-slate-600 text-xs font-semibold uppercase tracking-wider mb-2">Token</label>
               <select id="tokenSelect" class="w-full rounded-2xl px-4 py-3.5 text-sm font-medium outline-none cursor-pointer" onchange="onTokenSelectionChange(this)">
-                <option value="0x3600000000000000000000000000000000000000">USDC (Testnet Placeholder)</option>
+                <!-- Updated Tokens based on your contracts -->
+                <option value="0x3600000000000000000000000000000000000000" selected>USDC (Arc Testnet)</option>
                 <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC (Arc Testnet)</option>
                 <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC (Arc Testnet)</option>
+                <option value="0x0000000000000000000000000000000000000000">Native ARC (0x00...)</option>
                 <option value="custom">➕ Add Custom Token...</option>
               </select>
             </div>
@@ -360,10 +361,8 @@
   };
 
   const CONTRACT_ABI = [
-    "function splitBundleTokens(address[] calldata tokens, uint256[] calldata amounts) external",
-    "function claim(address token) external",
-    "function pendingWithdrawals(address recipient, address token) external view returns (uint256)",
-    "function allowedTokens(address token) external view returns (bool)"
+    "function splitByAmount(tuple(address token, uint256 totalChunkAmount, address[] wallets, uint256[] amounts, uint256 tokenToNativeRatio, uint256 batchId, uint256 deadline, uint256 nonce, uint256 baseGas, uint64 maxGasPriceLimit) params) external payable",
+    "function splitByPercentage(tuple(address token, uint256 totalChunkAmount, address[] wallets, uint16[] sharesBps, uint256 tokenToNativeRatio, uint256 batchId, uint256 deadline, uint256 nonce, uint256 baseGas, uint64 maxGasPriceLimit) params) external payable"
   ];
 
   const ERC20_ABI = [
@@ -373,7 +372,6 @@
     "function decimals() external view returns (uint8)"
   ];
 
-  // Persistent Roles & History Storage
   let rolesData = JSON.parse(localStorage.getItem('arcRolesData')) || [
     { name: "Founder", wallets: [], description: "Core Leadership", color: "blue" },
     { name: "Developer", wallets: [], description: "Engineering Team", color: "emerald" },
@@ -391,7 +389,6 @@
     localStorage.setItem('arcRolesData', JSON.stringify(rolesData));
   }
 
-  // Telegram WebApp / Bot Integration Support
   function initTelegramWebApp() {
     if (window.Telegram && window.Telegram.WebApp) {
       const tg = window.Telegram.WebApp;
@@ -428,6 +425,10 @@
 
   function setupWalletListeners() {
     if (!window.ethereum) return;
+    
+    window.ethereum.removeAllListeners('accountsChanged');
+    window.ethereum.removeAllListeners('chainChanged');
+
     window.ethereum.on('accountsChanged', (accounts) => {
       if (accounts.length === 0) {
         userAddress = null;
@@ -449,7 +450,9 @@
       return showToast("MetaMask or Web3 Wallet not found! Please install it.");
     }
     try {
-      provider = new ethers.BrowserProvider(window.ethereum);
+      if (!provider) {
+          provider = new ethers.BrowserProvider(window.ethereum);
+      }
       const accounts = await provider.send("eth_requestAccounts", []);
       userAddress = accounts[0];
       signer = await provider.getSigner();
@@ -501,19 +504,26 @@
       try {
         const tokenAddress = document.getElementById("tokenSelect").value;
         if (tokenAddress === "custom") return;
-        const erc20 = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
-        
-        let decimals = 18;
-        try {
-          decimals = await erc20.decimals();
-        } catch (e) {
-          decimals = 6;
-        }
 
-        const bal = await erc20.balanceOf(userAddress);
-        const formatted = ethers.formatUnits(bal, decimals);
-        document.getElementById("userBalanceDisplay").textContent = `${parseFloat(formatted).toFixed(2)}`;
-        return;
+        if (tokenAddress === "0x0000000000000000000000000000000000000000") {
+          const bal = await provider.getBalance(userAddress);
+          const formatted = ethers.formatUnits(bal, 18); // Default Native decimals
+          document.getElementById("userBalanceDisplay").textContent = `${parseFloat(formatted).toFixed(2)}`;
+          return;
+        } else {
+          const erc20 = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+          let decimals = 18;
+          try {
+            decimals = await erc20.decimals();
+          } catch (e) {
+            decimals = 6;
+          }
+
+          const bal = await erc20.balanceOf(userAddress);
+          const formatted = ethers.formatUnits(bal, decimals);
+          document.getElementById("userBalanceDisplay").textContent = `${parseFloat(formatted).toFixed(2)}`;
+          return;
+        }
       } catch (e) {
         attempts--;
         if (attempts === 0) {
@@ -802,7 +812,6 @@
       const percent = parseFloat(percentInput.value) || 0;
       totalPercent += percent;
 
-      // Auto-sync amounts when totalAmount changes
       if (totalAmount > 0 && percentInput.value !== '') {
         const calculatedAmount = (totalAmount * percent) / 100;
         amountInput.value = calculatedAmount.toFixed(4).replace(/\.?0+$/, '');
@@ -818,14 +827,14 @@
         }
 
         const amount = (totalAmount * percent) / 100;
-        let walletsHTML = roleObj && roleObj.wallets.length > 0 ? roleObj.wallets.map(w => `<div class="text-[10px] text-gray-400 light:text-slate-600 font-mono">↳ Wallet: ${w.substring(0,8)}... (${(amount / roleObj.wallets.length).toFixed(2)})</div>`).join('') : '<span class="text-rose-400 font-bold">⚠️ Warning: No wallet address added to this role!</span>';
+        let walletsHTML = roleObj && roleObj.wallets.length > 0 ? roleObj.wallets.map(w => `<div class="text-[10px] text-gray-400 light:text-slate-600 font-mono">↳ Wallet: ${w.substring(0,8)}... (${(amount / roleObj.wallets.length).toFixed(4)})</div>`).join('') : '<span class="text-rose-400 font-bold">⚠️ Warning: No wallet address added to this role!</span>';
 
         const div = document.createElement("div");
         div.className = "bg-white/[0.02] light:bg-slate-50 border border-white/5 light:border-black/5 p-3 rounded-xl space-y-1";
         div.innerHTML = `
           <div class="flex justify-between font-bold">
             <span>${roleName}</span>
-            <span class="text-emerald-400">${percent.toFixed(2)}% (${amount.toFixed(2)})</span>
+            <span class="text-emerald-400">${percent.toFixed(2)}% (${amount.toFixed(4)})</span>
           </div>
           ${walletsHTML}
         `;
@@ -913,57 +922,112 @@
 
     try {
       const tokenAddress = document.getElementById("tokenSelect").value;
+      const isNative = (tokenAddress === "0x0000000000000000000000000000000000000000");
       const rawAmount = document.getElementById("totalAmount").value;
+      
+      let decimals = 6; 
+      if (!isNative) {
+        const erc20Contract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+        try {
+          decimals = await erc20Contract.decimals();
+        } catch (e) {
+          decimals = 6;
+        }
+      } else {
+        decimals = 18; // Default native decimal for calculations
+      }
+
+      const totalAmountWei = ethers.parseUnits(rawAmount, decimals);
+
+      let walletsArr = [];
+      let amountsArr = [];
+      let splitAllocations = [];
+      let calculatedTotalAmountWei = 0n;
+
+      document.querySelectorAll('.role-split-row').forEach(row => {
+        const roleName = row.querySelector('.role-select').value;
+        const percent = parseFloat(row.querySelector('.role-percent').value) || 0;
+        
+        if (roleName && percent > 0) {
+          const roleObj = rolesData.find(r => r.name === roleName);
+          if (roleObj && roleObj.wallets.length > 0) {
+            
+            const percentBps = BigInt(Math.round(percent * 100));
+            const roleAmountWei = (totalAmountWei * percentBps) / 10000n;
+            const amountPerWalletWei = roleAmountWei / BigInt(roleObj.wallets.length);
+            
+            roleObj.wallets.forEach(w => {
+              walletsArr.push(w);
+              amountsArr.push(amountPerWalletWei);
+              calculatedTotalAmountWei += amountPerWalletWei;
+            });
+            
+            splitAllocations.push({
+              roleName: roleName,
+              percent: percent,
+              amount: parseFloat(ethers.formatUnits(roleAmountWei, decimals))
+            });
+          }
+        }
+      });
+
+      if (walletsArr.length === 0) {
+        showToast("No valid wallets found in selected roles.");
+        executeBtn.innerHTML = originalBtnText;
+        executeBtn.disabled = false;
+        return;
+      }
+
       const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
-      const erc20Contract = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
-      let decimals = 18;
-      try {
-        decimals = await erc20Contract.decimals();
-      } catch (e) {
-        decimals = 6;
-      }
-      const amountWei = ethers.parseUnits(rawAmount, decimals);
+      if (!isNative) {
+        const erc20Contract = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
+        let allowance = 0n;
+        try {
+          allowance = await erc20Contract.allowance(userAddress, CONTRACT_ADDRESS);
+        } catch (err) {
+          console.warn("Allowance check failed:", err);
+        }
 
-      let allowance = 0n;
-      try {
-        allowance = await erc20Contract.allowance(userAddress, CONTRACT_ADDRESS);
-      } catch (err) {
-        console.warn("Allowance check failed:", err);
-      }
-
-      if (allowance < amountWei) {
-        showToast("Approving ERC20 token expenditure...");
-        const approveTx = await erc20Contract.approve(CONTRACT_ADDRESS, amountWei);
-        await approveTx.wait();
+        if (allowance < calculatedTotalAmountWei) {
+          showToast("Approving ERC20 token expenditure...");
+          const approveTx = await erc20Contract.approve(CONTRACT_ADDRESS, calculatedTotalAmountWei);
+          await approveTx.wait();
+        }
       }
 
-      showToast("Executing splitBundleTokens on-chain...");
-      const tx = await contract.splitBundleTokens([tokenAddress], [amountWei]);
+      const params = {
+        token: tokenAddress,
+        totalChunkAmount: calculatedTotalAmountWei,
+        wallets: walletsArr,
+        amounts: amountsArr,
+        tokenToNativeRatio: ethers.parseUnits("1", 18),
+        batchId: Math.floor(Date.now() / 1000),
+        deadline: Math.floor(Date.now() / 1000) + 3600,
+        nonce: 0, 
+        baseGas: 0,
+        maxGasPriceLimit: 0
+      };
+
+      showToast("Executing Split on-chain...");
+      
+      let tx;
+      if (isNative) {
+        tx = await contract.splitByAmount(params, { value: calculatedTotalAmountWei });
+      } else {
+        tx = await contract.splitByAmount(params);
+      }
 
       showToast(`Transaction submitted! Waiting for confirmation...`, 5000);
       const receipt = await tx.wait();
 
-      const parsedAmount = parseFloat(rawAmount);
-      let splitAllocations = [];
-      document.querySelectorAll('.role-split-row').forEach(row => {
-        const roleName = row.querySelector('.role-select').value;
-        const percent = parseFloat(row.querySelector('.role-percent').value) || 0;
-        if (roleName) {
-          splitAllocations.push({
-            roleName: roleName,
-            percent: percent,
-            amount: (parsedAmount * percent) / 100
-          });
-        }
-      });
-
       showToast(`Role Split Executed Successfully on-chain! Tx: ${receipt.hash.substring(0,10)}...`, 7000);
 
+      const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
       historyList.unshift({
         date: new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString(),
         rolesCount: splitAllocations.length,
-        token: document.getElementById("tokenSelect").selectedOptions[0].text,
+        token: symbol,
         amount: rawAmount,
         status: "Completed",
         hash: receipt.hash,
