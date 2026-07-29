@@ -936,26 +936,39 @@
     let walletsArr = [];
     let sharesBps = [];
 
+    let totalBps = 0;
+
     document.querySelectorAll('.role-split-row').forEach(row => {
       const roleName = row.querySelector('.role-select').value;
-      const percent = parseFloat(row.querySelector('.role-percent').value) || 0;
-      if (roleName && percent > 0) {
+      const percentInput = parseFloat(row.querySelector('.role-percent').value) || 0;
+      
+      if (roleName && percentInput > 0) {
         const role = rolesData.find(r => r.name === roleName);
         if (role && role.wallets.length > 0) {
-          const bpsPerWallet = Math.round((percent * 100) / role.wallets.length);
-          role.wallets.forEach(() => {
-            walletsArr.push(role.wallets[0]); // فعلاً اولین والت
-            sharesBps.push(bpsPerWallet);
+          const bpsForRole = Math.round(percentInput * 100);
+          const bpsPerWallet = Math.floor(bpsForRole / role.wallets.length);
+          
+          role.wallets.forEach(wallet => {
+            if (ethers.isAddress(wallet)) {
+              walletsArr.push(wallet);
+              sharesBps.push(bpsPerWallet);
+              totalBps += bpsPerWallet;
+            }
           });
         }
       }
     });
 
+    // آخرین والت bps رو تنظیم کن تا دقیق 10000 بشه
+    if (sharesBps.length > 0) {
+      sharesBps[sharesBps.length - 1] += (10000 - totalBps);
+    }
+
     const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
     if (!isNative) {
       const erc20 = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
-      showToast("Approving...");
+      showToast("Approving USDC...");
       await (await erc20.approve(CONTRACT_ADDRESS, totalAmountWei * 5n)).wait();
     }
 
@@ -968,22 +981,23 @@
       batchId: Math.floor(Date.now() / 1000),
       deadline: Math.floor(Date.now() / 1000) + 3600,
       nonce: 0,
-      baseGas: 50000,
+      baseGas: 60000,
       maxGasPriceLimit: 0
     };
 
-    showToast("Executing Split...");
+    showToast("Executing on Arc Testnet...");
+    
     const tx = await contract.splitByPercentage(params);
-
     const receipt = await tx.wait();
-    showToast(`✅ Success! Tx: ${receipt.hash.slice(0,12)}...`, 7000);
+
+    showToast(`✅ Transaction Successful! Hash: ${receipt.hash.slice(0,12)}...`, 8000);
 
     switchTab('history');
     updateWalletBalance();
 
   } catch (err) {
     console.error(err);
-    showToast("❌ " + (err.message || "Failed"));
+    showToast("❌ " + (err.shortMessage || err.message || "Transaction reverted"));
   } finally {
     executeBtn.innerHTML = originalText;
     executeBtn.disabled = false;
