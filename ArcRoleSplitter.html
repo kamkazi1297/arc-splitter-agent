@@ -921,7 +921,7 @@
   try {
     const tokenAddress = document.getElementById("tokenSelect").value;
     const isNative = tokenAddress === "0x0000000000000000000000000000000000000000";
-    const rawAmount = document.getElementById("totalAmount").value || "10";
+    const rawAmount = document.getElementById("totalAmount").value || "5"; // مقدار کوچکتر
 
     let decimals = 6;
     if (!isNative) {
@@ -959,12 +959,10 @@
 
     const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
-    // Approve
     if (!isNative) {
       const erc20 = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
       showToast("Approving...");
-      await (await erc20.approve(CONTRACT_ADDRESS, totalAmountWei * 10n)).wait();
-      showToast("Approved ✓");
+      await (await erc20.approve(CONTRACT_ADDRESS, totalAmountWei * 5n)).wait();
     }
 
     const params = {
@@ -976,22 +974,32 @@
       batchId: Math.floor(Date.now() / 1000),
       deadline: Math.floor(Date.now() / 1000) + 7200,
       nonce: 0,
-      baseGas: 100000,
+      baseGas: 120000,
       maxGasPriceLimit: 0
     };
 
-    showToast("Executing Split on-chain...");
-    const tx = await contract.splitByPercentage(params, { gasLimit: 1000000 });
+    showToast("Sending transaction...");
+    const tx = await contract.splitByPercentage(params, { gasLimit: 1200000 });
+    
+    showToast("Transaction sent! Waiting for confirmation...", 6000);
 
-    const receipt = await tx.wait();
-    showToast(`✅ SUCCESS! Tx: ${receipt.hash.slice(0,12)}...`, 10000);
+    // Wait with delay to avoid rate limit
+    await new Promise(r => setTimeout(r, 8000));
+    
+    const receipt = await tx.wait(1);   // فقط ۱ confirmation
+
+    showToast(`✅ SUCCESS! Tx Hash: ${receipt.hash.slice(0,12)}...`, 12000);
 
     switchTab('history');
     updateWalletBalance();
 
   } catch (err) {
-    console.error("Full Error:", err);
-    showToast("❌ " + (err.shortMessage || err.message || "Failed"));
+    console.error(err);
+    if (err.message.includes("rate limited") || err.code === -32005) {
+      showToast("⚠️ Rate limited by RPC. Wait 10 seconds and check History tab.", 8000);
+    } else {
+      showToast("❌ " + (err.shortMessage || err.message));
+    }
   } finally {
     executeBtn.innerHTML = originalText;
     executeBtn.disabled = false;
