@@ -963,18 +963,23 @@
     let txOptions = { gasLimit: 1500000 };
 
     if (!isNative) {
-      // برای توکن‌های ERC20 غیربومی مثل EURC
-      const erc20 = new ethers.Contract(selectedToken, ERC20_ABI, signer);
+      const erc20 = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
       showToast("Approving...");
       await (await erc20.approve(CONTRACT_ADDRESS, totalAmountWei * 10n)).wait();
-    } else {
-      // برای توکن بومی شبکه (USDC)، مقدار باید همراه تراکنش در msg.value ارسال شود
-      txOptions.value = totalAmountWei;
-      showToast("Preparing Native USDC Transfer...");
+    } else if (isUSDC) {
+      showToast("USDC (Native) - No approve needed");
     }
 
+    const finalTokenAddress = isNative 
+      ? "0x0000000000000000000000000000000000000000" 
+      : tokenAddress;
+
+    const finalTokenAddress = isNative 
+      ? "0x0000000000000000000000000000000000000000" 
+      : tokenAddress;
+
     const params = {
-      token: contractTokenAddress, // ارسال آدرس صفر برای USDC نیتیو
+      token: finalTokenAddress, // 🔴 استفاده از آدرس صفر برای کوین بومی
       totalChunkAmount: totalAmountWei,
       wallets: walletsArr,
       sharesBps: sharesBps,
