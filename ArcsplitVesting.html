@@ -4,8 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
   <title>ArcSplit - Vesting & Cliff Engine</title>
+  
+  <!-- Tailwind & Ethers -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+  
+  <!-- Supabase Integration -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
+  <!-- FontAwesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 
   <style>
@@ -242,7 +249,7 @@
             <div>
               <label class="block text-gray-400 light:text-slate-600 text-xs font-bold uppercase tracking-wider mb-2">Asset Token</label>
               <select id="tokenSelect" class="w-full rounded-2xl px-5 py-4 text-sm sm:text-base font-medium cursor-pointer" onchange="handleTokenChange()">
-                <option value="0x3600000000000000000000000000000000000000">USDC (Native Layer 1)</option>
+                <option value="0x3600000000000000000000000000000000000000">USDC</option>
                 <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
                 <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">CIRBTC</option>
                 <option value="custom">Custom Token...</option>
@@ -343,13 +350,24 @@
                 <option value="Monthly" selected>Monthly</option>
               </select>
             </div>
-            <div>
-              <label class="block text-gray-400 light:text-slate-600 text-xs font-bold uppercase tracking-wider mb-2">Push Configuration</label>
-              <div class="flex items-center gap-6 pt-3 text-xs sm:text-sm font-bold">
-                <label class="flex items-center gap-2 cursor-pointer">
+            
+            <div class="space-y-4 pt-1">
+              <!-- Auto-Release Toggle -->
+              <div>
+                <label class="flex items-center gap-2 cursor-pointer text-xs sm:text-sm font-bold">
                   <input type="checkbox" id="allowRelayerPush" checked onchange="recalculateVesting()" class="accent-emerald-500 w-4 h-4 rounded"> 
-                  Enable Auto-Push (Relayer)
+                  Enable Auto-Release (Gasless)
                 </label>
+                <p class="text-[10px] text-gray-400 light:text-slate-500 mt-1 leading-relaxed">By enabling this option, our system pays the gas fees and deposits the tokens exactly on time to your wallet.</p>
+              </div>
+              
+              <!-- Revocable Toggle -->
+              <div>
+                <label class="flex items-center gap-2 cursor-pointer text-xs sm:text-sm font-bold">
+                  <input type="checkbox" id="isRevocable" class="accent-emerald-500 w-4 h-4 rounded"> 
+                  Revocable Contract
+                </label>
+                <p class="text-[10px] text-gray-400 light:text-slate-500 mt-1 leading-relaxed">If enabled, the contract creator can cancel the vesting later and retrieve the unvested tokens.</p>
               </div>
             </div>
           </div>
@@ -425,8 +443,8 @@
         <div class="flex justify-between"><span class="text-gray-400">Cliff Period:</span> <span id="modalCliff" class="font-bold preserve-theme">6 Months</span></div>
       </div>
       <div class="flex gap-3 pt-2">
-        <button onclick="closeConfirmModal()" class="app-button flex-1 py-3.5 rounded-xl border border-white/15 light:border-slate-300 hover:bg-white/5 light:hover:bg-slate-100 font-semibold text-sm transition-all preserve-theme">Cancel</button>
-        <button onclick="executeRealSmartContract()" class="app-button flex-1 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold rounded-xl text-sm transition-all shadow-lg shadow-emerald-500/20">Sign & Deploy</button>
+        <button id="modalCancelBtn" onclick="closeConfirmModal()" class="app-button flex-1 py-3.5 rounded-xl border border-white/15 light:border-slate-300 hover:bg-white/5 light:hover:bg-slate-100 font-semibold text-sm transition-all preserve-theme">Cancel</button>
+        <button id="modalDeployBtn" onclick="executeRealSmartContract()" class="app-button flex-1 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold rounded-xl text-sm transition-all shadow-lg shadow-emerald-500/20">Sign & Deploy</button>
       </div>
     </div>
   </div>
@@ -437,8 +455,46 @@
   </div>
 
 <script>
+  // -----------------------------------------------------
+  // Supabase Database Configuration & Functions
+  // -----------------------------------------------------
+  const SUPABASE_URL = 'https://yelauzpxsfjzydffhnhb.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InllbGF1enB4c2ZqenlkZmZobmhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzNjEyOTMsImV4cCI6MjEwMDkzNzI5M30.qtLEnhS8Zs34U_inur4e5UIBuKB5AmS_Z0VrT7jFvqM';
+
+  let supabaseClient = null;
+  function getSupabase() {
+    if (!supabaseClient && window.supabase) {
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    }
+    return supabaseClient;
+  }
+
+  async function saveHistoryToCloud(userAddress, record) {
+    const client = getSupabase();
+    if (!client || !userAddress) return;
+    const { error } = await client
+      .from('history')
+      .insert([{ user_address: userAddress.toLowerCase(), memo: record.memo || "Vesting Record", history_data: record }]);
+    if (error) console.error("Error saving to cloud:", error);
+  }
+
+  async function fetchHistoryFromCloud(userAddress) {
+    const client = getSupabase();
+    if (!client || !userAddress) return [];
+    const { data, error } = await client
+      .from('history')
+      .select('history_data')
+      .eq('user_address', userAddress.toLowerCase())
+      .order('id', { ascending: false });
+    if (error) return [];
+    return data.map(row => row.history_data);
+  }
+
+  // -----------------------------------------------------
+  // Application Logic
+  // -----------------------------------------------------
   let provider, signer, userAddress;
-  let historyTransactions = JSON.parse(localStorage.getItem('arcsplit_history') || '[]');
+  let historyTransactions = [];
   
   // Updated to Proxy Address based on the new smart contract deployment
   const VESTING_CONTRACT_ADDRESS = "0xd3640D303e2e7962aEeba09a8aDA73eb80e6606d";
@@ -460,7 +516,6 @@
 
     renderRecipients();
     recalculateVesting();
-    renderHistoryList();
 
     if (window.ethereum) {
       try {
@@ -477,6 +532,23 @@
   async function connectWallet(isAuto = false) {
     if (window.ethereum) {
       try {
+        // Network Switcher Check for Arc Testnet
+        const targetNetworkId = '0x...'; // Please replace with the actual hex chain ID for Arc Testnet (e.g. '0x5c8' or whatever it is).
+        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+        
+        if (chainId !== targetNetworkId) {
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: targetNetworkId }],
+                });
+            } catch (switchError) {
+                console.log("Please add Arc Testnet to your wallet.");
+                showToast("Please add Arc Testnet to your wallet.");
+                // We shouldn't stop the connection here, but just prompt them.
+            }
+        }
+
         provider = new ethers.BrowserProvider(window.ethereum);
         if (!isAuto) {
           await provider.send("eth_requestAccounts", []);
@@ -489,10 +561,21 @@
         document.getElementById('disconnectWalletBtn').classList.remove('hidden');
         
         await fetchRealTokenBalanceWithRetry();
+        
+        // Fetch History from Cloud
+        const cloudHistory = await fetchHistoryFromCloud(userAddress);
+        if (cloudHistory && cloudHistory.length > 0) {
+            historyTransactions = cloudHistory;
+        } else {
+            // Fallback to local storage if cloud is empty
+            historyTransactions = JSON.parse(localStorage.getItem('arcsplit_history') || '[]');
+        }
+        renderHistoryList();
+
         if (!isAuto) showToast("Wallet connected successfully!");
       } catch (error) {
         console.error(error);
-        if (!isAuto) showToast("Connection rejected by user.");
+        if (!isAuto) showToast("Connection rejected by user or network switch failed.");
       }
     } else {
       if (!isAuto) showToast("MetaMask or Web3 wallet not found!");
@@ -505,6 +588,8 @@
     document.getElementById('walletBtnText').textContent = "Connect Wallet";
     document.getElementById('disconnectWalletBtn').classList.add('hidden');
     document.getElementById('walletBalanceDisplay').textContent = `0.00 (Not Connected)`;
+    historyTransactions = [];
+    renderHistoryList();
     showToast("Wallet disconnected.");
   }
 
@@ -845,11 +930,21 @@
   }
 
   async function executeRealSmartContract() {
-    closeConfirmModal();
     if (!signer) {
       showToast("Please connect your wallet first!");
+      closeConfirmModal();
       return;
     }
+
+    const deployBtn = document.getElementById('modalDeployBtn');
+    const cancelBtn = document.getElementById('modalCancelBtn');
+    const originalBtnText = deployBtn.innerHTML;
+    
+    // Set loading state on button
+    deployBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+    deployBtn.disabled = true;
+    deployBtn.classList.add('opacity-70', 'cursor-not-allowed');
+    cancelBtn.disabled = true;
 
     try {
       showToast("Preparing on-chain transaction...");
@@ -876,7 +971,7 @@
       else slicePeriodSeconds = 2592000; // Monthly
 
       const allowRelayerPush = document.getElementById('allowRelayerPush').checked;
-      const isRevocable = true; // Default revocable per new logic requirements
+      const isRevocable = document.getElementById('isRevocable').checked;
 
       let tx;
       // Handles Native USDC representation
@@ -954,28 +1049,44 @@
       showToast("Transaction submitted to wallet. Waiting...");
       await tx.wait();
       
+      closeConfirmModal();
       showToast("Smart Contract executed successfully on-chain!");
       switchTab('history');
       
-      historyTransactions.unshift({
+      // Update local and cloud history
+      const newRecord = {
         hash: tx.hash,
         address: validRecipients.length > 1 ? `Batch (${validRecipients.length} addresses)` : validRecipients[0].address,
         allocated: validRecipients.length > 1 ? "Multiple" : (validRecipients[0].amount || "Set by %"),
         duration: getDurationText(),
-        timestamp: new Date().toLocaleString()
-      });
+        timestamp: new Date().toLocaleString(),
+        memo: "Successfully Deployed Vesting Plan"
+      };
+
+      historyTransactions.unshift(newRecord);
       localStorage.setItem('arcsplit_history', JSON.stringify(historyTransactions));
       renderHistoryList();
+      
+      // Push to Supabase
+      if (userAddress) {
+        await saveHistoryToCloud(userAddress, newRecord);
+      }
 
     } catch (error) {
       console.error("Contract Execution Error:", error);
       showToast("Transaction failed. Check balance, gas, or token approval.");
+    } finally {
+      // Revert button state
+      deployBtn.innerHTML = originalBtnText;
+      deployBtn.disabled = false;
+      deployBtn.classList.remove('opacity-70', 'cursor-not-allowed');
+      cancelBtn.disabled = false;
     }
   }
 
   function renderHistoryList() {
     let historyList = document.getElementById('historyList');
-    if (historyTransactions.length === 0) {
+    if (!historyTransactions || historyTransactions.length === 0) {
       historyList.innerHTML = `No vesting plans created yet.`;
       return;
     }
@@ -998,7 +1109,7 @@
     historyTransactions = [];
     localStorage.removeItem('arcsplit_history');
     renderHistoryList();
-    showToast("History cleared.");
+    showToast("History cleared locally.");
   }
 
   function exportScheduleData() {
