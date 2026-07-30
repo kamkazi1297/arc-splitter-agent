@@ -6,7 +6,6 @@
   <title>ArcRoleSplitter - Multi-Token Batch Split</title>
   <script src="db.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
@@ -31,11 +30,11 @@
     }
     
     .glass {
-      background: rgba(18, 18, 38, 0.65);
+      background: rgba(18, 18, 38, 0.70);
       backdrop-filter: blur(24px);
       -webkit-backdrop-filter: blur(24px);
-      border: 1px solid rgba(255, 255, 255, 0.07);
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
     
     .light {
@@ -47,60 +46,65 @@
     }
 
     .light .glass {
-      background: rgba(255, 255, 255, 0.85);
+      background: rgba(255, 255, 255, 0.88);
       border-color: rgba(0, 0, 0, 0.08);
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1);
     }
 
-    .light body, .light h1, .light h3, .light label, .light .text-white { color: #0f172a; }
-    .light .text-gray-400 { color: #475569 !important; }
+    .light .preserve-dark-color { color: #f8fafc !important; }
+    .light .preserve-dark-muted { color: #94a3b8 !important; }
+
+    .light body, .light label, .light .text-white:not(.preserve-dark-color) { color: #0f172a; }
+    .light .text-gray-400:not(.preserve-dark-muted) { color: #475569 !important; }
     .light .text-gray-300 { color: #334155 !important; }
-    .light .text-gray-200 { color: #1e293b !important; }
+    .light .text-emerald-400 { color: #059669 !important; }
+    .light .text-cyan-400 { color: #0891b2 !important; }
 
     select, input, textarea {
       background-color: rgba(255, 255, 255, 0.03);
       color: white;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.12);
       transition: all 0.25s ease;
     }
     select:focus, input:focus, textarea:focus {
       border-color: #10b981;
-      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
+      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.18);
       outline: none;
     }
-
     .light select, .light input, .light textarea {
       background-color: #ffffff;
       color: #0f172a;
       border: 1px solid #cbd5e1;
     }
-    
+
     select option { background-color: #0f172a; color: white; }
     .light select option { background-color: #ffffff; color: #0f172a; }
 
     .app-button { transition: all 0.25s ease; }
     .app-button:active:not(:disabled) { transform: scale(0.98); }
     
+    .preview-scroll { max-height: 320px; overflow-y: auto; scrollbar-width: thin; }
+
     .fade-in { animation: fadeIn 0.4s ease forwards; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
   </style>
 </head>
 <body class="text-white min-h-screen selection:bg-emerald-500 selection:text-black">
 
   <div class="max-w-7xl mx-auto px-4 py-6 sm:py-8">
     
+    <!-- HEADER -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
       <div>
-        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Multi Token <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Batch Split</span></h1>
-        <p class="text-gray-400 light:text-slate-600 text-xs sm:text-sm font-medium">Professional Decentralized multi-Token Splitter</p>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight preserve-dark-color">Multi Token <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Batch Split</span></h1>
+        <p class="text-xs sm:text-sm font-medium preserve-dark-muted">Professional Decentralized multi-Token Splitter</p>
       </div>
       
       <div class="flex items-center gap-3 flex-wrap">
         <div class="flex bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 rounded-2xl p-1 text-xs relative">
-          <button onclick="switchView('splitter')" id="navSplitterBtn" class="px-4 py-2.5 rounded-xl bg-emerald-500 text-gray-950 font-bold transition-all shadow-lg shadow-emerald-500/20">Batch Split</button>
-          <button onclick="switchView('history')" id="navHistoryBtn" class="px-4 py-2.5 rounded-xl font-bold transition-all text-gray-400 hover:text-white light:hover:text-black">History</button>
-          <button onclick="switchView('pending')" id="navPendingBtn" class="relative px-4 py-2.5 rounded-xl font-bold transition-all text-gray-400 hover:text-white light:hover:text-black">
+          <button onclick="switchView('splitter')" id="navSplitterBtn" class="px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400 preserve-dark-color shadow-lg shadow-emerald-500/20">Batch Split</button>
+          <button onclick="switchView('history')" id="navHistoryBtn" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted">History</button>
+          <button onclick="switchView('pending')" id="navPendingBtn" class="relative px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted">
             Pending
             <span id="pendingBadge" class="hidden absolute top-1 right-1 flex h-2.5 w-2.5">
               <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
@@ -109,39 +113,34 @@
           </button>
         </div>
 
-        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/10 border border-white/10 light:border-black/10 rounded-2xl transition-all">
+        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/15 border border-white/10 rounded-2xl transition-all" aria-label="Toggle Theme">
           <i class="fas fa-moon text-lg text-emerald-400"></i>
         </button>
+
+        <button onclick="handleWalletClick()" id="connectBtn" class="app-button px-5 py-2.5 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl text-xs flex items-center gap-2 shadow-lg">
+          <i class="fas fa-wallet text-emerald-500"></i> <span id="connectText">Connect Wallet</span>
+        </button>
       </div>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mb-8">
-      <div class="relative flex items-center">
-        <button onclick="handleWalletClick()" id="connectBtn" class="app-button w-full px-6 py-4 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl flex items-center justify-center gap-2.5 hover:bg-emerald-50 transition-all shadow-lg">
-          <i class="fas fa-wallet text-emerald-600 light:text-emerald-400"></i> 
-          <span id="connectText">Connect Wallet</span>
-        </button>
-        <button onclick="disconnectWallet(event)" id="disconnectBtn" class="hidden absolute right-3 px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-bold transition-all border border-rose-500/20" title="Disconnect Wallet">
-          <i class="fas fa-power-off"></i>
-        </button>
-      </div>
-
-      <div class="glass px-6 py-4 rounded-2xl flex items-center justify-between border border-white/10">
-        <div class="flex items-center gap-2 text-xs font-semibold text-gray-400">
-          <i class="fas fa-network-wired text-emerald-400"></i> Network: Arc Network (USDC L1)
+    <!-- STATUS BAR -->
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
+      <div id="status" class="glass rounded-2xl p-4 text-xs font-medium flex items-center justify-between border-l-4 border-l-emerald-500 md:col-span-4">
+        <div class="flex items-center gap-3">
+          <div id="statusIndicator" class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+          <span id="contractStatusText">Network: Arc Network (USDC L1)</span>
         </div>
-        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
       </div>
-    </div>
-
-    <div id="walletBalancesBox" class="glass rounded-2xl p-5 mb-8 hidden border border-emerald-500/20">
-      <div class="flex justify-between items-center mb-3">
-        <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Your Token Balances</div>
-        <button onclick="fetchAndRenderBalancesWithRetry()" class="px-3 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all">
-          <i class="fas fa-rotate text-[10px]"></i> Refresh
+      
+      <div class="glass rounded-2xl p-4 text-xs font-medium flex items-center justify-between md:col-span-8 border border-white/5 hidden" id="walletBalancesBox">
+        <div class="flex items-center gap-2 font-bold text-gray-400 preserve-dark-muted">
+          <i class="fas fa-coins text-emerald-400"></i> Your Balances:
+        </div>
+        <div class="flex items-center gap-4 overflow-x-auto flex-1 px-4" id="balancesContainer"></div>
+        <button onclick="fetchAndRenderBalancesWithRetry()" class="px-3 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-lg text-[10px] font-bold transition-all border border-emerald-500/30">
+          <i class="fas fa-rotate"></i> Refresh
         </button>
       </div>
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" id="balancesContainer"></div>
     </div>
 
     <!-- MAIN SPLIT VIEW -->
@@ -149,90 +148,81 @@
       
       <div class="lg:col-span-7 space-y-6">
         
+        <!-- Step 1 -->
         <div class="glass rounded-3xl p-6 sm:p-8 space-y-5">
-          <div class="flex justify-between items-center">
-            <h3 class="text-base sm:text-lg font-bold flex items-center gap-2">
-              <span class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">1</span> Add Tokens
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="font-bold text-base flex items-center gap-2 preserve-dark-color">
+              <i class="fas fa-layer-group text-emerald-400"></i> Step 1: Tokens & Amounts
             </h3>
-            <button onclick="addTokenRow()" class="app-button px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-xl text-xs font-bold flex items-center gap-1.5">
-              <i class="fas fa-plus text-[10px]"></i> Add Token
+            <button onclick="addTokenRow()" class="px-3.5 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-semibold transition-all">
+              <i class="fas fa-plus mr-1"></i> Add Token
             </button>
           </div>
           <div id="tokensContainer" class="space-y-3"></div>
         </div>
 
+        <!-- Step 2 -->
         <div class="glass rounded-3xl p-6 sm:p-8 space-y-5">
-          <div class="flex justify-between items-center">
-            <h3 class="text-base sm:text-lg font-bold flex items-center gap-2">
-              <span class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">2</span> Add Recipients & Shares
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="font-bold text-base flex items-center gap-2 preserve-dark-color">
+              <i class="fas fa-users-gear text-emerald-400"></i> Step 2: Recipients & Shares
             </h3>
             <div class="flex items-center gap-2">
-              <button onclick="importCSVModal()" class="app-button px-3 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-semibold flex items-center gap-1.5">
-                <i class="fas fa-file-csv text-cyan-400"></i> Import CSV
+              <button onclick="importCSVModal()" class="px-3.5 py-2 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/20 rounded-xl text-xs font-semibold transition-all">
+                <i class="fas fa-file-csv mr-1"></i> CSV
               </button>
-              <button onclick="addRecipientRow()" class="app-button px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-xl text-xs font-bold flex items-center gap-1.5">
-                <i class="fas fa-plus text-[10px]"></i> Add Recipient
+              <button onclick="addRecipientRow()" class="px-3.5 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-semibold transition-all">
+                <i class="fas fa-plus mr-1"></i> Add Recipient
               </button>
             </div>
           </div>
 
           <div id="recipientsContainer" class="space-y-3 max-h-80 overflow-y-auto pr-1"></div>
 
-          <div>
-            <button onclick="distributeRemaining()" class="app-button w-full py-3 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 rounded-2xl text-xs font-bold flex items-center justify-center gap-2">
-              <i class="fas fa-balance-scale"></i> Distribute Remaining
-            </button>
-          </div>
-
-          <div class="pt-3 border-t border-white/10 flex justify-between items-center text-sm font-semibold">
-            <span class="text-gray-400">Total Percentage:</span>
-            <span id="totalPercentageBadge" class="px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">100%</span>
+          <div class="flex items-center justify-between bg-white/[0.02] light:bg-slate-100 border border-white/5 light:border-black/5 p-4 rounded-2xl">
+            <span id="totalPercentageBadge" class="font-bold text-sm text-gray-400">Total: 0%</span>
+            <button onclick="distributeRemaining()" class="text-amber-400 hover:underline text-xs font-semibold"><i class="fas fa-balance-scale"></i> Distribute Remaining</button>
           </div>
         </div>
 
+        <!-- Step 3 -->
         <div class="glass rounded-3xl p-6 sm:p-8 space-y-4">
-          <h3 class="text-base font-bold flex items-center gap-2">
-            <span class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">3</span> Memo & Templates
+          <h3 class="font-bold text-base flex items-center gap-2 preserve-dark-color mb-4">
+            <i class="fas fa-bookmark text-emerald-400"></i> Step 3: Memo & Templates
           </h3>
           <div>
-            <textarea id="batchMemo" rows="2" class="w-full bg-black/20 rounded-2xl p-4 text-xs sm:text-sm outline-none resize-none" placeholder="e.g. Treasury Distribution - July Payroll"></textarea>
+            <textarea id="batchMemo" rows="2" class="w-full bg-black/20 light:bg-slate-100 rounded-2xl p-4 text-xs sm:text-sm outline-none resize-none" placeholder="e.g. Treasury Distribution - July Payroll"></textarea>
           </div>
           <div class="flex flex-wrap gap-3 pt-2">
-            <button onclick="openSaveTemplateModal()" class="app-button px-4 py-2.5 bg-violet-600/20 text-violet-400 rounded-xl text-xs font-semibold flex items-center gap-2">
-              <i class="fas fa-bookmark"></i> Save as Template 
+            <button onclick="openSaveTemplateModal()" class="px-4 py-2.5 bg-violet-600/20 text-violet-400 border border-violet-600/30 rounded-xl text-xs font-semibold transition-all">
+              <i class="fas fa-save mr-1"></i> Save as Template 
             </button>
-            <button onclick="openLoadTemplateModal()" class="app-button px-4 py-2.5 bg-white/5 hover:bg-white/10 rounded-xl text-xs font-semibold flex items-center gap-2">
-              <i class="fas fa-folder-open"></i> Open Template
+            <button onclick="openLoadTemplateModal()" class="px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-semibold transition-all preserve-dark-color">
+              <i class="fas fa-folder-open mr-1"></i> Open Template
             </button>
           </div>
         </div>
 
       </div>
 
+      <!-- Preview Column -->
       <div class="lg:col-span-5 space-y-6">
-        <div class="glass rounded-3xl p-6 sm:p-8 sticky top-6 space-y-6">
-          <h3 class="text-lg font-bold flex items-center justify-between border-b border-white/10 pb-4">
-            <span>Live Summary</span>
-            <span class="text-xs font-normal text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20">Preview</span>
+        <div class="glass rounded-3xl p-6 sm:p-8 sticky top-6">
+          <h3 class="font-bold text-base mb-4 flex items-center gap-2 preserve-dark-color">
+            <i class="fas fa-eye text-emerald-400"></i> Live Distribution Preview
           </h3>
 
-          <div class="grid grid-cols-2 gap-4 text-center">
-            <div class="bg-white/5 p-4 rounded-2xl border border-white/5">
-              <div class="text-gray-400 text-xs mb-1">Total Assets</div>
-              <div id="summaryAssetCount" class="text-xl font-extrabold text-cyan-400">0</div>
-            </div>
-            <div class="bg-white/5 p-4 rounded-2xl border border-white/5">
-              <div class="text-gray-400 text-xs mb-1">Total Recipients</div>
-              <div id="summaryRecipientCount" class="text-xl font-extrabold text-emerald-400">0</div>
-            </div>
+          <div class="mb-6 bg-black/25 light:bg-slate-100 border border-white/10 light:border-black/10 rounded-2xl overflow-hidden p-4">
+            <div id="liveBreakdownPreview" class="preview-scroll space-y-3 text-xs"></div>
           </div>
 
-          <div>
-            <label class="block text-gray-400 text-xs font-semibold uppercase mb-3">Distribution Breakdown</label>
-            <div id="liveBreakdownPreview" class="bg-black/30 border border-white/10 rounded-2xl p-4 max-h-72 overflow-y-auto space-y-4 font-mono text-xs"></div>
+          <div id="validationBox" class="glass border border-white/10 light:border-black/10 p-4 rounded-2xl mb-6 space-y-2 text-xs text-gray-400 light:text-slate-600">
+            <div id="valTokens"><i class="fas fa-circle-xmark text-rose-400 mr-2"></i> Token Amount Required</div>
+            <div id="valRecipients"><i class="fas fa-circle-xmark text-rose-400 mr-2"></i> Recipients Required</div>
+            <div id="valTotal"><i class="fas fa-circle-xmark text-rose-400 mr-2"></i> Total shares = 100%</div>
           </div>
 
-          <button id="executeBatchBtn" onclick="prepareBatchExecution()" class="app-button w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:brightness-110 py-4 sm:py-5 rounded-2xl text-base sm:text-lg font-bold shadow-xl shadow-emerald-500/25 text-gray-950">
+          <button id="executeBatchBtn" onclick="prepareBatchExecution()" disabled class="app-button w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:brightness-110 py-4 rounded-2xl text-base font-bold text-gray-950 shadow-xl opacity-50 cursor-not-allowed transition-all">
             Execute AdHoc Split
           </button>
         </div>
@@ -241,20 +231,24 @@
 
     <!-- PENDING VIEW -->
     <div id="pendingViewContainer" class="hidden space-y-6 fade-in">
-      <div class="glass rounded-3xl p-6 sm:p-8 space-y-6">
-        <div class="flex justify-between items-center border-b border-white/10 pb-4">
-          <h3 class="text-xl font-bold text-amber-400 flex items-center gap-2"><i class="fas fa-hourglass-half"></i> Pending Batches</h3>
-          <p class="text-xs text-gray-400">Batches execute sequentially automatically.</p>
+      <div class="flex justify-between items-center mb-6 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-6 rounded-3xl">
+        <div>
+          <h3 class="font-bold text-lg flex items-center gap-2 preserve-dark-color">
+            <i class="fas fa-hourglass-half text-amber-400"></i> Pending Batches
+          </h3>
+          <p class="text-xs text-gray-400 preserve-dark-muted">Transactions execute sequentially automatically. Resume them if interrupted.</p>
         </div>
-        <div id="pendingContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
       </div>
+      <div id="pendingContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
     </div>
 
     <!-- HISTORY VIEW -->
     <div id="historyViewContainer" class="hidden space-y-6 fade-in">
       <div class="glass rounded-3xl p-6 sm:p-8 space-y-6">
-        <div class="flex justify-between items-center border-b border-white/10 pb-4">
-          <h3 class="text-xl font-bold">Batch Split History</h3>
+        <div class="flex justify-between items-center border-b border-white/10 light:border-black/10 pb-4">
+          <h3 class="font-bold text-lg flex items-center gap-2 preserve-dark-color">
+            <i class="fas fa-history text-emerald-400"></i> Batch Split History
+          </h3>
           <button onclick="clearHistory()" class="text-xs text-rose-400 hover:underline">Clear History</button>
         </div>
         <div id="historyTableContainer" class="overflow-x-auto"></div>
@@ -265,36 +259,36 @@
 
   <!-- MODALS -->
   <div id="confirmModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
-    <div class="glass rounded-3xl p-6 sm:p-8 max-w-lg w-full shadow-2xl space-y-6">
+    <div class="glass rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-white/15 shadow-2xl space-y-6">
       <div class="text-center">
-        <h2 class="text-2xl font-bold text-emerald-400 mb-1">Confirm Batch Generation</h2>
-        <p class="text-xs text-gray-400">The transactions will be processed precisely by amount in batches of 100.</p>
+        <h2 class="text-xl font-bold text-emerald-400 mb-1">Confirm Batch Generation</h2>
+        <p class="text-xs text-gray-400 light:text-slate-600">The transactions will be processed precisely by amount in batches of 100.</p>
       </div>
-      <div id="confirmAssetsSummary" class="bg-white/5 rounded-2xl p-4 space-y-2 max-h-48 overflow-y-auto font-mono text-xs"></div>
+      <div id="confirmAssetsSummary" class="bg-black/20 light:bg-slate-100 rounded-2xl p-4 space-y-2 max-h-48 overflow-y-auto font-mono text-xs border border-white/5 light:border-black/5"></div>
       <div class="flex gap-3 pt-2" id="confirmModalActions">
-        <button onclick="hideConfirmModal()" class="app-button flex-1 py-3.5 rounded-xl border border-white/15 text-sm font-semibold">Cancel</button>
-        <button onclick="generateBatches()" class="app-button flex-1 py-3.5 bg-emerald-500 text-gray-950 font-bold rounded-xl text-sm shadow-lg">Generate & Proceed</button>
+        <button onclick="hideConfirmModal()" class="app-button flex-1 py-3 rounded-xl border border-white/15 text-sm font-semibold">Cancel</button>
+        <button onclick="generateBatches()" class="app-button flex-1 py-3 bg-emerald-500 text-gray-950 font-bold rounded-xl text-sm shadow-lg">Generate & Proceed</button>
       </div>
     </div>
   </div>
 
   <div id="detailsModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
     <div class="glass rounded-3xl p-6 sm:p-8 max-w-2xl w-full border border-white/15 shadow-2xl space-y-6">
-      <div class="flex justify-between items-center border-b border-white/10 pb-4">
-        <h3 class="text-xl font-bold">Batch Split Details</h3>
+      <div class="flex justify-between items-center border-b border-white/10 light:border-black/10 pb-4">
+        <h3 class="text-xl font-bold preserve-dark-color">Batch Split Details</h3>
         <button onclick="hideDetailsModal()" class="text-gray-400 hover:text-white text-xl">×</button>
       </div>
-      <div id="detailsContent" class="space-y-4 max-h-96 overflow-y-auto font-mono text-xs"></div>
+      <div id="detailsContent" class="space-y-4 max-h-96 overflow-y-auto font-mono text-xs preserve-dark-color"></div>
       <div class="flex justify-end">
-        <button onclick="hideDetailsModal()" class="app-button px-6 py-3 bg-white/10 rounded-xl font-semibold text-xs">Close</button>
+        <button onclick="hideDetailsModal()" class="app-button px-6 py-3 bg-white/10 border border-white/10 rounded-xl font-semibold text-xs">Close</button>
       </div>
     </div>
   </div>
 
   <div id="templateModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
     <div class="glass rounded-3xl p-6 sm:p-8 max-w-md w-full border border-white/15 shadow-2xl space-y-4">
-      <h3 class="text-lg font-bold">Save Template</h3>
-      <input type="text" id="templateNameInput" placeholder="e.g. Monthly Payroll" class="w-full rounded-xl p-3 text-sm outline-none">
+      <h3 class="text-lg font-bold preserve-dark-color">Save Template</h3>
+      <input type="text" id="templateNameInput" placeholder="e.g. Monthly Payroll" class="w-full bg-black/20 light:bg-slate-100 rounded-xl p-3 text-sm outline-none">
       <div class="flex gap-3 pt-2">
         <button onclick="hideTemplateModal()" class="app-button flex-1 py-3 rounded-xl border border-white/15 text-xs font-semibold">Cancel</button>
         <button onclick="saveTemplateAction()" class="app-button flex-1 py-3 bg-emerald-500 text-gray-950 font-bold rounded-xl text-xs">Save</button>
@@ -304,19 +298,19 @@
 
   <div id="loadTemplateModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
     <div class="glass rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-white/15 shadow-2xl space-y-4">
-      <h3 class="text-lg font-bold">Open Saved Template</h3>
+      <h3 class="text-lg font-bold preserve-dark-color">Open Saved Template</h3>
       <div id="templateListContainer" class="space-y-2 max-h-64 overflow-y-auto font-mono text-xs"></div>
       <div class="flex justify-end pt-2">
-        <button onclick="hideLoadTemplateModal()" class="app-button px-6 py-3 bg-white/10 rounded-xl font-semibold text-xs">Close</button>
+        <button onclick="hideLoadTemplateModal()" class="app-button px-6 py-3 bg-white/10 border border-white/10 rounded-xl font-semibold text-xs">Close</button>
       </div>
     </div>
   </div>
 
   <div id="csvModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
     <div class="glass rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-white/15 shadow-2xl space-y-4">
-      <h3 class="text-lg font-bold">Import Recipients (CSV / Text)</h3>
-      <p class="text-xs text-gray-400">Format per line: <code class="text-emerald-400">wallet, percentage</code> (e.g. 0x12..., 40)</p>
-      <textarea id="csvTextArea" rows="6" class="w-full bg-black/30 rounded-2xl p-4 font-mono text-xs outline-none" placeholder="0x123..., 40&#10;0x456..., 60"></textarea>
+      <h3 class="text-lg font-bold preserve-dark-color">Import Recipients (CSV)</h3>
+      <p class="text-xs text-gray-400 light:text-slate-600">Format per line: <code class="text-emerald-400">wallet, percentage</code> (e.g. 0x12..., 40)</p>
+      <textarea id="csvTextArea" rows="6" class="w-full bg-black/30 light:bg-slate-100 rounded-2xl p-4 font-mono text-xs outline-none" placeholder="0x123..., 40&#10;0x456..., 60"></textarea>
       <div class="flex gap-3 pt-2">
         <button onclick="hideCsvModal()" class="app-button flex-1 py-3 rounded-xl border border-white/15 text-xs font-semibold">Cancel</button>
         <button onclick="processCsvImport()" class="app-button flex-1 py-3 bg-emerald-500 text-gray-950 font-bold rounded-xl text-xs">Import</button>
@@ -333,7 +327,6 @@ const CONTRACT_ADDRESS = "0xf2073671b726b96DC1c99D001BBF6e60EE1f187F";
 const NATIVE_TOKEN = "0x3600000000000000000000000000000000000000";
 const BATCH_SIZE = 100;
 
-// FIXED: Native EVM tokens MUST always use 18 decimals regardless of the name on the network.
 const AVAILABLE_TOKENS = [
   { address: NATIVE_TOKEN, symbol: "Native USDC", decimals: 18 },
   { address: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a", symbol: "EURC", decimals: 6 },
@@ -369,9 +362,9 @@ function toggleTheme() {
   const icon = document.getElementById("themeBtn").querySelector("i");
   if (isLight) {
     icon.classList.remove("fa-moon", "text-emerald-400");
-    icon.classList.add("fa-sun", "text-amber-400");
+    icon.classList.add("fa-sun", "text-amber-500");
   } else {
-    icon.classList.remove("fa-sun", "text-amber-400");
+    icon.classList.remove("fa-sun", "text-amber-500");
     icon.classList.add("fa-moon", "text-emerald-400");
   }
 }
@@ -385,8 +378,8 @@ function switchView(view) {
   const hBtn = document.getElementById("navHistoryBtn");
   const pBtn = document.getElementById("navPendingBtn");
 
-  const activeClass = "px-4 py-2.5 rounded-xl bg-emerald-500 text-gray-950 font-bold transition-all shadow-lg shadow-emerald-500/20";
-  const inactiveClass = "px-4 py-2.5 rounded-xl font-bold transition-all text-gray-400 hover:text-white light:hover:text-black";
+  const activeClass = "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400 preserve-dark-color shadow-lg shadow-emerald-500/20";
+  const inactiveClass = "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted";
 
   splitter.classList.add("hidden");
   history.classList.add("hidden");
@@ -410,7 +403,10 @@ function switchView(view) {
   }
 }
 
-function handleWalletClick() { if (!userAddress) showConnectModal(); }
+function handleWalletClick() { 
+  if (!userAddress) showConnectModal(); 
+  else disconnectWallet(new Event('click'));
+}
 
 function showConnectModal() {
   if (window.ethereum) {
@@ -430,7 +426,7 @@ function showConnectModal() {
 }
 
 function disconnectWallet(event) {
-  event.stopPropagation();
+  if(event) event.stopPropagation();
   userAddress = null; signer = null;
   localStorage.removeItem("arcWalletConnected");
   updateConnectButton();
@@ -440,17 +436,12 @@ function disconnectWallet(event) {
 
 function updateConnectButton() {
   const btn = document.getElementById("connectBtn");
-  const disconnectBtn = document.getElementById("disconnectBtn");
-  const span = document.getElementById("connectText");
   
   if (userAddress) {
-    span.textContent = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
-    btn.classList.add("pr-16");
-    disconnectBtn.classList.remove("hidden");
+    const shortAddr = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
+    btn.innerHTML = `<i class="fas fa-wallet text-emerald-500"></i> <span class="font-bold">${shortAddr}</span> <i class="fas fa-power-off text-rose-400 ml-1 text-[10px]" title="Disconnect"></i>`;
   } else {
-    span.textContent = "Connect Wallet";
-    btn.classList.remove("pr-16");
-    disconnectBtn.classList.add("hidden");
+    btn.innerHTML = `<i class="fas fa-wallet text-emerald-500"></i> <span id="connectText">Connect Wallet</span>`;
   }
 }
 
@@ -491,16 +482,16 @@ async function fetchAndRenderBalancesWithRetry(maxRetries = 3) {
           formattedBal = ethers.formatUnits(bal, token.decimals);
         }
         balancesHtml += `
-          <div class="bg-white/5 p-3 rounded-xl border border-white/5 flex items-center justify-between font-mono">
-            <span class="font-bold text-emerald-400">${token.symbol}</span>
-            <span class="text-white text-xs">${parseFloat(formattedBal).toFixed(4)}</span>
+          <div class="bg-black/20 light:bg-slate-100 px-3 py-1.5 rounded-xl border border-white/5 light:border-black/5 flex items-center justify-between font-mono shrink-0 gap-3">
+            <span class="font-bold text-emerald-400 text-[10px]">${token.symbol}</span>
+            <span class="text-white preserve-dark-color text-[11px]">${parseFloat(formattedBal).toFixed(4)}</span>
           </div>
         `;
       }
       container.innerHTML = balancesHtml;
       success = true;
     } catch (e) {
-      if (attempt >= maxRetries) container.innerHTML = `<div class="col-span-3 text-rose-400 text-center text-xs">Failed to load balances. Click Refresh.</div>`;
+      if (attempt >= maxRetries) container.innerHTML = `<div class="text-rose-400 text-xs">Failed to load balances.</div>`;
       else await new Promise(res => setTimeout(res, 1500));
     }
   }
@@ -513,12 +504,14 @@ function renderTokens() {
   container.innerHTML = tokenRows.map((row, idx) => {
     const availableOptions = AVAILABLE_TOKENS.filter(t => t.address === row.token || !selectedTokens.includes(t.address));
     return `
-      <div class="flex items-center gap-3 bg-white/5 p-3.5 rounded-2xl border border-white/5 fade-in">
-        <select onchange="updateTokenRowToken(${idx}, this.value)" class="flex-1 rounded-xl px-4 py-3 text-xs sm:text-sm font-medium outline-none">
+      <div class="flex flex-col sm:flex-row items-center gap-3 bg-white/[0.02] light:bg-slate-50 p-3.5 rounded-2xl border border-white/5 light:border-black/5 fade-in">
+        <select onchange="updateTokenRowToken(${idx}, this.value)" class="w-full sm:flex-1 bg-black/20 light:bg-slate-100 rounded-xl px-4 py-3 text-xs sm:text-sm font-semibold outline-none cursor-pointer">
           ${availableOptions.map(t => `<option value="${t.address}" ${t.address === row.token ? 'selected' : ''}>${t.symbol}</option>`).join('')}
         </select>
-        <input type="number" value="${row.amount}" oninput="updateTokenRowAmount(${idx}, this.value)" placeholder="Amount" class="w-32 sm:w-40 rounded-xl px-4 py-3 text-xs sm:text-sm font-bold outline-none">
-        <button onclick="removeTokenRow(${idx})" class="w-10 h-10 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 flex items-center justify-center transition-all"><i class="fas fa-trash text-xs"></i></button>
+        <div class="w-full sm:w-auto flex gap-3">
+          <input type="number" value="${row.amount}" oninput="updateTokenRowAmount(${idx}, this.value)" placeholder="Amount" class="w-full sm:w-40 bg-black/20 light:bg-slate-100 rounded-xl px-4 py-3 text-xs sm:text-sm font-bold outline-none text-center">
+          <button onclick="removeTokenRow(${idx})" class="w-11 h-11 shrink-0 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 flex items-center justify-center transition-all"><i class="fas fa-trash-can text-xs"></i></button>
+        </div>
       </div>
     `;
   }).join('');
@@ -543,14 +536,17 @@ function removeTokenRow(idx) {
 function renderRecipients() {
   const container = document.getElementById("recipientsContainer");
   container.innerHTML = recipientRows.map((row, idx) => `
-    <div class="flex items-center gap-3 bg-white/5 p-3.5 rounded-2xl border border-white/5 fade-in">
-      <input type="text" value="${row.wallet}" oninput="updateRecipientWallet(${idx}, this.value)" placeholder="Wallet Address (0x...)" class="flex-1 rounded-xl px-4 py-3 font-mono text-xs outline-none">
-      <input type="number" value="${row.percentage}" oninput="updateRecipientPercentage(${idx}, this.value)" placeholder="Percentage %" class="w-24 sm:w-28 rounded-xl px-4 py-3 text-xs sm:text-sm font-bold outline-none">
-      <span class="text-xs text-gray-400 font-bold">%</span>
-      <button onclick="removeRecipientRow(${idx})" class="w-10 h-10 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 flex items-center justify-center transition-all"><i class="fas fa-trash text-xs"></i></button>
+    <div class="flex flex-col sm:flex-row items-center gap-3 bg-white/[0.02] light:bg-slate-50 p-3.5 rounded-2xl border border-white/5 light:border-black/5 fade-in">
+      <input type="text" value="${row.wallet}" oninput="updateRecipientWallet(${idx}, this.value)" placeholder="Wallet Address (0x...)" class="w-full sm:flex-1 bg-black/20 light:bg-slate-100 rounded-xl px-4 py-3 font-mono text-xs outline-none">
+      <div class="w-full sm:w-auto flex gap-3">
+        <div class="relative w-full sm:w-28">
+           <input type="number" value="${row.percentage}" oninput="updateRecipientPercentage(${idx}, this.value)" placeholder="%" class="w-full bg-black/20 light:bg-slate-100 rounded-xl px-4 py-3 text-xs sm:text-sm font-bold outline-none text-center">
+           <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">%</span>
+        </div>
+        <button onclick="removeRecipientRow(${idx})" class="w-11 h-11 shrink-0 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 flex items-center justify-center transition-all"><i class="fas fa-trash-can text-xs"></i></button>
+      </div>
     </div>
   `).join('');
-  validateTotalPercentage();
   renderLiveSummary();
 }
 
@@ -560,7 +556,7 @@ function addRecipientRow() {
 }
 
 function updateRecipientWallet(idx, val) { recipientRows[idx].wallet = val.trim(); renderLiveSummary(); }
-function updateRecipientPercentage(idx, val) { recipientRows[idx].percentage = val; validateTotalPercentage(); renderLiveSummary(); }
+function updateRecipientPercentage(idx, val) { recipientRows[idx].percentage = val; renderLiveSummary(); }
 function removeRecipientRow(idx) {
   if (recipientRows.length <= 1) return showToast("At least one recipient is required");
   recipientRows.splice(idx, 1); renderRecipients();
@@ -574,42 +570,60 @@ function distributeRemaining() {
   renderRecipients(); showToast("Remaining balance assigned to the last recipient");
 }
 
-function validateTotalPercentage() {
-  const total = recipientRows.reduce((sum, r) => sum + (parseFloat(r.percentage) || 0), 0);
-  const badge = document.getElementById("totalPercentageBadge");
-  const bps = Math.round(total * 100);
-  if (bps === 10000) {
-    badge.className = "px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
-    badge.textContent = "100% (Valid)";
-  } else {
-    badge.className = "px-3 py-1 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30";
-    badge.textContent = `${total}% - Must be 100%`;
-  }
-}
-
 function renderLiveSummary() {
-  document.getElementById("summaryAssetCount").textContent = tokenRows.length;
-  document.getElementById("summaryRecipientCount").textContent = recipientRows.filter(r => r.wallet.length > 5).length;
-
   const preview = document.getElementById("liveBreakdownPreview");
   let html = "";
+  let hasValidTokenAmount = false;
+
   tokenRows.forEach(tItem => {
     const tokenObj = AVAILABLE_TOKENS.find(t => t.address === tItem.token) || { symbol: "TOKEN" };
     const amt = parseFloat(tItem.amount) || 0;
-    html += `
-      <div class="border-b border-white/10 pb-3 mb-3">
-        <div class="font-bold text-cyan-400 mb-1">${amt} ${tokenObj.symbol}</div>
-        <div class="space-y-1 pl-2">
-    `;
-    recipientRows.forEach(rItem => {
-      const p = parseFloat(rItem.percentage) || 0;
-      const share = (amt * p) / 100;
-      const shortWallet = rItem.wallet ? rItem.wallet.slice(0,6) + "..." + rItem.wallet.slice(-4) : "0x...";
-      if(rItem.wallet) html += `<div class="flex justify-between text-gray-300"><span>${shortWallet} (${p}%)</span> <span class="text-white font-bold">${share.toFixed(4)}</span></div>`;
-    });
-    html += '</div></div>';
+    if (amt > 0) hasValidTokenAmount = true;
+
+    if(amt > 0 || recipientRows.length > 0) {
+      html += `
+        <div class="bg-white/[0.02] light:bg-slate-50 border border-white/5 light:border-black/5 p-3 rounded-xl space-y-1 mb-3">
+          <div class="flex justify-between font-bold mb-2 text-sm">
+            <span class="preserve-dark-color">${tokenObj.symbol}</span>
+            <span class="text-emerald-400">${amt} Total</span>
+          </div>
+          <div class="space-y-1">
+      `;
+      recipientRows.forEach(rItem => {
+        const p = parseFloat(rItem.percentage) || 0;
+        const share = (amt * p) / 100;
+        const shortWallet = rItem.wallet ? rItem.wallet.slice(0,6) + "..." + rItem.wallet.slice(-4) : "0x...";
+        if(rItem.wallet) {
+          html += `<div class="flex justify-between text-[11px] text-gray-400 light:text-slate-600 font-mono"><span>↳ ${shortWallet} (${p}%)</span> <span>${share.toFixed(4)}</span></div>`;
+        }
+      });
+      html += '</div></div>';
+    }
   });
-  preview.innerHTML = html || '<p class="text-gray-400 text-center py-4">Add tokens and recipients to see breakdown.</p>';
+
+  preview.innerHTML = html || '<p class="text-gray-400 light:text-slate-500 text-center py-4">Add tokens and recipients to see breakdown.</p>';
+  
+  // Validation Logic Update (mimicking ArcRoleSplitter UI)
+  const totalBps = Math.round(recipientRows.reduce((sum, r) => sum + (parseFloat(r.percentage) || 0), 0) * 100);
+  const is100 = totalBps === 10000;
+  const hasValidRecipients = recipientRows.length > 0 && recipientRows.some(r => r.wallet.length > 5);
+
+  document.getElementById("valTokens").innerHTML = hasValidTokenAmount ? `<i class="fas fa-circle-check text-emerald-400 mr-2"></i> Valid Token Amount` : `<i class="fas fa-circle-xmark text-rose-400 mr-2"></i> Token Amount Required`;
+  document.getElementById("valRecipients").innerHTML = hasValidRecipients ? `<i class="fas fa-circle-check text-emerald-400 mr-2"></i> Valid Recipients Setup` : `<i class="fas fa-circle-xmark text-rose-400 mr-2"></i> Recipients Required`;
+  document.getElementById("valTotal").innerHTML = is100 ? `<i class="fas fa-circle-check text-emerald-400 mr-2"></i> Total shares = 100%` : `<i class="fas fa-circle-xmark text-rose-400 mr-2"></i> Total shares = ${(totalBps/100).toFixed(2)}%`;
+
+  const badge = document.getElementById("totalPercentageBadge");
+  badge.textContent = `Total: ${(totalBps/100).toFixed(2)}%`;
+  badge.style.color = is100 ? '#10b981' : '#ef4444';
+
+  const execBtn = document.getElementById("executeBatchBtn");
+  if (hasValidTokenAmount && hasValidRecipients && is100) {
+      execBtn.disabled = false;
+      execBtn.classList.remove("opacity-50", "cursor-not-allowed");
+  } else {
+      execBtn.disabled = true;
+      execBtn.classList.add("opacity-50", "cursor-not-allowed");
+  }
 }
 
 function importCSVModal() { document.getElementById("csvModal").classList.remove("hidden"); }
@@ -645,11 +659,11 @@ function saveTemplateAction() {
 function openLoadTemplateModal() {
   const templates = JSON.parse(localStorage.getItem("arcSplitTemplates") || "[]");
   const container = document.getElementById("templateListContainer");
-  if (templates.length === 0) container.innerHTML = '<p class="text-gray-400 text-center py-4">No saved templates found.</p>';
+  if (templates.length === 0) container.innerHTML = '<p class="text-gray-400 light:text-slate-500 text-center py-4">No saved templates found.</p>';
   else {
     container.innerHTML = templates.map((t, idx) => `
-      <div class="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10">
-        <div><div class="font-bold text-sm">${t.name}</div><div class="text-[10px] text-gray-400">${t.tokens.length} Tokens | ${t.recipients.length} Recipients</div></div>
+      <div class="flex items-center justify-between p-3 bg-black/20 light:bg-slate-100 rounded-xl border border-white/5 light:border-black/5">
+        <div><div class="font-bold text-sm preserve-dark-color">${t.name}</div><div class="text-[10px] text-gray-400 light:text-slate-500">${t.tokens.length} Tokens | ${t.recipients.length} Recipients</div></div>
         <button onclick="loadTemplate(${idx})" class="px-3 py-1.5 bg-emerald-500 text-gray-950 font-bold rounded-xl text-xs">Load</button>
       </div>
     `).join('');
@@ -676,7 +690,7 @@ function prepareBatchExecution() {
   const summary = document.getElementById("confirmAssetsSummary");
   summary.innerHTML = tokenRows.map(t => {
     const symbol = AVAILABLE_TOKENS.find(x => x.address === t.token)?.symbol || "TOKEN";
-    return `<div class="flex justify-between"><span>${symbol}</span> <span class="font-bold text-white">${t.amount}</span></div>`;
+    return `<div class="flex justify-between text-gray-400 light:text-slate-600"><span>${symbol}</span> <span class="font-bold preserve-dark-color">${t.amount}</span></div>`;
   }).join('');
 
   document.getElementById("confirmModal").classList.remove("hidden");
@@ -765,7 +779,7 @@ function renderPendingBatches() {
   }
 
   if (batches.length === 0) {
-    if(container) container.innerHTML = `<p class="text-gray-400 text-center py-6 text-xs col-span-2">No pending transactions.</p>`;
+    if(container) container.innerHTML = `<p class="text-gray-400 light:text-slate-500 text-center py-6 text-xs col-span-2">No pending transactions.</p>`;
     return;
   }
 
@@ -777,19 +791,19 @@ function renderPendingBatches() {
         <div class="flex justify-between items-start mb-4 gap-2">
           <div>
             <h3 class="font-bold text-amber-400 text-sm">Amount: ${b.rawAmount} ${b.tokenSymbol}</h3>
-            <span class="text-[10px] text-gray-400">${b.date} - ${b.memo}</span>
+            <span class="text-[10px] text-gray-400 preserve-dark-muted">${b.date} - ${b.memo}</span>
           </div>
-          <button onclick="discardBatch(${b.id})" class="text-xs text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 px-2 py-1 rounded-lg">Discard</button>
+          <button onclick="discardBatch(${b.id})" class="text-xs text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 px-3 py-1.5 rounded-lg font-semibold transition-all">Discard</button>
         </div>
         <div>
-          <div class="w-full bg-black/30 rounded-full h-2.5 mb-2 border border-white/5">
+          <div class="w-full bg-black/30 light:bg-slate-200 rounded-full h-2.5 mb-2 border border-white/5 light:border-black/5">
             <div class="bg-gradient-to-r from-amber-400 to-emerald-400 h-full rounded-full transition-all" style="width: ${pct}%"></div>
           </div>
-          <div class="flex justify-between text-[11px] text-gray-400 mb-5">
+          <div class="flex justify-between text-[11px] text-gray-400 light:text-slate-500 mb-5 font-medium">
             <span>Done: ${b.currentIndex} / ${b.chunks.length}</span>
             <span>Rem. Wallets: ${Math.max(0, b.totalWallets - (b.currentIndex * BATCH_SIZE))}</span>
           </div>
-          <button onclick="resumeBatchTx(${b.id})" id="resume_btn_${b.id}" class="app-button w-full px-6 py-3 bg-amber-500 hover:bg-amber-600 text-black font-bold rounded-xl text-xs flex items-center justify-center gap-2">
+          <button onclick="resumeBatchTx(${b.id})" id="resume_btn_${b.id}" class="app-button w-full px-6 py-3 bg-amber-500 hover:bg-amber-600 text-black font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-500/20 transition-all">
             <i class="fas fa-play"></i> ${b.currentIndex === 0 ? 'Start Execution' : 'Resume Batch'}
           </button>
         </div>
@@ -912,13 +926,13 @@ async function resumeBatchTx(batchId) {
 
 async function saveToHistory(record) {
   // ذخیره در فضای ابری Supabase
-  if (userAddress) {
+  if (userAddress && typeof saveHistoryToCloud === 'function') {
     await saveHistoryToCloud(userAddress, record);
   }
   // پشتیبان‌گیری محلی اختیاری
-  const history = JSON.parse(localStorage.getItem("arcSplitHistory") || "[]");
+  const history = JSON.parse(localStorage.getItem("arcSplitHistoryMain") || "[]");
   history.unshift(record);
-  localStorage.setItem("arcSplitHistory", JSON.stringify(history));
+  localStorage.setItem("arcSplitHistoryMain", JSON.stringify(history));
 }
 
 async function renderHistoryTable() {
@@ -931,40 +945,40 @@ async function renderHistoryTable() {
   
   // اگر داده‌ای در ابر نبود یا ولت متصل نبود، به عنوان فال‌بک از localStorage بخوان
   if (!history || history.length === 0) {
-    history = JSON.parse(localStorage.getItem("arcSplitHistory") || "[]");
+    history = JSON.parse(localStorage.getItem("arcSplitHistoryMain") || "[]");
   }
 
   const container = document.getElementById("historyTableContainer");
 
   if (history.length === 0) {
-    container.innerHTML = '<div class="text-center py-12 text-gray-400">No batch splits recorded yet.</div>';
+    container.innerHTML = '<div class="text-center py-12 text-gray-400 light:text-slate-500">No batch splits recorded yet.</div>';
     return;
   }
 
   container.innerHTML = `
-    <table class="w-full text-left text-xs font-mono">
-      <thead class="bg-white/5 text-gray-400 uppercase">
-        <tr>
-          <th class="p-3 rounded-l-xl">Date / Memo</th>
-          <th class="p-3">Recipients</th>
-          <th class="p-3">Assets</th>
-          <th class="p-3">Status</th>
-          <th class="p-3 rounded-r-xl text-right">Actions</th>
+    <table class="w-full text-left border-collapse">
+      <thead>
+        <tr class="border-b border-white/10 light:border-black/10 text-gray-400 light:text-slate-500 text-xs uppercase tracking-wider">
+          <th class="p-3 font-semibold">Date / Memo</th>
+          <th class="p-3 font-semibold">Recipients</th>
+          <th class="p-3 font-semibold">Assets</th>
+          <th class="p-3 font-semibold">Status</th>
+          <th class="text-right p-3 font-semibold">Actions</th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-white/5">
+      <tbody class="text-xs divide-y divide-white/5 light:divide-black/5">
         ${history.map((h, idx) => `
-          <tr class="hover:bg-white/[0.02]">
+          <tr class="hover:bg-white/[0.02] light:hover:bg-black/[0.02] transition-colors">
             <td class="p-3">
-              <div class="font-bold text-white">${h.memo || 'Batch Split'}</div>
-              <div class="text-[10px] text-gray-400">${h.date || 'Recent'}</div>
+              <div class="font-bold text-white preserve-dark-color">${h.memo || 'Batch Split'}</div>
+              <div class="text-[10px] text-gray-400 light:text-slate-500">${h.date || 'Recent'}</div>
             </td>
-            <td class="p-3">${h.recipients ? h.recipients.length : (h.recipientsCount || 0)} Recipients</td>
-            <td class="p-3">${h.tokens ? h.tokens.length : (h.assetsCount || 0)} Tokens</td>
-            <td class="p-3"><span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">Completed</span></td>
+            <td class="p-3 font-mono text-gray-400 light:text-slate-600">${h.recipients ? h.recipients.length : (h.recipientsCount || 0)} Recipients</td>
+            <td class="p-3 font-mono text-gray-400 light:text-slate-600">${h.tokens ? h.tokens.length : (h.assetsCount || 0)} Tokens</td>
+            <td class="p-3"><span class="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-semibold">Completed</span></td>
             <td class="p-3 text-right space-x-2">
-              <button onclick="viewDetails(${idx})" class="px-2.5 py-1 bg-white/5 hover:bg-white/10 rounded-lg text-sky-400">Details</button>
-              <button onclick="duplicateBatch(${idx})" class="px-2.5 py-1 bg-violet-500/20 hover:bg-violet-500/30 text-violet-400 rounded-lg">Duplicate</button>
+              <button onclick="viewDetails(${idx})" class="px-2.5 py-1 bg-white/5 light:bg-black/5 hover:bg-white/10 light:hover:bg-black/10 rounded-lg text-sky-400 transition-all font-medium">Details</button>
+              <button onclick="duplicateBatch(${idx})" class="px-2.5 py-1 bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 rounded-lg transition-all font-medium">Duplicate</button>
             </td>
           </tr>
         `).join('')}
@@ -979,7 +993,7 @@ function viewDetails(idx) {
   
   let txLinks = "";
   if (h.txHashes && h.txHashes.length > 0) {
-    txLinks = `<div class="font-bold text-white mt-3 mb-2">Transactions (ArcScan):</div>`;
+    txLinks = `<div class="font-bold preserve-dark-color mt-3 mb-2">Transactions (ArcScan):</div>`;
     txLinks += h.txHashes.map((tx, i) => 
       `<div class="mb-1"><a href="https://testnet.arcscan.app/tx/${tx}" target="_blank" class="text-emerald-400 hover:underline flex items-center gap-1.5"><i class="fas fa-external-link-alt text-[10px]"></i> Chunk ${i+1}: ${tx.slice(0,10)}...${tx.slice(-8)}</a></div>`
     ).join('');
@@ -987,14 +1001,14 @@ function viewDetails(idx) {
 
   document.getElementById("detailsContent").innerHTML = `
     <div class="font-bold text-sm text-cyan-400 mb-2">${h.memo}</div>
-    <div class="font-bold text-white mb-1">Tokens Processed:</div>
-    ${h.tokens.map(t => '<div class="text-gray-300">' + t.amount + ' Token</div>').join('')}
+    <div class="font-bold preserve-dark-color mb-1">Tokens Processed:</div>
+    ${h.tokens.map(t => '<div class="text-gray-400 light:text-slate-600">' + t.amount + ' Token</div>').join('')}
     
     ${txLinks}
 
-    <div class="font-bold text-white mt-4 mb-1">Recipients:</div>
+    <div class="font-bold preserve-dark-color mt-4 mb-1">Recipients:</div>
     <div class="space-y-1">
-      ${h.recipients.map(r => '<div class="text-gray-300">' + r.wallet + ' <span class="text-gray-500">(' + r.percentage + '%)</span></div>').join('')}
+      ${h.recipients.map(r => '<div class="text-gray-400 light:text-slate-600 font-mono">' + r.wallet + ' <span class="text-gray-500 light:text-slate-400">(' + r.percentage + '%)</span></div>').join('')}
     </div>
   `;
   document.getElementById("detailsModal").classList.remove("hidden");
@@ -1018,7 +1032,7 @@ function clearHistory() {
 window.addEventListener('load', async () => {
   if (localStorage.getItem('theme') === 'light') {
     document.documentElement.classList.add('light');
-    document.getElementById("themeBtn").querySelector("i").className = "fas fa-sun text-amber-400";
+    document.getElementById("themeBtn").querySelector("i").className = "fas fa-sun text-amber-500";
   }
   renderTokens(); renderRecipients(); renderPendingBatches();
   await autoConnectWallet();
