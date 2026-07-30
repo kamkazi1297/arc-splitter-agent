@@ -49,8 +49,26 @@
     .light .glass {
       background: rgba(255, 255, 255, 0.90);
       border-color: rgba(0, 0, 0, 0.15);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 1);
+      /* Changed from white inset shadow to dark inset shadow for light mode */
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(0, 0, 0, 0.05);
     }
+
+    /* Convert standard white borders to dark borders in light mode */
+    .light .border-white\/5,
+    .light .border-white\/10,
+    .light .border-white\/15,
+    .light .border-white\/20,
+    .light .border-white\/30 {
+        border-color: rgba(0, 0, 0, 0.15) !important;
+    }
+    .light .divide-white\/5 > :not([hidden]) ~ :not([hidden]) {
+        border-color: rgba(0, 0, 0, 0.15) !important;
+    }
+
+    /* Force specific elements to keep their dark mode colors even in light mode */
+    .light .keep-dark-white { color: #f8fafc !important; }
+    .light .keep-dark-gray { color: #9ca3af !important; }
+    .light .keep-dark-emerald { color: #34d399 !important; }
 
     /* Override colors in light mode to force pure black or darkest slate */
     .light .preserve-dark-color { color: #000000 !important; }
@@ -110,15 +128,15 @@
     <!-- HEADER -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
       <div>
-        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight preserve-dark-color">Multi Token <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Batch Split</span></h1>
-        <p class="text-xs sm:text-sm font-medium preserve-dark-muted">Professional Decentralized multi-Token Splitter</p>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight keep-dark-white">Multi Token <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Batch Split</span></h1>
+        <p class="text-xs sm:text-sm font-medium keep-dark-gray">Professional Decentralized multi-Token Splitter</p>
       </div>
       
       <div class="flex items-center gap-3 flex-wrap">
         <div class="flex bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 rounded-2xl p-1 text-xs relative">
-          <button onclick="switchView('splitter')" id="navSplitterBtn" class="px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400 preserve-dark-color shadow-lg shadow-emerald-500/20">Batch Split</button>
-          <button onclick="switchView('history')" id="navHistoryBtn" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted">History</button>
-          <button onclick="switchView('pending')" id="navPendingBtn" class="relative px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted">
+          <button onclick="switchView('splitter')" id="navSplitterBtn" class="px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400 keep-dark-emerald shadow-lg shadow-emerald-500/20">Batch Split</button>
+          <button onclick="switchView('history')" id="navHistoryBtn" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 keep-dark-gray">History</button>
+          <button onclick="switchView('pending')" id="navPendingBtn" class="relative px-4 py-2 rounded-xl font-bold transition-all text-gray-400 keep-dark-gray">
             Pending
             <span id="pendingBadge" class="hidden absolute top-1 right-1 flex h-2.5 w-2.5">
               <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
@@ -392,8 +410,8 @@ function switchView(view) {
   const hBtn = document.getElementById("navHistoryBtn");
   const pBtn = document.getElementById("navPendingBtn");
 
-  const activeClass = "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400 preserve-dark-color shadow-lg shadow-emerald-500/20";
-  const inactiveClass = "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted";
+  const activeClass = "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400 keep-dark-emerald shadow-lg shadow-emerald-500/20";
+  const inactiveClass = "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 keep-dark-gray";
 
   splitter.classList.add("hidden");
   history.classList.add("hidden");
