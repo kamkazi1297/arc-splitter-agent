@@ -503,15 +503,16 @@
       document.getElementById("contractStatusText").textContent = "Connected to Arc Network";
       showToast("Wallet Connected Successfully via Web3!");
       
+      historyList = await fetchHistoryFromCloud(userAddress);
+      if(!document.getElementById('viewHistory').classList.contains('hidden')) {
+          renderHistory();
+      }
+      
       setupWalletListeners();
       updateWalletBalance();
       renderPendingBatches();
     } catch (err) {
       console.error(err);
-      historyList = await fetchHistoryFromCloud(userAddress);
-      if(!document.getElementById('viewHistory').classList.contains('hidden')) {
-          renderHistory();
-      }
       showToast("Wallet connection rejected or failed.");
     }
   }
@@ -1081,9 +1082,9 @@
       allocations: historyAllocations
     };
 
-    let pendingBatches = await getFromCloud('arcPendingBatches') || [];
+    let pendingBatches = JSON.parse(localStorage.getItem('arcPendingBatches') || '[]');
     pendingBatches.push(batchData);
-    await saveToCloud('arcPendingBatches', pendingBatches);
+    localStorage.setItem('arcPendingBatches', JSON.stringify(pendingBatches));
 
     renderPendingBatches();
     switchTab('pending');
@@ -1091,7 +1092,7 @@
   }
 
   async function renderPendingBatches() {
-    let batches = await getFromCloud('arcPendingBatches') || [];
+    let batches = JSON.parse(localStorage.getItem('arcPendingBatches') || '[]');
     const container = document.getElementById("pendingContainer");
     const badge = document.getElementById("pendingBadge");
     
@@ -1139,15 +1140,15 @@
   }
 
   async function discardBatch(id) {
-    let batches = await getFromCloud('arcPendingBatches') || [];
+    let batches = JSON.parse(localStorage.getItem('arcPendingBatches') || '[]');
     batches = batches.filter(b => b.id !== id);
-    await saveToCloud('arcPendingBatches', batches);
+    localStorage.setItem('arcPendingBatches', JSON.stringify(batches));
     await renderPendingBatches();
     showToast("Batch discarded.");
   }
 
   async function resumeBatchTx(batchId) {
-    let batches = await getFromCloud('arcPendingBatches') || [];
+    let batches = JSON.parse(localStorage.getItem('arcPendingBatches') || '[]');
     let bIndex = batches.findIndex(x => x.id === batchId);
     if (bIndex === -1) return;
     let data = batches[bIndex];
@@ -1191,7 +1192,6 @@
             const txApprove = await erc20.approve(CONTRACT_ADDRESS, ethers.MaxUint256);
             await txApprove.wait();
             
-            
             await new Promise(resolve => setTimeout(resolve, 3000));
         }
       }
@@ -1224,11 +1224,9 @@
         data.currentIndex++;
         
         batches[bIndex] = data;
-        await saveToCloud('arcPendingBatches', batches); 
+        localStorage.setItem('arcPendingBatches', JSON.stringify(batches)); 
         await renderPendingBatches();
     
-    
-
         if (data.currentIndex >= data.chunks.length) {
           const newHistoryRecord = {
             amount: data.rawAmount,
@@ -1238,19 +1236,18 @@
             hash: receipt.hash,
             status: "Success",
             allocations: data.allocations,
-            memo: `Role split of ${data.rawAmount} ${data.tokenSymbol}` // برای ستون memo در دیتابیس شما
+            memo: `Role split of ${data.rawAmount} ${data.tokenSymbol}` 
           };
           
           historyList.unshift(newHistoryRecord);
-          // فراخوانی مستقیم تابع db.js شما
           await saveHistoryToCloud(userAddress, newHistoryRecord);
         }
+      }
 
       showToast("✅ All Batch Transactions Completed Successfully!", 6000);
       
       batches.splice(bIndex, 1);
-      await saveToCloud('arcPendingBatches', batches);
-
+      localStorage.setItem('arcPendingBatches', JSON.stringify(batches));
       
       renderPendingBatches();
       if(batches.length === 0) switchTab('history');
@@ -1281,7 +1278,7 @@
           <div class="text-[11px] text-gray-400 light:text-slate-600">${item.date}</div>
         </div>
         <div class="flex items-center gap-3">
-          <a href="${explorerLink}" target="_blank" rel="noopener noreferrer" class="font-mono text-[11px] text-cyan-500 light:text-cyan-700 bg-cyan-500/10 light:bg-slate-300 px-2 py-1 rounded-lg hover:underline" title="View on ArcScan">Tx: ${shortHash} <i class="fas fa-external-link-alt text-[9px] ml-1"></i></a>
+          <a href="${explorerLink}" target="_blank" rel="noopener noreferrer" class="font-mono text-[11px] text-cyan-500 light:bg-slate-300 px-2 py-1 rounded-lg hover:underline" title="View on ArcScan">Tx: ${shortHash} <i class="fas fa-external-link-alt text-[9px] ml-1"></i></a>
           <span class="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 font-semibold">${item.status}</span>
         </div>
       `;
@@ -1306,7 +1303,7 @@
       historyList = [];
     }
 
-    renderRoleSplitRows(); 
+    renderRoleSplitRows();
     updateRoleSplitPreview();
   };
 </script>
