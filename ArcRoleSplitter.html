@@ -1161,36 +1161,17 @@
       const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
 
       if (!data.isNative && data.currentIndex === 0) {
-        showToast("Requesting Token Allowance...");
+        showToast("Requesting Token Allowance Approval...");
         const erc20 = new ethers.Contract(data.token, ERC20_ABI, signer);
         
         let sumWei = 0n;
         data.chunks.forEach(c => c.amounts.forEach(a => sumWei += BigInt(a)));
 
-        // --- سیستم تلاش مجدد برای RPC های ناپایدار ---
-        let currentAllowance = 0n;
-        let allowanceFetched = false;
-        let retries = 3;
-
-        while (retries > 0 && !allowanceFetched) {
-            try {
-                currentAllowance = await erc20.allowance(userAddress, CONTRACT_ADDRESS);
-                allowanceFetched = true;
-            } catch (error) {
-                console.warn("RPC fetch failed, retrying allowance...", error);
-                retries--;
-                if (retries === 0) throw error;   
-                await new Promise(resolve => setTimeout(resolve, 2000)); 
-            }
-        }
-        // ---------------------------------------------
-
+        const currentAllowance = await erc20.allowance(userAddress, CONTRACT_ADDRESS);
         if (currentAllowance < sumWei) {
-            showToast("Requesting Approval Signature...");
             const txApprove = await erc20.approve(CONTRACT_ADDRESS, ethers.MaxUint256);
             await txApprove.wait();
-            
-            
+            // FIX: Added 3 seconds delay to fix CALL_EXCEPTION error due to Testnet latency
             await new Promise(resolve => setTimeout(resolve, 3000));
         }
       }
