@@ -66,27 +66,27 @@
     .light .text-gray-300 { color: #334155 !important; }
     .light .text-gray-200 { color: #1e293b !important; }
 
-    select, input {
+    select, input[type="text"], input[type="number"], input[type="datetime-local"] {
       background-color: rgba(255, 255, 255, 0.03);
       color: white;
       border: 1px solid rgba(255, 255, 255, 0.1);
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    select:hover, input:hover {
+    select:hover, input[type="text"]:hover, input[type="number"]:hover, input[type="datetime-local"]:hover {
       border-color: rgba(255, 255, 255, 0.2);
     }
-    select:focus, input:focus {
+    select:focus, input[type="text"]:focus, input[type="number"]:focus, input[type="datetime-local"]:focus {
       border-color: #10b981;
       box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
       outline: none;
     }
 
-    .light select, .light input {
+    .light select, .light input[type="text"], .light input[type="number"], .light input[type="datetime-local"] {
       background-color: #ffffff;
       color: #0f172a;
       border: 1px solid #cbd5e1;
     }
-    .light select:focus, .light input:focus {
+    .light select:focus, .light input[type="text"]:focus, .light input[type="number"]:focus, .light input[type="datetime-local"]:focus {
       border-color: #10b981;
       box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
     }
@@ -186,7 +186,7 @@
   <div class="max-w-7xl mx-auto px-4 py-6 sm:py-8">
     
     <!-- Header Section -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/[0.02] light:bg-white/5 border border-white/5 light:border-black/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
       <div>
         <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight !text-white">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Vesting & Cliff Engine</span></h1>
         <p class="!text-gray-400 text-xs sm:text-sm font-medium">Schedule token releases over time with Smart Contract integration</p>
@@ -242,7 +242,7 @@
             <div>
               <label class="block text-gray-400 light:text-slate-600 text-xs font-bold uppercase tracking-wider mb-2">Asset Token</label>
               <select id="tokenSelect" class="w-full rounded-2xl px-5 py-4 text-sm sm:text-base font-medium cursor-pointer" onchange="handleTokenChange()">
-                <option value="0x3600000000000000000000000000000000000000">USDC</option>
+                <option value="0x3600000000000000000000000000000000000000">USDC (Native Layer 1)</option>
                 <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
                 <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">CIRBTC</option>
                 <option value="custom">Custom Token...</option>
@@ -337,17 +337,19 @@
             <div>
               <label class="block text-gray-400 light:text-slate-600 text-xs font-bold uppercase tracking-wider mb-2">Release Frequency</label>
               <select id="frequencySelect" class="w-full rounded-2xl px-4 py-3.5 text-xs sm:text-sm font-bold cursor-pointer" onchange="recalculateVesting()">
-                <option value="Hourly">Hourly</option>
+                <option value="Hourly">Hourly (Continuous)</option>
                 <option value="Daily">Daily</option>
                 <option value="Weekly">Weekly</option>
                 <option value="Monthly" selected>Monthly</option>
               </select>
             </div>
             <div>
-              <label class="block text-gray-400 light:text-slate-600 text-xs font-bold uppercase tracking-wider mb-2">Distribution Method</label>
+              <label class="block text-gray-400 light:text-slate-600 text-xs font-bold uppercase tracking-wider mb-2">Push Configuration</label>
               <div class="flex items-center gap-6 pt-3 text-xs sm:text-sm font-bold">
-                <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="distMethod" value="Equal" checked onchange="recalculateVesting()" class="accent-emerald-500"> Equal Release</label>
-                <label class="flex items-center gap-2 cursor-pointer"><input type="radio" name="distMethod" value="Linear" onchange="recalculateVesting()" class="accent-emerald-500"> Linear Vesting</label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" id="allowRelayerPush" checked onchange="recalculateVesting()" class="accent-emerald-500 w-4 h-4 rounded"> 
+                  Enable Auto-Push (Relayer)
+                </label>
               </div>
             </div>
           </div>
@@ -438,11 +440,13 @@
   let provider, signer, userAddress;
   let historyTransactions = JSON.parse(localStorage.getItem('arcsplit_history') || '[]');
   
-  const VESTING_CONTRACT_ADDRESS = "0xC1344c2146EE76d7Fe012d771c68c1BDD04cc198";
+  // Updated to Proxy Address based on the new smart contract deployment
+  const VESTING_CONTRACT_ADDRESS = "0xd3640D303e2e7962aEeba09a8aDA73eb80e6606d";
   
+  // Updated ABI logic for ArcVestingSplitter
   const VESTING_CONTRACT_ABI = [
-    "function createVestingSchedule(address beneficiary, address token, uint256 startTimestamp, uint256 cliffDuration, uint256 duration, uint256 totalAmount, bool revocable) external payable",
-    "function createVestingSchedule(bytes32 scheduleId, address beneficiary, address token, uint256 startTimestamp, uint256 cliffDuration, uint256 duration, uint256 totalAmount, bool revocable, uint8 vestingType, uint256 stepDuration) external payable"
+    "function createVestingSchedule(address token, address recipient, uint256 totalAmount, uint64 startTime, uint32 cliffDuration, uint32 vestingDuration, uint32 slicePeriodSeconds, bool isRevocable, bool allowRelayerPush) external payable returns (uint256)",
+    "function batchCreateVestingSchedules(address token, address[] calldata recipients, uint256[] calldata totalAmounts, uint64 startTime, uint32 cliffDuration, uint32 vestingDuration, uint32 slicePeriodSeconds, bool isRevocable, bool allowRelayerPush) external payable returns (uint256[])"
   ];
 
   let recipients = [
@@ -537,6 +541,7 @@
     for (let i = 0; i < retries; i++) {
       try {
         let rawBalance = "0.00";
+        // USDC Layer 1 Native Integration Check
         if (tokenAddr === "0x3600000000000000000000000000000000000000" || tokenAddr.startsWith("0x000")) {
           const nativeBal = await provider.getBalance(userAddress);
           rawBalance = parseFloat(ethers.formatEther(nativeBal)).toFixed(4);
@@ -761,7 +766,10 @@
     const cliffStr = getCliffText();
     const durationStr = getDurationText();
     const freq = document.getElementById('frequencySelect').value;
-    const distMethod = document.querySelector('input[name="distMethod"]:checked').value;
+    
+    // Updated Push Based logic UI string representation
+    const allowRelayerPush = document.getElementById('allowRelayerPush').checked;
+    const distMethodStr = allowRelayerPush ? "Auto Push" : "Manual Pull";
 
     document.getElementById('sumToken').textContent = tokenSymbol;
     document.getElementById('sumTotalAmt').textContent = totalAmt.toLocaleString();
@@ -817,14 +825,16 @@
       let releasePerStep = (totalAmt / 12).toFixed(2);
       calHtml += `<div class="flex justify-between items-center bg-white/[0.02] light:bg-black/5 border border-white/5 light:border-black/5 p-4 rounded-2xl">
         <span class="font-bold text-cyan-400 light:text-cyan-600">${fullDateTimeStr}</span>
-        <span class="font-bold text-emerald-400 light:text-emerald-600">${releasePerStep} (${distMethod})</span>
+        <span class="font-bold text-emerald-400 light:text-emerald-600">${releasePerStep} (${distMethodStr})</span>
       </div>`;
     }
     calendarList.innerHTML = calHtml;
   }
 
   function openConfirmModal() {
-    document.getElementById('modalRecipCount').textContent = recipients.length;
+    // Validate empty/invalid recipients before opening modal
+    const validRecipients = recipients.filter(r => r.address && (r.percent || r.amount));
+    document.getElementById('modalRecipCount').textContent = validRecipients.length;
     document.getElementById('modalDuration').textContent = getDurationText();
     document.getElementById('modalCliff').textContent = getCliffText();
     document.getElementById('confirmModal').classList.remove('hidden');
@@ -846,86 +856,99 @@
       
       const contract = new ethers.Contract(VESTING_CONTRACT_ADDRESS, VESTING_CONTRACT_ABI, signer);
       
-      const recipient = recipients[0];
-      if (!recipient || !recipient.address || !recipient.percent) {
-        showToast("Please enter valid recipient address and percentage/amount.");
+      const validRecipients = recipients.filter(r => r.address && (r.percent || r.amount));
+      if (validRecipients.length === 0) {
+        showToast("Please enter at least one valid recipient address and amount.");
         return;
       }
 
       const totalAmt = parseFloat(document.getElementById('totalAmount').value) || 0;
-      const allocatedAmt = recipient.amount !== "" ? parseFloat(recipient.amount) : (totalAmt * parseFloat(recipient.percent)) / 100;
       const tokenAddr = document.getElementById('tokenSelect').value;
       const startTimestamp = Math.floor(new Date(document.getElementById('startDate').value).getTime() / 1000);
       const cliffDuration = getCliffSeconds();
       const duration = getDurationSeconds();
-      const totalAmountParsed = ethers.parseUnits(allocatedAmt.toString(), 18);
-      const scheduleId = ethers.keccak256(ethers.toUtf8Bytes(Math.random().toString()));
-      const vestingType = document.querySelector('input[name="distMethod"]:checked').value === 'Linear' ? 0 : 1;
       
+      let slicePeriodSeconds;
+      const freq = document.getElementById('frequencySelect').value;
+      if (freq === 'Hourly') slicePeriodSeconds = 3600;
+      else if (freq === 'Daily') slicePeriodSeconds = 86400;
+      else if (freq === 'Weekly') slicePeriodSeconds = 604800;
+      else slicePeriodSeconds = 2592000; // Monthly
+
+      const allowRelayerPush = document.getElementById('allowRelayerPush').checked;
+      const isRevocable = true; // Default revocable per new logic requirements
+
       let tx;
+      // Handles Native USDC representation
       const isNative = (tokenAddr === "0x3600000000000000000000000000000000000000" || tokenAddr.startsWith("0x000"));
 
-      if (!isNative) {
-        showToast("Checking Token Allowance...");
-        const erc20ABI = ["function approve(address spender, uint256 amount) returns (bool)"];
-        const tokenContract = new ethers.Contract(tokenAddr, erc20ABI, signer);
-        let approveTx = await tokenContract.approve(VESTING_CONTRACT_ADDRESS, totalAmountParsed);
-        await approveTx.wait();
-        showToast("Token approved successfully. Sending vesting tx...");
-      }
+      if (validRecipients.length === 1) {
+        // --- Single Schedule Creation ---
+        const recipient = validRecipients[0];
+        const allocatedAmt = recipient.amount !== "" ? parseFloat(recipient.amount) : (totalAmt * parseFloat(recipient.percent)) / 100;
+        const totalAmountParsed = ethers.parseUnits(allocatedAmt.toString(), 18);
+        
+        if (!isNative) {
+          showToast("Checking Token Allowance...");
+          const erc20ABI = ["function approve(address spender, uint256 amount) returns (bool)"];
+          const tokenContract = new ethers.Contract(tokenAddr, erc20ABI, signer);
+          let approveTx = await tokenContract.approve(VESTING_CONTRACT_ADDRESS, totalAmountParsed);
+          await approveTx.wait();
+          showToast("Token approved successfully. Sending vesting tx...");
+        }
 
-      try {
-        if (isNative) {
-          tx = await contract.createVestingSchedule(
-            scheduleId,
-            recipient.address,
-            ethers.ZeroAddress,
-            startTimestamp,
-            cliffDuration,
-            duration,
-            totalAmountParsed,
-            true,
-            vestingType,
-            3600,
-            { value: totalAmountParsed }
-          );
-        } else {
-          tx = await contract.createVestingSchedule(
-            scheduleId,
-            recipient.address,
-            tokenAddr,
-            startTimestamp,
-            cliffDuration,
-            duration,
-            totalAmountParsed,
-            true,
-            vestingType,
-            3600
-          );
+        const txOpts = isNative ? { value: totalAmountParsed } : {};
+
+        tx = await contract.createVestingSchedule(
+          tokenAddr,
+          recipient.address,
+          totalAmountParsed,
+          startTimestamp,
+          cliffDuration,
+          duration,
+          slicePeriodSeconds,
+          isRevocable,
+          allowRelayerPush,
+          txOpts
+        );
+
+      } else {
+        // --- Batch Schedule Creation ---
+        let addrs = [];
+        let amounts = [];
+        let totalNativeValue = 0n;
+
+        for (let r of validRecipients) {
+          addrs.push(r.address);
+          let allocatedAmt = r.amount !== "" ? parseFloat(r.amount) : (totalAmt * parseFloat(r.percent)) / 100;
+          let parsed = ethers.parseUnits(allocatedAmt.toString(), 18);
+          amounts.push(parsed);
+          totalNativeValue += parsed;
         }
-      } catch (err1) {
-        if (isNative) {
-          tx = await contract.createVestingSchedule(
-            recipient.address,
-            ethers.ZeroAddress,
-            startTimestamp,
-            cliffDuration,
-            duration,
-            totalAmountParsed,
-            true,
-            { value: totalAmountParsed }
-          );
-        } else {
-          tx = await contract.createVestingSchedule(
-            recipient.address,
-            tokenAddr,
-            startTimestamp,
-            cliffDuration,
-            duration,
-            totalAmountParsed,
-            true
-          );
+
+        if (!isNative) {
+          showToast("Checking Token Allowance...");
+          const erc20ABI = ["function approve(address spender, uint256 amount) returns (bool)"];
+          const tokenContract = new ethers.Contract(tokenAddr, erc20ABI, signer);
+          let approveTx = await tokenContract.approve(VESTING_CONTRACT_ADDRESS, totalNativeValue);
+          await approveTx.wait();
+          showToast("Token approved successfully. Sending batch vesting tx...");
         }
+
+        const txOpts = isNative ? { value: totalNativeValue } : {};
+
+        tx = await contract.batchCreateVestingSchedules(
+          tokenAddr,
+          addrs,
+          amounts,
+          startTimestamp,
+          cliffDuration,
+          duration,
+          slicePeriodSeconds,
+          isRevocable,
+          allowRelayerPush,
+          txOpts
+        );
       }
 
       showToast("Transaction submitted to wallet. Waiting...");
@@ -936,8 +959,8 @@
       
       historyTransactions.unshift({
         hash: tx.hash,
-        address: recipient.address,
-        allocated: allocatedAmt,
+        address: validRecipients.length > 1 ? `Batch (${validRecipients.length} addresses)` : validRecipients[0].address,
+        allocated: validRecipients.length > 1 ? "Multiple" : (validRecipients[0].amount || "Set by %"),
         duration: getDurationText(),
         timestamp: new Date().toLocaleString()
       });
