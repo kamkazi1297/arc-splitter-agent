@@ -37,28 +37,44 @@
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
     
+    /* LIGHT MODE STYLES - Darkest Fonts */
     .light {
       background: #f1f5f9 !important;
       background-image: 
         radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.05) 0%, transparent 40%),
         radial-gradient(circle at 90% 80%, rgba(34, 211, 238, 0.05) 0%, transparent 40%) !important;
-      color: #0f172a !important;
+      color: #000000 !important;
     }
 
     .light .glass {
-      background: rgba(255, 255, 255, 0.88);
-      border-color: rgba(0, 0, 0, 0.08);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1);
+      background: rgba(255, 255, 255, 0.90);
+      border-color: rgba(0, 0, 0, 0.15);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05), inset 0 1px 0 rgba(255, 255, 255, 1);
     }
 
-    .light .preserve-dark-color { color: #f8fafc !important; }
-    .light .preserve-dark-muted { color: #94a3b8 !important; }
+    /* Override colors in light mode to force pure black or darkest slate */
+    .light .preserve-dark-color { color: #000000 !important; }
+    .light .preserve-dark-muted { color: #1e293b !important; }
+    
+    .light body, .light label, .light .text-white { color: #000000 !important; }
+    .light .text-gray-400 { color: #1e293b !important; }
+    .light .text-gray-300 { color: #0f172a !important; }
+    .light .text-slate-500, .light .text-slate-600 { color: #1e293b !important; }
+    
+    /* Darker accent colors for better readability on white */
+    .light .text-emerald-400 { color: #047857 !important; } 
+    .light .text-cyan-400 { color: #0369a1 !important; } 
+    .light .text-amber-400 { color: #b45309 !important; }
+    .light .text-rose-400 { color: #be123c !important; }
 
-    .light body, .light label, .light .text-white:not(.preserve-dark-color) { color: #0f172a; }
-    .light .text-gray-400:not(.preserve-dark-muted) { color: #475569 !important; }
-    .light .text-gray-300 { color: #334155 !important; }
-    .light .text-emerald-400 { color: #059669 !important; }
-    .light .text-cyan-400 { color: #0891b2 !important; }
+    .light select, .light input, .light textarea {
+      background-color: #ffffff;
+      color: #000000 !important;
+      border: 1px solid #94a3b8;
+    }
+
+    .light select option { background-color: #ffffff; color: #000000 !important; }
+    /* END LIGHT MODE STYLES */
 
     select, input, textarea {
       background-color: rgba(255, 255, 255, 0.03);
@@ -71,14 +87,12 @@
       box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.18);
       outline: none;
     }
-    .light select, .light input, .light textarea {
-      background-color: #ffffff;
-      color: #0f172a;
-      border: 1px solid #cbd5e1;
+    .light select:focus, .light input:focus, .light textarea:focus {
+      border-color: #047857;
+      box-shadow: 0 0 0 4px rgba(4, 120, 87, 0.15);
     }
 
     select option { background-color: #0f172a; color: white; }
-    .light select option { background-color: #ffffff; color: #0f172a; }
 
     .app-button { transition: all 0.25s ease; }
     .app-button:active:not(:disabled) { transform: scale(0.98); }
@@ -128,7 +142,7 @@
       <div id="status" class="glass rounded-2xl p-4 text-xs font-medium flex items-center justify-between border-l-4 border-l-emerald-500 md:col-span-4">
         <div class="flex items-center gap-3">
           <div id="statusIndicator" class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
-          <span id="contractStatusText">Network: Arc Network (USDC L1)</span>
+          <span id="contractStatusText" class="preserve-dark-color">Network: Arc Network (USDC L1)</span>
         </div>
       </div>
       
@@ -266,7 +280,7 @@
       </div>
       <div id="confirmAssetsSummary" class="bg-black/20 light:bg-slate-100 rounded-2xl p-4 space-y-2 max-h-48 overflow-y-auto font-mono text-xs border border-white/5 light:border-black/5"></div>
       <div class="flex gap-3 pt-2" id="confirmModalActions">
-        <button onclick="hideConfirmModal()" class="app-button flex-1 py-3 rounded-xl border border-white/15 text-sm font-semibold">Cancel</button>
+        <button onclick="hideConfirmModal()" class="app-button flex-1 py-3 rounded-xl border border-white/15 text-sm font-semibold preserve-dark-color">Cancel</button>
         <button onclick="generateBatches()" class="app-button flex-1 py-3 bg-emerald-500 text-gray-950 font-bold rounded-xl text-sm shadow-lg">Generate & Proceed</button>
       </div>
     </div>
@@ -280,7 +294,7 @@
       </div>
       <div id="detailsContent" class="space-y-4 max-h-96 overflow-y-auto font-mono text-xs preserve-dark-color"></div>
       <div class="flex justify-end">
-        <button onclick="hideDetailsModal()" class="app-button px-6 py-3 bg-white/10 border border-white/10 rounded-xl font-semibold text-xs">Close</button>
+        <button onclick="hideDetailsModal()" class="app-button px-6 py-3 bg-white/10 border border-white/10 rounded-xl font-semibold text-xs preserve-dark-color">Close</button>
       </div>
     </div>
   </div>
@@ -288,9 +302,9 @@
   <div id="templateModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
     <div class="glass rounded-3xl p-6 sm:p-8 max-w-md w-full border border-white/15 shadow-2xl space-y-4">
       <h3 class="text-lg font-bold preserve-dark-color">Save Template</h3>
-      <input type="text" id="templateNameInput" placeholder="e.g. Monthly Payroll" class="w-full bg-black/20 light:bg-slate-100 rounded-xl p-3 text-sm outline-none">
+      <input type="text" id="templateNameInput" placeholder="e.g. Monthly Payroll" class="w-full bg-black/20 light:bg-slate-100 rounded-xl p-3 text-sm outline-none preserve-dark-color">
       <div class="flex gap-3 pt-2">
-        <button onclick="hideTemplateModal()" class="app-button flex-1 py-3 rounded-xl border border-white/15 text-xs font-semibold">Cancel</button>
+        <button onclick="hideTemplateModal()" class="app-button flex-1 py-3 rounded-xl border border-white/15 text-xs font-semibold preserve-dark-color">Cancel</button>
         <button onclick="saveTemplateAction()" class="app-button flex-1 py-3 bg-emerald-500 text-gray-950 font-bold rounded-xl text-xs">Save</button>
       </div>
     </div>
@@ -301,7 +315,7 @@
       <h3 class="text-lg font-bold preserve-dark-color">Open Saved Template</h3>
       <div id="templateListContainer" class="space-y-2 max-h-64 overflow-y-auto font-mono text-xs"></div>
       <div class="flex justify-end pt-2">
-        <button onclick="hideLoadTemplateModal()" class="app-button px-6 py-3 bg-white/10 border border-white/10 rounded-xl font-semibold text-xs">Close</button>
+        <button onclick="hideLoadTemplateModal()" class="app-button px-6 py-3 bg-white/10 border border-white/10 rounded-xl font-semibold text-xs preserve-dark-color">Close</button>
       </div>
     </div>
   </div>
@@ -310,9 +324,9 @@
     <div class="glass rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-white/15 shadow-2xl space-y-4">
       <h3 class="text-lg font-bold preserve-dark-color">Import Recipients (CSV)</h3>
       <p class="text-xs text-gray-400 light:text-slate-600">Format per line: <code class="text-emerald-400">wallet, percentage</code> (e.g. 0x12..., 40)</p>
-      <textarea id="csvTextArea" rows="6" class="w-full bg-black/30 light:bg-slate-100 rounded-2xl p-4 font-mono text-xs outline-none" placeholder="0x123..., 40&#10;0x456..., 60"></textarea>
+      <textarea id="csvTextArea" rows="6" class="w-full bg-black/30 light:bg-slate-100 rounded-2xl p-4 font-mono text-xs outline-none preserve-dark-color" placeholder="0x123..., 40&#10;0x456..., 60"></textarea>
       <div class="flex gap-3 pt-2">
-        <button onclick="hideCsvModal()" class="app-button flex-1 py-3 rounded-xl border border-white/15 text-xs font-semibold">Cancel</button>
+        <button onclick="hideCsvModal()" class="app-button flex-1 py-3 rounded-xl border border-white/15 text-xs font-semibold preserve-dark-color">Cancel</button>
         <button onclick="processCsvImport()" class="app-button flex-1 py-3 bg-emerald-500 text-gray-950 font-bold rounded-xl text-xs">Import</button>
       </div>
     </div>
@@ -541,7 +555,7 @@ function renderRecipients() {
       <div class="w-full sm:w-auto flex gap-3">
         <div class="relative w-full sm:w-28">
            <input type="number" value="${row.percentage}" oninput="updateRecipientPercentage(${idx}, this.value)" placeholder="%" class="w-full bg-black/20 light:bg-slate-100 rounded-xl px-4 py-3 text-xs sm:text-sm font-bold outline-none text-center">
-           <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">%</span>
+           <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs preserve-dark-muted">%</span>
         </div>
         <button onclick="removeRecipientRow(${idx})" class="w-11 h-11 shrink-0 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 flex items-center justify-center transition-all"><i class="fas fa-trash-can text-xs"></i></button>
       </div>
@@ -594,7 +608,7 @@ function renderLiveSummary() {
         const share = (amt * p) / 100;
         const shortWallet = rItem.wallet ? rItem.wallet.slice(0,6) + "..." + rItem.wallet.slice(-4) : "0x...";
         if(rItem.wallet) {
-          html += `<div class="flex justify-between text-[11px] text-gray-400 light:text-slate-600 font-mono"><span>↳ ${shortWallet} (${p}%)</span> <span>${share.toFixed(4)}</span></div>`;
+          html += `<div class="flex justify-between text-[11px] text-gray-400 light:text-slate-600 font-mono"><span class="preserve-dark-muted">↳ ${shortWallet} (${p}%)</span> <span class="preserve-dark-muted">${share.toFixed(4)}</span></div>`;
         }
       });
       html += '</div></div>';
@@ -603,7 +617,6 @@ function renderLiveSummary() {
 
   preview.innerHTML = html || '<p class="text-gray-400 light:text-slate-500 text-center py-4">Add tokens and recipients to see breakdown.</p>';
   
-  // Validation Logic Update (mimicking ArcRoleSplitter UI)
   const totalBps = Math.round(recipientRows.reduce((sum, r) => sum + (parseFloat(r.percentage) || 0), 0) * 100);
   const is100 = totalBps === 10000;
   const hasValidRecipients = recipientRows.length > 0 && recipientRows.some(r => r.wallet.length > 5);
@@ -614,7 +627,12 @@ function renderLiveSummary() {
 
   const badge = document.getElementById("totalPercentageBadge");
   badge.textContent = `Total: ${(totalBps/100).toFixed(2)}%`;
-  badge.style.color = is100 ? '#10b981' : '#ef4444';
+  
+  if (document.documentElement.classList.contains('light')) {
+      badge.style.color = is100 ? '#047857' : '#be123c'; 
+  } else {
+      badge.style.color = is100 ? '#10b981' : '#ef4444';
+  }
 
   const execBtn = document.getElementById("executeBatchBtn");
   if (hasValidTokenAmount && hasValidRecipients && is100) {
@@ -698,7 +716,6 @@ function prepareBatchExecution() {
 
 function hideConfirmModal() { document.getElementById("confirmModal").classList.add("hidden"); }
 
-// OFF-CHAIN AMOUNT CALCULATION & BATCH GENERATION
 function generateBatches() {
   hideConfirmModal();
   const batchGroupId = Date.now();
@@ -743,7 +760,7 @@ function generateBatches() {
         isNative: isNative,
         chunks: chunks,
         currentIndex: 0,
-        txHashes: [], // ADDED FOR SAVING HASHES
+        txHashes: [], 
         totalWallets: flatWallets.length,
         rawAmount: rawAmount,
         tokenSymbol: symbol,
@@ -761,7 +778,6 @@ function generateBatches() {
     showToast("Batches successfully prepared!");
     switchView('pending');
     
-    // Auto start the first batch generated
     setTimeout(() => { resumeBatchTx(newBatches[0].id); }, 1500);
   } else {
     showToast("No valid data to execute.");
@@ -790,7 +806,7 @@ function renderPendingBatches() {
       <div class="glass rounded-3xl p-5 border border-amber-500/30 flex flex-col justify-between fade-in">
         <div class="flex justify-between items-start mb-4 gap-2">
           <div>
-            <h3 class="font-bold text-amber-400 text-sm">Amount: ${b.rawAmount} ${b.tokenSymbol}</h3>
+            <h3 class="font-bold text-amber-400 text-sm preserve-dark-color">Amount: ${b.rawAmount} ${b.tokenSymbol}</h3>
             <span class="text-[10px] text-gray-400 preserve-dark-muted">${b.date} - ${b.memo}</span>
           </div>
           <button onclick="discardBatch(${b.id})" class="text-xs text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 px-3 py-1.5 rounded-lg font-semibold transition-all">Discard</button>
@@ -799,7 +815,7 @@ function renderPendingBatches() {
           <div class="w-full bg-black/30 light:bg-slate-200 rounded-full h-2.5 mb-2 border border-white/5 light:border-black/5">
             <div class="bg-gradient-to-r from-amber-400 to-emerald-400 h-full rounded-full transition-all" style="width: ${pct}%"></div>
           </div>
-          <div class="flex justify-between text-[11px] text-gray-400 light:text-slate-500 mb-5 font-medium">
+          <div class="flex justify-between text-[11px] text-gray-400 light:text-slate-500 mb-5 font-medium preserve-dark-muted">
             <span>Done: ${b.currentIndex} / ${b.chunks.length}</span>
             <span>Rem. Wallets: ${Math.max(0, b.totalWallets - (b.currentIndex * BATCH_SIZE))}</span>
           </div>
@@ -873,7 +889,6 @@ async function resumeBatchTx(batchId) {
       showToast(`Sending batch ${data.currentIndex + 1} of ${data.chunks.length} (${data.tokenSymbol})... Please Sign!`, 0);
       const tx = await contract.splitByAmount(splitParams, { value: txValue });
       
-      // Save tx hash right away
       data.txHashes.push(tx.hash);
       batches[bIndex] = data;
       localStorage.setItem('arcPendingBatchesMain', JSON.stringify(batches));
@@ -887,7 +902,6 @@ async function resumeBatchTx(batchId) {
       renderPendingBatches();
     }
 
-    // When fully finished for this token
     batches.splice(bIndex, 1);
     localStorage.setItem('arcPendingBatchesMain', JSON.stringify(batches));
     renderPendingBatches();
@@ -905,7 +919,6 @@ async function resumeBatchTx(batchId) {
     confetti({ particleCount: 200, spread: 80, origin: { y: 0.6 } });
     fetchAndRenderBalancesWithRetry();
     
-    // AUTO EXECUTE NEXT BATCH IF IT EXISTS
     if (batches.length > 0) {
         showToast(`✅ ${data.tokenSymbol} Distributed! Auto-starting next token in 3s...`, 3000);
         setTimeout(() => resumeBatchTx(batches[0].id), 3000);
@@ -925,11 +938,9 @@ async function resumeBatchTx(batchId) {
 }
 
 async function saveToHistory(record) {
-  // ذخیره در فضای ابری Supabase
   if (userAddress && typeof saveHistoryToCloud === 'function') {
     await saveHistoryToCloud(userAddress, record);
   }
-  // پشتیبان‌گیری محلی اختیاری
   const history = JSON.parse(localStorage.getItem("arcSplitHistoryMain") || "[]");
   history.unshift(record);
   localStorage.setItem("arcSplitHistoryMain", JSON.stringify(history));
@@ -938,12 +949,10 @@ async function saveToHistory(record) {
 async function renderHistoryTable() {
   let history = [];
   
-  // خواندن از Supabase اگر ولت متصل باشد
   if (userAddress && typeof fetchHistoryFromCloud === 'function') {
     history = await fetchHistoryFromCloud(userAddress);
   }
   
-  // اگر داده‌ای در ابر نبود یا ولت متصل نبود، به عنوان فال‌بک از localStorage بخوان
   if (!history || history.length === 0) {
     history = JSON.parse(localStorage.getItem("arcSplitHistoryMain") || "[]");
   }
@@ -958,7 +967,7 @@ async function renderHistoryTable() {
   container.innerHTML = `
     <table class="w-full text-left border-collapse">
       <thead>
-        <tr class="border-b border-white/10 light:border-black/10 text-gray-400 light:text-slate-500 text-xs uppercase tracking-wider">
+        <tr class="border-b border-white/10 light:border-black/10 text-gray-400 light:text-slate-500 text-xs uppercase tracking-wider preserve-dark-muted">
           <th class="p-3 font-semibold">Date / Memo</th>
           <th class="p-3 font-semibold">Recipients</th>
           <th class="p-3 font-semibold">Assets</th>
@@ -971,13 +980,13 @@ async function renderHistoryTable() {
           <tr class="hover:bg-white/[0.02] light:hover:bg-black/[0.02] transition-colors">
             <td class="p-3">
               <div class="font-bold text-white preserve-dark-color">${h.memo || 'Batch Split'}</div>
-              <div class="text-[10px] text-gray-400 light:text-slate-500">${h.date || 'Recent'}</div>
+              <div class="text-[10px] text-gray-400 light:text-slate-500 preserve-dark-muted">${h.date || 'Recent'}</div>
             </td>
-            <td class="p-3 font-mono text-gray-400 light:text-slate-600">${h.recipients ? h.recipients.length : (h.recipientsCount || 0)} Recipients</td>
-            <td class="p-3 font-mono text-gray-400 light:text-slate-600">${h.tokens ? h.tokens.length : (h.assetsCount || 0)} Tokens</td>
+            <td class="p-3 font-mono text-gray-400 light:text-slate-600 preserve-dark-muted">${h.recipients ? h.recipients.length : (h.recipientsCount || 0)} Recipients</td>
+            <td class="p-3 font-mono text-gray-400 light:text-slate-600 preserve-dark-muted">${h.tokens ? h.tokens.length : (h.assetsCount || 0)} Tokens</td>
             <td class="p-3"><span class="px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-semibold">Completed</span></td>
             <td class="p-3 text-right space-x-2">
-              <button onclick="viewDetails(${idx})" class="px-2.5 py-1 bg-white/5 light:bg-black/5 hover:bg-white/10 light:hover:bg-black/10 rounded-lg text-sky-400 transition-all font-medium">Details</button>
+              <button onclick="viewDetails(${idx})" class="px-2.5 py-1 bg-white/5 light:bg-black/5 hover:bg-white/10 light:hover:bg-black/10 rounded-lg text-sky-400 transition-all font-medium preserve-dark-color">Details</button>
               <button onclick="duplicateBatch(${idx})" class="px-2.5 py-1 bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 rounded-lg transition-all font-medium">Duplicate</button>
             </td>
           </tr>
@@ -1002,13 +1011,13 @@ function viewDetails(idx) {
   document.getElementById("detailsContent").innerHTML = `
     <div class="font-bold text-sm text-cyan-400 mb-2">${h.memo}</div>
     <div class="font-bold preserve-dark-color mb-1">Tokens Processed:</div>
-    ${h.tokens.map(t => '<div class="text-gray-400 light:text-slate-600">' + t.amount + ' Token</div>').join('')}
+    ${h.tokens.map(t => '<div class="text-gray-400 light:text-slate-600 preserve-dark-muted">' + t.amount + ' Token</div>').join('')}
     
     ${txLinks}
 
     <div class="font-bold preserve-dark-color mt-4 mb-1">Recipients:</div>
     <div class="space-y-1">
-      ${h.recipients.map(r => '<div class="text-gray-400 light:text-slate-600 font-mono">' + r.wallet + ' <span class="text-gray-500 light:text-slate-400">(' + r.percentage + '%)</span></div>').join('')}
+      ${h.recipients.map(r => '<div class="text-gray-400 light:text-slate-600 font-mono preserve-dark-muted">' + r.wallet + ' <span class="text-gray-500 light:text-slate-400 preserve-dark-muted">(' + r.percentage + '%)</span></div>').join('')}
     </div>
   `;
   document.getElementById("detailsModal").classList.remove("hidden");
@@ -1033,6 +1042,7 @@ window.addEventListener('load', async () => {
   if (localStorage.getItem('theme') === 'light') {
     document.documentElement.classList.add('light');
     document.getElementById("themeBtn").querySelector("i").className = "fas fa-sun text-amber-500";
+    renderLiveSummary();
   }
   renderTokens(); renderRecipients(); renderPendingBatches();
   await autoConnectWallet();
