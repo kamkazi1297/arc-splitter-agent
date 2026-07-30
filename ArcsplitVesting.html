@@ -416,16 +416,13 @@
 
     </div>
 
-    <!-- Calendar View Tab -->
+    <!-- Calendar View Tab (Accordion Design) -->
     <div id="viewCalendar" class="hidden glass rounded-3xl p-6 sm:p-8 space-y-4">
       <h3 class="font-bold text-lg mb-1 flex items-center gap-2 preserve-theme"><i class="fas fa-calendar-alt text-emerald-400"></i> Active Vesting Plans</h3>
-      <p class="text-xs text-gray-400 light:text-slate-600 mb-4">Select a plan below to view its specific token unlock schedule.</p>
+      <p class="text-xs text-gray-400 light:text-slate-600 mb-4">Click on any plan below to view its specific token unlock schedule.</p>
       
-      <!-- Plans Tabs -->
-      <div id="calendarPlanTabs" class="flex flex-wrap gap-2 mb-4"></div>
-      
-      <!-- Calendar Detail List -->
-      <div id="calendarUnlockList" class="space-y-2 text-xs"></div>
+      <!-- Plans Accordion List -->
+      <div id="calendarPlanList" class="space-y-3"></div>
     </div>
 
     <!-- History View Tab -->
@@ -514,10 +511,15 @@
     { address: "", percent: "", amount: "" }
   ];
 
+  // LOAD LOGIC - Optimized to load LocalStorage immediately on page refresh
   window.addEventListener('load', async () => {
     const now = new Date();
     const nowISO = new Date(now.getTime() - now.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
     document.getElementById('startDate').value = nowISO;
+
+    // Load offline/cached data instantly before wallet connects so data isn't lost on refresh
+    historyTransactions = JSON.parse(localStorage.getItem('arcsplit_history') || '[]');
+    renderHistoryList();
 
     renderRecipients();
     recalculateVesting();
@@ -566,13 +568,22 @@
         
         await fetchRealTokenBalanceWithRetry();
         
+        // Fetch Cloud Data after connection and sync it with LocalStorage
         const cloudHistory = await fetchHistoryFromCloud(userAddress);
         if (cloudHistory && cloudHistory.length > 0) {
             historyTransactions = cloudHistory;
+            // Update LocalStorage so if user refreshes page, they instantly see updated data
+            localStorage.setItem('arcsplit_history', JSON.stringify(historyTransactions)); 
         } else {
             historyTransactions = JSON.parse(localStorage.getItem('arcsplit_history') || '[]');
         }
+        
         renderHistoryList();
+
+        // If the user is currently on the Calendar Tab, refresh the view
+        if (!document.getElementById('viewCalendar').classList.contains('hidden')) {
+            renderCalendarPlans();
+        }
 
         if (!isAuto) showToast("Wallet connected successfully!");
       } catch (error) {
@@ -590,8 +601,14 @@
     document.getElementById('walletBtnText').textContent = "Connect Wallet";
     document.getElementById('disconnectWalletBtn').classList.add('hidden');
     document.getElementById('walletBalanceDisplay').textContent = `0.00 (Not Connected)`;
-    historyTransactions = [];
+    
+    // Fallback to local storage when disconnected
+    historyTransactions = JSON.parse(localStorage.getItem('arcsplit_history') || '[]');
     renderHistoryList();
+    if (!document.getElementById('viewCalendar').classList.contains('hidden')) {
+        renderCalendarPlans();
+    }
+    
     showToast("Wallet disconnected.");
   }
 
@@ -705,7 +722,6 @@
     return parseInt(selectVal) * 30 * 86400;
   }
 
-  // Added Helper for Calendar breakdowns
   function getDurationMonths() {
     const selectVal = document.getElementById('durationSelect').value;
     if (selectVal === 'custom') {
@@ -909,69 +925,98 @@
     }
   }
 
-  // --- Calendar Tabs & Listing Logic ---
+  // --- Calendar Accordion & Listing Logic ---
   function renderCalendarPlans() {
-    const container = document.getElementById('calendarPlanTabs');
-    
-    let html = `<button id="calTab_draft" onclick="showCalendarDraft()" class="px-4 py-2 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 text-xs font-bold transition-all text-left">Current Draft</button>`;
-    
+    const container = document.getElementById('calendarPlanList');
+    let html = '';
+
+    // 1. نمایش کارت پیش‌نویس فعلی (Draft)
+    html += generateCalendarCardHtml(
+        'draft', 
+        '<i class="fas fa-pen-ruler text-cyan-400 mr-2"></i> Current Draft Configuration', 
+        'پیش‌نمایش تنظیمات فعلی که در تب Configuration وارد کرده‌اید',
+        'bg-cyan-500/10 border-cyan-500/30'
+    );
+
+    // 2. نمایش تمام وستینگ‌های فعال از دیتابیس ابری/لوکال
     if (historyTransactions && historyTransactions.length > 0) {
-      html += historyTransactions.map((tx, idx) => `
-        <button id="calTab_${idx}" onclick="showCalendarDetails(${idx})" class="px-4 py-2 rounded-xl bg-white/5 light:bg-black/5 hover:bg-emerald-500/20 hover:text-emerald-400 border border-white/10 light:border-slate-400 text-gray-400 text-xs font-bold transition-all text-left">
-          ${tx.address.substring(0, 12)}${tx.address.length > 12 ? '...' : ''} <span class="text-[10px] font-normal opacity-70 ml-1">(${tx.timestamp.split(',')[0]})</span>
-        </button>
-      `).join('');
+        historyTransactions.forEach((tx, idx) => {
+            let title = `<i class="fas fa-file-contract text-emerald-400 mr-2"></i> Plan: ${tx.address}`;
+            let subtitle = `Start: ${tx.startDate ? tx.startDate.replace('T', ' ') : 'N/A'} | Total Amount: ${tx.totalAmount} | Duration: ${tx.duration}`;
+            
+            html += generateCalendarCardHtml(
+                idx,
+                title,
+                subtitle,
+                'bg-white/5 border-white/10 hover:border-emerald-500/30 light:bg-black/5 light:border-slate-300'
+            );
+        });
+    } else {
+        html += `<div class="text-xs text-gray-500 light:text-slate-500 mt-4 px-2"><i class="fas fa-info-circle mr-1"></i> No active vesting plans found. Connect wallet to sync with Cloud.</div>`;
     }
-    
+
     container.innerHTML = html;
-    showCalendarDraft(); 
   }
 
-  function resetCalTabs() {
-    document.querySelectorAll('#calendarPlanTabs button').forEach(btn => {
-       btn.classList.remove('bg-emerald-500/20', 'border-emerald-500/30', 'text-emerald-400', 'bg-cyan-500/20', 'border-cyan-500/30', 'text-cyan-400');
-       btn.classList.add('bg-white/5', 'border-white/10', 'text-gray-400', 'light:border-slate-400');
-    });
+  function generateCalendarCardHtml(id, title, subtitle, extraClasses) {
+    return `
+    <div class="border rounded-2xl overflow-hidden transition-all duration-300 ${extraClasses}">
+        <button onclick="toggleCalendarDetails('${id}')" class="w-full text-left p-4 flex justify-between items-center focus:outline-none hover:bg-white/5 transition-colors">
+            <div>
+                <div class="font-bold text-sm text-gray-200 preserve-theme">${title}</div>
+                <div class="text-xs text-gray-400 light:text-slate-500 mt-1.5">${subtitle}</div>
+            </div>
+            <i id="icon_cal_${id}" class="fas fa-chevron-down text-gray-500 transition-transform duration-300"></i>
+        </button>
+        <div id="details_cal_${id}" class="hidden px-4 pb-4 border-t border-white/5 light:border-slate-300 pt-4">
+            <!-- Schedule loads here -->
+        </div>
+    </div>
+    `;
   }
 
-  function showCalendarDraft() {
-      resetCalTabs();
-      let btn = document.getElementById('calTab_draft');
-      if(btn) {
-         btn.className = "px-4 py-2 rounded-xl bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 text-xs font-bold transition-all text-left";
-      }
-      
-      let totalAmt = parseFloat(document.getElementById('totalAmount').value) || 0;
-      let distMethodStr = document.getElementById('allowRelayerPush').checked ? "Auto Push" : "Manual Pull";
-      let startDateVal = document.getElementById('startDate').value ? new Date(document.getElementById('startDate').value) : new Date();
-      let months = getDurationMonths();
+  function toggleCalendarDetails(id) {
+    const detailsDiv = document.getElementById(`details_cal_${id}`);
+    const icon = document.getElementById(`icon_cal_${id}`);
+    const isHidden = detailsDiv.classList.contains('hidden');
 
-      renderCalendarHtml(startDateVal, months, totalAmt, distMethodStr, "Draft Configuration Preview");
+    // بستن بقیه کارت‌ها
+    document.querySelectorAll('[id^="details_cal_"]').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('[id^="icon_cal_"]').forEach(el => el.style.transform = 'rotate(0deg)');
+
+    if (isHidden) {
+        // باز کردن کارت کلیک شده
+        detailsDiv.classList.remove('hidden');
+        icon.style.transform = 'rotate(180deg)';
+        
+        if (id === 'draft') {
+            renderScheduleInContainer(detailsDiv, null);
+        } else {
+            renderScheduleInContainer(detailsDiv, historyTransactions[id]);
+        }
+    }
   }
 
-  function showCalendarDetails(idx) {
-      resetCalTabs();
-      let btn = document.getElementById('calTab_' + idx);
-      if(btn) {
-         btn.className = "px-4 py-2 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold transition-all text-left";
-      }
-      
-      const plan = historyTransactions[idx];
-      if (!plan) return;
-      
-      let startDateVal = plan.startDate ? new Date(plan.startDate) : new Date();
-      let months = plan.durationMonths || 12;
-      let totalAmt = parseFloat(plan.totalAmount) || 0;
-      let distMethodStr = plan.distMethodStr || "Auto Push";
+  function renderScheduleInContainer(container, plan) {
+    let startDateVal, months, totalAmt, distMethodStr;
+    
+    if (!plan) {
+        startDateVal = document.getElementById('startDate').value ? new Date(document.getElementById('startDate').value) : new Date();
+        months = getDurationMonths();
+        totalAmt = parseFloat(document.getElementById('totalAmount').value) || 0;
+        distMethodStr = document.getElementById('allowRelayerPush').checked ? "Auto Push" : "Manual Pull";
+    } else {
+        startDateVal = plan.startDate ? new Date(plan.startDate) : new Date();
+        months = plan.durationMonths || 12;
+        totalAmt = parseFloat(plan.totalAmount) || 0;
+        distMethodStr = plan.distMethodStr || "Auto Push";
+    }
 
-      renderCalendarHtml(startDateVal, months, totalAmt, distMethodStr, `Plan Details: ${plan.address}`);
-  }
+    if (months === 0 || isNaN(months)) months = 1;
 
-  function renderCalendarHtml(startDateVal, months, totalAmt, distMethodStr, title) {
-      let calendarList = document.getElementById('calendarUnlockList');
-      let calHtml = `<div class="text-gray-300 light:text-slate-700 text-xs font-bold mb-3 border-b border-white/10 light:border-slate-400 pb-2">${title}</div>`;
-      
-      for(let m = 1; m <= months; m++) {
+    let calHtml = `<div class="space-y-2 text-xs max-h-72 overflow-y-auto pr-2 preview-scroll">`;
+    
+    for(let m = 1; m <= months; m++) {
         let unlockDate = new Date(startDateVal.getTime());
         unlockDate.setMonth(unlockDate.getMonth() + m);
         
@@ -980,16 +1025,16 @@
         let day = String(unlockDate.getDate()).padStart(2, '0');
         let hours = String(unlockDate.getHours()).padStart(2, '0');
         let minutes = String(unlockDate.getMinutes()).padStart(2, '0');
-        let seconds = String(unlockDate.getSeconds()).padStart(2, '0');
-        let fullDateTimeStr = `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+        let fullDateTimeStr = `${year}-${month}-${day} ${hours}:${minutes}`;
 
         let releasePerStep = (totalAmt / months).toFixed(2);
-        calHtml += `<div class="flex justify-between items-center bg-white/[0.02] light:bg-black/5 border border-white/5 light:border-slate-400 p-4 rounded-2xl mb-2">
-          <span class="font-bold text-cyan-400 light:text-cyan-600">${fullDateTimeStr}</span>
-          <span class="font-bold text-emerald-400 light:text-emerald-700">${releasePerStep} (${distMethodStr})</span>
+        calHtml += `<div class="flex justify-between items-center bg-black/20 light:bg-black/5 border border-white/5 light:border-slate-300 p-3 rounded-xl">
+          <span class="font-bold text-cyan-400 light:text-cyan-600"><i class="far fa-clock mr-1"></i> ${fullDateTimeStr}</span>
+          <span class="font-bold text-emerald-400 light:text-emerald-700">+${releasePerStep} <span class="text-[10px] text-gray-500">(${distMethodStr})</span></span>
         </div>`;
-      }
-      calendarList.innerHTML = calHtml;
+    }
+    calHtml += `</div>`;
+    container.innerHTML = calHtml;
   }
   // ----------------------------------------
 
@@ -1138,7 +1183,6 @@
       showToast("Smart Contract executed successfully on-chain!");
       switchTab('history');
       
-      // Extended record info to support Calendar view
       const newRecord = {
         hash: tx.hash,
         address: validRecipients.length > 1 ? `Batch (${validRecipients.length} addresses)` : validRecipients[0].address,
@@ -1153,9 +1197,12 @@
       };
 
       historyTransactions.unshift(newRecord);
+      
+      // Save to Local Storage immediately
       localStorage.setItem('arcsplit_history', JSON.stringify(historyTransactions));
       renderHistoryList();
       
+      // Save to Supabase Cloud Storage
       if (userAddress) {
         await saveHistoryToCloud(userAddress, newRecord);
       }
