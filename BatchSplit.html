@@ -242,7 +242,7 @@
       <div class="glass rounded-3xl p-6 sm:p-8 space-y-6">
         <div class="flex justify-between items-center border-b border-white/10 pb-4">
           <h3 class="text-xl font-bold text-amber-400 flex items-center gap-2"><i class="fas fa-hourglass-half"></i> Pending Batches</h3>
-          <p class="text-xs text-gray-400">Batches are chunked by 100 wallets safely.</p>
+          <p class="text-xs text-gray-400">Batches execute sequentially automatically.</p>
         </div>
         <div id="pendingContainer" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
       </div>
@@ -331,13 +331,13 @@ const CONTRACT_ADDRESS = "0xf2073671b726b96DC1c99D001BBF6e60EE1f187F";
 const NATIVE_TOKEN = "0x3600000000000000000000000000000000000000";
 const BATCH_SIZE = 100;
 
+// FIXED: Native EVM tokens MUST always use 18 decimals regardless of the name on the network.
 const AVAILABLE_TOKENS = [
-  { address: NATIVE_TOKEN, symbol: "Native USDC", decimals: 6 },
+  { address: NATIVE_TOKEN, symbol: "Native USDC", decimals: 18 },
   { address: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a", symbol: "EURC", decimals: 6 },
   { address: "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF", symbol: "cirBTC", decimals: 8 }
 ];
 
-// UPDATED ABI: Using splitByAmount just like ArcRoleSplitter to ensure 100% calculation accuracy for multiple tokens!
 const contractAbi = [
   "function splitByAmount(tuple(address token, uint256 totalChunkAmount, address[] wallets, uint256[] amounts, uint256 tokenToNativeRatio, uint256 batchId, uint256 deadline, uint256 nonce, uint256 baseGas, uint64 maxGasPriceLimit) params) external payable"
 ];
@@ -358,7 +358,7 @@ function showToast(msg, duration = 4000) {
   const toast = document.getElementById("toast");
   document.getElementById("toastText").innerHTML = msg;
   toast.classList.remove("hidden");
-  setTimeout(() => toast.classList.add("hidden"), duration);
+  if(duration > 0) setTimeout(() => toast.classList.add("hidden"), duration);
 }
 
 function toggleTheme() {
@@ -648,7 +648,7 @@ function openLoadTemplateModal() {
     container.innerHTML = templates.map((t, idx) => `
       <div class="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10">
         <div><div class="font-bold text-sm">${t.name}</div><div class="text-[10px] text-gray-400">${t.tokens.length} Tokens | ${t.recipients.length} Recipients</div></div>
-        <button onclick="loadTemplate(${idx})" class="px-3 py-1.5 bg-emerald-500 text-gray-950 font-bold rounded-lg text-xs">Load</button>
+        <button onclick="loadTemplate(${idx})" class="px-3 py-1.5 bg-emerald-500 text-gray-950 font-bold rounded-xl text-xs">Load</button>
       </div>
     `).join('');
   }
@@ -695,7 +695,6 @@ function generateBatches() {
     const dec = AVAILABLE_TOKENS.find(x => x.address === tItem.token)?.decimals || 18;
     const symbol = AVAILABLE_TOKENS.find(x => x.address === tItem.token)?.symbol || "TOKEN";
     
-    // Convert to Wei
     const amountWei = ethers.parseUnits(tItem.amount || "0", dec);
     const rawAmount = parseFloat(tItem.amount);
 
@@ -704,7 +703,6 @@ function generateBatches() {
 
     recipientRows.forEach(r => {
       const p = parseFloat(r.percentage) || 0;
-      // Calculate exact share off-chain perfectly for all decimals!
       const shareWei = (amountWei * BigInt(Math.round(p * 100))) / 10000n;
       if (shareWei > 0n && ethers.isAddress(r.wallet)) {
         flatWallets.push(r.wallet);
@@ -729,6 +727,7 @@ function generateBatches() {
         isNative: isNative,
         chunks: chunks,
         currentIndex: 0,
+        txHashes: [], // ADDED FOR SAVING HASHES
         totalWallets: flatWallets.length,
         rawAmount: rawAmount,
         tokenSymbol: symbol,
@@ -747,7 +746,7 @@ function generateBatches() {
     switchView('pending');
     
     // Auto start the first batch generated
-    setTimeout(() => { resumeBatchTx(newBatches[0].id); }, 1000);
+    setTimeout(() => { resumeBatchTx(newBatches[0].id); }, 1500);
   } else {
     showToast("No valid data to execute.");
   }
@@ -811,6 +810,8 @@ async function resumeBatchTx(batchId) {
   let bIndex = batches.findIndex(x => x.id === batchId);
   if (bIndex === -1) return;
   let data = batches[bIndex];
+  
+  if (!data.txHashes) data.txHashes = [];
 
   if (!signer) return showToast("Please connect your wallet first");
 
@@ -853,10 +854,15 @@ async function resumeBatchTx(batchId) {
 
       const txValue = data.isNative ? totalChunkAmountWei : 0n;
       
-      showToast(`Sending batch ${data.currentIndex + 1} of ${data.chunks.length} (${data.tokenSymbol})... Please Sign!`);
+      showToast(`Sending batch ${data.currentIndex + 1} of ${data.chunks.length} (${data.tokenSymbol})... Please Sign!`, 0);
       const tx = await contract.splitByAmount(splitParams, { value: txValue });
       
-      showToast(`Waiting for network confirmation...`);
+      // Save tx hash right away
+      data.txHashes.push(tx.hash);
+      batches[bIndex] = data;
+      localStorage.setItem('arcPendingBatchesMain', JSON.stringify(batches));
+
+      showToast(`Confirming... <a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline text-cyan-400">View on ArcScan</a>`, 0);
       await tx.wait();
 
       data.currentIndex++;
@@ -875,17 +881,20 @@ async function resumeBatchTx(batchId) {
       recipientsCount: data.totalWallets,
       assetsCount: 1,
       memo: data.memo + ` [${data.tokenSymbol}]`,
-      txHash: "Completed using Batches",
+      txHashes: data.txHashes,
       tokens: [{ token: data.originalToken, amount: data.rawAmount }],
       recipients: data.originalRecipients
     });
 
     confetti({ particleCount: 200, spread: 80, origin: { y: 0.6 } });
-    showToast(`✅ Successfully distributed all ${data.tokenSymbol}!`);
     fetchAndRenderBalancesWithRetry();
     
-    // Optionally move to History tab after completely finishing
-    if (JSON.parse(localStorage.getItem('arcPendingBatchesMain') || '[]').length === 0) {
+    // AUTO EXECUTE NEXT BATCH IF IT EXISTS
+    if (batches.length > 0) {
+        showToast(`✅ ${data.tokenSymbol} Distributed! Auto-starting next token in 3s...`, 3000);
+        setTimeout(() => resumeBatchTx(batches[0].id), 3000);
+    } else {
+        showToast(`✅ Successfully distributed all tokens!`, 3000);
         setTimeout(() => switchView('history'), 2500);
     }
 
@@ -940,12 +949,26 @@ function renderHistoryTable() {
 function viewDetails(idx) {
   const history = JSON.parse(localStorage.getItem("arcSplitHistoryMain") || "[]");
   const h = history[idx];
+  
+  let txLinks = "";
+  if (h.txHashes && h.txHashes.length > 0) {
+    txLinks = `<div class="font-bold text-white mt-3 mb-2">Transactions (ArcScan):</div>`;
+    txLinks += h.txHashes.map((tx, i) => 
+      `<div class="mb-1"><a href="https://testnet.arcscan.app/tx/${tx}" target="_blank" class="text-emerald-400 hover:underline flex items-center gap-1.5"><i class="fas fa-external-link-alt text-[10px]"></i> Chunk ${i+1}: ${tx.slice(0,10)}...${tx.slice(-8)}</a></div>`
+    ).join('');
+  }
+
   document.getElementById("detailsContent").innerHTML = `
     <div class="font-bold text-sm text-cyan-400 mb-2">${h.memo}</div>
     <div class="font-bold text-white mb-1">Tokens Processed:</div>
     ${h.tokens.map(t => '<div class="text-gray-300">' + t.amount + ' Token</div>').join('')}
-    <div class="font-bold text-white mt-3 mb-1">Recipients:</div>
-    ${h.recipients.map(r => '<div class="text-gray-300">' + r.wallet + ' - ' + r.percentage + '%</div>').join('')}
+    
+    ${txLinks}
+
+    <div class="font-bold text-white mt-4 mb-1">Recipients:</div>
+    <div class="space-y-1">
+      ${h.recipients.map(r => '<div class="text-gray-300">' + r.wallet + ' <span class="text-gray-500">(' + r.percentage + '%)</span></div>').join('')}
+    </div>
   `;
   document.getElementById("detailsModal").classList.remove("hidden");
 }
