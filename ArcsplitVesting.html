@@ -977,11 +977,28 @@
       // Handles Native USDC representation
       const isNative = (tokenAddr === "0x3600000000000000000000000000000000000000" || tokenAddr.startsWith("0x000"));
 
+      // ----------------------------------------------------
+      // NEW LOGIC: Dynamically fetch decimals for accuracy
+      // ----------------------------------------------------
+      let tokenDecimals = 18;
+      if (!isNative) {
+        try {
+          const erc20ABI = ["function decimals() view returns (uint8)"];
+          const tokenContract = new ethers.Contract(tokenAddr, erc20ABI, provider);
+          tokenDecimals = Number(await tokenContract.decimals());
+        } catch (e) {
+          console.warn("Failed to fetch decimals, defaulting to 18", e);
+        }
+      }
+      // ----------------------------------------------------
+
       if (validRecipients.length === 1) {
         // --- Single Schedule Creation ---
         const recipient = validRecipients[0];
         const allocatedAmt = recipient.amount !== "" ? parseFloat(recipient.amount) : (totalAmt * parseFloat(recipient.percent)) / 100;
-        const totalAmountParsed = ethers.parseUnits(allocatedAmt.toString(), 18);
+        
+        // Using dynamically fetched tokenDecimals instead of hardcoded 18
+        const totalAmountParsed = ethers.parseUnits(allocatedAmt.toString(), tokenDecimals);
         
         if (!isNative) {
           showToast("Checking Token Allowance...");
@@ -1016,7 +1033,9 @@
         for (let r of validRecipients) {
           addrs.push(r.address);
           let allocatedAmt = r.amount !== "" ? parseFloat(r.amount) : (totalAmt * parseFloat(r.percent)) / 100;
-          let parsed = ethers.parseUnits(allocatedAmt.toString(), 18);
+          
+          // Using dynamically fetched tokenDecimals instead of hardcoded 18
+          let parsed = ethers.parseUnits(allocatedAmt.toString(), tokenDecimals);
           amounts.push(parsed);
           totalNativeValue += parsed;
         }
