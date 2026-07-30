@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-  <title>ArcSplit - Unified Enterprise Token & Role Splitter</title>
+  <title>ArcSplit - Multi-Token Batch Split</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
@@ -71,7 +71,7 @@
       color: #0f172a;
       border: 1px solid #cbd5e1;
     }
-    
+
     select option { background-color: #0f172a; color: white; }
     .light select option { background-color: #ffffff; color: #0f172a; }
 
@@ -79,28 +79,29 @@
     .app-button:active:not(:disabled) { transform: scale(0.98); }
     
     .preview-scroll { max-height: 320px; overflow-y: auto; scrollbar-width: thin; }
-    .hide-scrollbar::-webkit-scrollbar { display: none; }
-    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+    .progress-bar-fill { transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); }
+    .fade-in { animation: fadeIn 0.4s ease forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   </style>
 </head>
 <body class="text-white min-h-screen selection:bg-emerald-500 selection:text-black">
 
   <div class="max-w-7xl mx-auto px-4 py-6 sm:py-8">
     
-    <!-- Top Header & Navigation -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
+    <!-- Header Section -->
+    <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-6 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
       <div>
-        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight preserve-dark-color">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Enterprise</span></h1>
-        <p class="text-xs sm:text-sm font-medium preserve-dark-muted">Unified Multi-Token, Role-Based & AdHoc Batched Distributor</p>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight preserve-dark-color">Multi Token <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Batch Split</span></h1>
+        <p class="text-xs sm:text-sm font-medium preserve-dark-muted">Professional Decentralized multi-Token Splitter Engine</p>
       </div>
       
       <div class="flex items-center gap-3 flex-wrap">
-        <div class="flex bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 rounded-2xl p-1 text-xs relative overflow-x-auto hide-scrollbar">
-          <button onclick="switchTab('batch')" id="tabBatch" class="px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400 preserve-dark-color whitespace-nowrap">Batch Split</button>
-          <button onclick="switchTab('role')" id="tabRole" class="relative px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted whitespace-nowrap">Role Split</button>
-          <button onclick="switchTab('roles')" id="tabRoles" class="relative px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted whitespace-nowrap">Roles</button>
-          <button onclick="switchTab('history')" id="tabHistory" class="relative px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted whitespace-nowrap">History</button>
-          <button onclick="switchTab('pending')" id="tabPending" class="relative px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted whitespace-nowrap">
+        <div class="flex bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 rounded-2xl p-1 text-xs relative flex-wrap sm:flex-nowrap">
+          <button onclick="switchTab('splitter')" id="tabSplitter" class="px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400 preserve-dark-color">Batch Split</button>
+          <button onclick="switchTab('templates')" id="tabTemplates" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted">Templates</button>
+          <button onclick="switchTab('history')" id="tabHistory" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted">History</button>
+          <button onclick="switchTab('pending')" id="tabPending" class="relative px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted">
             Pending
             <span id="pendingBadge" class="hidden absolute top-1 right-1 flex h-2.5 w-2.5">
               <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
@@ -109,959 +110,941 @@
           </button>
         </div>
 
-        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/15 border border-white/10 rounded-2xl transition-all shadow-sm">
+        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/15 border border-white/10 rounded-2xl transition-all" aria-label="Toggle Theme">
           <i class="fas fa-moon text-lg text-emerald-400"></i>
         </button>
-      </div>
-    </div>
 
-    <!-- Status Bar & Connection Widget -->
-    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
-      <div id="status" class="glass rounded-2xl p-4 text-xs font-medium flex items-center justify-between border-l-4 border-l-emerald-500 md:col-span-8">
-        <div class="flex items-center gap-3">
-          <div id="statusIndicator" class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
-          <span id="contractStatusText">Ready for Multi-Token & Role-Based Distribution.</span>
-        </div>
-        <div class="flex items-center gap-3">
-          <button onclick="switchNetworkToArc()" id="networkSwitchBtn" class="hidden px-3 py-1 bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 rounded-lg text-[11px] font-bold transition-all">
-            Switch Network
-          </button>
-          <div class="text-emerald-400 font-bold">Arc Network</div>
-        </div>
-      </div>
-      
-      <div class="glass rounded-2xl p-4 flex items-center justify-between md:col-span-4 border border-white/5">
-        <button onclick="toggleConnection()" id="connectBtn" class="app-button w-full px-4 py-2.5 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg hover:bg-emerald-50 transition-all">
+        <button onclick="toggleConnection()" id="connectBtn" class="app-button px-5 py-2.5 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl text-xs flex items-center gap-2 shadow-lg">
           <i class="fas fa-wallet text-emerald-500"></i> <span id="connectText">Connect Wallet</span>
         </button>
       </div>
     </div>
 
-    <!-- ================= VIEW 1: MULTI-TOKEN BATCH SPLIT ================= -->
-    <div id="viewBatch" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+    <!-- Status Bar -->
+    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mb-6">
+      <div id="status" class="glass rounded-2xl p-4 text-xs font-medium flex items-center justify-between border-l-4 border-l-emerald-500 md:col-span-12">
+        <div class="flex items-center gap-3">
+          <div id="statusIndicator" class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
+          <span id="contractStatusText">Ready for Multi-Token AdHoc Batch Distribution.</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <button onclick="fetchAndRenderBalancesWithRetry()" class="px-3 py-1 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-lg text-xs font-bold transition-all">
+            <i class="fas fa-rotate text-[10px] mr-1"></i> Refresh Balances
+          </button>
+          <div class="text-emerald-400 font-bold hidden sm:block">Arc Network (L1)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Wallet Balances (Only visible when connected) -->
+    <div id="walletBalancesBox" class="glass rounded-2xl p-5 mb-8 hidden border border-emerald-500/20 fade-in">
+      <div class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Your Token Balances</div>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4" id="balancesContainer"></div>
+    </div>
+
+    <!-- ================= VIEW 1: BATCH SPLIT ================= -->
+    <div id="viewSplitter" class="grid grid-cols-1 lg:grid-cols-12 gap-8 fade-in">
+      
       <div class="lg:col-span-7 space-y-6">
         
-        <!-- Tokens -->
         <div class="glass rounded-3xl p-6 sm:p-8 space-y-5">
           <div class="flex justify-between items-center">
-            <h3 class="text-base font-bold flex items-center gap-2 preserve-dark-color">
-              <span class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">1</span> 
+            <h3 class="text-base sm:text-lg font-bold flex items-center gap-2">
+              <span class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold preserve-dark-color">1</span> 
               Add Tokens
             </h3>
-            <button onclick="addMultiTokenRow()" class="app-button px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all">
-              <i class="fas fa-plus"></i> Add Token
+            <button onclick="addTokenRow()" class="app-button px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all">
+              <i class="fas fa-plus text-[10px]"></i> Add Token
             </button>
           </div>
-          <div id="multiTokensContainer" class="space-y-3"></div>
+          <div id="tokensContainer" class="space-y-3"></div>
         </div>
 
-        <!-- Recipients -->
         <div class="glass rounded-3xl p-6 sm:p-8 space-y-5">
           <div class="flex justify-between items-center">
-            <h3 class="text-base font-bold flex items-center gap-2 preserve-dark-color">
-              <span class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">2</span> 
+            <h3 class="text-base sm:text-lg font-bold flex items-center gap-2">
+              <span class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold preserve-dark-color">2</span> 
               Add Recipients & Shares
             </h3>
-            <div class="flex gap-2">
-              <button onclick="openMultiCsvModal()" class="app-button px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-semibold flex items-center gap-1.5">
+            <div class="flex items-center gap-2">
+              <button onclick="importCSVModal()" class="app-button px-3 py-2 bg-white/5 light:bg-black/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all">
                 <i class="fas fa-file-csv text-cyan-400"></i> Import CSV
               </button>
-              <button onclick="addMultiRecipientRow()" class="app-button px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-xl text-xs font-bold flex items-center gap-1.5">
-                <i class="fas fa-plus"></i> Add
+              <button onclick="addRecipientRow()" class="app-button px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all">
+                <i class="fas fa-plus text-[10px]"></i> Add Recipient
               </button>
             </div>
           </div>
-          
-          <div id="multiRecipientsContainer" class="space-y-3 max-h-80 overflow-y-auto pr-1 hide-scrollbar"></div>
-          
-          <button onclick="distributeMultiRemaining()" class="app-button w-full py-3 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-400 rounded-2xl text-xs font-bold flex items-center justify-center gap-2">
-            <i class="fas fa-balance-scale"></i> Distribute Remaining
-          </button>
-          
+
+          <div id="recipientsContainer" class="space-y-3 max-h-80 overflow-y-auto pr-1"></div>
+
+          <div>
+            <button onclick="distributeRemaining()" class="app-button w-full py-3 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-cyan-500 rounded-2xl text-xs font-bold flex items-center justify-center gap-2 transition-all">
+              <i class="fas fa-balance-scale"></i> Distribute Remaining
+            </button>
+          </div>
+
           <div class="pt-3 border-t border-white/10 flex justify-between items-center text-sm font-semibold">
-            <span class="text-gray-400">Total Valid Allocation:</span>
-            <span id="multiTotalBadge" class="px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">100% (10000 BPS)</span>
+            <span class="text-gray-400">Total Basis Points / Percentage:</span>
+            <span id="totalPercentageBadge" class="px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">100% (10000 BPS)</span>
           </div>
         </div>
 
-        <!-- Meta -->
         <div class="glass rounded-3xl p-6 sm:p-8 space-y-4">
-          <h3 class="text-base font-bold flex items-center gap-2 preserve-dark-color">
-            <span class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">3</span> 
-            Memo & Template Options
+          <h3 class="text-base font-bold flex items-center gap-2">
+            <span class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold preserve-dark-color">3</span> 
+            Memo Configuration
           </h3>
-          <textarea id="multiMemo" rows="2" class="w-full rounded-2xl p-4 text-xs outline-none resize-none" placeholder="e.g. Monthly Multi-Token Payroll"></textarea>
-          <div class="flex flex-wrap gap-3">
-            <button onclick="saveMultiTemplate()" class="app-button px-4 py-2.5 bg-violet-600/20 hover:bg-violet-600/30 text-violet-400 border border-violet-500/30 rounded-xl text-xs font-semibold flex items-center gap-2">
-              <i class="fas fa-bookmark"></i> Save Template
-            </button>
-            <button onclick="openLoadMultiTemplate()" class="app-button px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-semibold flex items-center gap-2">
-              <i class="fas fa-folder-open"></i> Load Template
-            </button>
+          <div>
+            <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Distribution Memo / Note</label>
+            <textarea id="batchMemo" rows="2" class="w-full bg-white/5 light:bg-slate-100 border border-white/10 rounded-2xl p-4 text-xs sm:text-sm outline-none resize-none" placeholder="e.g. Treasury Distribution - July Payroll"></textarea>
           </div>
         </div>
+
       </div>
 
       <div class="lg:col-span-5 space-y-6">
         <div class="glass rounded-3xl p-6 sm:p-8 sticky top-6 space-y-6">
-          <h3 class="text-lg font-bold flex items-center justify-between border-b border-white/10 pb-4 preserve-dark-color">
+          
+          <h3 class="text-lg font-bold flex items-center justify-between border-b border-white/10 pb-4">
             <span>Live Summary</span>
-            <span class="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20 uppercase tracking-wide">Batched Exec</span>
+            <span class="text-xs font-normal text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded-lg border border-emerald-500/20 preserve-dark-color">Preview</span>
           </h3>
+
           <div class="grid grid-cols-2 gap-4 text-center">
-            <div class="bg-white/5 light:bg-slate-100 p-4 rounded-2xl border border-white/5 light:border-black/5">
+            <div class="bg-black/25 light:bg-slate-100 p-4 rounded-2xl border border-white/5">
               <div class="text-gray-400 text-xs mb-1">Total Assets</div>
-              <div id="multiSummaryAssets" class="text-xl font-extrabold text-cyan-400">0</div>
+              <div id="summaryAssetCount" class="text-xl font-extrabold text-cyan-400">0</div>
             </div>
-            <div class="bg-white/5 light:bg-slate-100 p-4 rounded-2xl border border-white/5 light:border-black/5">
-              <div class="text-gray-400 text-xs mb-1">Total Wallets</div>
-              <div id="multiSummaryRecipients" class="text-xl font-extrabold text-emerald-400">0</div>
+            <div class="bg-black/25 light:bg-slate-100 p-4 rounded-2xl border border-white/5">
+              <div class="text-gray-400 text-xs mb-1">Total Recipients</div>
+              <div id="summaryRecipientCount" class="text-xl font-extrabold text-emerald-400">0</div>
             </div>
           </div>
+
           <div>
-            <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-3">Distribution Breakdown</label>
-            <div id="multiLivePreview" class="bg-black/30 light:bg-slate-100 border border-white/10 light:border-black/10 rounded-2xl p-4 preview-scroll space-y-4 font-mono text-xs"></div>
-          </div>
-          <button onclick="prepareBatchSplit()" id="btnExecBatch" class="app-button w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:brightness-110 py-4 rounded-2xl text-base font-bold text-gray-950 shadow-xl shadow-emerald-500/25">
-            Execute Batch Split
-          </button>
-        </div>
-      </div>
-    </div>
-
-    <!-- ================= VIEW 2: ROLE SPLIT ================= -->
-    <div id="viewRole" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-8">
-      <div class="lg:col-span-7 space-y-6">
-        <div class="glass rounded-3xl p-6 sm:p-8">
-          <h3 class="font-bold text-base mb-4 flex items-center gap-2 preserve-dark-color"><i class="fas fa-layer-group text-emerald-400"></i> Step 1: Token & Source</h3>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            <div>
-              <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Token</label>
-              <select id="roleTokenSelect" class="w-full rounded-2xl px-4 py-3.5 text-sm font-medium outline-none cursor-pointer" onchange="renderRolePreview()"></select>
-            </div>
-            <div>
-              <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-2">Total Amount</label>
-              <input type="number" id="roleTotalAmount" value="1000" min="0" step="any" class="w-full rounded-2xl px-4 py-3.5 text-lg font-bold outline-none" oninput="renderRolePreview()">
+            <label class="block text-gray-400 text-xs font-semibold uppercase tracking-wider mb-3">Distribution Breakdown Preview</label>
+            <div id="liveBreakdownPreview" class="bg-black/25 light:bg-slate-100 border border-white/10 rounded-2xl p-4 max-h-72 overflow-y-auto space-y-4 font-mono text-xs">
             </div>
           </div>
-          
-          <div class="h-px bg-white/5 light:bg-black/10 my-6"></div>
-          
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="font-bold text-base flex items-center gap-2 preserve-dark-color"><i class="fas fa-users-gear text-emerald-400"></i> Step 2: Role Allocations</h3>
-            <button onclick="addRoleSplitRow()" class="px-3.5 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-semibold transition-all">
-              <i class="fas fa-plus mr-1"></i> Add Role
-            </button>
-          </div>
-          <div id="roleSplitContainer" class="space-y-3 mb-6"></div>
-          <div class="flex items-center justify-between bg-white/[0.02] light:bg-slate-100 border border-white/5 p-4 rounded-2xl">
-            <span id="roleTotalBadge" class="font-bold text-sm text-gray-400">Total: 0%</span>
-            <button onclick="distributeRoleSplitRemaining()" class="text-cyan-400 hover:underline text-xs font-semibold">Distribute Remaining</button>
-          </div>
-        </div>
-      </div>
 
-      <div class="lg:col-span-5 space-y-6">
-        <div class="glass rounded-3xl p-6 sm:p-8 sticky top-6">
-          <h3 class="font-bold text-base mb-4 flex items-center gap-2 preserve-dark-color"><i class="fas fa-eye text-emerald-400"></i> Live Role Expansion</h3>
-          <div class="mb-6 bg-black/25 light:bg-slate-100 border border-white/10 rounded-2xl overflow-hidden p-4">
-            <div id="rolePreviewBox" class="preview-scroll space-y-3 font-mono text-xs"></div>
-          </div>
-          <div id="roleValidationBox" class="glass border border-white/10 p-4 rounded-2xl mb-6 space-y-2 text-xs text-gray-400">
-            <div id="valRole1"><i class="fas fa-circle-xmark text-rose-400 mr-2"></i> Roles selected</div>
-            <div id="valRole2"><i class="fas fa-circle-xmark text-rose-400 mr-2"></i> Total shares = 100%</div>
-            <div id="valRole3"><i class="fas fa-circle-xmark text-rose-400 mr-2"></i> Wallets found in roles</div>
-          </div>
-          <button onclick="prepareRoleSplit()" id="btnExecRole" disabled class="app-button w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:brightness-110 py-4 rounded-2xl text-base font-bold text-gray-950 shadow-xl opacity-50 cursor-not-allowed">
-            Execute Role Split
+          <button id="executeBatchBtn" onclick="prepareBatchExecution()" class="app-button w-full bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 hover:brightness-110 py-4 sm:py-5 rounded-2xl text-base sm:text-lg font-bold shadow-xl shadow-emerald-500/25 transition-all text-gray-950">
+            Execute AdHoc Split
           </button>
+          
+          <button onclick="openSaveTemplateModal()" class="app-button w-full py-3.5 bg-violet-600/10 hover:bg-violet-600/20 text-violet-400 border border-violet-500/30 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all">
+            <i class="fas fa-bookmark"></i> Save as Template 
+          </button>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ================= VIEW 2: TEMPLATES ================= -->
+    <div id="viewTemplates" class="hidden space-y-6 fade-in">
+      <div class="glass rounded-3xl p-6 sm:p-8 space-y-6">
+        <div class="flex justify-between items-center border-b border-white/10 pb-4">
+          <h3 class="text-xl font-bold flex items-center gap-2"><i class="fas fa-folder-open text-violet-400"></i> Saved Templates</h3>
+        </div>
+        <div id="templatesListContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <!-- Populated via JS -->
         </div>
       </div>
     </div>
 
-    <!-- ================= VIEW 3: ROLES MANAGEMENT ================= -->
-    <div id="viewRoles" class="hidden space-y-6">
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white/[0.02] light:bg-white/50 border border-white/5 p-6 rounded-3xl">
-        <div>
-          <h3 class="text-lg font-bold preserve-dark-color">Team & Corporate Roles</h3>
-          <p class="text-xs preserve-dark-muted">Define reusable roles and aggregate their target wallets.</p>
+    <!-- ================= VIEW 3: HISTORY ================= -->
+    <div id="viewHistory" class="hidden space-y-6 fade-in">
+      <div class="glass rounded-3xl p-6 sm:p-8 space-y-6">
+        <div class="flex justify-between items-center border-b border-white/10 pb-4">
+          <h3 class="text-xl font-bold flex items-center gap-2"><i class="fas fa-history text-emerald-400"></i> Batch Split History</h3>
+          <button onclick="clearHistory()" class="text-xs text-rose-400 hover:underline">Clear History</button>
         </div>
-        <div class="flex gap-2.5">
-          <button onclick="openRoleCsvModal()" class="px-4 py-2.5 bg-sky-500/10 text-sky-400 border border-sky-500/20 rounded-2xl text-xs font-semibold"><i class="fas fa-file-csv"></i> Import</button>
-          <button onclick="openEditRoleModal()" class="px-5 py-2.5 bg-emerald-500 text-gray-950 font-bold rounded-2xl text-xs shadow-lg shadow-emerald-500/20"><i class="fas fa-plus"></i> New Role</button>
+        <div id="historyTableContainer" class="overflow-x-auto">
         </div>
-      </div>
-      <div class="glass rounded-3xl p-6 overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-          <thead>
-            <tr class="border-b border-white/10 text-gray-400 text-xs uppercase tracking-wider">
-              <th class="p-3">Role Name</th>
-              <th class="p-3">Wallets</th>
-              <th class="p-3">Description</th>
-              <th class="text-right p-3">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="rolesTableBody" class="text-xs divide-y divide-white/5"></tbody>
-        </table>
       </div>
     </div>
 
-    <!-- ================= VIEW 4: HISTORY ================= -->
-    <div id="viewHistory" class="hidden glass rounded-3xl p-6 sm:p-8">
+    <!-- ================= VIEW 4: PENDING BATCHES ================= -->
+    <div id="viewPending" class="hidden space-y-6 fade-in">
       <div class="flex justify-between items-center mb-6">
-        <h3 class="font-bold text-lg flex items-center gap-2 preserve-dark-color"><i class="fas fa-history text-emerald-400"></i> Execution History</h3>
-        <button onclick="clearHistory()" class="text-xs text-rose-400 hover:underline">Clear Records</button>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="w-full text-left text-xs font-mono">
-          <thead class="bg-white/5 text-gray-400 uppercase">
-            <tr>
-              <th class="p-3 rounded-l-xl">Memo / Date</th>
-              <th class="p-3">Type</th>
-              <th class="p-3">Recipients</th>
-              <th class="p-3 text-right rounded-r-xl">Actions</th>
-            </tr>
-          </thead>
-          <tbody id="historyTableBody" class="divide-y divide-white/5"></tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- ================= VIEW 5: PENDING ================= -->
-    <div id="viewPending" class="hidden space-y-6">
-      <div class="flex justify-between items-center bg-amber-500/10 border border-amber-500/20 p-6 rounded-3xl">
-        <div>
-          <h3 class="font-bold text-lg flex items-center gap-2 text-amber-400"><i class="fas fa-hourglass-half"></i> Pending & Interrupted Sessions</h3>
-          <p class="text-xs text-amber-200/60 mt-1">Due to chunking (batches of 100), if a process fails, you can safely resume the remaining chunks here.</p>
-        </div>
-      </div>
-      <div id="pendingListContainer" class="space-y-4"></div>
-    </div>
-
-  </div> <!-- End Main Container -->
-
-
-  <!-- ================= MODALS ================= -->
-
-  <!-- Confirm / Progress Modal for Execution Engine -->
-  <div id="executionModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
-    <div class="glass rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-white/15 shadow-2xl space-y-6">
-      <div class="text-center">
-        <h2 class="text-2xl font-bold text-emerald-400 mb-1" id="execModalTitle">Confirm Distribution</h2>
-        <p class="text-xs text-gray-400" id="execModalDesc">You are about to execute an automated multi-batch distribution.</p>
+        <h3 class="font-bold text-lg flex items-center gap-2 preserve-dark-color">
+          <i class="fas fa-hourglass-half text-amber-400"></i> Pending & Incomplete Batches
+        </h3>
+        <p class="text-xs text-gray-400 preserve-dark-muted">Transactions that failed or were interrupted can be safely resumed here.</p>
       </div>
       
-      <div id="execModalSummary" class="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-2 max-h-48 overflow-y-auto font-mono text-xs"></div>
-
-      <div id="execProgressBox" class="hidden bg-black/40 p-4 rounded-2xl border border-emerald-500/30">
-        <div class="flex justify-between text-xs font-semibold mb-2">
-          <span class="text-emerald-400" id="execStepText">Initializing...</span>
-          <span class="text-gray-400" id="execStepCount">0/0</span>
+      <!-- Progress Bar (Hidden by default) -->
+      <div id="executionProgressBox" class="hidden glass rounded-3xl p-6 mb-6 border-emerald-500/30">
+        <div class="flex justify-between text-xs font-bold mb-2">
+          <span class="text-emerald-400">Executing Batches...</span>
+          <span id="executionProgressText" class="text-white">0 / 0</span>
         </div>
-        <div class="w-full bg-white/10 rounded-full h-1.5 mb-3">
-          <div id="execProgressBar" class="bg-emerald-500 h-1.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+        <div class="w-full bg-black/50 rounded-full h-3 mb-2 border border-white/10 overflow-hidden">
+          <div id="executionProgressBar" class="progress-bar-fill bg-gradient-to-r from-emerald-500 to-cyan-500 h-3 rounded-full" style="width: 0%"></div>
         </div>
-        <div id="execTxHash" class="text-[10px] text-cyan-400 truncate hidden">Tx: <a href="#" target="_blank" class="underline"></a></div>
+        <div id="executionStatusLabel" class="text-[10px] text-gray-400 text-center animate-pulse">Please confirm transaction in your wallet...</div>
       </div>
 
-      <div class="flex gap-3 pt-2" id="execActions">
-        <button onclick="hideExecutionModal()" class="app-button flex-1 py-3.5 rounded-xl border border-white/15 hover:bg-white/5 font-semibold text-sm">Cancel</button>
-        <button id="btnStartEngine" class="app-button flex-1 py-3.5 bg-emerald-500 text-gray-950 font-bold rounded-xl text-sm shadow-lg">Confirm & Run Engine</button>
+      <div id="pendingContainer" class="space-y-4">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ================= MODALS ================= -->
+  <div id="confirmModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+    <div class="glass rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-white/15 shadow-2xl space-y-6">
+      <div class="text-center">
+        <h2 class="text-2xl font-bold text-emerald-400 mb-1">Confirm Batch Split</h2>
+        <p class="text-xs text-gray-400">You are about to execute the following multi-token distribution. Batches > 100 will be chunked automatically.</p>
+      </div>
+
+      <div id="confirmAssetsSummary" class="bg-black/25 light:bg-slate-100 border border-white/10 rounded-2xl p-4 space-y-2 max-h-48 overflow-y-auto font-mono text-xs">
+      </div>
+
+      <div class="flex gap-3 pt-2" id="confirmModalActions">
+        <button onclick="hideConfirmModal()" class="app-button flex-1 py-3.5 rounded-xl bg-white/5 border border-white/15 hover:bg-white/10 font-semibold text-sm transition-all">Cancel</button>
+        <button onclick="executeConfirmedBatch()" class="app-button flex-1 py-3.5 bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold rounded-xl text-sm transition-all shadow-lg shadow-emerald-500/20">Queue & Send</button>
       </div>
     </div>
   </div>
 
-  <!-- Role Edit Modal -->
-  <div id="modalRoleEdit" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
-    <div class="glass rounded-3xl p-6 sm:p-8 max-w-md w-full border border-white/15 shadow-2xl">
-      <h3 id="roleModalTitle" class="text-xl font-bold mb-4">Role</h3>
-      <div class="space-y-4 text-xs">
-        <div>
-          <label class="block text-gray-400 mb-1 font-semibold">Role Name</label>
-          <input type="text" id="roleInputName" class="w-full rounded-xl px-4 py-3 outline-none" placeholder="e.g. Founders">
-        </div>
-        <div>
-          <label class="block text-gray-400 mb-1 font-semibold">Wallets (comma/newline separated)</label>
-          <textarea id="roleInputWallets" rows="4" class="w-full rounded-xl p-3 outline-none font-mono text-[10px]" placeholder="0x123..."></textarea>
-        </div>
+  <div id="detailsModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+    <div class="glass rounded-3xl p-6 sm:p-8 max-w-2xl w-full border border-white/15 shadow-2xl space-y-6">
+      <div class="flex justify-between items-center border-b border-white/10 pb-4">
+        <h3 class="text-xl font-bold">Batch Split Details</h3>
+        <button onclick="hideDetailsModal()" class="text-gray-400 hover:text-white text-xl">×</button>
       </div>
-      <div class="flex gap-3 mt-6">
-        <button onclick="closeRoleEditModal()" class="app-button flex-1 py-3 rounded-xl border border-white/15 text-xs">Cancel</button>
-        <button onclick="saveRoleEdit()" class="app-button flex-1 py-3 bg-emerald-500 text-gray-950 font-bold rounded-xl text-xs">Save</button>
+      <div id="detailsContent" class="space-y-4 max-h-96 overflow-y-auto font-mono text-xs">
+      </div>
+      <div class="flex justify-end">
+        <button onclick="hideDetailsModal()" class="app-button px-6 py-3 bg-white/10 rounded-xl font-semibold text-xs">Close</button>
       </div>
     </div>
   </div>
 
-  <!-- CSV Import Modal (Shared) -->
-  <div id="modalCsv" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
-    <div class="glass rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-white/15 shadow-2xl">
-      <h3 id="csvModalTitle" class="text-xl font-bold mb-2">Import CSV</h3>
-      <p id="csvModalDesc" class="text-xs text-gray-400 mb-4"></p>
-      <textarea id="csvTextArea" rows="6" class="w-full bg-black/30 border border-white/15 rounded-2xl p-4 font-mono text-xs outline-none mb-4"></textarea>
-      <div class="flex gap-3">
-        <button onclick="closeCsvModal()" class="app-button flex-1 py-3 rounded-xl border border-white/15 text-xs">Cancel</button>
-        <button id="btnProcessCsv" class="app-button flex-1 py-3 bg-cyan-500 text-white font-bold rounded-xl text-xs">Import</button>
+  <div id="templateModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+    <div class="glass rounded-3xl p-6 sm:p-8 max-w-md w-full border border-white/15 shadow-2xl space-y-4">
+      <h3 class="text-lg font-bold">Save Template</h3>
+      <input type="text" id="templateNameInput" placeholder="e.g. Monthly Payroll" class="w-full bg-black/30 border border-white/10 rounded-xl p-3 text-sm outline-none">
+      <div class="flex gap-3 pt-2">
+        <button onclick="hideTemplateModal()" class="app-button flex-1 py-3 rounded-xl border border-white/15 text-xs font-semibold">Cancel</button>
+        <button onclick="saveTemplateAction()" class="app-button flex-1 py-3 bg-emerald-500 text-gray-950 font-bold rounded-xl text-xs">Save</button>
       </div>
     </div>
   </div>
 
-  <!-- Toast -->
-  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#121228] border border-white/15 text-white px-5 py-3 rounded-2xl shadow-2xl z-50 text-xs backdrop-blur-xl transition-all">
+  <div id="csvModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
+    <div class="glass rounded-3xl p-6 sm:p-8 max-w-lg w-full border border-white/15 shadow-2xl space-y-4">
+      <h3 class="text-lg font-bold">Import Recipients (CSV / Text)</h3>
+      <p class="text-xs text-gray-400">Format per line: <code class="text-emerald-400">wallet_address, percentage</code> (e.g. 0x12..., 40)</p>
+      <textarea id="csvTextArea" rows="6" class="w-full bg-black/30 border border-white/15 rounded-2xl p-4 font-mono text-xs outline-none" placeholder="0x123..., 40&#10;0x456..., 60"></textarea>
+      <div class="flex gap-3 pt-2">
+        <button onclick="hideCsvModal()" class="app-button flex-1 py-3 rounded-xl border border-white/15 text-xs font-semibold">Cancel</button>
+        <button onclick="processCsvImport()" class="app-button flex-1 py-3 bg-emerald-500 text-gray-950 font-bold rounded-xl text-xs">Import</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#121228] border border-white/15 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 z-50 text-xs sm:text-sm backdrop-blur-xl">
     <span id="toastText"></span>
   </div>
 
 <script>
-// --- CORE CONFIGURATION ---
+// --- SMART CONTRACT DETAILS ---
 const CONTRACT_ADDRESS = "0xf2073671b726b96DC1c99D001BBF6e60EE1f187F";
-const ARC_CHAIN_ID = "5042002";
-const BATCH_SIZE = 100; // Chunking size limit
+const NATIVE_TOKEN = "0x3600000000000000000000000000000000000000";
 
 const AVAILABLE_TOKENS = [
-  { address: "0x3600000000000000000000000000000000000000", symbol: "USDC", decimals: 6 },
+  { address: NATIVE_TOKEN, symbol: "Native USDC", decimals: 6 },
   { address: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a", symbol: "EURC", decimals: 6 },
-  { address: "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF", symbol: "cirBTC", decimals: 8 },
-  { address: "custom", symbol: "➕ Add Custom Token...", decimals: 18 }
+  { address: "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF", symbol: "cirBTC", decimals: 8 }
 ];
 
+// Switched to splitByAmount to calculate EXACT token amounts locally, bypassing percentage bugs in the contract.
 const CONTRACT_ABI = [
-  // Leveraging splitByAmount inherently prevents multi-token batching "one address" logic bugs and easily supports robust chunking
   "function splitByAmount(tuple(address token, uint256 totalChunkAmount, address[] wallets, uint256[] amounts, uint256 tokenToNativeRatio, uint256 batchId, uint256 deadline, uint256 nonce, uint256 baseGas, uint64 maxGasPriceLimit) params) external payable"
 ];
 
 const ERC20_ABI = [
-  "function approve(address spender, uint256 amount) external returns (bool)",
-  "function allowance(address owner, address spender) external view returns (uint256)",
-  "function balanceOf(address account) external view returns (uint256)",
-  "function decimals() external view returns (uint8)"
+  "function balanceOf(address account) view returns (uint256)",
+  "function approve(address spender, uint256 amount) returns (bool)",
+  "function allowance(address owner, address spender) view returns (uint256)"
 ];
 
-// --- GLOBAL STATE ---
-let provider = null;
+const BATCH_SIZE = 100;
+
 let signer = null;
+let provider = null;
 let userAddress = null;
+let isExecuting = false;
 
-// Multi-Token State
-let multiTokens = [{ token: AVAILABLE_TOKENS[0].address, amount: "" }];
-let multiRecps = [{ wallet: "", percentage: "" }];
+let tokenRows = [{ token: NATIVE_TOKEN, amount: "" }];
+let recipientRows = [{ wallet: "", percentage: "" }];
 
-// Role Split State
-let rolesData = JSON.parse(localStorage.getItem('arcRolesData')) || [
-  { id: 'r1', name: "Founders", wallets: [] },
-  { id: 'r2', name: "Treasury", wallets: [] }
-];
-let roleSplitRows = [{ roleId: rolesData[0].id, percentage: "" }];
+let pendingBatches = JSON.parse(localStorage.getItem('arcPendingBatches') || '[]');
 
-// Storage
-let historyLog = JSON.parse(localStorage.getItem('arcHistory')) || [];
-let pendingSessions = JSON.parse(localStorage.getItem('arcPendingSessions')) || [];
-let activeSessionId = null; 
-
-// --- UTILS ---
-function showToast(msg, dur = 4000) {
-  const t = document.getElementById("toast");
+function showToast(msg, duration = 4000) {
+  const toast = document.getElementById("toast");
   document.getElementById("toastText").innerHTML = msg;
-  t.classList.remove("hidden");
-  setTimeout(() => t.classList.add("hidden"), dur);
+  toast.classList.remove("hidden");
+  setTimeout(() => toast.classList.add("hidden"), duration);
 }
 
 function toggleTheme() {
-  document.documentElement.classList.toggle('light');
-  const i = document.querySelector("#themeBtn i");
-  i.className = document.documentElement.classList.contains('light') ? "fas fa-sun text-lg text-amber-500" : "fas fa-moon text-lg text-emerald-400";
+  const isLight = document.documentElement.classList.toggle('light');
+  localStorage.setItem('theme', isLight ? 'light' : 'dark');
+  const icon = document.getElementById("themeBtn").querySelector("i");
+  if (isLight) {
+    icon.classList.remove("fa-moon", "text-emerald-400");
+    icon.classList.add("fa-sun", "text-amber-400");
+  } else {
+    icon.classList.remove("fa-sun", "text-amber-400");
+    icon.classList.add("fa-moon", "text-emerald-400");
+  }
 }
 
 function switchTab(tab) {
-  ['viewBatch', 'viewRole', 'viewRoles', 'viewHistory', 'viewPending'].forEach(v => document.getElementById(v).classList.add('hidden'));
-  ['tabBatch', 'tabRole', 'tabRoles', 'tabHistory', 'tabPending'].forEach(t => {
-    document.getElementById(t).className = "relative px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted whitespace-nowrap";
-  });
+  document.getElementById('viewSplitter').classList.toggle('hidden', tab !== 'splitter');
+  document.getElementById('viewTemplates').classList.toggle('hidden', tab !== 'templates');
+  document.getElementById('viewHistory').classList.toggle('hidden', tab !== 'history');
+  document.getElementById('viewPending').classList.toggle('hidden', tab !== 'pending');
+
+  const activeClass = "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400 preserve-dark-color";
+  const inactiveClass = "relative px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted";
   
-  let targetView = '', targetTab = '';
-  if(tab==='batch'){ targetView='viewBatch'; targetTab='tabBatch'; }
-  if(tab==='role'){ targetView='viewRole'; targetTab='tabRole'; }
-  if(tab==='roles'){ targetView='viewRoles'; targetTab='tabRoles'; }
-  if(tab==='history'){ targetView='viewHistory'; targetTab='tabHistory'; }
-  if(tab==='pending'){ targetView='viewPending'; targetTab='tabPending'; }
-  
-  document.getElementById(targetView).classList.remove('hidden');
-  document.getElementById(targetTab).className = "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400 preserve-dark-color whitespace-nowrap";
+  document.getElementById('tabSplitter').className = tab === 'splitter' ? activeClass : inactiveClass;
+  document.getElementById('tabTemplates').className = tab === 'templates' ? activeClass : inactiveClass;
+  document.getElementById('tabHistory').className = tab === 'history' ? activeClass : inactiveClass;
+  document.getElementById('tabPending').className = tab === 'pending' ? activeClass : inactiveClass;
 
-  if(tab==='roles') renderRolesTable();
-  if(tab==='history') renderHistory();
-  if(tab==='pending') renderPending();
-  updatePendingBadge();
+  if (tab === 'templates') renderTemplatesList();
+  if (tab === 'history') renderHistoryTable();
+  if (tab === 'pending') renderPendingBatches();
 }
 
-function getDecimals(addr) {
-  const t = AVAILABLE_TOKENS.find(x => x.address === addr);
-  return t ? t.decimals : 18; 
-}
-function getSymbol(addr) {
-  const t = AVAILABLE_TOKENS.find(x => x.address === addr);
-  return t ? t.symbol : "TOKEN";
-}
-
-// --- WALLET & ETHERS ---
-async function toggleConnection() {
-  if (userAddress) {
-    userAddress = signer = null;
-    document.getElementById("connectBtn").innerHTML = `<i class="fas fa-wallet text-emerald-500"></i> <span id="connectText">Connect Wallet</span>`;
-    showToast("Wallet disconnected");
-  } else {
-    if (!window.ethereum) return showToast("Web3 Wallet not detected");
+async function checkAutoConnect() {
+  if (window.ethereum && localStorage.getItem("arcWalletConnected") === "true") {
     try {
       provider = new ethers.BrowserProvider(window.ethereum);
-      const acc = await provider.send("eth_requestAccounts", []);
-      userAddress = acc[0];
-      signer = await provider.getSigner();
-      const short = userAddress.substring(0, 6) + '...' + userAddress.substring(userAddress.length - 4);
-      document.getElementById("connectBtn").innerHTML = `<i class="fas fa-wallet text-emerald-400"></i> <span class="font-bold">${short}</span>`;
-      showToast("Wallet Connected!");
+      const accounts = await provider.send("eth_accounts", []);
+      if (accounts.length > 0) {
+        userAddress = accounts[0];
+        signer = await provider.getSigner();
+        updateConnectButton();
+        fetchAndRenderBalancesWithRetry();
+        updatePendingBadge();
+      }
     } catch (e) {
+      console.error(e);
+      localStorage.removeItem("arcWalletConnected");
+    }
+  }
+}
+
+async function toggleConnection() {
+  if (userAddress) {
+    userAddress = null;
+    signer = null;
+    localStorage.removeItem("arcWalletConnected");
+    updateConnectButton();
+    document.getElementById("walletBalancesBox").classList.add("hidden");
+    showToast("Wallet disconnected");
+  } else {
+    if (!window.ethereum) return showToast("MetaMask / Web3 wallet not detected");
+    try {
+      provider = new ethers.BrowserProvider(window.ethereum);
+      const accounts = await provider.send("eth_requestAccounts", []);
+      userAddress = accounts[0];
+      signer = await provider.getSigner();
+      localStorage.setItem("arcWalletConnected", "true");
+      updateConnectButton();
+      fetchAndRenderBalancesWithRetry();
+      updatePendingBadge();
+      showToast("Wallet connected");
+    } catch (err) {
       showToast("Connection rejected");
     }
   }
 }
 
-async function switchNetworkToArc() {
-  if (!window.ethereum) return;
-  try {
-    await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: ARC_CHAIN_ID }] });
-  } catch (e) {
-    showToast("Please manually switch network to Arc Testnet");
-  }
-}
-
-// --- MULTI-TOKEN BATCH LOGIC ---
-function renderMultiTokens() {
-  const cont = document.getElementById("multiTokensContainer");
-  cont.innerHTML = multiTokens.map((r, i) => `
-    <div class="flex gap-2 bg-white/5 p-3 rounded-2xl border border-white/5">
-      <select onchange="updateMultiToken(${i}, this.value)" class="flex-1 rounded-xl px-3 py-2 text-xs outline-none">
-        ${AVAILABLE_TOKENS.map(t => `<option value="${t.address}" ${t.address === r.token ? 'selected' : ''}>${t.symbol}</option>`).join('')}
-      </select>
-      <input type="number" value="${r.amount}" oninput="updateMultiAmount(${i}, this.value)" placeholder="Amount" class="w-32 rounded-xl px-3 py-2 text-xs font-bold outline-none">
-      <button onclick="removeMultiToken(${i})" class="w-10 rounded-xl bg-rose-500/10 text-rose-400"><i class="fas fa-trash text-xs"></i></button>
-    </div>
-  `).join('');
-  renderMultiPreview();
-}
-function addMultiTokenRow() { if(multiTokens.length >= 5) return showToast("Max 5 tokens"); multiTokens.push({token: AVAILABLE_TOKENS[0].address, amount: ""}); renderMultiTokens(); }
-function removeMultiToken(i) { if(multiTokens.length <= 1) return; multiTokens.splice(i,1); renderMultiTokens(); }
-function updateMultiToken(i, v) { 
-  if(v==='custom'){
-    const c = prompt("Contract Address 0x:");
-    if(c && ethers.isAddress(c)) { AVAILABLE_TOKENS.push({address: c, symbol: `Custom`, decimals: 18}); v = c; }
-    else return renderMultiTokens();
-  }
-  multiTokens[i].token = v; renderMultiTokens(); 
-}
-function updateMultiAmount(i, v) { multiTokens[i].amount = v; renderMultiPreview(); }
-
-function renderMultiRecps() {
-  const cont = document.getElementById("multiRecipientsContainer");
-  cont.innerHTML = multiRecps.map((r, i) => `
-    <div class="flex gap-2 bg-white/5 p-3 rounded-2xl border border-white/5">
-      <input type="text" value="${r.wallet}" oninput="multiRecps[${i}].wallet=this.value.trim()" placeholder="0x..." class="flex-1 rounded-xl px-3 py-2 font-mono text-xs outline-none">
-      <input type="number" value="${r.percentage}" oninput="multiRecps[${i}].percentage=this.value; validateMulti(); renderMultiPreview()" placeholder="%" class="w-24 rounded-xl px-3 py-2 text-xs font-bold outline-none">
-      <button onclick="removeMultiRecp(${i})" class="w-10 rounded-xl bg-rose-500/10 text-rose-400"><i class="fas fa-trash text-xs"></i></button>
-    </div>
-  `).join('');
-  validateMulti();
-  renderMultiPreview();
-}
-function addMultiRecipientRow() { multiRecps.push({wallet: "", percentage: ""}); renderMultiRecps(); }
-function removeMultiRecp(i) { if(multiRecps.length<=1)return; multiRecps.splice(i,1); renderMultiRecps(); }
-function distributeMultiRemaining() {
-  const sum = multiRecps.slice(0,-1).reduce((a,b)=>a+(parseFloat(b.percentage)||0), 0);
-  const r = Math.max(0, 100 - sum);
-  multiRecps[multiRecps.length-1].percentage = r ? r.toFixed(2) : "";
-  renderMultiRecps();
-}
-function validateMulti() {
-  const sum = multiRecps.reduce((a,b)=>a+(parseFloat(b.percentage)||0), 0);
-  const badge = document.getElementById("multiTotalBadge");
-  const bps = Math.round(sum*100);
-  if(bps===10000){ badge.className="px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-400"; badge.textContent="100%"; }
-  else { badge.className="px-3 py-1 rounded-xl bg-rose-500/20 text-rose-400"; badge.textContent=`${sum}% (Error)`; }
-}
-function renderMultiPreview() {
-  document.getElementById("multiSummaryAssets").textContent = multiTokens.length;
-  document.getElementById("multiSummaryRecipients").textContent = multiRecps.length;
-  const p = document.getElementById("multiLivePreview");
-  p.innerHTML = multiTokens.map(t => {
-    const amt = parseFloat(t.amount)||0;
-    const items = multiRecps.map(r => {
-      const pc = parseFloat(r.percentage)||0;
-      const sh = (amt*pc)/100;
-      const w = r.wallet? r.wallet.slice(0,6)+'...'+r.wallet.slice(-4) : "0x...";
-      return `<div class="flex justify-between text-gray-400"><span>${w} (${pc}%)</span> <span class="text-white">${sh.toFixed(4)}</span></div>`;
-    }).join('');
-    return `<div class="mb-3 border-b border-white/5 pb-2"><div class="font-bold text-cyan-400 mb-1">${amt} ${getSymbol(t.token)}</div>${items}</div>`;
-  }).join('');
-}
-
-function openMultiCsvModal() {
-  document.getElementById('csvModalTitle').textContent = "Import Multi-Token CSV";
-  document.getElementById('csvModalDesc').textContent = "Format: wallet, percentage (e.g. 0x123..., 40)";
-  document.getElementById('btnProcessCsv').onclick = () => {
-    const txt = document.getElementById("csvTextArea").value;
-    const lines = txt.split('\n');
-    let res = [];
-    lines.forEach(l => {
-      const p = l.split(/[,;\t]/).map(x=>x.trim());
-      if(p.length>=2 && ethers.isAddress(p[0])) res.push({wallet: p[0], percentage: p[1]});
-    });
-    if(res.length) { multiRecps = res; renderMultiRecps(); closeCsvModal(); showToast("Imported successfully"); }
-    else showToast("Invalid format");
-  };
-  document.getElementById("modalCsv").classList.remove('hidden');
-}
-
-// --- ROLE SPLIT LOGIC ---
-function initRoleSelects() {
-  const sel = document.getElementById("roleTokenSelect");
-  sel.innerHTML = AVAILABLE_TOKENS.map(t => `<option value="${t.address}">${t.symbol}</option>`).join('');
-}
-function renderRoleSplitRows() {
-  const cont = document.getElementById("roleSplitContainer");
-  cont.innerHTML = roleSplitRows.map((r, i) => `
-    <div class="flex gap-2 bg-white/5 p-3 rounded-2xl border border-white/5">
-      <select onchange="roleSplitRows[${i}].roleId=this.value; renderRolePreview()" class="flex-1 rounded-xl px-3 py-2 text-xs outline-none">
-        ${rolesData.map(d => `<option value="${d.id}" ${d.id===r.roleId?'selected':''}>${d.name} (${d.wallets.length} members)</option>`).join('')}
-      </select>
-      <input type="number" value="${r.percentage}" oninput="roleSplitRows[${i}].percentage=this.value; validateRole(); renderRolePreview()" placeholder="%" class="w-24 rounded-xl px-3 py-2 text-xs font-bold outline-none">
-      <button onclick="removeRoleSplitRow(${i})" class="w-10 rounded-xl bg-rose-500/10 text-rose-400"><i class="fas fa-trash text-xs"></i></button>
-    </div>
-  `).join('');
-  validateRole();
-  renderRolePreview();
-}
-function addRoleSplitRow() { roleSplitRows.push({roleId: rolesData[0]?.id, percentage: ""}); renderRoleSplitRows(); }
-function removeRoleSplitRow(i) { if(roleSplitRows.length<=1)return; roleSplitRows.splice(i,1); renderRoleSplitRows(); }
-function distributeRoleSplitRemaining() {
-  const sum = roleSplitRows.slice(0,-1).reduce((a,b)=>a+(parseFloat(b.percentage)||0), 0);
-  const rm = Math.max(0, 100 - sum);
-  roleSplitRows[roleSplitRows.length-1].percentage = rm ? rm.toFixed(2) : "";
-  renderRoleSplitRows();
-}
-function validateRole() {
-  const sum = roleSplitRows.reduce((a,b)=>a+(parseFloat(b.percentage)||0), 0);
-  const badge = document.getElementById("roleTotalBadge");
-  const bps = Math.round(sum*100);
-  if(bps===10000){ badge.className="font-bold text-sm text-emerald-400"; badge.textContent="Total: 100%"; }
-  else { badge.className="font-bold text-sm text-rose-400"; badge.textContent=`Total: ${sum}% (Err)`; }
-  
-  const v1 = roleSplitRows.length > 0;
-  const v2 = bps === 10000;
-  let countW = 0; roleSplitRows.forEach(r => { const rl = rolesData.find(x=>x.id===r.roleId); if(rl) countW+=rl.wallets.length; });
-  const v3 = countW > 0;
-  
-  document.getElementById("valRole1").innerHTML = v1 ? `<i class="fas fa-circle-check text-emerald-400 mr-2"></i> Roles selected` : `<i class="fas fa-circle-xmark text-rose-400 mr-2"></i> Select roles`;
-  document.getElementById("valRole2").innerHTML = v2 ? `<i class="fas fa-circle-check text-emerald-400 mr-2"></i> Valid 100% distribution` : `<i class="fas fa-circle-xmark text-rose-400 mr-2"></i> Total shares must equal 100%`;
-  document.getElementById("valRole3").innerHTML = v3 ? `<i class="fas fa-circle-check text-emerald-400 mr-2"></i> ${countW} Wallets targeted` : `<i class="fas fa-circle-xmark text-rose-400 mr-2"></i> Target roles contain 0 wallets`;
-  document.getElementById("btnExecRole").disabled = !(v1&&v2&&v3);
-  document.getElementById("btnExecRole").className = (v1&&v2&&v3) ? "app-button w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:brightness-110 py-4 rounded-2xl text-base font-bold text-gray-950 shadow-xl" : "app-button w-full bg-gradient-to-r from-emerald-500 to-cyan-500 py-4 rounded-2xl text-base font-bold text-gray-950 opacity-50 cursor-not-allowed";
-}
-function renderRolePreview() {
-  const box = document.getElementById("rolePreviewBox");
-  const totalAmt = parseFloat(document.getElementById("roleTotalAmount").value)||0;
-  let html = '';
-  roleSplitRows.forEach(r => {
-    const role = rolesData.find(x=>x.id===r.roleId);
-    if(!role) return;
-    const p = parseFloat(r.percentage)||0;
-    const roleTotal = (totalAmt * p) / 100;
-    const perWallet = role.wallets.length ? (roleTotal / role.wallets.length) : 0;
-    html += `<div class="mb-3 border-b border-white/5 pb-2">
-      <div class="font-bold text-cyan-400 mb-1">${role.name} - ${p}% (${roleTotal.toFixed(4)})</div>`;
-    if(role.wallets.length===0) html+=`<div class="text-rose-400">No wallets in role</div>`;
-    else role.wallets.forEach(w => {
-      html += `<div class="flex justify-between text-gray-400"><span>${w.slice(0,6)}...${w.slice(-4)}</span> <span class="text-white">${perWallet.toFixed(4)}</span></div>`;
-    });
-    html += `</div>`;
-  });
-  box.innerHTML = html;
-}
-
-// --- ROLES MGMT ---
-function renderRolesTable() {
-  document.getElementById("rolesTableBody").innerHTML = rolesData.map((r, i) => `
-    <tr class="hover:bg-white/5">
-      <td class="p-3 font-bold">${r.name}</td>
-      <td class="p-3 font-mono text-gray-400">${r.wallets.length} members</td>
-      <td class="p-3"><span class="px-2 py-1 bg-emerald-500/10 text-emerald-400 rounded-lg">${r.wallets.length? 'Active' : 'Empty'}</span></td>
-      <td class="p-3 text-right">
-        <button onclick="openEditRoleModal('${r.id}')" class="text-sky-400 mr-3"><i class="fas fa-edit"></i></button>
-        <button onclick="deleteRole('${r.id}')" class="text-rose-400"><i class="fas fa-trash"></i></button>
-      </td>
-    </tr>
-  `).join('');
-}
-let currentEditId = null;
-function openEditRoleModal(id = null) {
-  currentEditId = id;
-  if(id) {
-    const r = rolesData.find(x=>x.id===id);
-    document.getElementById("roleInputName").value = r.name;
-    document.getElementById("roleInputWallets").value = r.wallets.join(',\n');
-    document.getElementById("roleModalTitle").textContent = "Edit Role";
+function updateConnectButton() {
+  const btn = document.getElementById("connectBtn");
+  if (userAddress) {
+    const short = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
+    btn.innerHTML = `<i class="fas fa-wallet text-emerald-400"></i> <span class="font-bold">${short}</span> <i class="fas fa-power-off text-rose-400 ml-1 text-[10px]"></i>`;
   } else {
-    document.getElementById("roleInputName").value = "";
-    document.getElementById("roleInputWallets").value = "";
-    document.getElementById("roleModalTitle").textContent = "New Role";
-  }
-  document.getElementById("modalRoleEdit").classList.remove('hidden');
-}
-function closeRoleEditModal() { document.getElementById("modalRoleEdit").classList.add('hidden'); }
-function saveRoleEdit() {
-  const name = document.getElementById("roleInputName").value.trim();
-  const wStr = document.getElementById("roleInputWallets").value;
-  if(!name) return showToast("Name required");
-  const ws = (wStr.match(/0x[a-fA-F0-9]{40}/g) || []).map(x => ethers.getAddress(x));
-  const uniqueWs = [...new Set(ws)];
-  
-  if(currentEditId) {
-    const r = rolesData.find(x=>x.id===currentEditId);
-    r.name = name; r.wallets = uniqueWs;
-  } else {
-    rolesData.push({ id: 'r'+Date.now(), name, wallets: uniqueWs });
-  }
-  localStorage.setItem('arcRolesData', JSON.stringify(rolesData));
-  closeRoleEditModal();
-  renderRolesTable();
-  initRoleSelects();
-  renderRoleSplitRows();
-}
-function deleteRole(id) {
-  if(confirm("Delete role?")) {
-    rolesData = rolesData.filter(x=>x.id!==id);
-    localStorage.setItem('arcRolesData', JSON.stringify(rolesData));
-    renderRolesTable();
+    btn.innerHTML = `<i class="fas fa-wallet text-emerald-500"></i> <span id="connectText">Connect Wallet</span>`;
   }
 }
-function openRoleCsvModal() {
-  document.getElementById('csvModalTitle').textContent = "Import Roles CSV";
-  document.getElementById('csvModalDesc').textContent = "Format: RoleName, WalletAddress";
-  document.getElementById('btnProcessCsv').onclick = () => {
-    const txt = document.getElementById("csvTextArea").value;
-    const lines = txt.split('\n');
-    lines.forEach(l => {
-      const [rName, w] = l.split(/[,;\t]/).map(x=>x.trim());
-      if(rName && w && ethers.isAddress(w)) {
-        let role = rolesData.find(x=>x.name.toLowerCase()===rName.toLowerCase());
-        if(!role) { role = {id:'r'+Date.now()+Math.random(), name: rName, wallets:[]}; rolesData.push(role); }
-        const c = ethers.getAddress(w);
-        if(!role.wallets.includes(c)) role.wallets.push(c);
-      }
-    });
-    localStorage.setItem('arcRolesData', JSON.stringify(rolesData));
-    renderRolesTable(); closeCsvModal(); showToast("Roles imported");
-  };
-  document.getElementById("modalCsv").classList.remove('hidden');
-}
-function closeCsvModal() { document.getElementById("modalCsv").classList.add('hidden'); }
 
-// --- UNIFIED EXECUTION ENGINE (CHUNKING via splitByAmount) ---
-function chunkifyData(tokenAddr, walletsData) {
-  // walletsData = {wallet, amountWei}
-  // Group identical wallets within the array to optimize gas
-  const agg = {};
-  walletsData.forEach(item => {
-    if(!agg[item.wallet]) agg[item.wallet] = 0n;
-    agg[item.wallet] += item.amountWei;
-  });
-  
-  const finalW = Object.keys(agg);
-  const chunks = [];
-  for(let i=0; i<finalW.length; i+=BATCH_SIZE) {
-    const sliceW = finalW.slice(i, i+BATCH_SIZE);
-    const sliceA = sliceW.map(w => agg[w]);
-    
-    // Convert BigInts to Strings for JSON storage in Pending
-    chunks.push({
-      token: tokenAddr,
-      wallets: sliceW,
-      amountsWeiStr: sliceA.map(a => a.toString()),
-      status: 'pending',
-      txHash: null
-    });
-  }
-  return chunks;
-}
+async function fetchAndRenderBalancesWithRetry(maxRetries = 3) {
+  if (!signer || !userAddress) return;
+  const container = document.getElementById("balancesContainer");
+  document.getElementById("walletBalancesBox").classList.remove("hidden");
 
-function prepareBatchSplit() {
-  const sum = Math.round(multiRecps.reduce((a,b)=>a+(parseFloat(b.percentage)||0),0)*100);
-  if(sum!==10000) return showToast("Total must equal exactly 100%");
-  
-  let validRecps = multiRecps.filter(r => ethers.isAddress(r.wallet));
-  if(validRecps.length === 0) return showToast("No valid wallets");
-  
-  const sessId = Date.now();
-  const session = {
-    id: sessId,
-    type: 'Multi-Token',
-    date: new Date().toLocaleString(),
-    memo: document.getElementById('multiMemo').value || 'Multi-Token Batch',
-    chunks: []
-  };
+  let attempt = 0;
+  let success = false;
 
-  multiTokens.forEach(tRow => {
-    const dec = getDecimals(tRow.token);
-    const tAmt = ethers.parseUnits(tRow.amount || "0", dec);
-    const wData = validRecps.map(r => ({
-      wallet: r.wallet,
-      amountWei: (tAmt * BigInt(Math.round(parseFloat(r.percentage)*100))) / 10000n
-    })).filter(x => x.amountWei > 0n);
-    
-    const tokenChunks = chunkifyData(tRow.token, wData);
-    session.chunks.push(...tokenChunks);
-  });
-  
-  if(session.chunks.length === 0) return showToast("Calculated amounts are zero");
-  openExecutionModal(session);
-}
-
-function prepareRoleSplit() {
-  const sum = Math.round(roleSplitRows.reduce((a,b)=>a+(parseFloat(b.percentage)||0),0)*100);
-  if(sum!==10000) return showToast("Total shares must equal 100%");
-
-  const tokenAddr = document.getElementById("roleTokenSelect").value;
-  const tAmtStr = document.getElementById("roleTotalAmount").value;
-  const dec = getDecimals(tokenAddr);
-  const totalWei = ethers.parseUnits(tAmtStr || "0", dec);
-  
-  let allW = [];
-  roleSplitRows.forEach(r => {
-    const role = rolesData.find(x=>x.id===r.roleId);
-    if(role && role.wallets.length > 0) {
-      const p = parseFloat(r.percentage)||0;
-      const roleTotalWei = (totalWei * BigInt(Math.round(p*100))) / 10000n;
-      const perW = roleTotalWei / BigInt(role.wallets.length);
-      role.wallets.forEach(w => allW.push({wallet: w, amountWei: perW}));
-    }
-  });
-
-  const session = {
-    id: Date.now(),
-    type: 'Role-Based',
-    date: new Date().toLocaleString(),
-    memo: 'Role Split Distribution',
-    chunks: chunkifyData(tokenAddr, allW)
-  };
-  
-  if(session.chunks.length === 0) return showToast("No wallets or zero amounts");
-  openExecutionModal(session);
-}
-
-function openExecutionModal(session) {
-  activeSessionId = session.id;
-  pendingSessions.push(session);
-  savePending();
-  updatePendingBadge();
-  
-  document.getElementById("execModalSummary").innerHTML = `
-    <div>Type: <span class="text-white">${session.type}</span></div>
-    <div>Total Batches/Chunks: <span class="text-white">${session.chunks.length}</span></div>
-    <div class="mt-2 text-gray-400">Assets required:</div>
-    ${summarizeSessionChunks(session)}
-  `;
-  document.getElementById("execProgressBox").classList.add('hidden');
-  document.getElementById("execActions").classList.remove('hidden');
-  document.getElementById("btnStartEngine").onclick = () => runEngine(session.id);
-  document.getElementById("executionModal").classList.remove('hidden');
-}
-function hideExecutionModal() { document.getElementById("executionModal").classList.add('hidden'); }
-
-function summarizeSessionChunks(session) {
-  const agg = {};
-  session.chunks.forEach(c => {
-    if(!agg[c.token]) agg[c.token] = 0n;
-    const cTotal = c.amountsWeiStr.reduce((a,b)=> BigInt(a)+BigInt(b), 0n);
-    agg[c.token] += cTotal;
-  });
-  return Object.keys(agg).map(t => `<div class="text-emerald-400 font-bold">${ethers.formatUnits(agg[t], getDecimals(t))} ${getSymbol(t)}</div>`).join('');
-}
-
-async function runEngine(sid) {
-  if(!signer) return showToast("Connect wallet first!");
-  const sessionIndex = pendingSessions.findIndex(s=>s.id===sid);
-  if(sessionIndex === -1) return;
-  const session = pendingSessions[sessionIndex];
-  
-  const progBox = document.getElementById("execProgressBox");
-  const actions = document.getElementById("execActions");
-  const stepText = document.getElementById("execStepText");
-  const stepCount = document.getElementById("execStepCount");
-  const bar = document.getElementById("execProgressBar");
-  const txBox = document.getElementById("execTxHash");
-  const txLink = txBox.querySelector("a");
-
-  progBox.classList.remove('hidden');
-  actions.classList.add('hidden');
-  txBox.classList.add('hidden');
-
-  let completed = session.chunks.filter(c=>c.status==='completed').length;
-  const total = session.chunks.length;
-  const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-
-  try {
-    for (let i = 0; i < total; i++) {
-      const chunk = session.chunks[i];
-      if (chunk.status === 'completed') continue;
-      
-      stepCount.textContent = `${completed+1}/${total}`;
-      bar.style.width = `${((completed)/total)*100}%`;
-      txBox.classList.add('hidden');
-      
-      const isNative = (chunk.token === "0x3600000000000000000000000000000000000000" || chunk.token === ethers.ZeroAddress);
-      const tokenAddrContract = isNative ? ethers.ZeroAddress : chunk.token;
-      const amountsWei = chunk.amountsWeiStr.map(s => BigInt(s));
-      const totalChunkWei = amountsWei.reduce((a,b)=> a+b, 0n);
-
-      if(!isNative) {
-        stepText.textContent = `Approving ${getSymbol(chunk.token)} for Chunk ${i+1}...`;
-        const erc20 = new ethers.Contract(chunk.token, ERC20_ABI, signer);
-        const allowance = await erc20.allowance(userAddress, CONTRACT_ADDRESS);
-        if(allowance < totalChunkWei) {
-          const appTx = await erc20.approve(CONTRACT_ADDRESS, ethers.MaxUint256);
-          await appTx.wait();
+  while (attempt < maxRetries && !success) {
+    attempt++;
+    try {
+      let balancesHtml = "";
+      for (const token of AVAILABLE_TOKENS) {
+        let formattedBal = "0.00";
+        if (token.address === NATIVE_TOKEN) {
+          const bal = await provider.getBalance(userAddress);
+          formattedBal = ethers.formatUnits(bal, token.decimals); 
+        } else {
+          const erc20 = new ethers.Contract(token.address, ERC20_ABI, provider);
+          const bal = await erc20.balanceOf(userAddress);
+          formattedBal = ethers.formatUnits(bal, token.decimals);
         }
+        balancesHtml += `
+          <div class="bg-black/20 p-3 rounded-xl border border-white/5 flex items-center justify-between font-mono">
+            <span class="font-bold text-emerald-400">${token.symbol}</span>
+            <span class="text-white text-xs">${parseFloat(formattedBal).toFixed(4)}</span>
+          </div>
+        `;
       }
-
-      stepText.textContent = `Sign Transaction for Chunk ${i+1}...`;
-      
-      const splitParams = {
-        token: tokenAddrContract,
-        totalChunkAmount: totalChunkAmountWei = totalChunkWei,
-        wallets: chunk.wallets,
-        amounts: amountsWei,
-        tokenToNativeRatio: ethers.parseUnits("1", 18),
-        batchId: Math.floor(Math.random() * 10000000) + 1,
-        deadline: Math.floor(Date.now() / 1000) + 3600,
-        nonce: 0, baseGas: 0, maxGasPriceLimit: 0
-      };
-
-      const txValue = isNative ? totalChunkWei : 0n;
-      const tx = await contract.splitByAmount(splitParams, { value: txValue });
-      
-      stepText.textContent = `Confirming Chunk ${i+1}...`;
-      txLink.href = `https://testnet.arcscan.app/tx/${tx.hash}`;
-      txLink.textContent = tx.hash.slice(0,12)+"...";
-      txBox.classList.remove('hidden');
-      
-      await tx.wait();
-      
-      chunk.status = 'completed';
-      chunk.txHash = tx.hash;
-      completed++;
-      savePending();
-      bar.style.width = `${(completed/total)*100}%`;
+      container.innerHTML = balancesHtml;
+      success = true;
+    } catch (e) {
+      if (attempt >= maxRetries) {
+        container.innerHTML = `<div class="col-span-3 bg-rose-500/10 border border-rose-500/20 p-3 rounded-xl text-rose-400 text-center text-xs font-mono">Failed to load balances. Click Refresh to try again.</div>`;
+      } else {
+        await new Promise(res => setTimeout(res, 1000));
+      }
     }
-
-    // Success
-    stepText.textContent = "All Batches Completed Successfully!";
-    confetti({ particleCount: 200, spread: 80, origin: { y: 0.6 } });
-    
-    // Move to history
-    historyLog.unshift(session);
-    localStorage.setItem('arcHistory', JSON.stringify(historyLog));
-    pendingSessions.splice(sessionIndex, 1);
-    savePending();
-    updatePendingBadge();
-    
-    setTimeout(() => {
-      hideExecutionModal();
-      if(document.getElementById('viewBatch').classList.contains('hidden') === false) switchTab('history');
-      if(document.getElementById('viewRole').classList.contains('hidden') === false) switchTab('history');
-    }, 2500);
-
-  } catch (err) {
-    console.error(err);
-    stepText.textContent = "Transaction Failed or Rejected.";
-    stepText.className = "text-rose-400";
-    showToast("Execution Interrupted. Safely paused in Pending.", 6000);
-    setTimeout(() => {
-      hideExecutionModal();
-      updatePendingBadge();
-    }, 3000);
   }
 }
 
-// --- PENDING SYSTEM ---
-function savePending() { localStorage.setItem('arcPendingSessions', JSON.stringify(pendingSessions)); }
-function updatePendingBadge() {
-  const b = document.getElementById("pendingBadge");
-  if(pendingSessions.length > 0) b.classList.remove('hidden');
-  else b.classList.add('hidden');
-}
-function renderPending() {
-  const cont = document.getElementById("pendingListContainer");
-  if(pendingSessions.length === 0) { cont.innerHTML = `<div class="text-center py-6 text-gray-400">No pending sessions.</div>`; return; }
-  
-  cont.innerHTML = pendingSessions.map((s, idx) => {
-    const comp = s.chunks.filter(c=>c.status==='completed').length;
-    const tot = s.chunks.length;
+// --- TOKEN & RECIPIENT LOGIC ---
+
+function renderTokens() {
+  const container = document.getElementById("tokensContainer");
+  const selectedTokens = tokenRows.map(r => r.token);
+
+  container.innerHTML = tokenRows.map((row, idx) => {
+    const availableOptions = AVAILABLE_TOKENS.filter(t => t.address === row.token || !selectedTokens.includes(t.address));
     return `
-      <div class="glass p-5 rounded-3xl border border-white/5">
-        <div class="flex justify-between items-center mb-4">
-          <div>
-            <div class="font-bold text-white">${s.memo}</div>
-            <div class="text-[10px] text-gray-400">Created: ${s.date} | Type: ${s.type}</div>
-          </div>
-          <div class="text-right">
-            <div class="text-lg font-extrabold text-cyan-400">${comp}/${tot}</div>
-            <div class="text-[10px] text-gray-500 uppercase">Chunks Completed</div>
-          </div>
-        </div>
-        <div class="flex gap-3">
-          <button onclick="resumePending('${s.id}')" class="flex-1 py-2 bg-emerald-500 text-gray-950 font-bold rounded-xl text-xs">Resume Remaining</button>
-          <button onclick="discardPending('${s.id}')" class="px-4 py-2 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-xl text-xs font-semibold">Discard</button>
-        </div>
+      <div class="flex items-center gap-3 bg-black/20 light:bg-slate-50 p-3.5 rounded-2xl border border-white/5">
+        <select onchange="updateTokenRowToken(${idx}, this.value)" class="flex-1 bg-transparent px-2 py-2 text-xs sm:text-sm font-medium outline-none">
+          ${availableOptions.map(t => `<option value="${t.address}" ${t.address === row.token ? 'selected' : ''}>${t.symbol}</option>`).join('')}
+        </select>
+        <input type="number" value="${row.amount}" oninput="updateTokenRowAmount(${idx}, this.value)" placeholder="Total Amount" class="w-32 sm:w-40 rounded-xl px-4 py-2 text-xs sm:text-sm font-bold outline-none border-none">
+        <button onclick="removeTokenRow(${idx})" class="w-10 h-10 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 flex items-center justify-center transition-all"><i class="fas fa-trash text-xs"></i></button>
       </div>
     `;
   }).join('');
+  renderLiveSummary();
 }
-function resumePending(id) { openExecutionModal(pendingSessions.find(s=>s.id===id)); }
-function discardPending(id) {
-  if(confirm("Discard this session? Any un-executed chunks will be lost.")) {
-    pendingSessions = pendingSessions.filter(s=>s.id!==id);
-    savePending(); renderPending(); updatePendingBadge();
+
+function addTokenRow() {
+  const unselected = AVAILABLE_TOKENS.find(t => !tokenRows.some(r => r.token === t.address));
+  if (!unselected) return showToast("All available tokens already added");
+  if (tokenRows.length >= 3) return showToast("Maximum 3 tokens allowed per batch configuration");
+  tokenRows.push({ token: unselected.address, amount: "" });
+  renderTokens();
+}
+
+function updateTokenRowToken(idx, val) { tokenRows[idx].token = val; renderTokens(); }
+function updateTokenRowAmount(idx, val) { tokenRows[idx].amount = val; renderLiveSummary(); }
+function removeTokenRow(idx) {
+  if (tokenRows.length <= 1) return showToast("At least one token is required");
+  tokenRows.splice(idx, 1);
+  renderTokens();
+}
+
+function renderRecipients() {
+  const container = document.getElementById("recipientsContainer");
+  container.innerHTML = recipientRows.map((row, idx) => `
+    <div class="flex items-center gap-3 bg-black/20 light:bg-slate-50 p-3.5 rounded-2xl border border-white/5">
+      <input type="text" value="${row.wallet}" oninput="updateRecipientWallet(${idx}, this.value)" placeholder="Wallet Address (0x...)" class="flex-1 rounded-xl px-4 py-3 font-mono text-xs outline-none border-none bg-transparent">
+      <input type="number" value="${row.percentage}" oninput="updateRecipientPercentage(${idx}, this.value)" placeholder="%" class="w-24 sm:w-28 rounded-xl px-4 py-3 text-xs sm:text-sm font-bold outline-none border-none bg-transparent">
+      <span class="text-xs text-gray-400 font-bold">%</span>
+      <button onclick="removeRecipientRow(${idx})" class="w-10 h-10 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 flex items-center justify-center transition-all"><i class="fas fa-trash text-xs"></i></button>
+    </div>
+  `).join('');
+  validateTotalPercentage();
+  renderLiveSummary();
+}
+
+function addRecipientRow() {
+  recipientRows.push({ wallet: "", percentage: "" });
+  renderRecipients();
+  setTimeout(() => {
+    const container = document.getElementById("recipientsContainer");
+    container.scrollTop = container.scrollHeight;
+  }, 50);
+}
+
+function updateRecipientWallet(idx, val) { recipientRows[idx].wallet = val.trim(); renderLiveSummary(); }
+function updateRecipientPercentage(idx, val) { 
+  recipientRows[idx].percentage = val; 
+  validateTotalPercentage(); 
+  renderLiveSummary(); 
+}
+function removeRecipientRow(idx) {
+  if (recipientRows.length <= 1) return showToast("At least one recipient is required");
+  recipientRows.splice(idx, 1);
+  renderRecipients();
+}
+
+function distributeRemaining() {
+  if (recipientRows.length === 0) return;
+  const currentTotal = recipientRows.reduce((sum, r, i) => {
+    if (i === recipientRows.length - 1) return sum;
+    return sum + (parseFloat(r.percentage) || 0);
+  }, 0);
+  
+  const remaining = Math.max(0, 100 - currentTotal);
+  recipientRows[recipientRows.length - 1].percentage = remaining > 0 ? remaining.toFixed(2).replace(/\.?0+$/, '') : "";
+  renderRecipients();
+  showToast("Remaining balance assigned to the last recipient");
+}
+
+function validateTotalPercentage() {
+  const total = recipientRows.reduce((sum, r) => sum + (parseFloat(r.percentage) || 0), 0);
+  const badge = document.getElementById("totalPercentageBadge");
+  const bps = Math.round(total * 100);
+  if (bps === 10000) {
+    badge.className = "px-3 py-1 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30";
+    badge.textContent = "100% (10000 BPS)";
+  } else {
+    badge.className = "px-3 py-1 rounded-xl bg-rose-500/20 text-rose-400 border border-rose-500/30";
+    badge.textContent = total.toFixed(2) + "% (" + bps + " BPS) - Must equal 100%";
   }
 }
 
-// --- HISTORY ---
-function renderHistory() {
-  const tbody = document.getElementById("historyTableBody");
-  if(historyLog.length===0) { tbody.innerHTML=`<tr><td colspan="4" class="text-center py-8 text-gray-400">No records found.</td></tr>`; return;}
-  tbody.innerHTML = historyLog.map(h => {
-    let wCount = 0; h.chunks.forEach(c=>wCount+=c.wallets.length);
-    return `
-      <tr class="hover:bg-white/5">
-        <td class="p-3">
-          <div class="font-bold text-white">${h.memo}</div>
-          <div class="text-[10px] text-gray-400">${h.date}</div>
-        </td>
-        <td class="p-3"><span class="px-2 py-1 bg-cyan-500/10 text-cyan-400 rounded-lg">${h.type}</span></td>
-        <td class="p-3">${wCount} Wallets (in ${h.chunks.length} chunks)</td>
-        <td class="p-3 text-right">
-          <a href="https://testnet.arcscan.app/tx/${h.chunks[0]?.txHash||''}" target="_blank" class="px-3 py-1 bg-white/5 hover:bg-white/10 rounded-lg text-emerald-400 text-xs">View Tx</a>
-        </td>
-      </tr>
-    `;
-  }).join('');
-}
-function clearHistory() { if(confirm("Clear history?")) { historyLog=[]; localStorage.removeItem('arcHistory'); renderHistory(); } }
+function renderLiveSummary() {
+  const validRecipients = recipientRows.filter(r => r.wallet && ethers.isAddress(r.wallet));
+  document.getElementById("summaryAssetCount").textContent = tokenRows.length;
+  document.getElementById("summaryRecipientCount").textContent = validRecipients.length;
 
-// --- BOOTSTRAP ---
-window.onload = () => {
-  if(localStorage.getItem('theme')==='light') { document.documentElement.classList.add('light'); document.querySelector("#themeBtn i").className="fas fa-sun text-lg text-amber-500"; }
-  renderMultiTokens();
-  renderMultiRecps();
-  initRoleSelects();
-  renderRoleSplitRows();
+  const preview = document.getElementById("liveBreakdownPreview");
+  let html = "";
+
+  tokenRows.forEach(tItem => {
+    const tokenObj = AVAILABLE_TOKENS.find(t => t.address === tItem.token) || { symbol: "TOKEN" };
+    const amt = parseFloat(tItem.amount) || 0;
+
+    if (amt > 0) {
+      html += `
+        <div class="border-b border-white/10 pb-3 mb-3">
+          <div class="font-bold text-cyan-400 mb-1">${amt} ${tokenObj.symbol}</div>
+          <div class="space-y-1 pl-2">
+      `;
+
+      validRecipients.forEach(rItem => {
+        const p = parseFloat(rItem.percentage) || 0;
+        const share = (amt * p) / 100;
+        const shortWallet = rItem.wallet.slice(0,6) + "..." + rItem.wallet.slice(-4);
+        html += '<div class="flex justify-between text-gray-400"><span>' + shortWallet + ' (' + p + '%)</span> <span class="text-white font-bold">' + share.toFixed(4) + '</span></div>';
+      });
+
+      html += '</div></div>';
+    }
+  });
+
+  preview.innerHTML = html || '<p class="text-gray-500 text-center py-4">Add valid tokens and recipients to see exact breakdown.</p>';
+}
+
+function importCSVModal() { document.getElementById("csvModal").classList.remove("hidden"); }
+function hideCsvModal() { document.getElementById("csvModal").classList.add("hidden"); }
+
+function processCsvImport() {
+  const text = document.getElementById("csvTextArea").value.trim();
+  if (!text) return showToast("Please paste CSV data");
+  const lines = text.split("\n");
+  let newRecipients = [];
+
+  lines.forEach(line => {
+    const parts = line.split(/[,;\t]/).map(p => p.trim());
+    if (parts.length >= 2 && ethers.isAddress(parts[0])) {
+      newRecipients.push({ wallet: parts[0], percentage: parts[1] });
+    }
+  });
+
+  if (newRecipients.length > 0) {
+    recipientRows = newRecipients; 
+    renderRecipients();
+    hideCsvModal();
+    showToast("Successfully imported " + newRecipients.length + " recipients");
+  } else {
+    showToast("Invalid CSV format");
+  }
+}
+
+// --- TEMPLATES LOGIC ---
+function openSaveTemplateModal() { document.getElementById("templateModal").classList.remove("hidden"); }
+function hideTemplateModal() { document.getElementById("templateModal").classList.add("hidden"); }
+
+function saveTemplateAction() {
+  const name = document.getElementById("templateNameInput").value.trim();
+  if (!name) return showToast("Enter template name");
+  const templates = JSON.parse(localStorage.getItem("arcSplitTemplates") || "[]");
+  templates.push({ name, tokens: tokenRows, recipients: recipientRows });
+  localStorage.setItem("arcSplitTemplates", JSON.stringify(templates));
+  hideTemplateModal();
+  showToast("Template saved successfully");
+}
+
+function renderTemplatesList() {
+  const templates = JSON.parse(localStorage.getItem("arcSplitTemplates") || "[]");
+  const container = document.getElementById("templatesListContainer");
+  if (templates.length === 0) {
+    container.innerHTML = '<p class="text-gray-400 py-4 col-span-3 text-center">No saved templates found.</p>';
+  } else {
+    container.innerHTML = templates.map((t, idx) => `
+      <div class="bg-black/20 p-5 rounded-2xl border border-white/5 flex flex-col justify-between h-full">
+        <div>
+          <div class="font-bold text-white text-base mb-2">${t.name}</div>
+          <div class="text-xs text-gray-400 mb-1"><i class="fas fa-coins text-emerald-400 mr-1"></i> ${t.tokens.length} Token Configurations</div>
+          <div class="text-xs text-gray-400 mb-4"><i class="fas fa-users text-cyan-400 mr-1"></i> ${t.recipients.length} Saved Recipients</div>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="loadTemplate(${idx})" class="flex-1 py-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 font-bold rounded-xl text-xs transition-all">Load</button>
+          <button onclick="deleteTemplate(${idx})" class="px-3 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs transition-all"><i class="fas fa-trash"></i></button>
+        </div>
+      </div>
+    `).join('');
+  }
+}
+
+function loadTemplate(idx) {
+  const templates = JSON.parse(localStorage.getItem("arcSplitTemplates") || "[]");
+  const t = templates[idx];
+  if (t) {
+    tokenRows = t.tokens;
+    recipientRows = t.recipients;
+    renderTokens();
+    renderRecipients();
+    switchTab('splitter');
+    showToast(`Template "${t.name}" loaded into workspace.`);
+  }
+}
+
+function deleteTemplate(idx) {
+  const templates = JSON.parse(localStorage.getItem("arcSplitTemplates") || "[]");
+  templates.splice(idx, 1);
+  localStorage.setItem("arcSplitTemplates", JSON.stringify(templates));
+  renderTemplatesList();
+}
+
+// --- EXECUTION PREPARATION LOGIC ---
+function prepareBatchExecution() {
+  const totalBps = recipientRows.reduce((sum, r) => sum + Math.round((parseFloat(r.percentage) || 0) * 100), 0);
+  if (totalBps !== 10000) return showToast("Total percentage must equal exactly 100% (10000 BPS)");
+  
+  const validRecipients = recipientRows.filter(r => r.wallet && ethers.isAddress(r.wallet));
+  if (validRecipients.length === 0) return showToast("Add at least one valid recipient address.");
+
+  const summary = document.getElementById("confirmAssetsSummary");
+  summary.innerHTML = tokenRows.map(t => {
+    const symbol = AVAILABLE_TOKENS.find(x => x.address === t.token)?.symbol || "TOKEN";
+    return '<div class="flex justify-between items-center bg-black/20 p-3 rounded-xl border border-white/5"><span><i class="fas fa-check-circle text-emerald-400 mr-2"></i>' + symbol + '</span> <span class="font-bold text-white">' + t.amount + '</span></div>';
+  }).join('');
+
+  document.getElementById("confirmModal").classList.remove("hidden");
+}
+
+function hideConfirmModal() { document.getElementById("confirmModal").classList.add("hidden"); }
+
+// --- THE CORE FIX: EXACT AMOUNT CHUNKING ENGINE ---
+async function executeConfirmedBatch() {
+  hideConfirmModal();
+  if (!signer) return showToast("Please connect your wallet first.");
+
+  const memo = document.getElementById("batchMemo").value || "Treasury Batch Split";
+  const batchGroupId = Date.now().toString() + Math.random().toString(36).substr(2, 5);
+
+  let newBatches = [];
+
+  // Parse accurate exact amounts for each token using BigInt math to avoid precision loss
+  for (let t of tokenRows) {
+    const tokenObj = AVAILABLE_TOKENS.find(x => x.address === t.token);
+    const totalAmount = t.amount;
+    const dec = tokenObj.decimals;
+    const isNative = (t.token === NATIVE_TOKEN);
+    const tokenAddrContract = isNative ? ethers.ZeroAddress : t.token;
+
+    let flatWallets = [];
+    let flatAmounts = [];
+    
+    // total amount in WEI
+    const totalWei = ethers.parseUnits(totalAmount.toString() || "0", dec);
+
+    recipientRows.forEach(r => {
+        const bps = Math.round((parseFloat(r.percentage) || 0) * 100);
+        if (bps > 0 && ethers.isAddress(r.wallet)) {
+            // share = (total * bps) / 10000
+            const shareWei = (totalWei * BigInt(bps)) / 10000n;
+            flatWallets.push(r.wallet);
+            flatAmounts.push(shareWei.toString());
+        }
+    });
+
+    if (flatWallets.length === 0) continue;
+
+    // Chunk into BATCH_SIZE (100)
+    for (let i = 0; i < flatWallets.length; i += BATCH_SIZE) {
+        const chunkW = flatWallets.slice(i, i + BATCH_SIZE);
+        const chunkA = flatAmounts.slice(i, i + BATCH_SIZE);
+        
+        // Sum of exact wei in this specific chunk
+        const chunkTotal = chunkA.reduce((acc, val) => acc + BigInt(val), 0n).toString();
+
+        newBatches.push({
+            id: batchGroupId + "-" + i,
+            date: new Date().toLocaleDateString() + " " + new Date().toLocaleTimeString(),
+            tokenAddress: tokenAddrContract,
+            tokenSymbol: tokenObj.symbol,
+            isNative: isNative,
+            totalChunkAmount: chunkTotal,
+            wallets: chunkW,
+            amounts: chunkA,
+            memo: memo,
+            status: "pending"
+        });
+    }
+  }
+
+  if (newBatches.length === 0) return showToast("No valid transactions generated.");
+
+  pendingBatches = [...pendingBatches, ...newBatches];
+  localStorage.setItem('arcPendingBatches', JSON.stringify(pendingBatches));
   updatePendingBadge();
-};
+  switchTab('pending');
+  
+  // Auto-start execution queue
+  executeBatchQueue();
+}
+
+async function executeBatchQueue() {
+  if (isExecuting) return;
+  if (pendingBatches.length === 0) {
+    document.getElementById("executionProgressBox").classList.add("hidden");
+    return;
+  }
+  
+  isExecuting = true;
+  document.getElementById("executionProgressBox").classList.remove("hidden");
+  
+  const initialCount = pendingBatches.length;
+  let currentCount = 0;
+
+  try {
+    const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+
+    while (pendingBatches.length > 0) {
+      const batch = pendingBatches[0]; // Take first item
+      currentCount++;
+
+      const progressPercent = ((currentCount - 1) / initialCount) * 100;
+      document.getElementById("executionProgressBar").style.width = `${progressPercent}%`;
+      document.getElementById("executionProgressText").textContent = `${currentCount} / ${initialCount}`;
+      document.getElementById("executionStatusLabel").textContent = `Processing ${batch.tokenSymbol} (Batch ${currentCount}/${initialCount}) - Please confirm in wallet...`;
+
+      // Handle ERC20 Approval if needed
+      if (!batch.isNative) {
+        document.getElementById("executionStatusLabel").textContent = `Checking allowance for ${batch.tokenSymbol}...`;
+        const erc20 = new ethers.Contract(batch.tokenAddress, ERC20_ABI, signer);
+        
+        const allowance = await erc20.allowance(userAddress, CONTRACT_ADDRESS);
+        if (BigInt(allowance) < BigInt(batch.totalChunkAmount)) {
+          document.getElementById("executionStatusLabel").textContent = `Requesting approval for ${batch.tokenSymbol}...`;
+          const approveTx = await erc20.approve(CONTRACT_ADDRESS, batch.totalChunkAmount);
+          await approveTx.wait();
+        }
+      }
+
+      document.getElementById("executionStatusLabel").textContent = `Sending ${batch.wallets.length} transfers of ${batch.tokenSymbol}...`;
+
+      const splitParams = {
+        token: batch.tokenAddress,
+        totalChunkAmount: batch.totalChunkAmount,
+        wallets: batch.wallets,
+        amounts: batch.amounts,
+        tokenToNativeRatio: ethers.parseUnits("1", 18), // Safe dummy
+        batchId: Math.floor(Math.random() * 1000000) + 1,
+        deadline: Math.floor(Date.now() / 1000) + 3600,
+        nonce: 0,
+        baseGas: 0,
+        maxGasPriceLimit: 0
+      };
+
+      const txValue = batch.isNative ? batch.totalChunkAmount : 0n;
+
+      const tx = await contract.splitByAmount(splitParams, { value: txValue });
+      
+      document.getElementById("executionStatusLabel").textContent = `Waiting for network confirmation...`;
+      await tx.wait();
+
+      // Successfully processed this batch
+      const completedBatch = pendingBatches.shift();
+      completedBatch.txHash = tx.hash;
+      completedBatch.status = "completed";
+      
+      saveToHistory(completedBatch);
+      localStorage.setItem('arcPendingBatches', JSON.stringify(pendingBatches));
+      renderPendingBatches();
+    }
+
+    document.getElementById("executionProgressBar").style.width = `100%`;
+    document.getElementById("executionStatusLabel").textContent = `All batches executed successfully!`;
+    confetti({ particleCount: 200, spread: 80, origin: { y: 0.6 } });
+    showToast("Batch Split Completed Successfully!");
+    
+    setTimeout(() => {
+      document.getElementById("executionProgressBox").classList.add("hidden");
+      switchTab('history');
+      fetchAndRenderBalancesWithRetry();
+    }, 3000);
+
+  } catch (error) {
+    console.error(error);
+    document.getElementById("executionStatusLabel").textContent = `Execution halted or rejected by user.`;
+    showToast(error.reason || "Transaction failed or was rejected.");
+  } finally {
+    isExecuting = false;
+    updatePendingBadge();
+  }
+}
+
+// --- PENDING BATCHES UI ---
+function updatePendingBadge() {
+  const badge = document.getElementById("pendingBadge");
+  if (pendingBatches.length > 0) badge.classList.remove("hidden");
+  else badge.classList.add("hidden");
+}
+
+function renderPendingBatches() {
+  const container = document.getElementById("pendingContainer");
+  if (pendingBatches.length === 0) {
+    container.innerHTML = `<div class="text-center py-12 text-gray-400">No pending batches in queue.</div>`;
+    return;
+  }
+
+  let html = pendingBatches.map((b, idx) => `
+    <div class="glass border border-amber-500/30 rounded-2xl p-4 flex flex-col md:flex-row justify-between items-center gap-4">
+      <div class="flex-1">
+        <div class="font-bold text-amber-400 mb-1 flex items-center gap-2"><i class="fas fa-pause-circle"></i> Pending Batch #${idx + 1}</div>
+        <div class="text-xs text-gray-300">Token: <span class="font-mono text-emerald-400">${b.tokenSymbol}</span> | Recipients: ${b.wallets.length}</div>
+        <div class="text-[10px] text-gray-500 mt-1">${b.memo} (${b.date})</div>
+      </div>
+      ${idx === 0 ? `<button onclick="executeBatchQueue()" class="px-5 py-2.5 bg-amber-500 hover:bg-amber-600 text-gray-950 font-bold rounded-xl text-xs shadow-lg transition-all"><i class="fas fa-play mr-1"></i> Resume Execution</button>` : `<div class="text-xs text-gray-500 italic">Waiting in queue...</div>`}
+      <button onclick="removePendingBatch(${idx})" class="px-3 py-2.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold rounded-xl text-xs transition-all" title="Discard"><i class="fas fa-trash"></i></button>
+    </div>
+  `).join('');
+  
+  if(pendingBatches.length > 1) {
+      html += `<div class="pt-4 text-center"><button onclick="clearAllPending()" class="text-xs text-rose-400 hover:underline">Clear all pending batches</button></div>`;
+  }
+  container.innerHTML = html;
+}
+
+function removePendingBatch(idx) {
+  pendingBatches.splice(idx, 1);
+  localStorage.setItem('arcPendingBatches', JSON.stringify(pendingBatches));
+  updatePendingBadge();
+  renderPendingBatches();
+}
+
+function clearAllPending() {
+  if (confirm("Are you sure you want to discard all pending transactions?")) {
+    pendingBatches = [];
+    localStorage.setItem('arcPendingBatches', JSON.stringify([]));
+    updatePendingBadge();
+    renderPendingBatches();
+  }
+}
+
+// --- HISTORY LOGIC ---
+function saveToHistory(record) {
+  const history = JSON.parse(localStorage.getItem("arcSplitHistory") || "[]");
+  history.unshift(record);
+  localStorage.setItem("arcSplitHistory", JSON.stringify(history));
+}
+
+function renderHistoryTable() {
+  const history = JSON.parse(localStorage.getItem("arcSplitHistory") || "[]");
+  const container = document.getElementById("historyTableContainer");
+
+  if (history.length === 0) {
+    container.innerHTML = '<div class="text-center py-12 text-gray-400">No batch splits recorded yet.</div>';
+    return;
+  }
+
+  container.innerHTML = `
+    <table class="w-full text-left text-xs font-mono">
+      <thead class="bg-white/5 text-gray-400 uppercase">
+        <tr>
+          <th class="p-3 rounded-l-xl">Date / Memo</th>
+          <th class="p-3">Recipients</th>
+          <th class="p-3">Asset Sent</th>
+          <th class="p-3">Status</th>
+          <th class="p-3 rounded-r-xl text-right">Details</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-white/5">
+        ${history.map((h, idx) => `
+          <tr class="hover:bg-white/[0.02]">
+            <td class="p-3">
+              <div class="font-bold text-white">${h.memo}</div>
+              <div class="text-[10px] text-gray-400">${h.date}</div>
+            </td>
+            <td class="p-3">${h.wallets.length} Wallets</td>
+            <td class="p-3 font-bold text-cyan-400">${h.tokenSymbol} Batch</td>
+            <td class="p-3"><span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">Success</span></td>
+            <td class="p-3 text-right">
+              <button onclick="viewDetails(${idx})" class="px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg text-sky-400 transition-all">View</button>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+function viewDetails(idx) {
+  const history = JSON.parse(localStorage.getItem("arcSplitHistory") || "[]");
+  const h = history[idx];
+  const content = document.getElementById("detailsContent");
+
+  content.innerHTML = `
+    <div class="font-bold text-sm text-cyan-400 mb-2">${h.memo} (${h.date})</div>
+    <div class="mb-3 text-gray-300">Tx Hash Link: <a href="https://testnet.arcscan.app/tx/${h.txHash}" target="_blank" class="underline text-emerald-400">${h.txHash}</a></div>
+    <div class="font-bold text-white mt-3 mb-1">Recipients & Exact Amounts (WEI format processed):</div>
+    ${h.wallets.map((w, i) => '<div class="text-gray-300 flex justify-between"><span>' + w + '</span> <span class="text-cyan-400">' + h.amounts[i] + ' wei</span></div>').join('')}
+  `;
+  document.getElementById("detailsModal").classList.remove("hidden");
+}
+
+function hideDetailsModal() { document.getElementById("detailsModal").classList.add("hidden"); }
+
+function clearHistory() {
+  if (confirm("Clear all history?")) {
+    localStorage.removeItem("arcSplitHistory");
+    renderHistoryTable();
+    showToast("History cleared");
+  }
+}
+
+window.addEventListener('load', async () => {
+  if (localStorage.getItem('theme') === 'light') {
+    document.documentElement.classList.add('light');
+    const icon = document.getElementById("themeBtn").querySelector("i");
+    icon.classList.remove("fa-moon", "text-emerald-400");
+    icon.classList.add("fa-sun", "text-amber-400");
+  }
+  renderTokens();
+  renderRecipients();
+  updatePendingBadge();
+  await checkAutoConnect();
+});
 </script>
 </body>
 </html>
