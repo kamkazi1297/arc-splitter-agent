@@ -1230,18 +1230,21 @@
     
 
         if (data.currentIndex >= data.chunks.length) {
-          historyList.unshift({
+          const newHistoryRecord = {
             amount: data.rawAmount,
             token: data.tokenSymbol,
             rolesCount: data.totalWallets,
             date: new Date().toLocaleString(),
             hash: receipt.hash,
             status: "Success",
-            allocations: data.allocations
-          });
-          await saveToCloud('arcRoleHistory', historyList);
+            allocations: data.allocations,
+            memo: `Role split of ${data.rawAmount} ${data.tokenSymbol}` // برای ستون memo در دیتابیس شما
+          };
+          
+          historyList.unshift(newHistoryRecord);
+          // فراخوانی مستقیم تابع db.js شما
+          await saveHistoryToCloud(userAddress, newHistoryRecord);
         }
-      }
 
       showToast("✅ All Batch Transactions Completed Successfully!", 6000);
       
