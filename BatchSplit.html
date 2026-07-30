@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
   <title>ArcRoleSplitter - Multi-Token Batch Split</title>
+  <script src="db.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
@@ -908,23 +910,44 @@ async function resumeBatchTx(batchId) {
   }
 }
 
-function saveToHistory(record) {
-  const history = JSON.parse(localStorage.getItem("arcSplitHistoryMain") || "[]");
+async function saveToHistory(record) {
+  // ذخیره در فضای ابری Supabase
+  if (userAddress) {
+    await saveHistoryToCloud(userAddress, record);
+  }
+  // پشتیبان‌گیری محلی اختیاری
+  const history = JSON.parse(localStorage.getItem("arcSplitHistory") || "[]");
   history.unshift(record);
-  localStorage.setItem("arcSplitHistoryMain", JSON.stringify(history));
+  localStorage.setItem("arcSplitHistory", JSON.stringify(history));
 }
 
-function renderHistoryTable() {
-  const history = JSON.parse(localStorage.getItem("arcSplitHistoryMain") || "[]");
+async function renderHistoryTable() {
+  let history = [];
+  
+  // خواندن از Supabase اگر ولت متصل باشد
+  if (userAddress && typeof fetchHistoryFromCloud === 'function') {
+    history = await fetchHistoryFromCloud(userAddress);
+  }
+  
+  // اگر داده‌ای در ابر نبود یا ولت متصل نبود، به عنوان فال‌بک از localStorage بخوان
+  if (!history || history.length === 0) {
+    history = JSON.parse(localStorage.getItem("arcSplitHistory") || "[]");
+  }
+
   const container = document.getElementById("historyTableContainer");
-  if (history.length === 0) return container.innerHTML = '<div class="text-center py-12 text-gray-400">No batch splits recorded yet.</div>';
+
+  if (history.length === 0) {
+    container.innerHTML = '<div class="text-center py-12 text-gray-400">No batch splits recorded yet.</div>';
+    return;
+  }
 
   container.innerHTML = `
     <table class="w-full text-left text-xs font-mono">
       <thead class="bg-white/5 text-gray-400 uppercase">
         <tr>
-          <th class="p-3 rounded-l-xl">Memo / Date</th>
+          <th class="p-3 rounded-l-xl">Date / Memo</th>
           <th class="p-3">Recipients</th>
+          <th class="p-3">Assets</th>
           <th class="p-3">Status</th>
           <th class="p-3 rounded-r-xl text-right">Actions</th>
         </tr>
@@ -932,8 +955,12 @@ function renderHistoryTable() {
       <tbody class="divide-y divide-white/5">
         ${history.map((h, idx) => `
           <tr class="hover:bg-white/[0.02]">
-            <td class="p-3"><div class="font-bold text-white">${h.memo}</div><div class="text-[10px] text-gray-400">${h.date}</div></td>
-            <td class="p-3">${h.recipientsCount} Wallets</td>
+            <td class="p-3">
+              <div class="font-bold text-white">${h.memo || 'Batch Split'}</div>
+              <div class="text-[10px] text-gray-400">${h.date || 'Recent'}</div>
+            </td>
+            <td class="p-3">${h.recipients ? h.recipients.length : (h.recipientsCount || 0)} Recipients</td>
+            <td class="p-3">${h.tokens ? h.tokens.length : (h.assetsCount || 0)} Tokens</td>
             <td class="p-3"><span class="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400">Completed</span></td>
             <td class="p-3 text-right space-x-2">
               <button onclick="viewDetails(${idx})" class="px-2.5 py-1 bg-white/5 hover:bg-white/10 rounded-lg text-sky-400">Details</button>
