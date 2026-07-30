@@ -1134,11 +1134,11 @@
     });
   }
 
-  function discardBatch(id) {
-    let batches = JSON.parse(localStorage.getItem('arcPendingBatches') || '[]');
+  async function discardBatch(id) {
+    let batches = await getFromCloud('arcPendingBatches') || [];
     batches = batches.filter(b => b.id !== id);
-    localStorage.setItem('arcPendingBatches', JSON.stringify(batches));
-    renderPendingBatches();
+    await saveToCloud('arcPendingBatches', batches);
+    await renderPendingBatches();
     showToast("Batch discarded.");
   }
 
