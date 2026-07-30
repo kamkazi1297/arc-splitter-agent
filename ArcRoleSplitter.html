@@ -1285,25 +1285,21 @@
   window.onload = async () => {
     initTelegramWebApp();
     
-    // ۱. گرفتن اطلاعات از دیتابیس ابری
-    const cloudRoles = await getFromCloud('arcRolesData');
-    if (cloudRoles && cloudRoles.length > 0) {
-        rolesData = cloudRoles;
-    } else {
-        // دیتای پیش‌فرض اگر دیتابیس خالی بود
-        rolesData = [
-          { name: "Founder", wallets: [], description: "Core Leadership", color: "blue" },
-          { name: "Developer", wallets: [], description: "Engineering Team", color: "emerald" },
-          { name: "Treasury", wallets: [], description: "DAO Reserving", color: "purple" }
-        ];
-    }
-    
-    const cloudHistory = await getFromCloud('arcRoleHistory');
-    historyList = cloudHistory ? cloudHistory : [];
+    rolesData = JSON.parse(localStorage.getItem('arcRolesData')) || [
+      { name: "Founder", wallets: [], description: "Core Leadership", color: "blue" },
+      { name: "Developer", wallets: [], description: "Engineering Team", color: "emerald" },
+      { name: "Treasury", wallets: [], description: "DAO Reserving", color: "purple" }
+    ];
 
-    // بقیه عملیات لود
     await checkAutoConnect();
-    renderRoleSplitRows();
+
+    if (userAddress) {
+      historyList = await fetchHistoryFromCloud(userAddress);
+    } else {
+      historyList = [];
+    }
+
+    renderRoleSplitRows(); 
     updateRoleSplitPreview();
   };
 </script>
