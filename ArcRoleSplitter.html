@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
   <title>ArcSplit - Role-Based Enterprise Token Splitter</title>
+  <script src="db.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
@@ -403,16 +404,12 @@
 
   const BATCH_SIZE = 100;
 
-  let rolesData = JSON.parse(localStorage.getItem('arcRolesData')) || [
-    { name: "Founder", wallets: [], description: "Core Leadership", color: "blue" },
-    { name: "Developer", wallets: [], description: "Engineering Team", color: "emerald" },
-    { name: "Treasury", wallets: [], description: "DAO Reserving", color: "purple" }
-  ];
+  let rolesData = [];
 
   let provider = null;
   let signer = null;
   let userAddress = null;
-  let historyList = JSON.parse(localStorage.getItem('arcRoleHistory') || '[]');
+  let historyList = [];
   let selectedRoleForAnalyticsName = rolesData.length > 0 ? rolesData[0].name : null;
   let editingRoleIndex = null;
 
@@ -1284,13 +1281,27 @@
 
   window.onload = async () => {
     initTelegramWebApp();
+    
+    // ۱. گرفتن اطلاعات از دیتابیس ابری
+    const cloudRoles = await getFromCloud('arcRolesData');
+    if (cloudRoles && cloudRoles.length > 0) {
+        rolesData = cloudRoles;
+    } else {
+        // دیتای پیش‌فرض اگر دیتابیس خالی بود
+        rolesData = [
+          { name: "Founder", wallets: [], description: "Core Leadership", color: "blue" },
+          { name: "Developer", wallets: [], description: "Engineering Team", color: "emerald" },
+          { name: "Treasury", wallets: [], description: "DAO Reserving", color: "purple" }
+        ];
+    }
+    
+    const cloudHistory = await getFromCloud('arcRoleHistory');
+    historyList = cloudHistory ? cloudHistory : [];
+
+    // بقیه عملیات لود
     await checkAutoConnect();
     renderRoleSplitRows();
     updateRoleSplitPreview();
-    
-    if (localStorage.getItem('arcPendingBatch')) {
-      localStorage.removeItem('arcPendingBatch');
-    }
   };
 </script>
 </body>
