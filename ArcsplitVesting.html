@@ -55,7 +55,7 @@
 
     .light .glass {
       background: rgba(255, 255, 255, 0.85);
-      border-color: rgba(0, 0, 0, 0.22); /* Darkened light mode box borders */
+      border-color: rgba(0, 0, 0, 0.22);
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1);
     }
 
@@ -91,7 +91,7 @@
     .light select, .light input[type="text"], .light input[type="number"], .light input[type="datetime-local"] {
       background-color: #ffffff;
       color: #0f172a;
-      border: 1px solid #64748b; /* Darkened input borders in light mode */
+      border: 1px solid #64748b;
     }
     .light select:focus, .light input[type="text"]:focus, .light input[type="number"]:focus, .light input[type="datetime-local"]:focus {
       border-color: #10b981;
@@ -534,7 +534,7 @@
   async function connectWallet(isAuto = false) {
     if (window.ethereum) {
       try {
-        // Network Switcher Check for Arc Testnet (Fixed Hex Code)
+        // Network Switcher Check for Arc Testnet
         const targetNetworkId = '0x4cef52';
        
         const chainId = await window.ethereum.request({ method: 'eth_chainId' });
@@ -746,7 +746,6 @@
 
     container.innerHTML = recipients.map((r, idx) => {
       let currentPercent = r.percent !== "" ? r.percent : "";
-      // Updated to .toFixed(8) for 8-decimal support (CIRBTC)
       let currentAmt = r.amount !== "" ? r.amount : (totalAmt > 0 && r.percent !== "" ? ((totalAmt * r.percent) / 100).toFixed(8) : "");
       
       return `
@@ -774,7 +773,6 @@
     const p = parseFloat(val) || 0;
     const totalAmt = parseFloat(document.getElementById('totalAmount').value) || 0;
     const amt = totalAmt > 0 ? (totalAmt * p) / 100 : "";
-    // Updated to .toFixed(8) for 8-decimal support (CIRBTC)
     recipients[idx].amount = amt !== "" ? amt.toFixed(8) : "";
     
     const inputs = document.querySelectorAll('#recipientsContainer input.amount');
@@ -814,7 +812,6 @@
     recipients[lastIdx].percent = parseFloat(remaining.toFixed(2));
     
     const totalAmt = parseFloat(document.getElementById('totalAmount').value) || 0;
-    // Updated to .toFixed(8) for 8-decimal support (CIRBTC)
     recipients[lastIdx].amount = totalAmt > 0 ? ((totalAmt * recipients[lastIdx].percent) / 100).toFixed(8) : "";
 
     renderRecipients();
@@ -826,7 +823,6 @@
     const totalAmt = parseFloat(document.getElementById('totalAmount').value) || 0;
     recipients.forEach(r => {
       if (r.percent !== "") {
-        // Updated to .toFixed(8) for 8-decimal support (CIRBTC)
         r.amount = ((totalAmt * parseFloat(r.percent)) / 100).toFixed(8);
       }
     });
@@ -880,20 +876,34 @@
       warningEl.classList.add('hidden');
     }
 
+    // Dynamic Step Calculation Fixed
+    const durationSeconds = getDurationSeconds();
+    let slicePeriodSeconds;
+    let freqLabel = "mo";
+    
+    if (freq === 'Hourly') { slicePeriodSeconds = 3600; freqLabel = "hr"; }
+    else if (freq === 'Daily') { slicePeriodSeconds = 86400; freqLabel = "day"; }
+    else if (freq === 'Weekly') { slicePeriodSeconds = 604800; freqLabel = "wk"; }
+    else { slicePeriodSeconds = 2592000; freqLabel = "mo"; }
+    
+    let totalSteps = Math.floor(durationSeconds / slicePeriodSeconds);
+    if(totalSteps <= 0) totalSteps = 1;
+
     const previewEl = document.getElementById('previewBreakdown');
     previewEl.innerHTML = recipients.map(r => {
       let p = parseFloat(r.percent) || 0;
       let allocatedAmt = r.amount !== "" ? parseFloat(r.amount) : (totalAmt * p) / 100;
-      let portion = (allocatedAmt / 12).toFixed(4);
+      let portion = (allocatedAmt / totalSteps).toFixed(4); // Fixed division logic
       return `<div class="flex justify-between items-center bg-white/[0.02] light:bg-black/5 border border-white/5 light:border-black/20 p-3 rounded-2xl">
         <span class="font-bold text-gray-300 light:text-slate-700">${r.address ? r.address.substring(0,6)+'...' : 'No Address'} (${p}%)</span>
-        <span class="text-emerald-400 light:text-emerald-600 font-bold">${portion} / mo</span>
+        <span class="text-emerald-400 light:text-emerald-600 font-bold">${portion} / ${freqLabel}</span>
       </div>`;
     }).join('');
 
     let timelineEl = document.getElementById('visualTimeline');
     timelineEl.innerHTML = '';
-    for(let i=0; i<12; i++) {
+    let boxesCount = totalSteps > 12 ? 12 : totalSteps; 
+    for(let i=0; i<boxesCount; i++) {
       let box = document.createElement('div');
       box.className = `flex-1 h-full rounded-lg bg-emerald-500/80`;
       timelineEl.appendChild(box);
@@ -926,7 +936,7 @@
               </div>
               <div class="text-left">
                 <div class="font-bold text-sm preserve-theme">${item.tokenSymbol || 'Token'} Vesting Plan</div>
-                <div class="text-[11px] text-gray-400 light:text-slate-500 mt-0.5">${item.timestamp} • ${item.duration} • <span class="text-emerald-400">${item.allocated} Tokens</span></div>
+                <div class="text-[11px] text-gray-400 light:text-slate-500 mt-0.5">${item.timestamp} • ${item.duration} • <span class="text-emerald-400">${item.totalAmount || item.allocated} Tokens</span></div>
               </div>
             </div>
             <i class="fas fa-chevron-down text-gray-400 transition-transform duration-300" id="cal-icon-${index}"></i>
@@ -955,9 +965,13 @@
     }
   }
 
+  // Fixed Calendar Generation Logic
   function generateUnlockScheduleHtml(item) {
      let startDate = new Date(item.startDate);
-     let durationMonths = item.durationMonths || 12;
+     
+     // Compatibility check for older history items
+     let durationSeconds = item.durationSeconds || (item.durationMonths ? item.durationMonths * 30 * 86400 : 31536000);
+     let slicePeriodSeconds = item.slicePeriodSeconds || 2592000;
      
      let totalAllocated = 0;
      if (item.recipients) {
@@ -970,10 +984,15 @@
        totalAllocated = parseFloat(item.totalAmount) || 0;
      }
 
+     let totalSteps = Math.floor(durationSeconds / slicePeriodSeconds);
+     if (totalSteps <= 0) totalSteps = 1;
+
      let calHtml = '';
-     for(let m = 1; m <= durationMonths; m++) {
-        let unlockDate = new Date(startDate.getTime());
-        unlockDate.setMonth(unlockDate.getMonth() + m);
+     let limit = totalSteps > 300 ? 300 : totalSteps; // Performance UI cap
+
+     for(let s = 1; s <= limit; s++) {
+        // Correctly calculate the exact unlock time in seconds/hours/days
+        let unlockDate = new Date(startDate.getTime() + (s * slicePeriodSeconds * 1000));
         
         let year = unlockDate.getFullYear();
         let month = String(unlockDate.getMonth() + 1).padStart(2, '0');
@@ -982,14 +1001,19 @@
         let minutes = String(unlockDate.getMinutes()).padStart(2, '0');
         let dateStr = `${year}-${month}-${day} ${hours}:${minutes}`;
 
-        let releasePerStep = totalAllocated > 0 ? (totalAllocated / durationMonths).toFixed(8) : "0.00";
+        let releasePerStep = totalAllocated > 0 ? (totalAllocated / totalSteps).toFixed(8) : "0.00";
 
         calHtml += `
         <div class="flex justify-between items-center bg-white/[0.02] light:bg-white p-3 rounded-xl border border-white/5 light:border-slate-200">
           <span class="font-bold text-cyan-400 light:text-cyan-600">${dateStr}</span>
-          <span class="font-bold text-emerald-400 light:text-emerald-600">${releasePerStep} ${item.tokenSymbol || ''}</span>
+          <span class="font-bold text-emerald-400 light:text-emerald-600">${releasePerStep} ${item.tokenSymbol || ''} (Total Pool)</span>
         </div>`;
      }
+     
+     if(totalSteps > limit) {
+         calHtml += `<div class="text-xs text-gray-500 text-center py-2">... ${totalSteps - limit} more unlock steps hidden to prevent browser lag ...</div>`;
+     }
+     
      return calHtml;
   }
 
@@ -1050,9 +1074,6 @@
       else if (freq === 'Daily') slicePeriodSeconds = 86400;
       else if (freq === 'Weekly') slicePeriodSeconds = 604800;
       else slicePeriodSeconds = 2592000;
-
-      const durSelect = document.getElementById('durationSelect').value;
-      const actualDurationMonths = durSelect === 'custom' ? parseInt(document.getElementById('customDurationNum').value) || 12 : parseInt(durSelect);
 
       const allowRelayerPush = document.getElementById('allowRelayerPush').checked;
       const isRevocable = document.getElementById('isRevocable').checked;
@@ -1147,6 +1168,7 @@
       showToast("Smart Contract executed successfully on-chain!");
       switchTab('calendar');
       
+      // Fix Applied: Saving accurate dynamic time data instead of hardcoded months
       const newRecord = {
         hash: tx.hash,
         address: validRecipients.length > 1 ? `Batch (${validRecipients.length} addresses)` : validRecipients[0].address,
@@ -1157,7 +1179,8 @@
         tokenSymbol: tokenSymbol,
         startDate: rawDateVal,
         frequency: freq,
-        durationMonths: actualDurationMonths,
+        durationSeconds: duration, // Exact time in seconds
+        slicePeriodSeconds: slicePeriodSeconds, // Exact frequency in seconds
         totalAmount: totalAmtToSave,
         recipients: JSON.parse(JSON.stringify(validRecipients))
       };
