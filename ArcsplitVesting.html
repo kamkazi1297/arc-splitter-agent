@@ -876,7 +876,7 @@
       warningEl.classList.add('hidden');
     }
 
-    // Dynamic Step Calculation Fixed
+    // Dynamic Step Calculation
     const durationSeconds = getDurationSeconds();
     let slicePeriodSeconds;
     let freqLabel = "mo";
@@ -965,13 +965,17 @@
     }
   }
 
-  // Fixed Calendar Generation Logic
+  // Fixed Calendar Generation Logic WITH CLIFF SUPPORT
   function generateUnlockScheduleHtml(item) {
      let startDate = new Date(item.startDate);
+     if (isNaN(startDate.getTime())) {
+         startDate = new Date(); // Fallback for invalid dates
+     }
      
      // Compatibility check for older history items
      let durationSeconds = item.durationSeconds || (item.durationMonths ? item.durationMonths * 30 * 86400 : 31536000);
      let slicePeriodSeconds = item.slicePeriodSeconds || 2592000;
+     let cliffSeconds = item.cliffSeconds || 0; // Added Cliff property
      
      let totalAllocated = 0;
      if (item.recipients) {
@@ -989,10 +993,13 @@
 
      let calHtml = '';
      let limit = totalSteps > 300 ? 300 : totalSteps; // Performance UI cap
+     
+     // The true start of vesting unlocks is Start Date + Cliff
+     let actualVestingStart = startDate.getTime() + (cliffSeconds * 1000);
 
      for(let s = 1; s <= limit; s++) {
-        // Correctly calculate the exact unlock time in seconds/hours/days
-        let unlockDate = new Date(startDate.getTime() + (s * slicePeriodSeconds * 1000));
+        // Unlock time is actualVestingStart + (step * slicePeriodSeconds)
+        let unlockDate = new Date(actualVestingStart + (s * slicePeriodSeconds * 1000));
         
         let year = unlockDate.getFullYear();
         let month = String(unlockDate.getMonth() + 1).padStart(2, '0');
@@ -1168,7 +1175,7 @@
       showToast("Smart Contract executed successfully on-chain!");
       switchTab('calendar');
       
-      // Fix Applied: Saving accurate dynamic time data instead of hardcoded months
+      // Save all dynamically calculated parameters properly
       const newRecord = {
         hash: tx.hash,
         address: validRecipients.length > 1 ? `Batch (${validRecipients.length} addresses)` : validRecipients[0].address,
@@ -1179,8 +1186,9 @@
         tokenSymbol: tokenSymbol,
         startDate: rawDateVal,
         frequency: freq,
-        durationSeconds: duration, // Exact time in seconds
-        slicePeriodSeconds: slicePeriodSeconds, // Exact frequency in seconds
+        durationSeconds: duration, 
+        slicePeriodSeconds: slicePeriodSeconds, 
+        cliffSeconds: cliffDuration, // Added Cliff
         totalAmount: totalAmtToSave,
         recipients: JSON.parse(JSON.stringify(validRecipients))
       };
