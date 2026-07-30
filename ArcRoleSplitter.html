@@ -1220,8 +1220,10 @@
         data.currentIndex++;
         
         batches[bIndex] = data;
-        localStorage.setItem('arcPendingBatches', JSON.stringify(batches));
-        renderPendingBatches();
+        await saveToCloud('arcPendingBatches', batches); 
+        await renderPendingBatches();
+    
+    
 
         if (data.currentIndex >= data.chunks.length) {
           historyList.unshift({
@@ -1233,7 +1235,7 @@
             status: "Success",
             allocations: data.allocations
           });
-          localStorage.setItem('arcRoleHistory', JSON.stringify(historyList));
+          await saveToCloud('arcRoleHistory', historyList);
         }
       }
 
