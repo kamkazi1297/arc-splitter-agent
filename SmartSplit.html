@@ -177,8 +177,8 @@
               <div class="flex gap-2">
                 <input type="number" id="hubAmount" placeholder="Amount..." class="w-full rounded-xl px-4 py-3 text-sm font-bold">
                 <select id="hubToken" class="rounded-xl px-2 py-3 text-sm font-bold w-32 text-center" onchange="handleTokenChange()">
-                  <!-- Auto-detecting decimals & symbols -->
-                  <option value="0x3600000000000000000000000000000000000000" data-price="1.00">USDC</option>
+                  <!-- Network Native Token first -->
+                  <option value="0x3600000000000000000000000000000000000000" data-price="1.00">USDC (Native)</option>
                   <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a" data-price="1.08">EURC</option>
                   <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF" data-price="60000">cirBTC</option>
                   <option value="custom">➕ Add Custom</option>
@@ -187,6 +187,7 @@
               <div class="flex gap-2">
                 <button onclick="depositFunds()" class="flex-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 py-2.5 rounded-xl text-sm font-bold transition-all"><i class="fas fa-arrow-down mr-1"></i> Deposit</button>
                 <button onclick="withdrawFunds()" class="flex-1 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/30 py-2.5 rounded-xl text-sm font-bold transition-all"><i class="fas fa-arrow-up mr-1"></i> Withdraw</button>
+                <button onclick="claimFailedPulls()" class="w-12 bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/30 py-2.5 rounded-xl text-sm font-bold transition-all" title="Claim Failed Pulls"><i class="fas fa-hand-holding-usd"></i></button>
               </div>
             </div>
           </div>
@@ -221,8 +222,8 @@
                 <input type="number" id="ruleFee" placeholder="e.g. 1" value="0" class="w-full rounded-xl px-4 py-3 text-sm font-bold">
               </div>
               <div>
-                <label class="block text-xs font-bold text-gray-400 mb-2">Rule Nonce (ID)</label>
-                <input type="number" id="ruleNonce" placeholder="Auto-generated" class="w-full rounded-xl px-4 py-3 text-sm font-bold">
+                <label class="block text-xs font-bold text-gray-400 mb-2">Deadline (Optional)</label>
+                <input type="datetime-local" id="ruleDeadline" class="w-full rounded-xl px-4 py-3 text-sm font-bold">
               </div>
             </div>
 
@@ -234,9 +235,15 @@
                 </label>
                 <span class="text-sm font-bold text-gray-300">Recurring Payment</span>
               </div>
+              
               <div id="cooldownBox" class="hidden flex-1 min-w-[200px] flex items-center gap-2">
                 <label class="text-xs font-bold text-gray-400 whitespace-nowrap">Cooldown (Sec):</label>
                 <input type="number" id="ruleCooldown" placeholder="e.g. 86400" value="0" class="flex-1 rounded-xl px-3 py-2 text-sm font-bold">
+              </div>
+              
+              <div class="flex-1 min-w-[150px] flex items-center gap-2 border-l border-white/10 pl-4">
+                <label class="text-xs font-bold text-gray-400 whitespace-nowrap">Nonce:</label>
+                <input type="number" id="ruleNonce" placeholder="Auto-generated" class="w-full rounded-xl px-3 py-2 text-sm font-bold bg-transparent">
               </div>
             </div>
           </div>
@@ -264,6 +271,10 @@
               <div class="flex justify-between border-b border-white/5 pb-2">
                 <span class="text-gray-500">Target</span>
                 <span class="font-mono text-emerald-400" id="previewTarget">0x...</span>
+              </div>
+              <div class="flex justify-between border-b border-white/5 pb-2">
+                <span class="text-gray-500">Token</span>
+                <span class="font-bold text-white" id="previewTokenSymbol">USDC (Native)</span>
               </div>
               <div class="flex justify-between border-b border-white/5 pb-2">
                 <span class="text-gray-500">Amount</span>
@@ -306,22 +317,27 @@
   </div>
 
 <script>
-  // Core Architecture Configuration
-  const CONTRACT_ADDRESS = "0x0ede4363D3B6a0dCfe9c67bA31799D9591567fD0"; 
+  // Core Architecture Configuration - Proxy Address for Upgradeable Contract
+  const CONTRACT_ADDRESS = "0xDE2Ae2189990a7a5b0e8c3Fee7aDa6E4386a8DEe"; 
   const EXPLORER_URL = "https://testnet.arcscan.app/tx/";
 
-  // Added symbol to ERC20 ABI for custom token support
+  // Add approve to ERC20 ABI
   const ERC20_ABI = [
     "function decimals() view returns (uint8)",
     "function symbol() view returns (string)",
     "function balanceOf(address) view returns (uint256)",
-    "function transfer(address to, uint amount) returns (bool)"
+    "function transfer(address to, uint amount) returns (bool)",
+    "function approve(address spender, uint256 amount) returns (bool)"
   ];
 
+  // Updated Splitter ABI based on new UUPS Contract Architecture
   const SPLITTER_ABI = [
-    "function registerRule(address recipient, uint256 amountToSplit, uint256 maxRelayerFee, uint256 ruleIdNonce, bool isRecurring, uint256 ruleCooldown, uint8[] calldata opcodes, address[] calldata evaluators, bytes[] calldata evaluatorsData) external returns (bytes32)",
-    "function balances(address account) external view returns (uint256)",
-    "function withdraw(uint256 amount) external"
+    "function registerRule(address token, address recipient, uint256 amountToSplit, uint256 maxRelayerFee, uint256 ruleIdNonce, bool isRecurring, uint256 ruleCooldown, uint256 deadline, uint8[] calldata opcodes, address[] calldata evaluators, bytes[] calldata evaluatorsData) external returns (bytes32)",
+    "function nativeBalances(address account) external view returns (uint256)",
+    "function tokenBalances(address account, address token) external view returns (uint256)",
+    "function depositERC20(address token, uint256 amount) external",
+    "function withdraw(address token, uint256 amount) external",
+    "function claimFailedPull(address token) external"
   ];
 
   const APP_IDENTIFIER = "ArcSplit_App";
@@ -361,14 +377,13 @@
     }
   }
 
-  // --- Add Custom Token Logic ---
   async function handleTokenChange() {
     const select = document.getElementById('hubToken');
     if (select.value === 'custom') {
       const address = prompt("Enter Custom Token Contract Address (0x...):");
       if (!address || !ethers.isAddress(address)) {
         showToast("Invalid contract address!");
-        select.selectedIndex = 0; // fallback to first token
+        select.selectedIndex = 0; 
         return updateTokenInfo();
       }
       
@@ -384,33 +399,35 @@
         symbol = prompt("Could not auto-fetch symbol. Enter Token Symbol manually:") || "CUSTOM";
       }
 
-      // Add to select options dynamically
       const newOption = document.createElement('option');
       newOption.value = address;
       newOption.textContent = symbol;
       newOption.setAttribute('data-price', '1.00'); 
       
-      // Insert before the 'custom' option
       select.insertBefore(newOption, select.options[select.options.length - 1]);
       select.value = address;
     }
     await updateTokenInfo();
   }
 
-  // --- Auto-Detect Token Info ---
   async function updateTokenInfo() {
     const select = document.getElementById('hubToken');
     const selectedOption = select.options[select.selectedIndex];
     const tokenAddress = selectedOption.value;
     currentFiatPrice = parseFloat(selectedOption.getAttribute('data-price') || 1.00);
     
-    const tokenSymbol = selectedOption.text.replace('➕ ', '');
+    let tokenSymbol = selectedOption.text.replace('➕ ', '');
+    if (tokenAddress.toLowerCase() === "0x3600000000000000000000000000000000000000") {
+        tokenSymbol = "USDC"; // Override for Native System Token
+    }
+    
     document.querySelectorAll('.sponsorBalanceSymbol').forEach(el => el.textContent = tokenSymbol);
     document.querySelectorAll('.walletBalanceSymbol').forEach(el => el.textContent = tokenSymbol);
+    document.getElementById('previewTokenSymbol').textContent = tokenSymbol;
 
     if (provider && tokenAddress) {
       if (tokenAddress.toLowerCase() === "0x3600000000000000000000000000000000000000") {
-          activeDecimals = 18; 
+          activeDecimals = 18; // Defaulting to 18 for native L1 coin
       } else {
           try {
             const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
@@ -432,7 +449,6 @@
     else box.classList.add('hidden');
   }
 
-  // --- Address Book ---
   function renderContacts() {
     const datalist = document.getElementById('savedContacts');
     datalist.innerHTML = '';
@@ -456,7 +472,6 @@
     }
   }
 
-  // --- Web3 Core ---
   async function checkAndSwitchNetwork() {
     if (!window.ethereum) return;
     try {
@@ -534,21 +549,22 @@
 
     for (let i = 0; i < retries; i++) {
       try {
-        let walletBalRaw;
+        let walletBalRaw, balRaw;
         
+        // Native System USDC logic vs ERC20 logic
         if (tokenAddress.toLowerCase() === "0x3600000000000000000000000000000000000000") {
             walletBalRaw = await provider.getBalance(userAddress);
+            balRaw = await contract.nativeBalances(userAddress);
         } else {
             const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
             walletBalRaw = await tokenContract.balanceOf(userAddress);
+            balRaw = await contract.tokenBalances(userAddress, tokenAddress);
         }
 
         const displayWalletBal = ethers.formatUnits(walletBalRaw, activeDecimals);
         document.getElementById('walletBalanceDisplay').textContent = parseFloat(displayWalletBal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
         document.getElementById('walletFiat').textContent = `~$${(parseFloat(displayWalletBal) * currentFiatPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-        // Get Sponsor Balance using contract ABI specification 
-        const balRaw = await contract.balances(userAddress);
         const displayVal = ethers.formatUnits(balRaw, activeDecimals);
         document.getElementById('sponsorBalanceDisplay').textContent = parseFloat(displayVal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
         document.getElementById('sponsorFiat').textContent = `~$${(parseFloat(displayVal) * currentFiatPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -582,19 +598,26 @@
       let tx;
 
       if (tokenAddress.toLowerCase() === "0x3600000000000000000000000000000000000000") {
+          // Native L1 USDC Transfer via receive() function
           tx = await signer.sendTransaction({
             to: CONTRACT_ADDRESS,
             value: parsedAmt
           });
       } else {
+          // ERC20 Flow requires Approve -> DepositERC20
+          showToast(`Approving ${amt} ${tokenSymbol}... Please sign.`);
           const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
-          tx = await tokenContract.transfer(CONTRACT_ADDRESS, parsedAmt);
+          const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, parsedAmt);
+          await approveTx.wait();
+          
+          showToast(`Approve Successful! Now Depositing...`);
+          tx = await contract.depositERC20(tokenAddress, parsedAmt);
       }
       
       showToast(`Transaction Sent! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-cyan-400 underline mt-2 inline-block font-normal'>View Explorer</a>`);
       await tx.wait(); 
       
-      showToast(`Deposit of ${amt} ${tokenSymbol} Successful! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-emerald-400 underline mt-2 inline-block font-normal'>View Receipt</a>`);
+      showToast(`Deposit of ${amt} ${tokenSymbol} Successful!`);
       
       await fetchBalances(); 
       document.getElementById('hubAmount').value = '';
@@ -623,8 +646,10 @@
     
     try {
       const parsedAmt = ethers.parseUnits(amt.toString(), activeDecimals);
+      const tokenAddress = document.getElementById('hubToken').value;
       const tokenSymbol = document.querySelector('.sponsorBalanceSymbol').textContent;
-      const tx = await contract.withdraw(parsedAmt);
+      
+      const tx = await contract.withdraw(tokenAddress, parsedAmt);
       
       showToast(`Withdraw Tx Sent! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-cyan-400 underline mt-2 inline-block font-normal'>View Explorer</a>`);
       await tx.wait();
@@ -650,6 +675,23 @@
     }
   }
 
+  async function claimFailedPulls() {
+    if (!contract) return showToast("Connect wallet first!");
+    const tokenAddress = document.getElementById('hubToken').value;
+    
+    try {
+      const tx = await contract.claimFailedPull(tokenAddress);
+      showToast(`Claiming Failed Pulls... <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-cyan-400 underline mt-2 inline-block font-normal'>View Explorer</a>`);
+      await tx.wait();
+      
+      showToast(`Successfully Claimed Locked Funds!`);
+      await fetchBalances();
+    } catch(e) {
+      console.error(e);
+      showToast("No failed pulls to claim for this token, or Tx Failed.");
+    }
+  }
+
   async function registerSmartRule() {
     if (!contract) return showToast("Connect wallet first!");
     
@@ -659,9 +701,16 @@
     const nonce = document.getElementById('ruleNonce').value || "0";
     const isRecurring = document.getElementById('ruleRecurring').checked;
     const cooldown = document.getElementById('ruleCooldown').value || "0";
+    const tokenAddress = document.getElementById('hubToken').value;
+    const deadlineInput = document.getElementById('ruleDeadline').value;
 
     if (!recipient || !ethers.isAddress(recipient)) return showToast("Invalid Recipient Address");
     if (!amt || amt <= 0) return showToast("Invalid Amount");
+
+    let deadlineUnix = 0;
+    if (deadlineInput) {
+       deadlineUnix = Math.floor(new Date(deadlineInput).getTime() / 1000);
+    }
 
     let opcodes = [];
     let evaluators = [];
@@ -687,7 +736,7 @@
       btn.disabled = true;
 
       const tx = await contract.registerRule(
-        recipient, parsedAmt, parsedFee, nonce, isRecurring, cooldown,
+        tokenAddress, recipient, parsedAmt, parsedFee, nonce, isRecurring, cooldown, deadlineUnix,
         opcodes, evaluators, evaluatorsData
       );
       
@@ -721,7 +770,6 @@
     }
   }
 
-  // --- No-Code Condition Builder ---
   function addCondition() {
     conditions.push({ type: 'custom', address: '', data: '0x', uiValue: '' });
     renderConditions();
@@ -840,7 +888,7 @@
     document.getElementById('previewTarget').textContent = rec.substring(0, 8) + '...' + rec.substring(rec.length - 4);
     
     let fiatStr = `(~$${(parseFloat(amt) * currentFiatPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`;
-    document.getElementById('previewAmt').innerHTML = `${amt} ${document.querySelector('.sponsorBalanceSymbol').textContent} <span class="text-gray-500 font-normal ml-1">${amt > 0 ? fiatStr : ''}</span>`;
+    document.getElementById('previewAmt').innerHTML = `${amt} <span class="text-gray-500 font-normal ml-1">${amt > 0 ? fiatStr : ''}</span>`;
     
     document.getElementById('previewEvalCount').textContent = `${conditions.length} Conditions`;
   }
@@ -905,7 +953,6 @@
     }
   }
 
-  // Init + Auto Connect Session Restoration
   window.addEventListener('load', async () => {
     renderContacts();
     renderConditions();
