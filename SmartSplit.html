@@ -546,13 +546,16 @@
     
     const select = document.getElementById('hubToken');
     const tokenAddress = select.value;
+    const NATIVE_SYS = "0x3600000000000000000000000000000000000000";
 
     for (let i = 0; i < retries; i++) {
       try {
         let walletBalRaw, balRaw;
         
-        // Native System USDC logic vs ERC20 logic
-        if (tokenAddress.toLowerCase() === "0x3600000000000000000000000000000000000000") {
+        // مقایسه امن آدرس‌ها با ادرسه استاندارد ethers
+        const isNative = (tokenAddress.toLowerCase() === NATIVE_SYS.toLowerCase());
+
+        if (isNative) {
             walletBalRaw = await provider.getBalance(userAddress);
             balRaw = await contract.nativeBalances(userAddress);
         } else {
@@ -575,12 +578,12 @@
         return; 
         
       } catch (err) {
-        console.warn(`Balance fetch attempt ${i+1} failed:`, err);
+        console.error(`Balance fetch attempt ${i+1} error details:`, err);
         if (i === retries - 1) {
             badge.textContent = "Sync Error";
             badge.className = "px-2 py-1 bg-rose-500/20 text-rose-400 rounded text-[10px] font-bold";
         } else {
-            await new Promise(r => setTimeout(r, 1500));
+            await new Promise(r => setTimeout(r, 1000));
         }
       }
     }
