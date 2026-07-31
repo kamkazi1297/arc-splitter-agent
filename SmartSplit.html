@@ -94,7 +94,6 @@
     
     .preview-scroll { max-height: 400px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.2) transparent; }
 
-    /* Custom Styles for Tabs */
     .tab-btn.active {
       color: #34d399;
       border-bottom: 2px solid #34d399;
@@ -142,7 +141,6 @@
           <button onclick="disconnectWallet()" id="disconnectBtn" class="hidden w-full px-4 py-3 bg-rose-500/10 border border-rose-500/30 text-rose-400 font-bold rounded-2xl transition-all flex items-center justify-center gap-2">
             <i class="fas fa-power-off"></i> Disconnect
           </button>
-          <!-- Network Badge -->
           <div id="networkBadge" class="absolute top-6 right-6 px-2 py-1 bg-gray-500/20 text-gray-400 rounded text-[10px] font-bold border border-gray-500/30">Unknown Net</div>
         </div>
 
@@ -160,7 +158,7 @@
                 <p class="text-xs text-gray-500 mb-1">Your Wallet Balance</p>
                 <div class="text-2xl font-extrabold text-cyan-400 flex items-baseline gap-2">
                   <span id="walletBalanceDisplay">0.00</span>
-                  <span class="text-xs text-gray-400" id="walletBalanceSymbol">USDC</span>
+                  <span class="text-xs text-gray-400 walletBalanceSymbol">USDC</span>
                 </div>
                 <div id="walletFiat" class="text-xs text-gray-500 mt-0.5">~$0.00</div>
               </div>
@@ -168,7 +166,7 @@
                 <p class="text-xs text-gray-500 mb-1">Contract (Sponsor) Balance</p>
                 <div class="text-3xl font-extrabold text-emerald-400 flex items-baseline gap-2">
                   <span id="sponsorBalanceDisplay">0.00</span>
-                  <span class="text-sm text-gray-400" id="sponsorBalanceSymbol">USDC</span>
+                  <span class="text-sm text-gray-400 sponsorBalanceSymbol">USDC</span>
                 </div>
                 <div id="sponsorFiat" class="text-xs text-gray-500 mt-0.5">~$0.00</div>
               </div>
@@ -178,10 +176,11 @@
             <div class="space-y-3">
               <div class="flex gap-2">
                 <input type="number" id="hubAmount" placeholder="Amount..." class="w-full rounded-xl px-4 py-3 text-sm font-bold">
-                <select id="hubToken" class="rounded-xl px-2 py-3 text-sm font-bold w-32 text-center" onchange="updateDecimals()">
-                  <option value="0x3600000000000000000000000000000000000000" data-dec="6" data-price="1.00">USDC</option>
-                  <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a" data-dec="6" data-price="1.08">EURC</option>
-                  <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF" data-dec="8" data-price="60000">cirBTC</option>
+                <select id="hubToken" class="rounded-xl px-2 py-3 text-sm font-bold w-32 text-center" onchange="updateTokenInfo()">
+                  <!-- Removed hardcoded decimals, will auto-detect -->
+                  <option value="0x3600000000000000000000000000000000000000" data-price="1.00">USDC</option>
+                  <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a" data-price="1.08">EURC</option>
+                  <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF" data-price="60000">cirBTC</option>
                 </select>
               </div>
               <div class="flex gap-2">
@@ -200,15 +199,14 @@
           <div class="glass rounded-3xl p-6">
             <div class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-5">3. Rule Configuration</div>
             
-            <!-- Address Book Datalist -->
             <datalist id="savedContacts"></datalist>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
               <div class="relative">
                 <label class="block text-xs font-bold text-gray-400 mb-2">Recipient Address</label>
                 <div class="flex gap-2">
-                  <input type="text" id="ruleRecipient" list="savedContacts" placeholder="0x... or select contact" class="w-full rounded-xl px-4 py-3 text-sm font-mono">
-                  <button onclick="saveContact()" class="bg-white/10 hover:bg-white/20 border border-white/10 px-4 rounded-xl text-white transition-all" title="Save to Address Book">
+                  <input type="text" id="ruleRecipient" list="savedContacts" placeholder="0x..." class="w-full rounded-xl px-4 py-3 text-sm font-mono">
+                  <button onclick="saveContact()" class="bg-white/10 hover:bg-white/20 border border-white/10 px-4 rounded-xl text-white transition-all">
                     <i class="fas fa-address-book"></i>
                   </button>
                 </div>
@@ -310,25 +308,30 @@
   // Core Architecture Configuration
   const CONTRACT_ADDRESS = "0x0ede4363D3B6a0dCfe9c67bA31799D9591567fD0"; 
   const EXPLORER_URL = "https://testnet.arcscan.app/tx/";
-  
-  // Dummy Chain ID for Arc Testnet (if standard EVM). Adjust to actual Arc Testnet chainId if known.
-  const ARC_TESTNET_CHAIN_ID = "0x203"; // Placeholder. Metamask requires hex.
 
-  const CONTRACT_ABI = [
+  // Added standard ERC20 ABI for balance, decimals and transfer
+  const ERC20_ABI = [
+    "function decimals() view returns (uint8)",
+    "function balanceOf(address) view returns (uint256)",
+    "function transfer(address to, uint amount) returns (bool)"
+  ];
+
+  const SPLITTER_ABI = [
     "function registerRule(address recipient, uint256 amountToSplit, uint256 maxRelayerFee, uint256 ruleIdNonce, bool isRecurring, uint256 ruleCooldown, uint8[] calldata opcodes, address[] calldata evaluators, bytes[] calldata evaluatorsData) external returns (bytes32)",
     "function balances(address account) external view returns (uint256)",
-    "function withdraw(uint256 amount) external",
-    "function executeConditionalPush(address sponsor, address recipient, uint256 amountToSplit, uint256 maxRelayerFee, uint256 relayerFeeRequested, uint256 ruleIdNonce, bool isRecurring, uint256 ruleCooldown, uint8[] calldata opcodes, address[] calldata evaluators, bytes[] calldata evaluatorsData, bytes calldata signature) external"
+    "function withdraw(uint256 amount) external"
   ];
+
+  // Specific identifier to isolate history for THIS site only
+  const APP_IDENTIFIER = "ArcSplit_App";
 
   let provider, signer, userAddress = null;
   let contract;
   let conditions = [];
-  let activeDecimals = 6; 
-  let currentFiatPrice = 1.00; // Default USDC
+  let activeDecimals = 6; // Default, will be auto-updated
+  let currentFiatPrice = 1.00;
   let savedContacts = JSON.parse(localStorage.getItem('arc_contacts') || '[]');
 
-  // --- UI Functions ---
   function showToast(msg, duration = 6000) {
     const t = document.getElementById("toast");
     document.getElementById("toastText").innerHTML = msg;
@@ -336,9 +339,7 @@
     setTimeout(() => t.classList.add("hidden"), duration);
   }
 
-  function toggleTheme() {
-    document.documentElement.classList.toggle('light');
-  }
+  function toggleTheme() { document.documentElement.classList.toggle('light'); }
 
   function switchTab(tab) {
     if (tab === 'dashboard') {
@@ -359,14 +360,27 @@
     }
   }
 
-  function updateDecimals() {
+  // --- Auto-Detect Token Info ---
+  async function updateTokenInfo() {
     const select = document.getElementById('hubToken');
     const selectedOption = select.options[select.selectedIndex];
-    activeDecimals = parseInt(selectedOption.getAttribute('data-dec') || 6);
+    const tokenAddress = selectedOption.value;
     currentFiatPrice = parseFloat(selectedOption.getAttribute('data-price') || 1.00);
     
-    document.getElementById('sponsorBalanceSymbol').textContent = selectedOption.text;
-    document.getElementById('walletBalanceSymbol').textContent = selectedOption.text;
+    document.querySelectorAll('.sponsorBalanceSymbol').forEach(el => el.textContent = selectedOption.text);
+    document.querySelectorAll('.walletBalanceSymbol').forEach(el => el.textContent = selectedOption.text);
+
+    if (provider && tokenAddress) {
+      try {
+        const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+        activeDecimals = await tokenContract.decimals(); // Auto read from blockchain
+      } catch (e) {
+        console.warn("Could not fetch decimals automatically, defaulting to 6.", e);
+        activeDecimals = 6; 
+      }
+    }
+    
+    // Refresh balances after switching tokens
     fetchBalances();
   }
 
@@ -391,9 +405,7 @@
 
   function saveContact() {
     const addr = document.getElementById('ruleRecipient').value;
-    if(!ethers.isAddress(addr)) {
-      return showToast("Please enter a valid valid address first!");
-    }
+    if(!ethers.isAddress(addr)) return showToast("Please enter a valid valid address first!");
     const name = prompt("Enter a name for this contact:");
     if(name) {
       savedContacts.push({ name: name, address: addr });
@@ -409,12 +421,6 @@
     try {
       const chainId = await window.ethereum.request({ method: 'eth_chainId' });
       const badge = document.getElementById('networkBadge');
-      
-      // If we know the exact Arc Testnet Chain ID, we can force switch:
-      // if (chainId !== ARC_TESTNET_CHAIN_ID) {
-      //    await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: ARC_TESTNET_CHAIN_ID }] });
-      // }
-      
       badge.textContent = `Chain ID: ${parseInt(chainId, 16)}`;
       badge.className = "absolute top-6 right-6 px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-[10px] font-bold border border-emerald-500/30";
     } catch (err) {
@@ -426,13 +432,11 @@
     if (typeof window.ethereum !== 'undefined') {
       try {
         await checkAndSwitchNetwork();
-
         provider = new ethers.BrowserProvider(window.ethereum);
         await provider.send("eth_requestAccounts", []);
         signer = await provider.getSigner();
         userAddress = await signer.getAddress();
-        
-        contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+        contract = new ethers.Contract(CONTRACT_ADDRESS, SPLITTER_ABI, signer);
         
         const shortAddr = userAddress.substring(0, 6) + "..." + userAddress.substring(userAddress.length - 4);
         const btn = document.getElementById('connectBtn');
@@ -445,14 +449,14 @@
         badge.className = "px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-[10px] font-bold";
 
         showToast("Wallet Connected!");
-        fetchBalances();
+        
+        // Auto-fetch token info & balances
+        await updateTokenInfo(); 
         document.getElementById('ruleNonce').value = Math.floor(Math.random() * 1000000);
         
-        // Listen to network changes
         window.ethereum.on('chainChanged', () => window.location.reload());
         window.ethereum.on('accountsChanged', () => window.location.reload());
       } catch (err) {
-        console.error(err);
         showToast("Connection failed. Please check MetaMask.");
       }
     } else {
@@ -462,7 +466,6 @@
 
   function disconnectWallet() {
     userAddress = null; signer = null; contract = null;
-    
     const btn = document.getElementById('connectBtn');
     btn.className = "w-full px-6 py-4 bg-white text-gray-950 font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg hover:bg-gray-100";
     document.getElementById('connectText').innerHTML = `Connect Wallet`;
@@ -482,29 +485,58 @@
     showToast("Wallet disconnected.");
   }
 
-  async function fetchBalances() {
+  // Modified Fetch Balance with 3-Retry Mechanism
+  async function fetchBalances(retries = 3) {
     if (!contract || !userAddress || !provider) return;
-    try {
-      // Since native L1 token is USDC on Arc (as per contract msg.value), we get native balance
-      const walletBalRaw = await provider.getBalance(userAddress);
-      // Format with the active decimals of the selected token in the UI
-      const displayWalletBal = ethers.formatUnits(walletBalRaw, activeDecimals);
-      document.getElementById('walletBalanceDisplay').textContent = parseFloat(displayWalletBal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
-      document.getElementById('walletFiat').textContent = `~$${(parseFloat(displayWalletBal) * currentFiatPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-      // Fetch Sponsor (Contract) Balance
-      const balRaw = await contract.balances(userAddress);
-      const displayVal = ethers.formatUnits(balRaw, activeDecimals);
-      document.getElementById('sponsorBalanceDisplay').textContent = parseFloat(displayVal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
-      document.getElementById('sponsorFiat').textContent = `~$${(parseFloat(displayVal) * currentFiatPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-      
-      updatePreview();
-    } catch (err) {
-      console.error("Failed to fetch balances", err);
+    const badge = document.getElementById('syncBadge');
+    badge.textContent = "Syncing...";
+    
+    const select = document.getElementById('hubToken');
+    const tokenAddress = select.value;
+
+    for (let i = 0; i < retries; i++) {
+      try {
+        let walletBalRaw;
+        
+        // 1. Get Wallet Balance
+        // If it's the known Native USDC address, fetch via getBalance
+        if (tokenAddress.toLowerCase() === "0x3600000000000000000000000000000000000000") {
+            walletBalRaw = await provider.getBalance(userAddress);
+        } else {
+            // Otherwise, read balanceOf from the ERC20 token
+            const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+            walletBalRaw = await tokenContract.balanceOf(userAddress);
+        }
+
+        const displayWalletBal = ethers.formatUnits(walletBalRaw, activeDecimals);
+        document.getElementById('walletBalanceDisplay').textContent = parseFloat(displayWalletBal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+        document.getElementById('walletFiat').textContent = `~$${(parseFloat(displayWalletBal) * currentFiatPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+        // 2. Get Sponsor Balance (from Splitter Contract)
+        const balRaw = await contract.balances(userAddress);
+        const displayVal = ethers.formatUnits(balRaw, activeDecimals);
+        document.getElementById('sponsorBalanceDisplay').textContent = parseFloat(displayVal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+        document.getElementById('sponsorFiat').textContent = `~$${(parseFloat(displayVal) * currentFiatPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        
+        updatePreview();
+        badge.textContent = "Synced";
+        return; // Success, exit retry loop
+        
+      } catch (err) {
+        console.warn(`Balance fetch attempt ${i+1} failed:`, err);
+        if (i === retries - 1) {
+            badge.textContent = "Sync Error";
+            badge.className = "px-2 py-1 bg-rose-500/20 text-rose-400 rounded text-[10px] font-bold";
+        } else {
+            // Wait 1 second before retrying
+            await new Promise(r => setTimeout(r, 1000));
+        }
+      }
     }
   }
 
-  // --- Transactions ---
+  // Modified Deposit to handle ERC20 vs Native correctly
   async function depositFunds() {
     if (!signer || !userAddress) return showToast("Connect wallet first!");
     const amt = document.getElementById('hubAmount').value;
@@ -512,28 +544,39 @@
     
     try {
       const parsedAmt = ethers.parseUnits(amt.toString(), activeDecimals);
+      const tokenAddress = document.getElementById('hubToken').value;
+      let tx;
+
+      // Check if it's the Native USDC token address
+      if (tokenAddress.toLowerCase() === "0x3600000000000000000000000000000000000000") {
+          // Native transfer (msg.value)
+          tx = await signer.sendTransaction({
+            to: CONTRACT_ADDRESS,
+            value: parsedAmt
+          });
+      } else {
+          // ERC20 Transfer (Fixes 0 in block explorer issue)
+          const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
+          tx = await tokenContract.transfer(CONTRACT_ADDRESS, parsedAmt);
+      }
       
-      const tx = await signer.sendTransaction({
-        to: CONTRACT_ADDRESS,
-        value: parsedAmt
-      });
-      
-      showToast(`Transaction Sent! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-cyan-400 underline mt-2 inline-block font-normal'>View on ArcScan Explorer</a>`);
-      await tx.wait(); // Wait for confirmation
+      showToast(`Transaction Sent! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-cyan-400 underline mt-2 inline-block font-normal'>View Explorer</a>`);
+      await tx.wait(); 
       
       showToast(`Deposit Successful! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-emerald-400 underline mt-2 inline-block font-normal'>View Receipt</a>`);
       
-      await fetchBalances();
+      await fetchBalances(); // Auto uses retry mechanism
       document.getElementById('hubAmount').value = '';
 
       if (typeof saveHistoryToCloud === 'function') {
         await saveHistoryToCloud(userAddress, {
+          appName: APP_IDENTIFIER, // Isolate History
           type: 'Deposit',
           amount: amt,
-          token: document.getElementById('sponsorBalanceSymbol').textContent,
+          token: document.querySelector('.sponsorBalanceSymbol').textContent,
           hash: tx.hash,
           timestamp: new Date().toISOString(),
-          memo: `Deposited ${amt} tokens to sponsor treasury`
+          memo: `Deposited ${amt} tokens`
         });
       }
     } catch(e) {
@@ -554,18 +597,19 @@
       showToast(`Withdraw Tx Sent! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-cyan-400 underline mt-2 inline-block font-normal'>View Explorer</a>`);
       await tx.wait();
       
-      showToast(`Withdraw Successful! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-emerald-400 underline mt-2 inline-block font-normal'>View Receipt</a>`);
+      showToast(`Withdraw Successful!`);
       await fetchBalances();
       document.getElementById('hubAmount').value = '';
 
       if (typeof saveHistoryToCloud === 'function') {
         await saveHistoryToCloud(userAddress, {
+          appName: APP_IDENTIFIER, // Isolate History
           type: 'Withdraw',
           amount: amt,
-          token: document.getElementById('sponsorBalanceSymbol').textContent,
+          token: document.querySelector('.sponsorBalanceSymbol').textContent,
           hash: tx.hash,
           timestamp: new Date().toISOString(),
-          memo: `Withdrew ${amt} tokens from treasury`
+          memo: `Withdrew ${amt} tokens`
         });
       }
     } catch(e) {
@@ -618,7 +662,7 @@
       showToast(`Rule Tx Sent! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-cyan-400 underline mt-2 inline-block font-normal'>View on Explorer</a>`);
       await tx.wait();
       
-      showToast(`Smart Rule Registered On-Chain! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-emerald-400 underline mt-2 inline-block font-normal'>View Receipt</a>`);
+      showToast(`Smart Rule Registered On-Chain!`);
       
       btn.innerHTML = ogHtml;
       btn.disabled = false;
@@ -626,14 +670,15 @@
 
       if (typeof saveHistoryToCloud === 'function') {
         await saveHistoryToCloud(userAddress, {
+          appName: APP_IDENTIFIER, // Isolate History
           type: 'New Rule',
           amount: amt,
-          token: document.getElementById('sponsorBalanceSymbol').textContent,
+          token: document.querySelector('.sponsorBalanceSymbol').textContent,
           recipient: recipient,
           conditionsCount: conditions.length,
           hash: tx.hash,
           timestamp: new Date().toISOString(),
-          memo: `Registered ${isRecurring ? 'recurring' : 'one-time'} rule for ${recipient.substring(0,6)}...`
+          memo: `Rule created for ${recipient.substring(0,6)}...`
         });
       }
     } catch(e) {
@@ -659,12 +704,11 @@
     conditions[index].type = newType;
     conditions[index].uiValue = '';
     
-    // Auto-fill dummy evaluator addresses for templates (For UX Demo)
     if(newType === 'price') {
-       conditions[index].address = '0x1111222233334444555566667777888899990000'; // Dummy Price Oracle
+       conditions[index].address = '0x1111222233334444555566667777888899990000'; 
        conditions[index].data = '0x';
     } else if(newType === 'time') {
-       conditions[index].address = '0xAAAABBBBCCCCDDDDEEEEFFFF0000111122223333'; // Dummy TimeLock
+       conditions[index].address = '0xAAAABBBBCCCCDDDDEEEEFFFF0000111122223333';
        conditions[index].data = '0x';
     } else {
        conditions[index].address = '';
@@ -676,9 +720,7 @@
   function updateConditionParam(index, field, value) {
     conditions[index][field] = value;
     
-    // Auto-generate Hex Data for Normal Users!
     if(conditions[index].type === 'price' && field === 'uiValue') {
-       // Just a demo encoding of uint256
        try {
          const val = parseInt(value) || 0;
          const encoded = ethers.AbiCoder.defaultAbiCoder().encode(['uint256'], [val]);
@@ -700,7 +742,7 @@
     container.innerHTML = '';
     
     if(conditions.length === 0) {
-      container.innerHTML = `<div class="text-gray-500 italic text-sm text-center py-4 border border-dashed border-gray-600 rounded-xl">No conditions defined. Rule will trigger instantly if balance suffices.</div>`;
+      container.innerHTML = `<div class="text-gray-500 italic text-sm text-center py-4 border border-dashed border-gray-600 rounded-xl">No conditions defined. Rule will trigger instantly.</div>`;
     }
 
     conditions.forEach((c, i) => {
@@ -766,12 +808,12 @@
     document.getElementById('previewTarget').textContent = rec.substring(0, 8) + '...' + rec.substring(rec.length - 4);
     
     let fiatStr = `(~$${(parseFloat(amt) * currentFiatPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`;
-    document.getElementById('previewAmt').innerHTML = `${amt} ${document.getElementById('sponsorBalanceSymbol').textContent} <span class="text-gray-500 font-normal ml-1">${amt > 0 ? fiatStr : ''}</span>`;
+    document.getElementById('previewAmt').innerHTML = `${amt} ${document.querySelector('.sponsorBalanceSymbol').textContent} <span class="text-gray-500 font-normal ml-1">${amt > 0 ? fiatStr : ''}</span>`;
     
     document.getElementById('previewEvalCount').textContent = `${conditions.length} Conditions`;
   }
 
-  // --- Cloud History loader ---
+  // Modified Cloud History with Filtering
   async function loadHistoryData() {
     const container = document.getElementById('historyContainer');
     if (!userAddress) {
@@ -787,10 +829,13 @@
     container.innerHTML = `<div class="text-emerald-400 text-center py-10"><i class="fas fa-spinner fa-spin text-2xl"></i><p class="mt-2 text-sm">Loading history...</p></div>`;
     
     try {
-      const history = await fetchHistoryFromCloud(userAddress);
+      let historyRaw = await fetchHistoryFromCloud(userAddress);
+      
+      // ONLY show history relevant to THIS APP
+      const history = historyRaw.filter(item => item.appName === APP_IDENTIFIER);
       
       if (!history || history.length === 0) {
-        container.innerHTML = `<div class="text-gray-500 italic text-center py-10 border border-dashed border-white/10 rounded-2xl">No history found for this wallet.</div>`;
+        container.innerHTML = `<div class="text-gray-500 italic text-center py-10 border border-dashed border-white/10 rounded-2xl">No history found for this app.</div>`;
         return;
       }
       
@@ -833,7 +878,6 @@
   // Init
   window.addEventListener('load', () => {
     renderContacts();
-    updateDecimals();
     renderConditions();
   });
 </script>
