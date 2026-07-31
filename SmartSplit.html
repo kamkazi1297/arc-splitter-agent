@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-  <title>ArcSplit - Smart Conditional Split</title>
+  <title>ArcSplit - Enterprise Push-Based Splitter</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
@@ -45,26 +45,16 @@
       box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 1);
     }
 
-    /* اصلاح و تیره‌تر کردن فونت‌ها در حالت لایت مود برای خوانایی بهتر */
-    .light body, 
-    .light h3, 
-    .light label, 
-    .light span,
-    .light div,
-    .light .text-white, 
-    .light .text-gray-400, 
-    .light .text-gray-300 { 
+    .light body, .light h3, .light label, .light span, .light div,
+    .light .text-white, .light .text-gray-400, .light .text-gray-300 { 
       color: #0f172a !important; 
     }
     
     .light .text-gray-400 { color: #334155 !important; font-weight: 600 !important; }
-    .light .text-gray-500 { color: #475569 !important; }
     
-    /* حفظ رنگ هدرها، تب‌های بالا و عنوان Smart Conditional Split در حالت لایت مود دقیقاً مشابه درک مود */
     .header-title-text, .history-title-text, .smart-split-gradient,
     .light .header-title-text, .light .history-title-text, .light .smart-split-gradient { color: #ffffff !important; }
     
-    /* گرادینت متن Smart Conditional Split */
     .smart-split-gradient {
       background: linear-gradient(to right, #34d399, #22d3ee);
       -webkit-background-clip: text;
@@ -76,41 +66,16 @@
       -webkit-text-fill-color: transparent !important;
     }
 
-    .light p.text-gray-400 {
-      color: #94a3b8 !important;
-    }
-
-    .light #tabSplitter, .light #tabHistory {
-      color: #94a3b8 !important;
-    }
-    .light #tabSplitter.bg-emerald-500\/20, .light #tabHistory.bg-emerald-500\/20 {
-      color: #34d399 !important;
-    }
-
-    /* حفظ رنگ فونت آدرس ولت متصل در حالت لایت مود دقیقاً مشابه دراک مود */
-    .wallet-connected-glass,
-    .light .wallet-connected-glass {
+    .wallet-connected-glass, .light .wallet-connected-glass {
       background: rgba(18, 18, 38, 0.85) !important;
       backdrop-filter: blur(24px) !important;
       border: 1px solid rgba(16, 185, 129, 0.3) !important;
       color: #34d399 !important;
-      font-family: 'Plus Jakarta Sans', system-ui, sans-serif !important;
     }
-    .light .wallet-connected-glass span,
-    .light .wallet-connected-glass i {
-      color: #34d399 !important;
-    }
+    .light .wallet-connected-glass span, .light .wallet-connected-glass i { color: #34d399 !important; }
 
-    /* حفظ رنگ پیام‌های هشدار (Toast) پایین صفحه در حالت لایت مود دقیقاً مشابه دراک مود */
-    #toast,
-    .light #toast {
-      background: #121228 !important;
-      border: 1px solid rgba(255, 255, 255, 0.15) !important;
-      color: #ffffff !important;
-    }
-    .light #toast span {
-      color: #ffffff !important;
-    }
+    #toast, .light #toast { background: #121228 !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; color: #ffffff !important; }
+    .light #toast span { color: #ffffff !important; }
 
     select, input {
       background-color: rgba(255, 255, 255, 0.03);
@@ -118,718 +83,197 @@
       border: 1px solid rgba(255, 255, 255, 0.1);
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    select:focus, input:focus {
-      border-color: #10b981;
-      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15);
-      outline: none;
-    }
-    .light select, .light input {
-      background-color: #ffffff;
-      color: #020617;
-      border: 1px solid #94a3b8;
-      font-weight: 600;
-    }
-
+    select:focus, input:focus { border-color: #10b981; box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15); outline: none; }
+    
+    .light select, .light input { background-color: #ffffff; color: #020617; border: 1px solid #94a3b8; font-weight: 600; }
     select option { background-color: #0f172a; color: white; padding: 10px; }
     .light select option { background-color: #ffffff; color: #020617; }
-
-    .percent-container { position: relative; }
-    .percent-container::after {
-      content: "%";
-      position: absolute;
-      right: 14px;
-      top: 50%;
-      transform: translateY(-50%);
-      color: #64748b;
-      font-weight: 600;
-      pointer-events: none;
-      font-size: 0.8rem;
-    }
-    .light .percent-container::after { color: #334155; }
-
-    .preview-scroll {
-      max-height: 320px;
-      overflow-y: auto;
-      scrollbar-width: thin;
-      scrollbar-color: rgba(255,255,255,0.2) transparent;
-    }
+    
+    .preview-scroll { max-height: 400px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.2) transparent; }
   </style>
 </head>
 <body class="text-white min-h-screen selection:bg-emerald-500 selection:text-black">
 
   <div class="max-w-7xl mx-auto px-4 py-6 sm:py-8">
     
-    <!-- Header Section -->
+    <!-- Header -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/10 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
       <div>
-        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight header-title-text">ArcSplit <span class="smart-split-gradient">Smart Conditional Split</span></h1>
-        <p class="text-gray-400 text-xs sm:text-sm font-semibold">Create rule-based payment distributions.</p>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight header-title-text">ArcSplit <span class="smart-split-gradient">Enterprise Push Engine</span></h1>
+        <p class="text-gray-400 text-xs sm:text-sm font-semibold">Decentralized Rule-Based Execution via Nested RPN</p>
       </div>
-      
       <div class="flex items-center gap-3">
-        <div class="flex bg-white/5 light:bg-black/5 border border-white/10 light:border-black/15 rounded-2xl p-1 text-xs">
-          <button onclick="switchTab('splitter')" id="tabSplitter" class="px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400">Rule Engine</button>
-          <button onclick="switchTab('history')" id="tabHistory" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400">History</button>
-        </div>
-        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/10 border border-white/10 light:border-black/15 rounded-2xl transition-all">
+        <button onclick="toggleTheme()" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 border border-white/10 light:border-black/15 rounded-2xl transition-all">
           <i class="fas fa-moon text-lg text-emerald-400"></i>
         </button>
       </div>
     </div>
 
-    <!-- Connect Hub, Disconnect & Balance Section -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
-      <div class="flex gap-2">
-        <button onclick="connectWallet()" id="connectBtn" class="flex-1 px-6 py-4 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg">
+    <!-- Wallet & Sponsor Hub -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+      
+      <!-- Connect -->
+      <div class="glass rounded-3xl p-6 flex flex-col justify-center gap-4">
+        <div class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">1. Connection</div>
+        <button onclick="connectWallet()" id="connectBtn" class="w-full px-6 py-4 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg">
           <i class="fas fa-wallet text-emerald-600"></i> <span id="connectText">Connect Wallet</span>
         </button>
-        <button onclick="disconnectWallet()" id="disconnectBtn" class="hidden px-4 py-4 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 font-bold rounded-2xl transition-all flex items-center justify-center" title="Disconnect Wallet">
-          <i class="fas fa-power-off text-base"></i>
+        <button onclick="disconnectWallet()" id="disconnectBtn" class="hidden w-full px-4 py-3 bg-rose-500/10 border border-rose-500/30 text-rose-400 font-bold rounded-2xl transition-all flex items-center justify-center gap-2">
+          <i class="fas fa-power-off"></i> Disconnect
         </button>
       </div>
 
-      <div class="glass rounded-2xl p-4 flex items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400">
-            <i class="fas fa-coins text-lg"></i>
-          </div>
-          <div>
-            <div class="text-[11px] text-gray-400 light:text-slate-800 uppercase font-bold">Token Balance</div>
-            <div id="walletBalanceDisplay" class="text-sm font-bold tracking-wide">0.00</div>
-          </div>
+      <!-- Sponsor Balance Hub -->
+      <div class="glass rounded-3xl p-6 lg:col-span-2">
+        <div class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 flex justify-between items-center">
+          <span>2. Sponsor Treasury (Contract Balance)</span>
+          <span id="syncBadge" class="px-2 py-1 bg-rose-500/20 text-rose-400 rounded text-[10px]">Disconnected</span>
         </div>
-        <!-- چراغ نقطه توپر کوچک وضعیت بالانس بدون نوشته -->
-        <div id="retryStatusBadge" class="w-3 h-3 rounded-full bg-rose-500 animate-pulse shadow-sm" title="Disconnected / Syncing"></div>
-      </div>
-    </div>
-
-    <!-- Status Banner -->
-    <div id="status" class="glass rounded-2xl p-4 mb-6 text-sm font-medium flex items-center gap-3 border-l-4 border-l-emerald-500">
-      <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-      Ready to configure Smart Conditional Split on Arc Testnet.
-    </div>
-
-    <!-- Main Layout -->
-    <div id="viewSplitter" class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      
-      <!-- COLUMN 1 & 2: Rules Builder & Base Asset (8 Cols) -->
-      <div class="lg:col-span-8 space-y-6">
         
-        <!-- Step 1: Base Asset -->
-        <div class="glass rounded-3xl p-6">
-          <div class="flex items-center gap-2 mb-4">
-            <span class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">1</span>
-            <h3 class="font-bold text-base">Base Asset & Initial Setup</h3>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
+          <div>
+            <div class="text-4xl font-extrabold text-emerald-400 flex items-baseline gap-2">
+              <span id="sponsorBalanceDisplay">0.00</span>
+              <span class="text-sm text-gray-400" id="sponsorBalanceSymbol">USDC</span>
+            </div>
+            <p class="text-xs text-gray-500 mt-2">Funds required to sponsor automated push rules.</p>
           </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label class="block text-gray-400 light:text-slate-800 text-xs font-bold uppercase tracking-wider mb-2">Select Token</label>
-              <select id="tokenSelect" class="w-full rounded-2xl px-4 py-3.5 text-sm font-medium cursor-pointer" onchange="handleTokenSelectChange()">
-                <option value="0x3600000000000000000000000000000000000000">USDC</option>
-                <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
-                <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">CIRBTC (cirBTC)</option>
-                <option value="CUSTOM">+ Add Custom Token</option>
+          
+          <div class="space-y-3">
+            <div class="flex gap-2">
+              <input type="number" id="hubAmount" placeholder="Amount..." class="w-full rounded-xl px-4 py-3 text-sm font-bold">
+              <select id="hubToken" class="rounded-xl px-3 py-3 text-sm font-bold w-32" onchange="updateDecimals()">
+                <option value="0x3600000000000000000000000000000000000000" data-dec="6">USDC</option>
+                <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a" data-dec="6">EURC</option>
+                <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF" data-dec="8">cirBTC</option>
               </select>
             </div>
+            <div class="flex gap-2">
+              <button onclick="depositFunds()" class="flex-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 py-2.5 rounded-xl text-sm font-bold transition-all">Deposit</button>
+              <button onclick="withdrawFunds()" class="flex-1 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/30 py-2.5 rounded-xl text-sm font-bold transition-all">Withdraw</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rule Registration Form -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      
+      <!-- Left Column: Rule Details & Engine -->
+      <div class="lg:col-span-8 space-y-6">
+        
+        <div class="glass rounded-3xl p-6">
+          <div class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-5">3. Rule Configuration</div>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
             <div>
-              <label class="block text-gray-400 light:text-slate-800 text-xs font-bold uppercase tracking-wider mb-2">Default Base Amount</label>
-              <input type="number" id="baseTestAmount" placeholder="e.g. 1000" class="w-full rounded-2xl px-4 py-3.5 text-sm font-bold" oninput="runSimulation()">
+              <label class="block text-xs font-bold text-gray-400 mb-2">Recipient Address</label>
+              <input type="text" id="ruleRecipient" placeholder="0x..." class="w-full rounded-xl px-4 py-3 text-sm font-mono">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-gray-400 mb-2">Amount to Push (per execution)</label>
+              <input type="number" id="ruleAmount" placeholder="e.g. 100" class="w-full rounded-xl px-4 py-3 text-sm font-bold">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-gray-400 mb-2">Max Relayer Fee (Optional)</label>
+              <input type="number" id="ruleFee" placeholder="e.g. 1" value="0" class="w-full rounded-xl px-4 py-3 text-sm font-bold">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-gray-400 mb-2">Rule Nonce (Unique ID)</label>
+              <input type="number" id="ruleNonce" placeholder="Auto-generated" class="w-full rounded-xl px-4 py-3 text-sm font-bold">
             </div>
           </div>
 
-          <!-- Custom Token Input Box -->
-          <div id="customTokenBox" class="hidden mt-4 pt-4 border-t border-white/10 light:border-black/10 grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label class="block text-gray-400 light:text-slate-800 text-[11px] font-bold uppercase mb-1">Custom Token Symbol</label>
-              <input type="text" id="customTokenSymbol" placeholder="e.g. MYT" class="w-full rounded-xl px-3 py-2 text-xs font-bold">
+          <div class="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between gap-4 flex-wrap">
+            <div class="flex items-center gap-3">
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="ruleRecurring" onchange="toggleRecurring()" class="sr-only peer">
+                <div class="w-9 h-5 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+              </label>
+              <span class="text-sm font-bold text-gray-300">Recurring Payment</span>
             </div>
-            <div>
-              <label class="block text-gray-400 light:text-slate-800 text-[11px] font-bold uppercase mb-1">Custom Token Address</label>
-              <div class="flex gap-2">
-                <input type="text" id="customTokenAddress" placeholder="0x..." class="flex-1 rounded-xl px-3 py-2 text-xs font-mono">
-                <button onclick="saveCustomToken()" class="px-4 bg-emerald-500 hover:bg-emerald-600 text-black font-bold rounded-xl text-xs">Add</button>
-              </div>
+            <div id="cooldownBox" class="hidden flex-1 min-w-[200px] flex items-center gap-2">
+              <label class="text-xs font-bold text-gray-400 whitespace-nowrap">Cooldown (Sec):</label>
+              <input type="number" id="ruleCooldown" placeholder="e.g. 86400 for 1 day" value="0" class="flex-1 rounded-xl px-3 py-2 text-sm font-bold">
             </div>
           </div>
         </div>
 
-        <!-- Step 2: Rules Builder -->
+        <!-- RPN Evaluator Builder -->
         <div class="glass rounded-3xl p-6">
-          <div class="flex items-center justify-between mb-4">
-            <div class="flex items-center gap-2">
-              <span class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">2</span>
-              <h3 class="font-bold text-base">Conditional Rules (Smart Contract Engine)</h3>
-            </div>
-            <button onclick="addRuleCard()" class="px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
-              <i class="fas fa-plus"></i> Add Rule
+          <div class="flex items-center justify-between mb-5">
+            <div class="text-sm font-bold text-gray-400 uppercase tracking-wider">4. Conditional Evaluators (RPN Engine)</div>
+            <button onclick="addCondition()" class="px-4 py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-bold flex items-center gap-1.5">
+              <i class="fas fa-plus"></i> Add Evaluator
             </button>
           </div>
+          
+          <p class="text-xs text-gray-500 mb-4">
+            Conditions are compiled into a Nested Bitwise RPN logic. Multiple evaluators will be processed with an AND (`OP_AND`) logic to ensure all conditions are met before push execution.
+          </p>
 
-          <div id="rulesContainer" class="space-y-4"></div>
-
-          <div class="mt-4 p-4 rounded-2xl border border-white/10 light:border-black/15 bg-white/[0.01] light:bg-black/[0.02] border-dashed">
-            <div class="flex items-center justify-between mb-3">
-              <span class="text-xs font-bold text-amber-500 uppercase tracking-wider">Fallback Rule (Otherwise)</span>
-              <span class="text-xs text-gray-400 light:text-slate-800 font-semibold">Executed if no conditions match</span>
-            </div>
-            <div id="defaultRecipientsList" class="space-y-2"></div>
-            <div class="flex items-center justify-between mt-3">
-              <button onclick="addDefaultRecipient()" class="text-xs text-emerald-500 font-bold hover:underline flex items-center gap-1">
-                <i class="fas fa-plus"></i> Add Recipient
-              </button>
-              <button onclick="distributeRemainingDefault()" class="text-[11px] text-cyan-600 font-bold hover:underline flex items-center gap-1">
-                <i class="fas fa-balance-scale"></i> Distribute Remaining
-              </button>
-            </div>
+          <div id="conditionsContainer" class="space-y-3">
+            <!-- Dynamic Conditions -->
           </div>
         </div>
 
       </div>
 
-      <!-- COLUMN 3: Live Preview & Simulator (4 Cols) -->
+      <!-- Right Column: Compile & Register -->
       <div class="lg:col-span-4 space-y-6">
         <div class="glass rounded-3xl p-6 sticky top-6">
+          <h3 class="font-bold text-base mb-4 border-b border-white/10 pb-3">Deployment Preview</h3>
           
-          <div class="flex items-center justify-between mb-4">
-            <h3 class="font-bold text-base flex items-center gap-2">
-              <i class="fas fa-play-circle text-emerald-400"></i> Live Simulator
-            </h3>
-            <span class="px-2.5 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 text-[10px] font-bold">Real-time</span>
-          </div>
-
-          <div class="mb-5">
-            <label class="block text-gray-400 light:text-slate-800 text-xs font-bold uppercase tracking-wider mb-2">Test Amount</label>
-            <input type="number" id="simAmountInput" placeholder="Enter amount to test..." class="w-full rounded-2xl px-4 py-3 text-sm font-bold" oninput="runSimulation()">
-          </div>
-
-          <div class="bg-black/30 light:bg-slate-100 border border-white/10 light:border-black/10 rounded-2xl p-4 mb-5 space-y-3">
-            <div class="flex justify-between items-center text-xs pb-2 border-b border-white/10 light:border-black/10">
-              <span class="text-gray-400 light:text-slate-700 font-semibold">Matched Rule:</span>
-              <span id="simMatchedRule" class="font-bold text-emerald-400 light:text-emerald-600">None</span>
+          <div class="space-y-4 mb-6 text-xs preview-scroll">
+            <div class="flex justify-between border-b border-white/5 pb-2">
+              <span class="text-gray-500">Target</span>
+              <span class="font-mono text-emerald-400" id="previewTarget">0x...</span>
             </div>
-            <div>
-              <div class="text-[11px] text-gray-400 light:text-slate-800 uppercase font-bold mb-2">Distribution Breakdown</div>
-              <div id="simResultBreakdown" class="space-y-1.5 preview-scroll text-xs">
-                <div class="text-gray-500 light:text-slate-600 italic">No rules evaluated yet.</div>
-              </div>
+            <div class="flex justify-between border-b border-white/5 pb-2">
+              <span class="text-gray-500">Amount</span>
+              <span class="font-bold text-white" id="previewAmt">0</span>
+            </div>
+            <div class="flex justify-between border-b border-white/5 pb-2">
+              <span class="text-gray-500">RPN Opcodes</span>
+              <span class="font-mono text-cyan-400" id="previewOpcodes">[]</span>
+            </div>
+            <div class="flex justify-between border-b border-white/5 pb-2">
+              <span class="text-gray-500">Evaluators</span>
+              <span class="font-bold text-white" id="previewEvalCount">0 Contracts</span>
             </div>
           </div>
 
-          <div id="engineErrors" class="hidden glass border border-rose-500/30 bg-rose-500/10 rounded-2xl p-3.5 mb-5 text-xs text-rose-300 light:text-rose-700 space-y-1 font-semibold"></div>
-
-          <button id="deployBtn" onclick="deploySmartSplit()" class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:brightness-110 py-4 rounded-2xl font-bold text-sm shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center gap-2 text-slate-950">
-            Deploy Smart Split Contract
+          <button id="registerBtn" onclick="registerSmartRule()" class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:brightness-110 py-4 rounded-2xl font-bold text-sm shadow-lg shadow-emerald-500/20 transition-all text-slate-950 flex justify-center items-center gap-2">
+            Register Rule On-Chain
           </button>
         </div>
       </div>
 
     </div>
-
-    <!-- History View -->
-    <div id="viewHistory" class="hidden glass rounded-3xl p-6">
-      <h3 class="font-bold text-lg mb-4 history-title-text">Smart Split History</h3>
-      <div id="historyList" class="space-y-4 text-xs text-gray-400 light:text-slate-800 font-semibold">No smart splits deployed yet.</div>
-    </div>
-
   </div>
 
   <!-- Toast Notification -->
-  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#121228] light:bg-[#121228] border border-white/15 text-white px-5 py-3 rounded-2xl shadow-2xl z-50 text-xs sm:text-sm backdrop-blur-xl font-bold">
+  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#121228] border border-white/15 text-white px-5 py-3 rounded-2xl shadow-2xl z-50 text-sm backdrop-blur-xl font-bold">
     <span id="toastText"></span>
   </div>
 
 <script>
-  let provider, signer, userAddress = null;
-  let rules = [];
-  let defaultRecipients = [];
-
-  const ERC20_ABI = [
-    "function balanceOf(address owner) view returns (uint256)",
-    "function decimals() view returns (uint8)"
+  // Core Architecture Configuration
+  const CONTRACT_ADDRESS = "0x0ede4363D3B6a0dCfe9c67bA31799D9591567fD0"; 
+  
+  // Minimal required ABI for the new ArcConditionalSplitter
+  const CONTRACT_ABI = [
+    "function registerRule(address recipient, uint256 amountToSplit, uint256 maxRelayerFee, uint256 ruleIdNonce, bool isRecurring, uint256 ruleCooldown, uint8[] calldata opcodes, address[] calldata evaluators, bytes[] calldata evaluatorsData) external returns (bytes32)",
+    "function balances(address account) external view returns (uint256)",
+    "function withdraw(uint256 amount) external",
+    "function executeConditionalPush(address sponsor, address recipient, uint256 amountToSplit, uint256 maxRelayerFee, uint256 relayerFeeRequested, uint256 ruleIdNonce, bool isRecurring, uint256 ruleCooldown, uint8[] calldata opcodes, address[] calldata evaluators, bytes[] calldata evaluatorsData, bytes calldata signature) external"
   ];
 
-  function switchTab(tab) {
-    const isSplitter = tab === 'splitter';
-    document.getElementById('viewSplitter').classList.toggle('hidden', !isSplitter);
-    document.getElementById('viewHistory').classList.toggle('hidden', isSplitter);
-    document.getElementById('tabSplitter').className = isSplitter ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400";
-    document.getElementById('tabHistory').className = !isSplitter ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400";
-  }
-
-  async function checkInitialConnection() {
-    if (typeof window.ethereum !== 'undefined') {
-      try {
-        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-        if (accounts && accounts.length > 0) {
-          provider = new ethers.BrowserProvider(window.ethereum);
-          signer = await provider.getSigner();
-          userAddress = accounts[0];
-          updateWalletUI();
-          fetchBalanceWithRetry();
-        }
-      } catch (err) {
-        console.error("Auto-connect check failed:", err);
-      }
-    }
-  }
-
-  async function connectWallet() {
-    if (typeof window.ethereum !== 'undefined') {
-      try {
-        showToast("Connecting to Web3 Wallet...");
-        provider = new ethers.BrowserProvider(window.ethereum);
-        await provider.send("eth_requestAccounts", []);
-        signer = await provider.getSigner();
-        userAddress = await signer.getAddress();
-        
-        updateWalletUI();
-        showToast("Wallet Connected Successfully!");
-        fetchBalanceWithRetry();
-        checkEngineErrors();
-      } catch (err) {
-        console.error(err);
-        showToast("Wallet connection rejected or failed.");
-      }
-    } else {
-      showToast("MetaMask or Web3 Wallet not found! Please install it.");
-    }
-  }
-
-  function updateWalletUI() {
-    if (!userAddress) return;
-    const shortAddr = userAddress.substring(0, 6) + "..." + userAddress.substring(userAddress.length - 4);
-    const btn = document.getElementById('connectBtn');
-    btn.className = "flex-1 px-6 py-4 wallet-connected-glass font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg";
-    document.getElementById('connectText').innerHTML = `<i class="fas fa-check-circle text-emerald-400"></i> ${shortAddr}`;
-    document.getElementById('disconnectBtn').classList.remove('hidden');
-    checkEngineErrors();
-  }
-
-  function disconnectWallet() {
-    userAddress = null;
-    signer = null;
-    provider = null;
-
-    const btn = document.getElementById('connectBtn');
-    btn.className = "flex-1 px-6 py-4 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg";
-    document.getElementById('connectText').innerHTML = `Connect Wallet`;
-    document.getElementById('disconnectBtn').classList.add('hidden');
-
-    document.getElementById('walletBalanceDisplay').textContent = "0.00";
-    const badge = document.getElementById('retryStatusBadge');
-    badge.className = "w-3 h-3 rounded-full bg-rose-500 animate-pulse shadow-sm";
-    badge.title = "Not Connected";
-
-    showToast("Wallet disconnected.");
-    runSimulation();
-    checkEngineErrors();
-  }
-
-  function handleTokenSelectChange() {
-    const select = document.getElementById('tokenSelect');
-    const customBox = document.getElementById('customTokenBox');
-    if (select.value === 'CUSTOM') {
-      customBox.classList.remove('hidden');
-    } else {
-      customBox.classList.add('hidden');
-      fetchBalanceWithRetry();
-    }
-    runSimulation();
-  }
-
-  function saveCustomToken() {
-    const symbol = document.getElementById('customTokenSymbol').value.trim().toUpperCase();
-    const address = document.getElementById('customTokenAddress').value.trim();
-
-    if (!symbol || !address) {
-      showToast("Please enter both custom token symbol and address.");
-      return;
-    }
-
-    const select = document.getElementById('tokenSelect');
-    const opt = document.createElement('option');
-    opt.value = address;
-    opt.textContent = `${symbol} (Custom)`;
-    opt.selected = true;
-
-    select.insertBefore(opt, select.lastElementChild);
-    document.getElementById('customTokenBox').classList.add('hidden');
-    document.getElementById('customTokenSymbol').value = '';
-    document.getElementById('customTokenAddress').value = '';
-    
-    showToast(`Custom token ${symbol} added successfully!`);
-    fetchBalanceWithRetry();
-    runSimulation();
-  }
-
-  // مدیریت بالانس با ۳ تلاش، مکث و چراغ نقطه‌ای قرمز/سبز چشمک‌زن بدون متن
-  async function fetchBalanceWithRetry(retries = 3) {
-    const badge = document.getElementById('retryStatusBadge');
-    const balanceDisplay = document.getElementById('walletBalanceDisplay');
-    const select = document.getElementById('tokenSelect');
-    
-    if (!userAddress || !provider) {
-      balanceDisplay.textContent = "0.00";
-      badge.className = "w-3 h-3 rounded-full bg-rose-500 animate-pulse shadow-sm";
-      badge.title = "Not Connected";
-      return;
-    }
-
-    if (select.value === 'CUSTOM') return;
-
-    const tokenAddress = select.value;
-    const selectedSymbol = select.options[select.selectedIndex].text.split(' ')[0];
-
-    for (let attempt = 1; attempt <= retries; attempt++) {
-      // چراغ قرمز چشمک‌زن در حین تلاش برای دریافت بالانس
-      badge.className = "w-3 h-3 rounded-full bg-rose-500 animate-pulse shadow-sm";
-      badge.title = `Syncing (${attempt}/${retries})...`;
-
-      try {
-        const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
-        const [rawBalance, decimals] = await Promise.all([
-          tokenContract.balanceOf(userAddress),
-          tokenContract.decimals().catch(() => 18)
-        ]);
-
-        const formattedBalance = ethers.formatUnits(rawBalance, decimals);
-        const displayVal = parseFloat(formattedBalance).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
-
-        balanceDisplay.textContent = `${displayVal} ${selectedSymbol}`;
-        // چراغ سبز ثابت پس از دریافت موفقیت‌آمیز بالانس
-        badge.className = "w-3 h-3 rounded-full bg-emerald-500 shadow-sm";
-        badge.title = "Synced Successfully";
-        return;
-      } catch (err) {
-        console.warn(`Attempt ${attempt} failed to fetch actual balance. Retrying...`, err);
-        
-        if (attempt < retries) {
-          await new Promise(resolve => setTimeout(resolve, 1500));
-        }
-
-        if (attempt === retries) {
-          balanceDisplay.textContent = `0.00 ${selectedSymbol}`;
-          // چراغ قرمز ثابت در صورت شکست نهایی در ۳ تلاش
-          badge.className = "w-3 h-3 rounded-full bg-rose-500 shadow-sm";
-          badge.title = "Sync Failed";
-        }
-      }
-    }
-  }
-
-  function saveHistoryToStorage(historyHtmlContent) {
-    let savedHistories = JSON.parse(localStorage.getItem('arcSplit_history') || '[]');
-    savedHistories.unshift(historyHtmlContent);
-    localStorage.setItem('arcSplit_history', JSON.stringify(savedHistories));
-    loadHistoryFromStorage();
-  }
-
-  function loadHistoryFromStorage() {
-    let savedHistories = JSON.parse(localStorage.getItem('arcSplit_history') || '[]');
-    const historyListElem = document.getElementById('historyList');
-    
-    if (savedHistories.length > 0) {
-      historyListElem.innerHTML = savedHistories.join('');
-    } else {
-      historyListElem.innerHTML = 'No smart splits deployed yet.';
-    }
-  }
-
-  function renderRules() {
-    const container = document.getElementById('rulesContainer');
-    container.innerHTML = '';
-
-    rules.forEach((rule, index) => {
-      const card = document.createElement('div');
-      card.className = "glass border border-white/10 light:border-black/15 rounded-2xl p-4 relative group space-y-3";
-      
-      let recipientsHtml = rule.recipients.map((r, rIdx) => `
-        <div class="flex items-center gap-2">
-          <input type="text" value="${r.address}" oninput="updateRuleRecipient(${index}, ${rIdx}, 'address', this.value)" class="flex-1 bg-black/20 light:bg-white rounded-xl px-3 py-2 text-xs font-medium" placeholder="0xRecipient Address...">
-          <div class="percent-container w-24">
-            <input type="number" value="${r.perc}" oninput="updateRuleRecipient(${index}, ${rIdx}, 'perc', this.value)" class="w-full bg-black/25 light:bg-white rounded-xl px-3 py-2 text-center text-xs font-bold" placeholder="0">
-          </div>
-          <button onclick="removeRuleRecipient(${index}, ${rIdx})" class="text-gray-500 hover:text-rose-400 text-xs px-1"><i class="fas fa-times"></i></button>
-        </div>
-      `).join('');
-
-      card.innerHTML = `
-        <div class="flex items-center justify-between pb-2 border-b border-white/5 light:border-black/10">
-          <div class="flex items-center gap-2">
-            <span class="text-xs font-extrabold text-emerald-400 light:text-emerald-600">Rule #${index + 1}</span>
-            <label class="relative inline-flex items-center cursor-pointer ml-2">
-              <input type="checkbox" ${rule.active ? 'checked' : ''} onchange="toggleRuleActive(${index})" class="sr-only peer">
-              <div class="w-7 h-4 bg-white/10 light:bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-500"></div>
-            </label>
-          </div>
-          <div class="flex items-center gap-1.5">
-            <button onclick="moveRule(${index}, -1)" title="Move Up" class="text-gray-400 light:text-slate-700 hover:text-white px-1 text-xs"><i class="fas fa-arrow-up"></i></button>
-            <button onclick="moveRule(${index}, 1)" title="Move Down" class="text-gray-400 light:text-slate-700 hover:text-white px-1 text-xs"><i class="fas fa-arrow-down"></i></button>
-            <button onclick="duplicateRule(${index})" title="Duplicate" class="text-cyan-400 light:text-cyan-600 hover:text-cyan-300 px-1 text-xs"><i class="fas fa-copy"></i></button>
-            <button onclick="deleteRule(${index})" title="Delete" class="text-rose-400 light:text-rose-600 hover:text-rose-300 px-1 text-xs"><i class="fas fa-trash"></i></button>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 sm:grid-cols-4 gap-2 items-center text-xs">
-          <div>
-            <span class="text-gray-400 light:text-slate-800 text-[10px] uppercase font-bold">Condition Type</span>
-            <select onchange="updateRuleCond(${index}, 'type', this.value)" class="w-full rounded-xl px-3 py-2 mt-1">
-              <option value="Amount" ${rule.condition.type === 'Amount' ? 'selected' : ''}>Amount Threshold</option>
-              <option value="Sender" ${rule.condition.type === 'Sender' ? 'selected' : ''}>Sender Address</option>
-              <option value="Token" ${rule.condition.type === 'Token' ? 'selected' : ''}>Token Type</option>
-              <option value="ManualTag" ${rule.condition.type === 'ManualTag' ? 'selected' : ''}>Manual Tag</option>
-              <option value="DateTime" ${rule.condition.type === 'DateTime' ? 'selected' : ''}>Date / Time</option>
-              <option value="Wallet" ${rule.condition.type === 'Wallet' ? 'selected' : ''}>Wallet Whitelist</option>
-            </select>
-          </div>
-          <div>
-            <span class="text-gray-400 light:text-slate-800 text-[10px] uppercase font-bold">Operator</span>
-            <select onchange="updateRuleCond(${index}, 'op', this.value)" class="w-full rounded-xl px-3 py-2 mt-1">
-              <option value=">" ${rule.condition.op === '>' ? 'selected' : ''}>></option>
-              <option value="<" ${rule.condition.op === '<' ? 'selected' : ''}><</option>
-              <option value="=" ${rule.condition.op === '=' ? 'selected' : ''}>=</option>
-              <option value=">=" ${rule.condition.op === '>=' ? 'selected' : ''}>>=</option>
-              <option value="<=" ${rule.condition.op === '<=' ? 'selected' : ''}><=</option>
-              <option value="==" ${rule.condition.op === '==' ? 'selected' : ''}>== (Equals)</option>
-            </select>
-          </div>
-          <div class="sm:col-span-2">
-            <span class="text-gray-400 light:text-slate-800 text-[10px] uppercase font-bold">Threshold / Match Value / Token</span>
-            <div id="condValueContainer_${index}" class="mt-1">
-              ${getConditionValueInputHtml(index, rule.condition)}
-            </div>
-          </div>
-        </div>
-
-        <div class="space-y-2 pt-2 border-t border-white/5 light:border-black/10">
-          <div class="text-[10px] text-gray-400 light:text-slate-800 uppercase font-bold">Contract Split Distribution (Recipients & %)</div>
-          ${recipientsHtml}
-          <div class="flex items-center justify-between mt-1">
-            <button onclick="addRuleRecipientPrompt(${index})" class="text-[11px] text-emerald-400 light:text-emerald-600 font-bold hover:underline flex items-center gap-1">
-              <i class="fas fa-plus"></i> Add Recipient
-            </button>
-            <button onclick="distributeRemainingRule(${index})" class="text-[11px] text-cyan-400 light:text-cyan-600 font-bold hover:underline flex items-center gap-1">
-              <i class="fas fa-balance-scale"></i> Distribute Remaining
-            </button>
-          </div>
-        </div>
-      `;
-      container.appendChild(card);
-    });
-
-    renderDefaultRecipients();
-    runSimulation();
-    checkEngineErrors();
-  }
-
-  function getConditionValueInputHtml(index, cond) {
-    if (cond.type === 'Token') {
-      const currentTokenSelect = document.getElementById('tokenSelect');
-      let optionsHtml = '';
-      for (let i = 0; i < currentTokenSelect.options.length - 1; i++) {
-        const opt = currentTokenSelect.options[i];
-        const isSelected = cond.val === opt.value ? 'selected' : '';
-        optionsHtml += `<option value="${opt.value}" ${isSelected}>${opt.text}</option>`;
-      }
-      return `<select onchange="updateRuleCond(${index}, 'val', this.value)" class="w-full rounded-xl px-3 py-2">${optionsHtml}</select>`;
-    } else if (cond.type === 'DateTime') {
-      return `<input type="datetime-local" value="${cond.val}" oninput="updateRuleCond(${index}, 'val', this.value)" class="w-full rounded-xl px-3 py-2 text-xs font-bold">`;
-    } else if (cond.type === 'ManualTag') {
-      return `<input type="text" value="${cond.val}" oninput="updateRuleCond(${index}, 'val', this.value)" placeholder="e.g. VIP_PROMO" class="w-full rounded-xl px-3 py-2 text-xs font-bold">`;
-    } else if (cond.type === 'Wallet') {
-      return `<input type="text" value="${cond.val}" oninput="updateRuleCond(${index}, 'val', this.value)" placeholder="0xWhitelistedAddress..." class="w-full rounded-xl px-3 py-2 text-xs font-bold">`;
-    } else {
-      return `<input type="text" value="${cond.val}" oninput="updateRuleCond(${index}, 'val', this.value)" placeholder="e.g. 500 or 0x..." class="w-full rounded-xl px-3 py-2 font-bold">`;
-    }
-  }
-
-  function renderDefaultRecipients() {
-    const list = document.getElementById('defaultRecipientsList');
-    if (!list) return;
-    list.innerHTML = defaultRecipients.map((r, idx) => `
-      <div class="flex items-center gap-2">
-        <input type="text" value="${r.address}" oninput="defaultRecipients[${idx}].address=this.value" class="flex-1 bg-black/20 light:bg-white rounded-xl px-3 py-1.5 text-xs font-medium" placeholder="0xFallback Receiver...">
-        <div class="percent-container w-24">
-          <input type="number" value="${r.perc}" oninput="defaultRecipients[${idx}].perc=parseFloat(this.value)||0; runSimulation(); checkEngineErrors();" class="w-full bg-black/25 light:bg-white rounded-xl px-3 py-1.5 text-center text-xs font-bold" placeholder="0">
-        </div>
-        <button onclick="defaultRecipients.splice(${idx},1); renderRules();" class="text-gray-500 hover:text-rose-400 text-xs px-1"><i class="fas fa-times"></i></button>
-      </div>
-    `).join('');
-  }
-
-  function addDefaultRecipient() {
-    defaultRecipients.push({ address: '', perc: 0 });
-    renderRules();
-  }
-
-  function distributeRemainingDefault() {
-    if (defaultRecipients.length === 0) return;
-    let currentSum = defaultRecipients.slice(0, -1).reduce((acc, r) => acc + (parseFloat(r.perc) || 0), 0);
-    let remaining = Math.max(0, 100 - currentSum);
-    defaultRecipients[defaultRecipients.length - 1].perc = remaining;
-    renderRules();
-  }
-
-  function distributeRemainingRule(ruleIdx) {
-    let recs = rules[ruleIdx].recipients;
-    if (recs.length === 0) return;
-    let currentSum = recs.slice(0, -1).reduce((acc, r) => acc + (parseFloat(r.perc) || 0), 0);
-    let remaining = Math.max(0, 100 - currentSum);
-    recs[recs.length - 1].perc = remaining;
-    renderRules();
-  }
-
-  function addRuleCard() {
-    rules.push({
-      id: Date.now(),
-      active: true,
-      condition: { type: 'Amount', op: '>', val: '' },
-      recipients: [{ address: '', perc: 100 }]
-    });
-    renderRules();
-  }
-
-  function deleteRule(index) {
-    rules.splice(index, 1);
-    renderRules();
-  }
-
-  function duplicateRule(index) {
-    const cloned = JSON.parse(JSON.stringify(rules[index]));
-    cloned.id = Date.now();
-    rules.splice(index + 1, 0, cloned);
-    renderRules();
-  }
-
-  function moveRule(index, direction) {
-    const target = index + direction;
-    if (target < 0 || target >= rules.length) return;
-    const temp = rules[index];
-    rules[index] = rules[target];
-    rules[target] = temp;
-    renderRules();
-  }
-
-  function toggleRuleActive(index) {
-    rules[index].active = !rules[index].active;
-    runSimulation();
-  }
-
-  function updateRuleCond(index, field, value) {
-    rules[index].condition[field] = value;
-    if (field === 'type') {
-      const container = document.getElementById(`condValueContainer_${index}`);
-      if (container) {
-        container.innerHTML = getConditionValueInputHtml(index, rules[index].condition);
-      }
-    }
-    runSimulation();
-  }
-
-  function updateRuleRecipient(ruleIdx, recIdx, field, val) {
-    rules[ruleIdx].recipients[recIdx][field] = field === 'perc' ? (parseFloat(val) || 0) : val;
-    runSimulation();
-    checkEngineErrors();
-  }
-
-  function addRuleRecipientPrompt(ruleIdx) {
-    rules[ruleIdx].recipients.push({ address: '', perc: 0 });
-    renderRules();
-  }
-
-  function removeRuleRecipient(ruleIdx, recIdx) {
-    rules[ruleIdx].recipients.splice(recIdx, 1);
-    renderRules();
-  }
-
-  function runSimulation() {
-    const amountInput = parseFloat(document.getElementById('simAmountInput').value) || 0;
-    const selectTokenVal = document.getElementById('tokenSelect').value;
-    let matchedRuleName = "Fallback (Otherwise Rule)";
-    let selectedRecipients = defaultRecipients;
-
-    for (let i = 0; i < rules.length; i++) {
-      if (!rules[i].active) continue;
-      const c = rules[i].condition;
-      let valNum = parseFloat(c.val) || 0;
-      let matched = false;
-
-      if (c.type === 'Amount') {
-        if (c.op === '>' && amountInput > valNum) matched = true;
-        if (c.op === '<' && amountInput < valNum) matched = true;
-        if (c.op === '=' && amountInput === valNum) matched = true;
-        if (c.op === '>=' && amountInput >= valNum) matched = true;
-        if (c.op === '<=' && amountInput <= valNum) matched = true;
-        if (c.op === '==' && amountInput === valNum) matched = true;
-      } else if (c.type === 'Sender' || c.type === 'Wallet') {
-        if (userAddress && userAddress.toLowerCase() === (c.val || "").toLowerCase()) {
-          matched = true;
-        }
-      } else if (c.type === 'Token') {
-        if (selectTokenVal.toLowerCase() === (c.val || "").toLowerCase()) {
-          matched = true;
-        }
-      } else if (c.type === 'DateTime') {
-        const targetTime = new Date(c.val).getTime();
-        const nowTime = new Date().getTime();
-        if (!isNaN(targetTime)) {
-          if (c.op === '>=' && nowTime >= targetTime) matched = true;
-          else if (c.op === '<=' && nowTime <= targetTime) matched = true;
-          else if (nowTime >= targetTime) matched = true;
-        }
-      } else if (c.type === 'ManualTag') {
-        if ((c.val || "").trim().length > 0) matched = true;
-      }
-
-      if (matched) {
-        matchedRuleName = `Rule #${i + 1}`;
-        selectedRecipients = rules[i].recipients;
-        break;
-      }
-    }
-
-    document.getElementById('simMatchedRule').textContent = matchedRuleName;
-    const breakdownEl = document.getElementById('simResultBreakdown');
-    breakdownEl.innerHTML = '';
-
-    if (selectedRecipients.length === 0) {
-      breakdownEl.innerHTML = `<div class="text-gray-500 light:text-slate-600 italic">No recipients defined for this rule outcome.</div>`;
-      return;
-    }
-
-    selectedRecipients.forEach(r => {
-      const calculatedAmt = (amountInput * (r.perc || 0)) / 100;
-      const displayAddr = r.address ? (r.address.substring(0, 6) + '...' + r.address.substring(r.address.length - 4)) : 'Unassigned';
-      const row = document.createElement('div');
-      row.className = "flex justify-between items-center text-xs bg-white/[0.02] light:bg-slate-200 p-2 rounded-xl";
-      row.innerHTML = `<span class="font-bold text-gray-300 light:text-slate-900">${displayAddr} (${r.perc}%)</span> <span class="font-bold text-emerald-400 light:text-emerald-700">${calculatedAmt.toFixed(2)}</span>`;
-      breakdownEl.appendChild(row);
-    });
-  }
-
-  function checkEngineErrors() {
-    const errBox = document.getElementById('engineErrors');
-    let errors = [];
-
-    rules.forEach((rule, idx) => {
-      const totalPerc = rule.recipients.reduce((sum, r) => sum + (r.perc || 0), 0);
-      if (Math.abs(totalPerc - 100) > 0.01) {
-        errors.push(`⚠️ Rule #${idx + 1}: Total percentage is ${totalPerc}% (Smart contract requires exactly 100%).`);
-      }
-    });
-
-    const defSum = defaultRecipients.reduce((sum, r) => sum + (r.perc || 0), 0);
-    if (Math.abs(defSum - 100) > 0.01) {
-      errors.push(`⚠️ Fallback Rule: Total percentage is ${defSum}% (Smart contract requires exactly 100%).`);
-    }
-
-    if (errors.length > 0) {
-      errBox.innerHTML = errors.join('<br>');
-      errBox.classList.remove('hidden');
-    } else {
-      errBox.classList.add('hidden');
-    }
-  }
+  let provider, signer, userAddress = null;
+  let contract;
+  let conditions = [];
+  let activeDecimals = 6;
 
   function showToast(msg, duration = 4000) {
     const t = document.getElementById("toast");
@@ -842,276 +286,261 @@
     document.documentElement.classList.toggle('light');
   }
 
-  async function deploySmartSplit() {
-    if (!userAddress || !signer) {
-      showToast("Please connect your wallet first!");
-      return;
-    }
+  function updateDecimals() {
+    const select = document.getElementById('hubToken');
+    const selectedOption = select.options[select.selectedIndex];
+    activeDecimals = parseInt(selectedOption.getAttribute('data-dec') || 6);
+    document.getElementById('sponsorBalanceSymbol').textContent = selectedOption.text;
+    fetchSponsorBalance();
+  }
 
-    const deployBtn = document.getElementById('deployBtn');
-    const originalBtnHtml = deployBtn.innerHTML;
+  function toggleRecurring() {
+    const isRecurring = document.getElementById('ruleRecurring').checked;
+    const box = document.getElementById('cooldownBox');
+    if (isRecurring) box.classList.remove('hidden');
+    else box.classList.add('hidden');
+  }
 
-    try {
-      deployBtn.disabled = true;
-
-      deployBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Preparing...`;
-      await new Promise(r => setTimeout(r, 600));
-
-      const CONTRACT_ADDRESS = "0x372Ec402aD0BDbeD367c80C89a585A8077B919B2";
-      
-      const CONTRACT_ABI = [
-        "function createSplitRule(address _tokenToSplit, uint256 _totalAmount, (address recipient, uint256 amount)[] _recipientsData, (uint8 cType, address targetAddress, address tokenAddress, uint256 threshold, uint8 operator)[] _conditionInputs, uint256 _deadline, bool _isAndLogic, bool _restrictedExecution) external payable returns (uint256)"
-      ];
-
-      const ERC20_APPROVE_ABI = [
-        "function approve(address spender, uint256 amount) returns (bool)"
-      ];
-
-      const tokenSelectElem = document.getElementById('tokenSelect');
-      const tokenAddress = tokenSelectElem.value;
-      const baseAmountInput = document.getElementById('baseTestAmount').value;
-
-      let tokenSymbol = "Tokens";
-      if (tokenAddress === "0x3600000000000000000000000000000000000000") {
-        tokenSymbol = "USDC";
-      } else {
-        tokenSymbol = tokenSelectElem.options[tokenSelectElem.selectedIndex].text.split(' ')[0];
-      }
-
-      if (!baseAmountInput || parseFloat(baseAmountInput) <= 0) {
-        showToast("Please enter a valid Default Base Amount.");
-        deployBtn.disabled = false;
-        deployBtn.innerHTML = originalBtnHtml;
-        return;
-      }
-
-      let decimals = 18;
-      if (tokenAddress !== "0x3600000000000000000000000000000000000000" && tokenAddress !== "CUSTOM") {
-        try {
-          const tokenContract = new ethers.Contract(tokenAddress, ["function decimals() view returns (uint8)"], provider);
-          decimals = await tokenContract.decimals();
-        } catch (e) {
-          decimals = 18;
-        }
-      }
-
-      const totalAmountParsed = ethers.parseUnits(baseAmountInput, decimals);
-
-      const recipientsData = [];
-      let totalAssignedPerc = 0;
-      
-      const activeRecipients = rules.length > 0 && rules[0].recipients.length > 0 ? rules[0].recipients : defaultRecipients;
-      
-      activeRecipients.forEach(r => {
-        const shareAmount = (totalAmountParsed * BigInt(Math.round(r.perc * 100))) / BigInt(10000);
-        recipientsData.push({
-          recipient: r.address,
-          amount: shareAmount
-        });
-        totalAssignedPerc += r.perc;
-      });
-
-      if (Math.abs(totalAssignedPerc - 100) > 0.01) {
-        showToast("Error: Total recipient percentages must equal exactly 100%.");
-        deployBtn.disabled = false;
-        deployBtn.innerHTML = originalBtnHtml;
-        return;
-      }
-
-      const conditionInputs = [];
-      rules.forEach(rule => {
-        let cTypeVal = 0; 
-        if (rule.condition.type === 'Token') cTypeVal = 1;
-        else if (rule.condition.type === 'ManualTag') cTypeVal = 2;
-        else if (rule.condition.type === 'DateTime') cTypeVal = 3;
-        else if (rule.condition.type === 'Wallet') cTypeVal = 4;
-
-        let opVal = 0; 
-        if (rule.condition.op === '<') opVal = 1; 
-        else if (rule.condition.op === '=' || rule.condition.op === '==') opVal = 2; 
-
-        let thresholdVal = 0n;
-        const rawVal = rule.condition.val || "0";
-        if (rule.condition.type !== 'Token' && rule.condition.type !== 'ManualTag' && !rawVal.startsWith('0x') && rule.condition.type !== 'DateTime') {
-          try {
-            thresholdVal = ethers.parseUnits(rawVal, decimals);
-          } catch (e) {
-            thresholdVal = 0n;
-          }
-        }
-
-        conditionInputs.push({
-          cType: cTypeVal,
-          targetAddress: userAddress,
-          tokenAddress: tokenAddress === "CUSTOM" ? ethers.ZeroAddress : tokenAddress,
-          threshold: thresholdVal,
-          operator: opVal
-        });
-      });
-
-      if (conditionInputs.length === 0) {
-        conditionInputs.push({
-          cType: 0, 
-          targetAddress: ethers.ZeroAddress,
-          tokenAddress: ethers.ZeroAddress,
-          threshold: 0n,
-          operator: 2 
-        });
-      }
-
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
-
-      if (tokenAddress !== ethers.ZeroAddress) {
-        deployBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Signing...`;
-        const tokenContract = new ethers.Contract(tokenAddress, ERC20_APPROVE_ABI, signer);
-        const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, totalAmountParsed);
-        await approveTx.wait();
-      }
-
-      deployBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Submitting...`;
-
-      const deadline = 0; 
-      const isAndLogic = true;
-      const restrictedExecution = false;
-
-      let tx;
-      if (tokenAddress === ethers.ZeroAddress) {
-        tx = await contract.createSplitRule(
-          tokenAddress, 
-          totalAmountParsed, 
-          recipientsData, 
-          conditionInputs, 
-          deadline, 
-          isAndLogic, 
-          restrictedExecution, 
-          { value: totalAmountParsed }
-        );
-      } else {
-        tx = await contract.createSplitRule(
-          tokenAddress, 
-          totalAmountParsed, 
-          recipientsData, 
-          conditionInputs, 
-          deadline, 
-          isAndLogic, 
-          restrictedExecution
-        );
-      }
-
-      deployBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Completed`;
-      await tx.wait();
-
-      showToast("Smart Split successfully deployed on-chain!");
-      switchTab('history');
-      
-      let totalNumBase = parseFloat(baseAmountInput) || 0;
-      let rulesHistoryHtml = rules.map((rule, idx) => {
-        let condText = `${rule.condition.type} ${rule.condition.op} ${rule.condition.val}`;
-        if (rule.condition.type === 'Token') {
-          let targetSymbol = rule.condition.val;
-          for (let opt of tokenSelectElem.options) {
-            if (opt.value === rule.condition.val) {
-              targetSymbol = opt.text.split(' ')[0];
-              break;
-            }
-          }
-          condText = `Token Type == ${targetSymbol}`;
-        }
+  async function connectWallet() {
+    if (typeof window.ethereum !== 'undefined') {
+      try {
+        provider = new ethers.BrowserProvider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        signer = await provider.getSigner();
+        userAddress = await signer.getAddress();
         
-        let recsHtml = rule.recipients.map(r => {
-          let tokenValCalc = (totalNumBase * (r.perc || 0)) / 100;
-          return `
-            <div class="flex justify-between items-center bg-black/20 light:bg-white px-3 py-1.5 rounded-lg my-1">
-              <span class="font-mono text-gray-300 light:text-slate-900">${r.address ? r.address.substring(0,6) + '...' + r.address.substring(r.address.length-4) : 'Unassigned'}</span>
-              <div class="text-right">
-                <span class="font-bold text-emerald-400 light:text-emerald-700 block">${tokenValCalc.toFixed(2)} ${tokenSymbol}</span>
-                <span class="text-[10px] text-gray-400 light:text-slate-700 font-bold">${r.perc}%</span>
-              </div>
-            </div>
-          `;
-        }).join('');
+        contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+        
+        const shortAddr = userAddress.substring(0, 6) + "..." + userAddress.substring(userAddress.length - 4);
+        const btn = document.getElementById('connectBtn');
+        btn.className = "w-full px-6 py-4 wallet-connected-glass font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg";
+        document.getElementById('connectText').innerHTML = `<i class="fas fa-check-circle text-emerald-400"></i> ${shortAddr}`;
+        document.getElementById('disconnectBtn').classList.remove('hidden');
+        
+        const badge = document.getElementById('syncBadge');
+        badge.textContent = "Synced";
+        badge.className = "px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-[10px] font-bold";
 
-        return `
-          <div class="bg-white/[0.03] light:bg-slate-100 border border-white/5 light:border-black/10 p-3.5 rounded-2xl space-y-2">
-            <div class="flex justify-between items-center text-xs font-bold text-emerald-400 light:text-emerald-700">
-              <span>Conditional Rule #${idx + 1}</span>
-              <span class="text-[10px] text-gray-400 light:text-slate-800 bg-white/5 light:bg-slate-200 px-2 py-0.5 rounded-md font-bold">${condText}</span>
-            </div>
-            <div class="space-y-1">
-              <div class="text-[10px] text-gray-400 light:text-slate-800 uppercase font-bold">Recipients Breakdown:</div>
-              ${recsHtml}
-            </div>
-          </div>
-        `;
-      }).join('');
-
-      let fallbackRecsHtml = defaultRecipients.map(r => {
-        let tokenValCalc = (totalNumBase * (r.perc || 0)) / 100;
-        return `
-          <div class="flex justify-between items-center bg-black/20 light:bg-white px-3 py-1.5 rounded-lg my-1">
-            <span class="font-mono text-gray-300 light:text-slate-900">${r.address ? r.address.substring(0,6) + '...' + r.address.substring(r.address.length-4) : 'Unassigned'}</span>
-            <div class="text-right">
-              <span class="font-bold text-amber-400 light:text-amber-700 block">${tokenValCalc.toFixed(2)} ${tokenSymbol}</span>
-              <span class="text-[10px] text-gray-400 light:text-slate-700 font-bold">${r.perc}%</span>
-            </div>
-          </div>
-        `;
-      }).join('');
-
-      let fallbackHistoryHtml = `
-        <div class="bg-white/[0.03] light:bg-slate-100 border border-white/5 light:border-black/10 p-3.5 rounded-2xl space-y-2">
-          <div class="flex justify-between items-center text-xs font-bold text-amber-400 light:text-amber-700">
-            <span>Fallback Rule (Otherwise)</span>
-            <span class="text-[10px] text-gray-400 light:text-slate-800 bg-white/5 light:bg-slate-200 px-2 py-0.5 rounded-md font-bold">Default Execution</span>
-          </div>
-          <div class="space-y-1">
-            <div class="text-[10px] text-gray-400 light:text-slate-800 uppercase font-bold">Recipients Breakdown:</div>
-            ${fallbackRecsHtml}
-          </div>
-        </div>
-      `;
-
-      const explorerUrl = `https://testnet.arcscan.app/tx/${tx.hash}`;
-
-      const newHistoryItemHtml = `
-        <div class="glass p-5 rounded-3xl space-y-4 mb-4">
-          <div class="flex justify-between items-center pb-3 border-b border-white/10 light:border-black/10">
-            <div>
-              <div class="font-bold text-white light:text-slate-900 text-sm">On-Chain Deployed Split</div>
-              <div class="text-xs text-gray-400 light:text-slate-700 mt-1 flex items-center gap-1.5 font-semibold">
-                Tx Hash: 
-                <a href="${explorerUrl}" target="_blank" class="text-cyan-400 light:text-cyan-700 hover:underline font-mono inline-flex items-center gap-1">
-                  ${tx.hash}
-                  <i class="fas fa-external-link-alt text-[10px]"></i>
-                </a>
-              </div>
-            </div>
-            <span class="px-3 py-1 bg-emerald-500/10 text-emerald-400 light:text-emerald-700 rounded-full text-xs font-bold">Confirmed</span>
-          </div>
-          <div class="space-y-3">
-            ${rulesHistoryHtml}
-            ${fallbackHistoryHtml}
-          </div>
-        </div>
-      `;
-
-      saveHistoryToStorage(newHistoryItemHtml);
-
-      deployBtn.disabled = false;
-      deployBtn.innerHTML = originalBtnHtml;
-
-    } catch (err) {
-      console.error(err);
-      showToast("Transaction failed or rejected by user.");
-      deployBtn.disabled = false;
-      deployBtn.innerHTML = originalBtnHtml;
+        showToast("Wallet Connected!");
+        fetchSponsorBalance();
+        
+        // Auto-gen nonce
+        document.getElementById('ruleNonce').value = Math.floor(Math.random() * 1000000);
+      } catch (err) {
+        console.error(err);
+        showToast("Connection failed.");
+      }
+    } else {
+      showToast("MetaMask not found.");
     }
   }
 
+  function disconnectWallet() {
+    userAddress = null; signer = null; contract = null;
+    
+    const btn = document.getElementById('connectBtn');
+    btn.className = "w-full px-6 py-4 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg";
+    document.getElementById('connectText').innerHTML = `Connect Wallet`;
+    document.getElementById('disconnectBtn').classList.add('hidden');
+    
+    document.getElementById('sponsorBalanceDisplay').textContent = "0.00";
+    const badge = document.getElementById('syncBadge');
+    badge.textContent = "Disconnected";
+    badge.className = "px-2 py-1 bg-rose-500/20 text-rose-400 rounded text-[10px] font-bold";
+    showToast("Wallet disconnected.");
+  }
+
+  async function fetchSponsorBalance() {
+    if (!contract || !userAddress) return;
+    try {
+      const balRaw = await contract.balances(userAddress);
+      const displayVal = ethers.formatUnits(balRaw, activeDecimals);
+      document.getElementById('sponsorBalanceDisplay').textContent = parseFloat(displayVal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+    } catch (err) {
+      console.error("Failed to fetch balance", err);
+    }
+  }
+
+  async function depositFunds() {
+    if (!signer || !userAddress) return showToast("Connect wallet first!");
+    const amt = document.getElementById('hubAmount').value;
+    if (!amt || amt <= 0) return showToast("Enter valid deposit amount");
+    
+    try {
+      const parsedAmt = ethers.parseUnits(amt.toString(), activeDecimals);
+      showToast("Initiating Deposit transaction...");
+      
+      const tx = await signer.sendTransaction({
+        to: CONTRACT_ADDRESS,
+        value: parsedAmt
+      });
+      await tx.wait();
+      
+      showToast("Deposit Successful!");
+      fetchSponsorBalance();
+      document.getElementById('hubAmount').value = '';
+    } catch(e) {
+      console.error(e);
+      showToast("Deposit failed or rejected.");
+    }
+  }
+
+  async function withdrawFunds() {
+    if (!contract) return showToast("Connect wallet first!");
+    const amt = document.getElementById('hubAmount').value;
+    if (!amt || amt <= 0) return showToast("Enter valid withdraw amount");
+    
+    try {
+      const parsedAmt = ethers.parseUnits(amt.toString(), activeDecimals);
+      showToast("Initiating Withdraw transaction...");
+      
+      const tx = await contract.withdraw(parsedAmt);
+      await tx.wait();
+      
+      showToast("Withdraw Successful!");
+      fetchSponsorBalance();
+      document.getElementById('hubAmount').value = '';
+    } catch(e) {
+      console.error(e);
+      showToast("Withdraw failed. Check balance.");
+    }
+  }
+
+  // Conditions Builder Logic
+  function addCondition() {
+    conditions.push({ address: '', data: '0x' });
+    renderConditions();
+  }
+
+  function removeCondition(index) {
+    conditions.splice(index, 1);
+    renderConditions();
+  }
+
+  function updateCondition(index, field, value) {
+    conditions[index][field] = value;
+    updatePreview();
+  }
+
+  function renderConditions() {
+    const container = document.getElementById('conditionsContainer');
+    container.innerHTML = '';
+    
+    if(conditions.length === 0) {
+      container.innerHTML = `<div class="text-gray-500 italic text-sm">No conditions defined. Rule will always be executable if balance suffices.</div>`;
+    }
+
+    conditions.forEach((c, i) => {
+      container.innerHTML += `
+        <div class="p-4 bg-white/5 border border-white/10 rounded-xl relative">
+          <button onclick="removeCondition(${i})" class="absolute top-2 right-2 text-rose-500 hover:text-rose-400 p-2"><i class="fas fa-times"></i></button>
+          <div class="text-xs font-bold text-emerald-400 mb-3">Evaluator Contract #${i+1}</div>
+          <div class="space-y-3">
+            <div>
+              <label class="text-[10px] text-gray-400 uppercase tracking-wide">Contract Address</label>
+              <input type="text" value="${c.address}" oninput="updateCondition(${i}, 'address', this.value)" placeholder="0x..." class="w-full rounded-lg px-3 py-2 text-xs font-mono mt-1">
+            </div>
+            <div>
+              <label class="text-[10px] text-gray-400 uppercase tracking-wide">Calldata (Hex)</label>
+              <input type="text" value="${c.data}" oninput="updateCondition(${i}, 'data', this.value)" placeholder="0x..." class="w-full rounded-lg px-3 py-2 text-xs font-mono mt-1">
+            </div>
+          </div>
+        </div>
+      `;
+    });
+    updatePreview();
+  }
+
+  // Real-time Event Listeners for Preview
+  document.getElementById('ruleRecipient').addEventListener('input', updatePreview);
+  document.getElementById('ruleAmount').addEventListener('input', updatePreview);
+
+  function updatePreview() {
+    const rec = document.getElementById('ruleRecipient').value || '0x...';
+    const amt = document.getElementById('ruleAmount').value || '0';
+    
+    document.getElementById('previewTarget').textContent = rec.substring(0, 8) + '...' + rec.substring(rec.length - 4);
+    document.getElementById('previewAmt').textContent = amt + ' ' + document.getElementById('sponsorBalanceSymbol').textContent;
+    
+    document.getElementById('previewEvalCount').textContent = `${conditions.length} Contracts`;
+    
+    let ops = [];
+    if (conditions.length > 0) {
+      conditions.forEach((_, idx) => {
+        ops.push("OP_EVAL(3)");
+        if (idx > 0) ops.push("OP_AND(0)");
+      });
+    }
+    document.getElementById('previewOpcodes').textContent = `[${ops.join(', ')}]`;
+  }
+
+  async function registerSmartRule() {
+    if (!contract) return showToast("Connect wallet first!");
+    
+    const recipient = document.getElementById('ruleRecipient').value;
+    const amt = document.getElementById('ruleAmount').value;
+    const fee = document.getElementById('ruleFee').value || "0";
+    const nonce = document.getElementById('ruleNonce').value || "0";
+    const isRecurring = document.getElementById('ruleRecurring').checked;
+    const cooldown = document.getElementById('ruleCooldown').value || "0";
+
+    if (!recipient || !ethers.isAddress(recipient)) return showToast("Invalid Recipient Address");
+    if (!amt || amt <= 0) return showToast("Invalid Amount");
+
+    // Compile RPN
+    let opcodes = [];
+    let evaluators = [];
+    let evaluatorsData = [];
+
+    conditions.forEach((c, index) => {
+      evaluators.push(c.address || ethers.ZeroAddress);
+      let d = c.data;
+      if (!d.startsWith("0x")) d = "0x" + d;
+      evaluatorsData.push(d);
+      
+      opcodes.push(3); // OP_EVAL
+      if (index > 0) opcodes.push(0); // OP_AND
+    });
+
+    try {
+      const parsedAmt = ethers.parseUnits(amt.toString(), activeDecimals);
+      const parsedFee = ethers.parseUnits(fee.toString(), activeDecimals);
+      
+      const btn = document.getElementById('registerBtn');
+      const ogHtml = btn.innerHTML;
+      btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Submitting...`;
+      btn.disabled = true;
+
+      const tx = await contract.registerRule(
+        recipient,
+        parsedAmt,
+        parsedFee,
+        nonce,
+        isRecurring,
+        cooldown,
+        opcodes,
+        evaluators,
+        evaluatorsData
+      );
+      
+      await tx.wait();
+      showToast("Smart Rule Successfully Registered On-Chain!");
+      
+      btn.innerHTML = ogHtml;
+      btn.disabled = false;
+      document.getElementById('ruleNonce').value = Math.floor(Math.random() * 1000000); // gen new nonce
+    } catch(e) {
+      console.error(e);
+      showToast("Transaction failed. Check console.");
+      document.getElementById('registerBtn').innerHTML = `Register Rule On-Chain`;
+      document.getElementById('registerBtn').disabled = false;
+    }
+  }
+
+  // Init
   window.addEventListener('load', () => {
-    renderRules();
-    checkInitialConnection();
-    loadHistoryFromStorage();
+    updateDecimals();
+    renderConditions();
   });
 </script>
 </body>
