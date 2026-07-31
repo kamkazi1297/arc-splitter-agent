@@ -8,7 +8,7 @@
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
   
-  <!-- اتصال به دیتابیس ابری شما -->
+  <!-- Cloud Database Integration -->
   <script src="db.js"></script>
 
   <style>
@@ -55,8 +55,8 @@
     
     .light .text-gray-400 { color: #334155 !important; font-weight: 600 !important; }
     
-    .header-title-text, .history-title-text, .smart-split-gradient,
-    .light .header-title-text, .light .history-title-text, .light .smart-split-gradient { color: #ffffff !important; }
+    .header-title-text, .smart-split-gradient,
+    .light .header-title-text, .light .smart-split-gradient { color: #ffffff !important; }
     
     .smart-split-gradient {
       background: linear-gradient(to right, #34d399, #22d3ee);
@@ -134,21 +134,23 @@
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         
         <!-- Connect -->
-        <div class="glass rounded-3xl p-6 flex flex-col justify-center gap-4">
+        <div class="glass rounded-3xl p-6 flex flex-col justify-center gap-4 relative">
           <div class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">1. Connection</div>
-          <button onclick="connectWallet()" id="connectBtn" class="w-full px-6 py-4 bg-white text-gray-950 font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg">
+          <button onclick="connectWallet()" id="connectBtn" class="w-full px-6 py-4 bg-white text-gray-950 font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg hover:bg-gray-100">
             <i class="fas fa-wallet text-emerald-600"></i> <span id="connectText">Connect Wallet</span>
           </button>
           <button onclick="disconnectWallet()" id="disconnectBtn" class="hidden w-full px-4 py-3 bg-rose-500/10 border border-rose-500/30 text-rose-400 font-bold rounded-2xl transition-all flex items-center justify-center gap-2">
             <i class="fas fa-power-off"></i> Disconnect
           </button>
+          <!-- Network Badge -->
+          <div id="networkBadge" class="absolute top-6 right-6 px-2 py-1 bg-gray-500/20 text-gray-400 rounded text-[10px] font-bold border border-gray-500/30">Unknown Net</div>
         </div>
 
         <!-- Balances Hub -->
         <div class="glass rounded-3xl p-6 lg:col-span-2">
           <div class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 flex justify-between items-center">
             <span>2. Treasuries & Balances</span>
-            <span id="syncBadge" class="px-2 py-1 bg-rose-500/20 text-rose-400 rounded text-[10px]">Disconnected</span>
+            <span id="syncBadge" class="px-2 py-1 bg-rose-500/20 text-rose-400 rounded text-[10px] font-bold">Disconnected</span>
           </div>
           
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
@@ -158,8 +160,9 @@
                 <p class="text-xs text-gray-500 mb-1">Your Wallet Balance</p>
                 <div class="text-2xl font-extrabold text-cyan-400 flex items-baseline gap-2">
                   <span id="walletBalanceDisplay">0.00</span>
-                  <span class="text-xs text-gray-400">Native</span>
+                  <span class="text-xs text-gray-400" id="walletBalanceSymbol">USDC</span>
                 </div>
+                <div id="walletFiat" class="text-xs text-gray-500 mt-0.5">~$0.00</div>
               </div>
               <div>
                 <p class="text-xs text-gray-500 mb-1">Contract (Sponsor) Balance</p>
@@ -167,6 +170,7 @@
                   <span id="sponsorBalanceDisplay">0.00</span>
                   <span class="text-sm text-gray-400" id="sponsorBalanceSymbol">USDC</span>
                 </div>
+                <div id="sponsorFiat" class="text-xs text-gray-500 mt-0.5">~$0.00</div>
               </div>
             </div>
             
@@ -174,14 +178,15 @@
             <div class="space-y-3">
               <div class="flex gap-2">
                 <input type="number" id="hubAmount" placeholder="Amount..." class="w-full rounded-xl px-4 py-3 text-sm font-bold">
-                <select id="hubToken" class="rounded-xl px-3 py-3 text-sm font-bold w-32" onchange="updateDecimals()">
-                  <option value="native" data-dec="18">Native</option>
-                  <option value="0x3600000000000000000000000000000000000000" data-dec="6">USDC</option>
+                <select id="hubToken" class="rounded-xl px-2 py-3 text-sm font-bold w-32 text-center" onchange="updateDecimals()">
+                  <option value="0x3600000000000000000000000000000000000000" data-dec="6" data-price="1.00">USDC</option>
+                  <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a" data-dec="6" data-price="1.08">EURC</option>
+                  <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF" data-dec="8" data-price="60000">cirBTC</option>
                 </select>
               </div>
               <div class="flex gap-2">
-                <button onclick="depositFunds()" class="flex-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 py-2.5 rounded-xl text-sm font-bold transition-all">Deposit</button>
-                <button onclick="withdrawFunds()" class="flex-1 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/30 py-2.5 rounded-xl text-sm font-bold transition-all">Withdraw</button>
+                <button onclick="depositFunds()" class="flex-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 py-2.5 rounded-xl text-sm font-bold transition-all"><i class="fas fa-arrow-down mr-1"></i> Deposit</button>
+                <button onclick="withdrawFunds()" class="flex-1 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/30 py-2.5 rounded-xl text-sm font-bold transition-all"><i class="fas fa-arrow-up mr-1"></i> Withdraw</button>
               </div>
             </div>
           </div>
@@ -195,10 +200,18 @@
           <div class="glass rounded-3xl p-6">
             <div class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-5">3. Rule Configuration</div>
             
+            <!-- Address Book Datalist -->
+            <datalist id="savedContacts"></datalist>
+
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
-              <div>
+              <div class="relative">
                 <label class="block text-xs font-bold text-gray-400 mb-2">Recipient Address</label>
-                <input type="text" id="ruleRecipient" placeholder="0x..." class="w-full rounded-xl px-4 py-3 text-sm font-mono">
+                <div class="flex gap-2">
+                  <input type="text" id="ruleRecipient" list="savedContacts" placeholder="0x... or select contact" class="w-full rounded-xl px-4 py-3 text-sm font-mono">
+                  <button onclick="saveContact()" class="bg-white/10 hover:bg-white/20 border border-white/10 px-4 rounded-xl text-white transition-all" title="Save to Address Book">
+                    <i class="fas fa-address-book"></i>
+                  </button>
+                </div>
               </div>
               <div>
                 <label class="block text-xs font-bold text-gray-400 mb-2">Amount to Push</label>
@@ -231,13 +244,16 @@
 
           <!-- RPN Evaluator Builder -->
           <div class="glass rounded-3xl p-6">
-            <div class="flex items-center justify-between mb-5">
-              <div class="text-sm font-bold text-gray-400 uppercase tracking-wider">4. Conditional Evaluators</div>
-              <button onclick="addCondition()" class="px-4 py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-bold flex items-center gap-1.5">
+            <div class="flex flex-wrap items-center justify-between gap-4 mb-5">
+              <div>
+                <div class="text-sm font-bold text-gray-400 uppercase tracking-wider">4. Conditional Evaluators</div>
+                <p class="text-[11px] text-gray-500 mt-1">Use No-Code Templates or Write Custom Hex</p>
+              </div>
+              <button onclick="addCondition()" class="px-4 py-2 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all">
                 <i class="fas fa-plus"></i> Add Evaluator
               </button>
             </div>
-            <div id="conditionsContainer" class="space-y-3"></div>
+            <div id="conditionsContainer" class="space-y-4"></div>
           </div>
         </div>
 
@@ -260,7 +276,7 @@
               </div>
             </div>
             <button id="registerBtn" onclick="registerSmartRule()" class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:brightness-110 py-4 rounded-2xl font-bold text-sm shadow-lg shadow-emerald-500/20 transition-all text-slate-950 flex justify-center items-center gap-2">
-              Register Rule On-Chain
+              <i class="fas fa-link"></i> Register Rule On-Chain
             </button>
           </div>
         </div>
@@ -295,6 +311,9 @@
   const CONTRACT_ADDRESS = "0x0ede4363D3B6a0dCfe9c67bA31799D9591567fD0"; 
   const EXPLORER_URL = "https://testnet.arcscan.app/tx/";
   
+  // Dummy Chain ID for Arc Testnet (if standard EVM). Adjust to actual Arc Testnet chainId if known.
+  const ARC_TESTNET_CHAIN_ID = "0x203"; // Placeholder. Metamask requires hex.
+
   const CONTRACT_ABI = [
     "function registerRule(address recipient, uint256 amountToSplit, uint256 maxRelayerFee, uint256 ruleIdNonce, bool isRecurring, uint256 ruleCooldown, uint8[] calldata opcodes, address[] calldata evaluators, bytes[] calldata evaluatorsData) external returns (bytes32)",
     "function balances(address account) external view returns (uint256)",
@@ -305,7 +324,9 @@
   let provider, signer, userAddress = null;
   let contract;
   let conditions = [];
-  let activeDecimals = 18; // Default to native initially
+  let activeDecimals = 6; 
+  let currentFiatPrice = 1.00; // Default USDC
+  let savedContacts = JSON.parse(localStorage.getItem('arc_contacts') || '[]');
 
   // --- UI Functions ---
   function showToast(msg, duration = 6000) {
@@ -341,8 +362,11 @@
   function updateDecimals() {
     const select = document.getElementById('hubToken');
     const selectedOption = select.options[select.selectedIndex];
-    activeDecimals = parseInt(selectedOption.getAttribute('data-dec') || 18);
+    activeDecimals = parseInt(selectedOption.getAttribute('data-dec') || 6);
+    currentFiatPrice = parseFloat(selectedOption.getAttribute('data-price') || 1.00);
+    
     document.getElementById('sponsorBalanceSymbol').textContent = selectedOption.text;
+    document.getElementById('walletBalanceSymbol').textContent = selectedOption.text;
     fetchBalances();
   }
 
@@ -353,10 +377,56 @@
     else box.classList.add('hidden');
   }
 
+  // --- Address Book ---
+  function renderContacts() {
+    const datalist = document.getElementById('savedContacts');
+    datalist.innerHTML = '';
+    savedContacts.forEach(contact => {
+      let option = document.createElement('option');
+      option.value = contact.address;
+      option.textContent = contact.name;
+      datalist.appendChild(option);
+    });
+  }
+
+  function saveContact() {
+    const addr = document.getElementById('ruleRecipient').value;
+    if(!ethers.isAddress(addr)) {
+      return showToast("Please enter a valid valid address first!");
+    }
+    const name = prompt("Enter a name for this contact:");
+    if(name) {
+      savedContacts.push({ name: name, address: addr });
+      localStorage.setItem('arc_contacts', JSON.stringify(savedContacts));
+      renderContacts();
+      showToast(`Contact '${name}' saved!`);
+    }
+  }
+
   // --- Web3 Core ---
+  async function checkAndSwitchNetwork() {
+    if (!window.ethereum) return;
+    try {
+      const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+      const badge = document.getElementById('networkBadge');
+      
+      // If we know the exact Arc Testnet Chain ID, we can force switch:
+      // if (chainId !== ARC_TESTNET_CHAIN_ID) {
+      //    await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: ARC_TESTNET_CHAIN_ID }] });
+      // }
+      
+      badge.textContent = `Chain ID: ${parseInt(chainId, 16)}`;
+      badge.className = "absolute top-6 right-6 px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-[10px] font-bold border border-emerald-500/30";
+    } catch (err) {
+      console.warn("Network check failed", err);
+    }
+  }
+
   async function connectWallet() {
     if (typeof window.ethereum !== 'undefined') {
       try {
+        await checkAndSwitchNetwork();
+
         provider = new ethers.BrowserProvider(window.ethereum);
         await provider.send("eth_requestAccounts", []);
         signer = await provider.getSigner();
@@ -377,9 +447,13 @@
         showToast("Wallet Connected!");
         fetchBalances();
         document.getElementById('ruleNonce').value = Math.floor(Math.random() * 1000000);
+        
+        // Listen to network changes
+        window.ethereum.on('chainChanged', () => window.location.reload());
+        window.ethereum.on('accountsChanged', () => window.location.reload());
       } catch (err) {
         console.error(err);
-        showToast("Connection failed.");
+        showToast("Connection failed. Please check MetaMask.");
       }
     } else {
       showToast("MetaMask not found.");
@@ -390,12 +464,16 @@
     userAddress = null; signer = null; contract = null;
     
     const btn = document.getElementById('connectBtn');
-    btn.className = "w-full px-6 py-4 bg-white text-gray-950 font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg";
+    btn.className = "w-full px-6 py-4 bg-white text-gray-950 font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg hover:bg-gray-100";
     document.getElementById('connectText').innerHTML = `Connect Wallet`;
     document.getElementById('disconnectBtn').classList.add('hidden');
+    document.getElementById('networkBadge').textContent = "Unknown Net";
+    document.getElementById('networkBadge').className = "absolute top-6 right-6 px-2 py-1 bg-gray-500/20 text-gray-400 rounded text-[10px] font-bold border border-gray-500/30";
     
     document.getElementById('sponsorBalanceDisplay').textContent = "0.00";
     document.getElementById('walletBalanceDisplay').textContent = "0.00";
+    document.getElementById('walletFiat').textContent = "~$0.00";
+    document.getElementById('sponsorFiat').textContent = "~$0.00";
     
     const badge = document.getElementById('syncBadge');
     badge.textContent = "Disconnected";
@@ -407,15 +485,20 @@
   async function fetchBalances() {
     if (!contract || !userAddress || !provider) return;
     try {
-      // 1. Fetch Wallet Native Balance
+      // Since native L1 token is USDC on Arc (as per contract msg.value), we get native balance
       const walletBalRaw = await provider.getBalance(userAddress);
-      const displayWalletBal = ethers.formatUnits(walletBalRaw, 18);
+      // Format with the active decimals of the selected token in the UI
+      const displayWalletBal = ethers.formatUnits(walletBalRaw, activeDecimals);
       document.getElementById('walletBalanceDisplay').textContent = parseFloat(displayWalletBal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+      document.getElementById('walletFiat').textContent = `~$${(parseFloat(displayWalletBal) * currentFiatPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-      // 2. Fetch Sponsor (Contract) Balance
+      // Fetch Sponsor (Contract) Balance
       const balRaw = await contract.balances(userAddress);
       const displayVal = ethers.formatUnits(balRaw, activeDecimals);
       document.getElementById('sponsorBalanceDisplay').textContent = parseFloat(displayVal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+      document.getElementById('sponsorFiat').textContent = `~$${(parseFloat(displayVal) * currentFiatPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+      
+      updatePreview();
     } catch (err) {
       console.error("Failed to fetch balances", err);
     }
@@ -429,27 +512,25 @@
     
     try {
       const parsedAmt = ethers.parseUnits(amt.toString(), activeDecimals);
-      showToast("Initiating Deposit transaction...");
       
       const tx = await signer.sendTransaction({
         to: CONTRACT_ADDRESS,
         value: parsedAmt
       });
       
-      showToast(`Transaction Sent! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-cyan-400 underline mt-2 inline-block'>View on ArcScan Explorer</a>`);
+      showToast(`Transaction Sent! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-cyan-400 underline mt-2 inline-block font-normal'>View on ArcScan Explorer</a>`);
       await tx.wait(); // Wait for confirmation
       
-      showToast(`Deposit Successful! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-emerald-400 underline mt-2 inline-block'>View Receipt</a>`);
+      showToast(`Deposit Successful! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-emerald-400 underline mt-2 inline-block font-normal'>View Receipt</a>`);
       
-      // Update UI Balances
       await fetchBalances();
       document.getElementById('hubAmount').value = '';
 
-      // Save to Cloud History
       if (typeof saveHistoryToCloud === 'function') {
         await saveHistoryToCloud(userAddress, {
           type: 'Deposit',
           amount: amt,
+          token: document.getElementById('sponsorBalanceSymbol').textContent,
           hash: tx.hash,
           timestamp: new Date().toISOString(),
           memo: `Deposited ${amt} tokens to sponsor treasury`
@@ -470,10 +551,10 @@
       const parsedAmt = ethers.parseUnits(amt.toString(), activeDecimals);
       const tx = await contract.withdraw(parsedAmt);
       
-      showToast(`Withdraw Tx Sent! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-cyan-400 underline mt-2 inline-block'>View Explorer</a>`);
+      showToast(`Withdraw Tx Sent! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-cyan-400 underline mt-2 inline-block font-normal'>View Explorer</a>`);
       await tx.wait();
       
-      showToast(`Withdraw Successful! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-emerald-400 underline mt-2 inline-block'>View Receipt</a>`);
+      showToast(`Withdraw Successful! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-emerald-400 underline mt-2 inline-block font-normal'>View Receipt</a>`);
       await fetchBalances();
       document.getElementById('hubAmount').value = '';
 
@@ -481,6 +562,7 @@
         await saveHistoryToCloud(userAddress, {
           type: 'Withdraw',
           amount: amt,
+          token: document.getElementById('sponsorBalanceSymbol').textContent,
           hash: tx.hash,
           timestamp: new Date().toISOString(),
           memo: `Withdrew ${amt} tokens from treasury`
@@ -533,20 +615,20 @@
         opcodes, evaluators, evaluatorsData
       );
       
-      showToast(`Rule Tx Sent! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-cyan-400 underline mt-2 inline-block'>View on Explorer</a>`);
+      showToast(`Rule Tx Sent! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-cyan-400 underline mt-2 inline-block font-normal'>View on Explorer</a>`);
       await tx.wait();
       
-      showToast(`Smart Rule Registered On-Chain! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-emerald-400 underline mt-2 inline-block'>View Receipt</a>`);
+      showToast(`Smart Rule Registered On-Chain! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-emerald-400 underline mt-2 inline-block font-normal'>View Receipt</a>`);
       
       btn.innerHTML = ogHtml;
       btn.disabled = false;
       document.getElementById('ruleNonce').value = Math.floor(Math.random() * 1000000);
 
-      // Save rule to history
       if (typeof saveHistoryToCloud === 'function') {
         await saveHistoryToCloud(userAddress, {
           type: 'New Rule',
           amount: amt,
+          token: document.getElementById('sponsorBalanceSymbol').textContent,
           recipient: recipient,
           conditionsCount: conditions.length,
           hash: tx.hash,
@@ -557,14 +639,14 @@
     } catch(e) {
       console.error(e);
       showToast("Transaction failed. Check console.");
-      document.getElementById('registerBtn').innerHTML = `Register Rule On-Chain`;
+      document.getElementById('registerBtn').innerHTML = `<i class="fas fa-link"></i> Register Rule On-Chain`;
       document.getElementById('registerBtn').disabled = false;
     }
   }
 
-  // --- Condition Builder ---
+  // --- No-Code Condition Builder ---
   function addCondition() {
-    conditions.push({ address: '', data: '0x' });
+    conditions.push({ type: 'custom', address: '', data: '0x', uiValue: '' });
     renderConditions();
   }
 
@@ -573,8 +655,43 @@
     renderConditions();
   }
 
-  function updateCondition(index, field, value) {
+  function changeConditionType(index, newType) {
+    conditions[index].type = newType;
+    conditions[index].uiValue = '';
+    
+    // Auto-fill dummy evaluator addresses for templates (For UX Demo)
+    if(newType === 'price') {
+       conditions[index].address = '0x1111222233334444555566667777888899990000'; // Dummy Price Oracle
+       conditions[index].data = '0x';
+    } else if(newType === 'time') {
+       conditions[index].address = '0xAAAABBBBCCCCDDDDEEEEFFFF0000111122223333'; // Dummy TimeLock
+       conditions[index].data = '0x';
+    } else {
+       conditions[index].address = '';
+       conditions[index].data = '0x';
+    }
+    renderConditions();
+  }
+
+  function updateConditionParam(index, field, value) {
     conditions[index][field] = value;
+    
+    // Auto-generate Hex Data for Normal Users!
+    if(conditions[index].type === 'price' && field === 'uiValue') {
+       // Just a demo encoding of uint256
+       try {
+         const val = parseInt(value) || 0;
+         const encoded = ethers.AbiCoder.defaultAbiCoder().encode(['uint256'], [val]);
+         conditions[index].data = encoded;
+       } catch(e) {}
+    } else if(conditions[index].type === 'time' && field === 'uiValue') {
+       try {
+         const days = parseInt(value) || 0;
+         const encoded = ethers.AbiCoder.defaultAbiCoder().encode(['uint256'], [days * 86400]);
+         conditions[index].data = encoded;
+       } catch(e) {}
+    }
+
     updatePreview();
   }
 
@@ -583,23 +700,56 @@
     container.innerHTML = '';
     
     if(conditions.length === 0) {
-      container.innerHTML = `<div class="text-gray-500 italic text-sm">No conditions defined. Rule will always be executable if balance suffices.</div>`;
+      container.innerHTML = `<div class="text-gray-500 italic text-sm text-center py-4 border border-dashed border-gray-600 rounded-xl">No conditions defined. Rule will trigger instantly if balance suffices.</div>`;
     }
 
     conditions.forEach((c, i) => {
+      let inputsHtml = '';
+
+      if (c.type === 'custom') {
+        inputsHtml = `
+          <div>
+            <label class="text-[10px] text-gray-400 uppercase tracking-wide">Contract Address (0x...)</label>
+            <input type="text" value="${c.address}" oninput="updateConditionParam(${i}, 'address', this.value)" placeholder="0x..." class="w-full rounded-lg px-3 py-2 text-xs font-mono mt-1 border-gray-600">
+          </div>
+          <div>
+            <label class="text-[10px] text-gray-400 uppercase tracking-wide">Calldata (Hex)</label>
+            <input type="text" value="${c.data}" oninput="updateConditionParam(${i}, 'data', this.value)" placeholder="0x..." class="w-full rounded-lg px-3 py-2 text-xs font-mono mt-1 border-gray-600">
+          </div>
+        `;
+      } else if (c.type === 'price') {
+        inputsHtml = `
+          <div>
+            <label class="text-[10px] text-cyan-400 uppercase tracking-wide font-bold"><i class="fas fa-chart-line"></i> Target Price ($)</label>
+            <input type="number" value="${c.uiValue}" oninput="updateConditionParam(${i}, 'uiValue', this.value)" placeholder="e.g. 65000" class="w-full rounded-lg px-3 py-2 text-sm font-bold mt-1 border-cyan-500/50 bg-cyan-500/5">
+            <div class="text-[10px] text-gray-500 mt-1">Generated Hex: <span class="font-mono">${c.data.substring(0,15)}...</span></div>
+          </div>
+        `;
+      } else if (c.type === 'time') {
+        inputsHtml = `
+          <div>
+            <label class="text-[10px] text-emerald-400 uppercase tracking-wide font-bold"><i class="fas fa-clock"></i> Wait Time (Days)</label>
+            <input type="number" value="${c.uiValue}" oninput="updateConditionParam(${i}, 'uiValue', this.value)" placeholder="e.g. 30" class="w-full rounded-lg px-3 py-2 text-sm font-bold mt-1 border-emerald-500/50 bg-emerald-500/5">
+            <div class="text-[10px] text-gray-500 mt-1">Generated Hex: <span class="font-mono">${c.data.substring(0,15)}...</span></div>
+          </div>
+        `;
+      }
+
       container.innerHTML += `
-        <div class="p-4 bg-white/5 border border-white/10 rounded-xl relative">
-          <button onclick="removeCondition(${i})" class="absolute top-2 right-2 text-rose-500 hover:text-rose-400 p-2"><i class="fas fa-times"></i></button>
-          <div class="text-xs font-bold text-emerald-400 mb-3">Evaluator Contract #${i+1}</div>
+        <div class="p-4 bg-white/5 border border-white/10 rounded-xl relative hover:border-white/20 transition-all">
+          <button onclick="removeCondition(${i})" class="absolute top-2 right-2 text-rose-500 hover:text-rose-400 p-2 bg-rose-500/10 rounded-lg"><i class="fas fa-trash"></i></button>
+          
+          <div class="flex items-center gap-3 mb-4 pr-10">
+            <div class="text-xs font-bold text-gray-300 bg-white/10 px-2 py-1 rounded">Rule #${i+1}</div>
+            <select class="rounded-lg px-2 py-1.5 text-xs font-bold bg-white/10 border-none text-white w-full max-w-[200px]" onchange="changeConditionType(${i}, this.value)">
+              <option value="custom" ${c.type === 'custom' ? 'selected' : ''}>Custom Hex (Dev)</option>
+              <option value="price" ${c.type === 'price' ? 'selected' : ''}>Price Target (Template)</option>
+              <option value="time" ${c.type === 'time' ? 'selected' : ''}>Time Lock (Template)</option>
+            </select>
+          </div>
+
           <div class="space-y-3">
-            <div>
-              <label class="text-[10px] text-gray-400 uppercase tracking-wide">Contract Address</label>
-              <input type="text" value="${c.address}" oninput="updateCondition(${i}, 'address', this.value)" placeholder="0x..." class="w-full rounded-lg px-3 py-2 text-xs font-mono mt-1">
-            </div>
-            <div>
-              <label class="text-[10px] text-gray-400 uppercase tracking-wide">Calldata (Hex)</label>
-              <input type="text" value="${c.data}" oninput="updateCondition(${i}, 'data', this.value)" placeholder="0x..." class="w-full rounded-lg px-3 py-2 text-xs font-mono mt-1">
-            </div>
+            ${inputsHtml}
           </div>
         </div>
       `;
@@ -614,8 +764,11 @@
     const rec = document.getElementById('ruleRecipient').value || '0x...';
     const amt = document.getElementById('ruleAmount').value || '0';
     document.getElementById('previewTarget').textContent = rec.substring(0, 8) + '...' + rec.substring(rec.length - 4);
-    document.getElementById('previewAmt').textContent = amt + ' ' + document.getElementById('sponsorBalanceSymbol').textContent;
-    document.getElementById('previewEvalCount').textContent = `${conditions.length} Contracts`;
+    
+    let fiatStr = `(~$${(parseFloat(amt) * currentFiatPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`;
+    document.getElementById('previewAmt').innerHTML = `${amt} ${document.getElementById('sponsorBalanceSymbol').textContent} <span class="text-gray-500 font-normal ml-1">${amt > 0 ? fiatStr : ''}</span>`;
+    
+    document.getElementById('previewEvalCount').textContent = `${conditions.length} Conditions`;
   }
 
   // --- Cloud History loader ---
@@ -637,7 +790,7 @@
       const history = await fetchHistoryFromCloud(userAddress);
       
       if (!history || history.length === 0) {
-        container.innerHTML = `<div class="text-gray-500 italic text-center py-10">No history found for this wallet.</div>`;
+        container.innerHTML = `<div class="text-gray-500 italic text-center py-10 border border-dashed border-white/10 rounded-2xl">No history found for this wallet.</div>`;
         return;
       }
       
@@ -645,25 +798,26 @@
       history.forEach(item => {
         let icon = 'fa-file-contract';
         let color = 'text-emerald-400';
+        let bg = 'bg-emerald-400/10';
         
-        if(item.type === 'Deposit') { icon = 'fa-arrow-down'; color = 'text-cyan-400'; }
-        if(item.type === 'Withdraw') { icon = 'fa-arrow-up'; color = 'text-rose-400'; }
+        if(item.type === 'Deposit') { icon = 'fa-arrow-down'; color = 'text-cyan-400'; bg = 'bg-cyan-400/10'; }
+        if(item.type === 'Withdraw') { icon = 'fa-arrow-up'; color = 'text-rose-400'; bg = 'bg-rose-400/10'; }
 
         container.innerHTML += `
-          <div class="bg-white/5 border border-white/10 p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-white/10 transition">
+          <div class="bg-white/5 border border-white/10 p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-white/10 transition shadow-lg">
             <div class="flex items-center gap-4">
-              <div class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center ${color}">
+              <div class="w-12 h-12 rounded-full ${bg} flex items-center justify-center ${color}">
                 <i class="fas ${icon} text-lg"></i>
               </div>
               <div>
-                <div class="font-bold text-white">${item.type} <span class="text-xs text-gray-500 font-normal ml-2">${new Date(item.timestamp).toLocaleString()}</span></div>
+                <div class="font-bold text-white">${item.type} <span class="text-xs text-gray-500 font-normal ml-2"><i class="far fa-clock"></i> ${new Date(item.timestamp).toLocaleString()}</span></div>
                 <div class="text-sm text-gray-400 mt-1">${item.memo}</div>
-                ${item.conditionsCount !== undefined ? `<div class="text-xs text-emerald-500 mt-1"><i class="fas fa-code-branch mr-1"></i> ${item.conditionsCount} Condition(s)</div>` : ''}
+                ${item.conditionsCount !== undefined ? `<div class="text-xs text-emerald-500 mt-1 bg-emerald-500/10 inline-block px-2 py-0.5 rounded"><i class="fas fa-code-branch mr-1"></i> ${item.conditionsCount} Condition(s)</div>` : ''}
               </div>
             </div>
             <div class="w-full sm:w-auto text-left sm:text-right">
-              <div class="text-lg font-bold text-white mb-1">${item.amount || '0'} <span class="text-xs text-gray-400">Tokens</span></div>
-              <a href="${EXPLORER_URL}${item.hash}" target="_blank" class="text-xs text-cyan-400 bg-cyan-400/10 px-3 py-1.5 rounded-lg hover:bg-cyan-400/20 transition inline-block">
+              <div class="text-lg font-bold text-white mb-1">${item.amount || '0'} <span class="text-xs text-gray-400">${item.token || 'USDC'}</span></div>
+              <a href="${EXPLORER_URL}${item.hash}" target="_blank" class="text-xs text-cyan-400 border border-cyan-400/30 px-3 py-1.5 rounded-lg hover:bg-cyan-400/10 transition inline-block">
                 View Tx <i class="fas fa-external-link-alt ml-1"></i>
               </a>
             </div>
@@ -678,6 +832,7 @@
 
   // Init
   window.addEventListener('load', () => {
+    renderContacts();
     updateDecimals();
     renderConditions();
   });
