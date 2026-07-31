@@ -7,6 +7,9 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  
+  <!-- اتصال به دیتابیس ابری شما -->
+  <script src="db.js"></script>
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -90,6 +93,16 @@
     .light select option { background-color: #ffffff; color: #020617; }
     
     .preview-scroll { max-height: 400px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.2) transparent; }
+
+    /* Custom Styles for Tabs */
+    .tab-btn.active {
+      color: #34d399;
+      border-bottom: 2px solid #34d399;
+    }
+    .light .tab-btn.active {
+      color: #059669;
+      border-bottom: 2px solid #059669;
+    }
   </style>
 </head>
 <body class="text-white min-h-screen selection:bg-emerald-500 selection:text-black">
@@ -97,172 +110,191 @@
   <div class="max-w-7xl mx-auto px-4 py-6 sm:py-8">
     
     <!-- Header -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/10 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/[0.02] border border-white/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
       <div>
-        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight header-title-text">ArcSplit <span class="smart-split-gradient">Enterprise Push Engine</span></h1>
-        <p class="text-gray-400 text-xs sm:text-sm font-semibold">Decentralized Rule-Based Execution via Nested RPN</p>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight header-title-text">ArcSplit <span class="smart-split-gradient">Enterprise</span></h1>
+        <p class="text-gray-400 text-xs sm:text-sm font-semibold">Decentralized Rule-Based Execution</p>
       </div>
       <div class="flex items-center gap-3">
-        <button onclick="toggleTheme()" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 border border-white/10 light:border-black/15 rounded-2xl transition-all">
+        <button onclick="toggleTheme()" class="w-11 h-11 flex items-center justify-center bg-white/5 border border-white/10 rounded-2xl transition-all">
           <i class="fas fa-moon text-lg text-emerald-400"></i>
         </button>
       </div>
     </div>
 
-    <!-- Wallet & Sponsor Hub -->
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-      
-      <!-- Connect -->
-      <div class="glass rounded-3xl p-6 flex flex-col justify-center gap-4">
-        <div class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">1. Connection</div>
-        <button onclick="connectWallet()" id="connectBtn" class="w-full px-6 py-4 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg">
-          <i class="fas fa-wallet text-emerald-600"></i> <span id="connectText">Connect Wallet</span>
-        </button>
-        <button onclick="disconnectWallet()" id="disconnectBtn" class="hidden w-full px-4 py-3 bg-rose-500/10 border border-rose-500/30 text-rose-400 font-bold rounded-2xl transition-all flex items-center justify-center gap-2">
-          <i class="fas fa-power-off"></i> Disconnect
-        </button>
-      </div>
-
-      <!-- Sponsor Balance Hub -->
-      <div class="glass rounded-3xl p-6 lg:col-span-2">
-        <div class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 flex justify-between items-center">
-          <span>2. Sponsor Treasury (Contract Balance)</span>
-          <span id="syncBadge" class="px-2 py-1 bg-rose-500/20 text-rose-400 rounded text-[10px]">Disconnected</span>
-        </div>
-        
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
-          <div>
-            <div class="text-4xl font-extrabold text-emerald-400 flex items-baseline gap-2">
-              <span id="sponsorBalanceDisplay">0.00</span>
-              <span class="text-sm text-gray-400" id="sponsorBalanceSymbol">USDC</span>
-            </div>
-            <p class="text-xs text-gray-500 mt-2">Funds required to sponsor automated push rules.</p>
-          </div>
-          
-          <div class="space-y-3">
-            <div class="flex gap-2">
-              <input type="number" id="hubAmount" placeholder="Amount..." class="w-full rounded-xl px-4 py-3 text-sm font-bold">
-              <select id="hubToken" class="rounded-xl px-3 py-3 text-sm font-bold w-32" onchange="updateDecimals()">
-                <option value="0x3600000000000000000000000000000000000000" data-dec="6">USDC</option>
-                <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a" data-dec="6">EURC</option>
-                <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF" data-dec="8">cirBTC</option>
-              </select>
-            </div>
-            <div class="flex gap-2">
-              <button onclick="depositFunds()" class="flex-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 py-2.5 rounded-xl text-sm font-bold transition-all">Deposit</button>
-              <button onclick="withdrawFunds()" class="flex-1 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/30 py-2.5 rounded-xl text-sm font-bold transition-all">Withdraw</button>
-            </div>
-          </div>
-        </div>
-      </div>
+    <!-- Tab Navigation -->
+    <div class="flex gap-6 mb-8 border-b border-white/10 pb-1">
+      <button onclick="switchTab('dashboard')" id="btn-dashboard" class="tab-btn active pb-2 font-bold text-lg transition-colors duration-200">Dashboard</button>
+      <button onclick="switchTab('history')" id="btn-history" class="tab-btn text-gray-500 hover:text-gray-300 pb-2 font-bold text-lg transition-colors duration-200">History</button>
     </div>
 
-    <!-- Rule Registration Form -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-      
-      <!-- Left Column: Rule Details & Engine -->
-      <div class="lg:col-span-8 space-y-6">
+    <!-- ==================== DASHBOARD TAB ==================== -->
+    <div id="tab-dashboard">
+      <!-- Wallet & Sponsor Hub -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         
-        <div class="glass rounded-3xl p-6">
-          <div class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-5">3. Rule Configuration</div>
-          
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
-            <div>
-              <label class="block text-xs font-bold text-gray-400 mb-2">Recipient Address</label>
-              <input type="text" id="ruleRecipient" placeholder="0x..." class="w-full rounded-xl px-4 py-3 text-sm font-mono">
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-gray-400 mb-2">Amount to Push (per execution)</label>
-              <input type="number" id="ruleAmount" placeholder="e.g. 100" class="w-full rounded-xl px-4 py-3 text-sm font-bold">
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-gray-400 mb-2">Max Relayer Fee (Optional)</label>
-              <input type="number" id="ruleFee" placeholder="e.g. 1" value="0" class="w-full rounded-xl px-4 py-3 text-sm font-bold">
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-gray-400 mb-2">Rule Nonce (Unique ID)</label>
-              <input type="number" id="ruleNonce" placeholder="Auto-generated" class="w-full rounded-xl px-4 py-3 text-sm font-bold">
-            </div>
-          </div>
-
-          <div class="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between gap-4 flex-wrap">
-            <div class="flex items-center gap-3">
-              <label class="relative inline-flex items-center cursor-pointer">
-                <input type="checkbox" id="ruleRecurring" onchange="toggleRecurring()" class="sr-only peer">
-                <div class="w-9 h-5 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
-              </label>
-              <span class="text-sm font-bold text-gray-300">Recurring Payment</span>
-            </div>
-            <div id="cooldownBox" class="hidden flex-1 min-w-[200px] flex items-center gap-2">
-              <label class="text-xs font-bold text-gray-400 whitespace-nowrap">Cooldown (Sec):</label>
-              <input type="number" id="ruleCooldown" placeholder="e.g. 86400 for 1 day" value="0" class="flex-1 rounded-xl px-3 py-2 text-sm font-bold">
-            </div>
-          </div>
-        </div>
-
-        <!-- RPN Evaluator Builder -->
-        <div class="glass rounded-3xl p-6">
-          <div class="flex items-center justify-between mb-5">
-            <div class="text-sm font-bold text-gray-400 uppercase tracking-wider">4. Conditional Evaluators (RPN Engine)</div>
-            <button onclick="addCondition()" class="px-4 py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-bold flex items-center gap-1.5">
-              <i class="fas fa-plus"></i> Add Evaluator
-            </button>
-          </div>
-          
-          <p class="text-xs text-gray-500 mb-4">
-            Conditions are compiled into a Nested Bitwise RPN logic. Multiple evaluators will be processed with an AND (`OP_AND`) logic to ensure all conditions are met before push execution.
-          </p>
-
-          <div id="conditionsContainer" class="space-y-3">
-            <!-- Dynamic Conditions -->
-          </div>
-        </div>
-
-      </div>
-
-      <!-- Right Column: Compile & Register -->
-      <div class="lg:col-span-4 space-y-6">
-        <div class="glass rounded-3xl p-6 sticky top-6">
-          <h3 class="font-bold text-base mb-4 border-b border-white/10 pb-3">Deployment Preview</h3>
-          
-          <div class="space-y-4 mb-6 text-xs preview-scroll">
-            <div class="flex justify-between border-b border-white/5 pb-2">
-              <span class="text-gray-500">Target</span>
-              <span class="font-mono text-emerald-400" id="previewTarget">0x...</span>
-            </div>
-            <div class="flex justify-between border-b border-white/5 pb-2">
-              <span class="text-gray-500">Amount</span>
-              <span class="font-bold text-white" id="previewAmt">0</span>
-            </div>
-            <div class="flex justify-between border-b border-white/5 pb-2">
-              <span class="text-gray-500">RPN Opcodes</span>
-              <span class="font-mono text-cyan-400" id="previewOpcodes">[]</span>
-            </div>
-            <div class="flex justify-between border-b border-white/5 pb-2">
-              <span class="text-gray-500">Evaluators</span>
-              <span class="font-bold text-white" id="previewEvalCount">0 Contracts</span>
-            </div>
-          </div>
-
-          <button id="registerBtn" onclick="registerSmartRule()" class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:brightness-110 py-4 rounded-2xl font-bold text-sm shadow-lg shadow-emerald-500/20 transition-all text-slate-950 flex justify-center items-center gap-2">
-            Register Rule On-Chain
+        <!-- Connect -->
+        <div class="glass rounded-3xl p-6 flex flex-col justify-center gap-4">
+          <div class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">1. Connection</div>
+          <button onclick="connectWallet()" id="connectBtn" class="w-full px-6 py-4 bg-white text-gray-950 font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg">
+            <i class="fas fa-wallet text-emerald-600"></i> <span id="connectText">Connect Wallet</span>
+          </button>
+          <button onclick="disconnectWallet()" id="disconnectBtn" class="hidden w-full px-4 py-3 bg-rose-500/10 border border-rose-500/30 text-rose-400 font-bold rounded-2xl transition-all flex items-center justify-center gap-2">
+            <i class="fas fa-power-off"></i> Disconnect
           </button>
         </div>
+
+        <!-- Balances Hub -->
+        <div class="glass rounded-3xl p-6 lg:col-span-2">
+          <div class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 flex justify-between items-center">
+            <span>2. Treasuries & Balances</span>
+            <span id="syncBadge" class="px-2 py-1 bg-rose-500/20 text-rose-400 rounded text-[10px]">Disconnected</span>
+          </div>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
+            <!-- Balances Display -->
+            <div class="space-y-4">
+              <div>
+                <p class="text-xs text-gray-500 mb-1">Your Wallet Balance</p>
+                <div class="text-2xl font-extrabold text-cyan-400 flex items-baseline gap-2">
+                  <span id="walletBalanceDisplay">0.00</span>
+                  <span class="text-xs text-gray-400">Native</span>
+                </div>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500 mb-1">Contract (Sponsor) Balance</p>
+                <div class="text-3xl font-extrabold text-emerald-400 flex items-baseline gap-2">
+                  <span id="sponsorBalanceDisplay">0.00</span>
+                  <span class="text-sm text-gray-400" id="sponsorBalanceSymbol">USDC</span>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Actions -->
+            <div class="space-y-3">
+              <div class="flex gap-2">
+                <input type="number" id="hubAmount" placeholder="Amount..." class="w-full rounded-xl px-4 py-3 text-sm font-bold">
+                <select id="hubToken" class="rounded-xl px-3 py-3 text-sm font-bold w-32" onchange="updateDecimals()">
+                  <option value="native" data-dec="18">Native</option>
+                  <option value="0x3600000000000000000000000000000000000000" data-dec="6">USDC</option>
+                </select>
+              </div>
+              <div class="flex gap-2">
+                <button onclick="depositFunds()" class="flex-1 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 border border-emerald-500/30 py-2.5 rounded-xl text-sm font-bold transition-all">Deposit</button>
+                <button onclick="withdrawFunds()" class="flex-1 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/30 py-2.5 rounded-xl text-sm font-bold transition-all">Withdraw</button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
+      <!-- Rule Registration Form -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Left Column: Rule Details & Engine -->
+        <div class="lg:col-span-8 space-y-6">
+          <div class="glass rounded-3xl p-6">
+            <div class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-5">3. Rule Configuration</div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
+              <div>
+                <label class="block text-xs font-bold text-gray-400 mb-2">Recipient Address</label>
+                <input type="text" id="ruleRecipient" placeholder="0x..." class="w-full rounded-xl px-4 py-3 text-sm font-mono">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-gray-400 mb-2">Amount to Push</label>
+                <input type="number" id="ruleAmount" placeholder="e.g. 100" class="w-full rounded-xl px-4 py-3 text-sm font-bold">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-gray-400 mb-2">Max Relayer Fee</label>
+                <input type="number" id="ruleFee" placeholder="e.g. 1" value="0" class="w-full rounded-xl px-4 py-3 text-sm font-bold">
+              </div>
+              <div>
+                <label class="block text-xs font-bold text-gray-400 mb-2">Rule Nonce (ID)</label>
+                <input type="number" id="ruleNonce" placeholder="Auto-generated" class="w-full rounded-xl px-4 py-3 text-sm font-bold">
+              </div>
+            </div>
+
+            <div class="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between gap-4 flex-wrap">
+              <div class="flex items-center gap-3">
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" id="ruleRecurring" onchange="toggleRecurring()" class="sr-only peer">
+                  <div class="w-9 h-5 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+                </label>
+                <span class="text-sm font-bold text-gray-300">Recurring Payment</span>
+              </div>
+              <div id="cooldownBox" class="hidden flex-1 min-w-[200px] flex items-center gap-2">
+                <label class="text-xs font-bold text-gray-400 whitespace-nowrap">Cooldown (Sec):</label>
+                <input type="number" id="ruleCooldown" placeholder="e.g. 86400" value="0" class="flex-1 rounded-xl px-3 py-2 text-sm font-bold">
+              </div>
+            </div>
+          </div>
+
+          <!-- RPN Evaluator Builder -->
+          <div class="glass rounded-3xl p-6">
+            <div class="flex items-center justify-between mb-5">
+              <div class="text-sm font-bold text-gray-400 uppercase tracking-wider">4. Conditional Evaluators</div>
+              <button onclick="addCondition()" class="px-4 py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl text-xs font-bold flex items-center gap-1.5">
+                <i class="fas fa-plus"></i> Add Evaluator
+              </button>
+            </div>
+            <div id="conditionsContainer" class="space-y-3"></div>
+          </div>
+        </div>
+
+        <!-- Right Column: Compile & Register -->
+        <div class="lg:col-span-4 space-y-6">
+          <div class="glass rounded-3xl p-6 sticky top-6">
+            <h3 class="font-bold text-base mb-4 border-b border-white/10 pb-3">Deployment Preview</h3>
+            <div class="space-y-4 mb-6 text-xs preview-scroll">
+              <div class="flex justify-between border-b border-white/5 pb-2">
+                <span class="text-gray-500">Target</span>
+                <span class="font-mono text-emerald-400" id="previewTarget">0x...</span>
+              </div>
+              <div class="flex justify-between border-b border-white/5 pb-2">
+                <span class="text-gray-500">Amount</span>
+                <span class="font-bold text-white" id="previewAmt">0</span>
+              </div>
+              <div class="flex justify-between border-b border-white/5 pb-2">
+                <span class="text-gray-500">Evaluators</span>
+                <span class="font-bold text-white" id="previewEvalCount">0 Contracts</span>
+              </div>
+            </div>
+            <button id="registerBtn" onclick="registerSmartRule()" class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:brightness-110 py-4 rounded-2xl font-bold text-sm shadow-lg shadow-emerald-500/20 transition-all text-slate-950 flex justify-center items-center gap-2">
+              Register Rule On-Chain
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
+
+    <!-- ==================== HISTORY TAB ==================== -->
+    <div id="tab-history" class="hidden">
+      <div class="glass rounded-3xl p-6 min-h-[500px]">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-bold text-white">Your Activity History</h2>
+          <button onclick="loadHistoryData()" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold transition">
+            <i class="fas fa-sync-alt mr-1"></i> Refresh
+          </button>
+        </div>
+        
+        <div id="historyContainer" class="space-y-4">
+          <div class="text-gray-500 italic text-center py-10">Connect your wallet to view cloud history.</div>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <!-- Toast Notification -->
-  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#121228] border border-white/15 text-white px-5 py-3 rounded-2xl shadow-2xl z-50 text-sm backdrop-blur-xl font-bold">
+  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#121228] border border-white/15 text-white px-5 py-3 rounded-2xl shadow-2xl z-50 text-sm backdrop-blur-xl font-bold text-center min-w-[300px]">
     <span id="toastText"></span>
   </div>
 
 <script>
   // Core Architecture Configuration
   const CONTRACT_ADDRESS = "0x0ede4363D3B6a0dCfe9c67bA31799D9591567fD0"; 
+  const EXPLORER_URL = "https://testnet.arcscan.app/tx/";
   
-  // Minimal required ABI for the new ArcConditionalSplitter
   const CONTRACT_ABI = [
     "function registerRule(address recipient, uint256 amountToSplit, uint256 maxRelayerFee, uint256 ruleIdNonce, bool isRecurring, uint256 ruleCooldown, uint8[] calldata opcodes, address[] calldata evaluators, bytes[] calldata evaluatorsData) external returns (bytes32)",
     "function balances(address account) external view returns (uint256)",
@@ -273,9 +305,10 @@
   let provider, signer, userAddress = null;
   let contract;
   let conditions = [];
-  let activeDecimals = 6;
+  let activeDecimals = 18; // Default to native initially
 
-  function showToast(msg, duration = 4000) {
+  // --- UI Functions ---
+  function showToast(msg, duration = 6000) {
     const t = document.getElementById("toast");
     document.getElementById("toastText").innerHTML = msg;
     t.classList.remove("hidden");
@@ -286,12 +319,31 @@
     document.documentElement.classList.toggle('light');
   }
 
+  function switchTab(tab) {
+    if (tab === 'dashboard') {
+      document.getElementById('tab-dashboard').classList.remove('hidden');
+      document.getElementById('tab-history').classList.add('hidden');
+      document.getElementById('btn-dashboard').classList.add('active', 'text-emerald-400');
+      document.getElementById('btn-dashboard').classList.remove('text-gray-500');
+      document.getElementById('btn-history').classList.remove('active', 'text-emerald-400');
+      document.getElementById('btn-history').classList.add('text-gray-500');
+    } else {
+      document.getElementById('tab-dashboard').classList.add('hidden');
+      document.getElementById('tab-history').classList.remove('hidden');
+      document.getElementById('btn-history').classList.add('active', 'text-emerald-400');
+      document.getElementById('btn-history').classList.remove('text-gray-500');
+      document.getElementById('btn-dashboard').classList.remove('active', 'text-emerald-400');
+      document.getElementById('btn-dashboard').classList.add('text-gray-500');
+      loadHistoryData();
+    }
+  }
+
   function updateDecimals() {
     const select = document.getElementById('hubToken');
     const selectedOption = select.options[select.selectedIndex];
-    activeDecimals = parseInt(selectedOption.getAttribute('data-dec') || 6);
+    activeDecimals = parseInt(selectedOption.getAttribute('data-dec') || 18);
     document.getElementById('sponsorBalanceSymbol').textContent = selectedOption.text;
-    fetchSponsorBalance();
+    fetchBalances();
   }
 
   function toggleRecurring() {
@@ -301,6 +353,7 @@
     else box.classList.add('hidden');
   }
 
+  // --- Web3 Core ---
   async function connectWallet() {
     if (typeof window.ethereum !== 'undefined') {
       try {
@@ -322,9 +375,7 @@
         badge.className = "px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-[10px] font-bold";
 
         showToast("Wallet Connected!");
-        fetchSponsorBalance();
-        
-        // Auto-gen nonce
+        fetchBalances();
         document.getElementById('ruleNonce').value = Math.floor(Math.random() * 1000000);
       } catch (err) {
         console.error(err);
@@ -339,28 +390,38 @@
     userAddress = null; signer = null; contract = null;
     
     const btn = document.getElementById('connectBtn');
-    btn.className = "w-full px-6 py-4 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg";
+    btn.className = "w-full px-6 py-4 bg-white text-gray-950 font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg";
     document.getElementById('connectText').innerHTML = `Connect Wallet`;
     document.getElementById('disconnectBtn').classList.add('hidden');
     
     document.getElementById('sponsorBalanceDisplay').textContent = "0.00";
+    document.getElementById('walletBalanceDisplay').textContent = "0.00";
+    
     const badge = document.getElementById('syncBadge');
     badge.textContent = "Disconnected";
     badge.className = "px-2 py-1 bg-rose-500/20 text-rose-400 rounded text-[10px] font-bold";
+    document.getElementById('historyContainer').innerHTML = '<div class="text-gray-500 italic text-center py-10">Connect your wallet to view cloud history.</div>';
     showToast("Wallet disconnected.");
   }
 
-  async function fetchSponsorBalance() {
-    if (!contract || !userAddress) return;
+  async function fetchBalances() {
+    if (!contract || !userAddress || !provider) return;
     try {
+      // 1. Fetch Wallet Native Balance
+      const walletBalRaw = await provider.getBalance(userAddress);
+      const displayWalletBal = ethers.formatUnits(walletBalRaw, 18);
+      document.getElementById('walletBalanceDisplay').textContent = parseFloat(displayWalletBal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+
+      // 2. Fetch Sponsor (Contract) Balance
       const balRaw = await contract.balances(userAddress);
       const displayVal = ethers.formatUnits(balRaw, activeDecimals);
       document.getElementById('sponsorBalanceDisplay').textContent = parseFloat(displayVal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 4 });
     } catch (err) {
-      console.error("Failed to fetch balance", err);
+      console.error("Failed to fetch balances", err);
     }
   }
 
+  // --- Transactions ---
   async function depositFunds() {
     if (!signer || !userAddress) return showToast("Connect wallet first!");
     const amt = document.getElementById('hubAmount').value;
@@ -374,11 +435,26 @@
         to: CONTRACT_ADDRESS,
         value: parsedAmt
       });
-      await tx.wait();
       
-      showToast("Deposit Successful!");
-      fetchSponsorBalance();
+      showToast(`Transaction Sent! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-cyan-400 underline mt-2 inline-block'>View on ArcScan Explorer</a>`);
+      await tx.wait(); // Wait for confirmation
+      
+      showToast(`Deposit Successful! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-emerald-400 underline mt-2 inline-block'>View Receipt</a>`);
+      
+      // Update UI Balances
+      await fetchBalances();
       document.getElementById('hubAmount').value = '';
+
+      // Save to Cloud History
+      if (typeof saveHistoryToCloud === 'function') {
+        await saveHistoryToCloud(userAddress, {
+          type: 'Deposit',
+          amount: amt,
+          hash: tx.hash,
+          timestamp: new Date().toISOString(),
+          memo: `Deposited ${amt} tokens to sponsor treasury`
+        });
+      }
     } catch(e) {
       console.error(e);
       showToast("Deposit failed or rejected.");
@@ -392,21 +468,101 @@
     
     try {
       const parsedAmt = ethers.parseUnits(amt.toString(), activeDecimals);
-      showToast("Initiating Withdraw transaction...");
-      
       const tx = await contract.withdraw(parsedAmt);
+      
+      showToast(`Withdraw Tx Sent! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-cyan-400 underline mt-2 inline-block'>View Explorer</a>`);
       await tx.wait();
       
-      showToast("Withdraw Successful!");
-      fetchSponsorBalance();
+      showToast(`Withdraw Successful! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-emerald-400 underline mt-2 inline-block'>View Receipt</a>`);
+      await fetchBalances();
       document.getElementById('hubAmount').value = '';
+
+      if (typeof saveHistoryToCloud === 'function') {
+        await saveHistoryToCloud(userAddress, {
+          type: 'Withdraw',
+          amount: amt,
+          hash: tx.hash,
+          timestamp: new Date().toISOString(),
+          memo: `Withdrew ${amt} tokens from treasury`
+        });
+      }
     } catch(e) {
       console.error(e);
       showToast("Withdraw failed. Check balance.");
     }
   }
 
-  // Conditions Builder Logic
+  async function registerSmartRule() {
+    if (!contract) return showToast("Connect wallet first!");
+    
+    const recipient = document.getElementById('ruleRecipient').value;
+    const amt = document.getElementById('ruleAmount').value;
+    const fee = document.getElementById('ruleFee').value || "0";
+    const nonce = document.getElementById('ruleNonce').value || "0";
+    const isRecurring = document.getElementById('ruleRecurring').checked;
+    const cooldown = document.getElementById('ruleCooldown').value || "0";
+
+    if (!recipient || !ethers.isAddress(recipient)) return showToast("Invalid Recipient Address");
+    if (!amt || amt <= 0) return showToast("Invalid Amount");
+
+    let opcodes = [];
+    let evaluators = [];
+    let evaluatorsData = [];
+
+    conditions.forEach((c, index) => {
+      evaluators.push(c.address || ethers.ZeroAddress);
+      let d = c.data;
+      if (!d.startsWith("0x")) d = "0x" + d;
+      evaluatorsData.push(d);
+      
+      opcodes.push(3); // OP_EVAL
+      if (index > 0) opcodes.push(0); // OP_AND
+    });
+
+    try {
+      const parsedAmt = ethers.parseUnits(amt.toString(), activeDecimals);
+      const parsedFee = ethers.parseUnits(fee.toString(), activeDecimals);
+      
+      const btn = document.getElementById('registerBtn');
+      const ogHtml = btn.innerHTML;
+      btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Submitting...`;
+      btn.disabled = true;
+
+      const tx = await contract.registerRule(
+        recipient, parsedAmt, parsedFee, nonce, isRecurring, cooldown,
+        opcodes, evaluators, evaluatorsData
+      );
+      
+      showToast(`Rule Tx Sent! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-cyan-400 underline mt-2 inline-block'>View on Explorer</a>`);
+      await tx.wait();
+      
+      showToast(`Smart Rule Registered On-Chain! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-emerald-400 underline mt-2 inline-block'>View Receipt</a>`);
+      
+      btn.innerHTML = ogHtml;
+      btn.disabled = false;
+      document.getElementById('ruleNonce').value = Math.floor(Math.random() * 1000000);
+
+      // Save rule to history
+      if (typeof saveHistoryToCloud === 'function') {
+        await saveHistoryToCloud(userAddress, {
+          type: 'New Rule',
+          amount: amt,
+          recipient: recipient,
+          conditionsCount: conditions.length,
+          hash: tx.hash,
+          timestamp: new Date().toISOString(),
+          memo: `Registered ${isRecurring ? 'recurring' : 'one-time'} rule for ${recipient.substring(0,6)}...`
+        });
+      }
+    } catch(e) {
+      console.error(e);
+      showToast("Transaction failed. Check console.");
+      document.getElementById('registerBtn').innerHTML = `Register Rule On-Chain`;
+      document.getElementById('registerBtn').disabled = false;
+    }
+  }
+
+  // --- Condition Builder ---
   function addCondition() {
     conditions.push({ address: '', data: '0x' });
     renderConditions();
@@ -451,89 +607,72 @@
     updatePreview();
   }
 
-  // Real-time Event Listeners for Preview
   document.getElementById('ruleRecipient').addEventListener('input', updatePreview);
   document.getElementById('ruleAmount').addEventListener('input', updatePreview);
 
   function updatePreview() {
     const rec = document.getElementById('ruleRecipient').value || '0x...';
     const amt = document.getElementById('ruleAmount').value || '0';
-    
     document.getElementById('previewTarget').textContent = rec.substring(0, 8) + '...' + rec.substring(rec.length - 4);
     document.getElementById('previewAmt').textContent = amt + ' ' + document.getElementById('sponsorBalanceSymbol').textContent;
-    
     document.getElementById('previewEvalCount').textContent = `${conditions.length} Contracts`;
-    
-    let ops = [];
-    if (conditions.length > 0) {
-      conditions.forEach((_, idx) => {
-        ops.push("OP_EVAL(3)");
-        if (idx > 0) ops.push("OP_AND(0)");
-      });
-    }
-    document.getElementById('previewOpcodes').textContent = `[${ops.join(', ')}]`;
   }
 
-  async function registerSmartRule() {
-    if (!contract) return showToast("Connect wallet first!");
+  // --- Cloud History loader ---
+  async function loadHistoryData() {
+    const container = document.getElementById('historyContainer');
+    if (!userAddress) {
+      container.innerHTML = `<div class="text-gray-500 italic text-center py-10">Please connect wallet first.</div>`;
+      return;
+    }
     
-    const recipient = document.getElementById('ruleRecipient').value;
-    const amt = document.getElementById('ruleAmount').value;
-    const fee = document.getElementById('ruleFee').value || "0";
-    const nonce = document.getElementById('ruleNonce').value || "0";
-    const isRecurring = document.getElementById('ruleRecurring').checked;
-    const cooldown = document.getElementById('ruleCooldown').value || "0";
+    if (typeof fetchHistoryFromCloud !== 'function') {
+      container.innerHTML = `<div class="text-rose-500 italic text-center py-10">Error: Database connection (db.js) not found.</div>`;
+      return;
+    }
 
-    if (!recipient || !ethers.isAddress(recipient)) return showToast("Invalid Recipient Address");
-    if (!amt || amt <= 0) return showToast("Invalid Amount");
-
-    // Compile RPN
-    let opcodes = [];
-    let evaluators = [];
-    let evaluatorsData = [];
-
-    conditions.forEach((c, index) => {
-      evaluators.push(c.address || ethers.ZeroAddress);
-      let d = c.data;
-      if (!d.startsWith("0x")) d = "0x" + d;
-      evaluatorsData.push(d);
-      
-      opcodes.push(3); // OP_EVAL
-      if (index > 0) opcodes.push(0); // OP_AND
-    });
-
+    container.innerHTML = `<div class="text-emerald-400 text-center py-10"><i class="fas fa-spinner fa-spin text-2xl"></i><p class="mt-2 text-sm">Loading history...</p></div>`;
+    
     try {
-      const parsedAmt = ethers.parseUnits(amt.toString(), activeDecimals);
-      const parsedFee = ethers.parseUnits(fee.toString(), activeDecimals);
+      const history = await fetchHistoryFromCloud(userAddress);
       
-      const btn = document.getElementById('registerBtn');
-      const ogHtml = btn.innerHTML;
-      btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Submitting...`;
-      btn.disabled = true;
+      if (!history || history.length === 0) {
+        container.innerHTML = `<div class="text-gray-500 italic text-center py-10">No history found for this wallet.</div>`;
+        return;
+      }
+      
+      container.innerHTML = '';
+      history.forEach(item => {
+        let icon = 'fa-file-contract';
+        let color = 'text-emerald-400';
+        
+        if(item.type === 'Deposit') { icon = 'fa-arrow-down'; color = 'text-cyan-400'; }
+        if(item.type === 'Withdraw') { icon = 'fa-arrow-up'; color = 'text-rose-400'; }
 
-      const tx = await contract.registerRule(
-        recipient,
-        parsedAmt,
-        parsedFee,
-        nonce,
-        isRecurring,
-        cooldown,
-        opcodes,
-        evaluators,
-        evaluatorsData
-      );
-      
-      await tx.wait();
-      showToast("Smart Rule Successfully Registered On-Chain!");
-      
-      btn.innerHTML = ogHtml;
-      btn.disabled = false;
-      document.getElementById('ruleNonce').value = Math.floor(Math.random() * 1000000); // gen new nonce
-    } catch(e) {
+        container.innerHTML += `
+          <div class="bg-white/5 border border-white/10 p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-white/10 transition">
+            <div class="flex items-center gap-4">
+              <div class="w-12 h-12 rounded-full bg-white/5 flex items-center justify-center ${color}">
+                <i class="fas ${icon} text-lg"></i>
+              </div>
+              <div>
+                <div class="font-bold text-white">${item.type} <span class="text-xs text-gray-500 font-normal ml-2">${new Date(item.timestamp).toLocaleString()}</span></div>
+                <div class="text-sm text-gray-400 mt-1">${item.memo}</div>
+                ${item.conditionsCount !== undefined ? `<div class="text-xs text-emerald-500 mt-1"><i class="fas fa-code-branch mr-1"></i> ${item.conditionsCount} Condition(s)</div>` : ''}
+              </div>
+            </div>
+            <div class="w-full sm:w-auto text-left sm:text-right">
+              <div class="text-lg font-bold text-white mb-1">${item.amount || '0'} <span class="text-xs text-gray-400">Tokens</span></div>
+              <a href="${EXPLORER_URL}${item.hash}" target="_blank" class="text-xs text-cyan-400 bg-cyan-400/10 px-3 py-1.5 rounded-lg hover:bg-cyan-400/20 transition inline-block">
+                View Tx <i class="fas fa-external-link-alt ml-1"></i>
+              </a>
+            </div>
+          </div>
+        `;
+      });
+    } catch (e) {
       console.error(e);
-      showToast("Transaction failed. Check console.");
-      document.getElementById('registerBtn').innerHTML = `Register Rule On-Chain`;
-      document.getElementById('registerBtn').disabled = false;
+      container.innerHTML = `<div class="text-rose-500 italic text-center py-10">Failed to load history from cloud.</div>`;
     }
   }
 
