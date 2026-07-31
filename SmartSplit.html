@@ -39,7 +39,7 @@
       background-image: 
         radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.05) 0%, transparent 40%),
         radial-gradient(circle at 90% 80%, rgba(34, 211, 238, 0.05) 0%, transparent 40%) !important;
-      color: #020617 !important;
+      color: #000000 !important;
     }
 
     .light .glass {
@@ -50,10 +50,10 @@
 
     .light body, .light h3, .light label, .light span, .light div,
     .light .text-white, .light .text-gray-400, .light .text-gray-300 { 
-      color: #0f172a !important; 
+      color: #000000 !important; 
     }
     
-    .light .text-gray-400 { color: #334155 !important; font-weight: 600 !important; }
+    .light .text-gray-400 { color: #000000 !important; font-weight: 700 !important; }
     
     .header-title-text, .smart-split-gradient,
     .light .header-title-text, .light .smart-split-gradient { color: #ffffff !important; }
@@ -75,9 +75,9 @@
       border: 1px solid rgba(16, 185, 129, 0.3) !important;
       color: #34d399 !important;
     }
-    .light .wallet-connected-glass span, .light .wallet-connected-glass i { color: #34d399 !important; }
+    .light .wallet-connected-glass span, .light .wallet-connected-glass i { color: #059669 !important; }
 
-    #toast, .light #toast { background: #121228 !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; color: #ffffff !important; }
+    #toast, .light #toast { background: #000000 !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; color: #ffffff !important; }
     .light #toast span { color: #ffffff !important; }
 
     select, input {
@@ -88,9 +88,9 @@
     }
     select:focus, input:focus { border-color: #10b981; box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15); outline: none; }
     
-    .light select, .light input { background-color: #ffffff; color: #020617; border: 1px solid #94a3b8; font-weight: 600; }
+    .light select, .light input { background-color: #ffffff; color: #000000; border: 1px solid #000000; font-weight: 700; }
     select option { background-color: #0f172a; color: white; padding: 10px; }
-    .light select option { background-color: #ffffff; color: #020617; }
+    .light select option { background-color: #ffffff; color: #000000; }
     
     .preview-scroll { max-height: 400px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.2) transparent; }
 
@@ -100,7 +100,7 @@
     }
     .light .tab-btn.active {
       color: #059669;
-      border-bottom: 2px solid #059669;
+      border-bottom: 2px solid #000000;
     }
   </style>
 </head>
@@ -409,21 +409,19 @@
     document.querySelectorAll('.walletBalanceSymbol').forEach(el => el.textContent = tokenSymbol);
 
     if (provider && tokenAddress) {
-      // Fix USDC/Native decimal issue
       if (tokenAddress.toLowerCase() === "0x3600000000000000000000000000000000000000") {
           activeDecimals = 18; 
       } else {
           try {
             const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
-            activeDecimals = Number(await tokenContract.decimals()); // Safely convert BigInt
+            activeDecimals = Number(await tokenContract.decimals());
           } catch (e) {
             console.warn("Could not fetch decimals automatically, defaulting to 18.", e);
-            activeDecimals = 18; // Defaulting to 18 is safer for EVM tokens
+            activeDecimals = 18; 
           }
       }
     }
     
-    // Refresh balances after switching tokens
     fetchBalances();
   }
 
@@ -490,8 +488,6 @@
         const badge = document.getElementById('syncBadge');
         badge.textContent = "Synced";
         badge.className = "px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-[10px] font-bold";
-
-        showToast("Wallet Connected!");
         
         await updateTokenInfo(); 
         document.getElementById('ruleNonce').value = Math.floor(Math.random() * 1000000);
@@ -499,7 +495,7 @@
         window.ethereum.on('chainChanged', () => window.location.reload());
         window.ethereum.on('accountsChanged', () => window.location.reload());
       } catch (err) {
-        showToast("Connection failed. Please check MetaMask.");
+        console.warn("Connection failed or user rejected.", err);
       }
     } else {
       showToast("MetaMask not found.");
@@ -527,7 +523,6 @@
     showToast("Wallet disconnected.");
   }
 
-  // Modified Fetch Balance with 3-Retry Mechanism (Robust)
   async function fetchBalances(retries = 3) {
     if (!contract || !userAddress || !provider) return;
 
@@ -552,6 +547,7 @@
         document.getElementById('walletBalanceDisplay').textContent = parseFloat(displayWalletBal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
         document.getElementById('walletFiat').textContent = `~$${(parseFloat(displayWalletBal) * currentFiatPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
+        // Get Sponsor Balance using contract ABI specification 
         const balRaw = await contract.balances(userAddress);
         const displayVal = ethers.formatUnits(balRaw, activeDecimals);
         document.getElementById('sponsorBalanceDisplay').textContent = parseFloat(displayVal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
@@ -560,7 +556,7 @@
         updatePreview();
         badge.textContent = "Synced";
         badge.className = "px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-[10px] font-bold";
-        return; // Success, exit retry loop
+        return; 
         
       } catch (err) {
         console.warn(`Balance fetch attempt ${i+1} failed:`, err);
@@ -568,7 +564,6 @@
             badge.textContent = "Sync Error";
             badge.className = "px-2 py-1 bg-rose-500/20 text-rose-400 rounded text-[10px] font-bold";
         } else {
-            // Wait 1.5 second before retrying
             await new Promise(r => setTimeout(r, 1500));
         }
       }
@@ -599,7 +594,6 @@
       showToast(`Transaction Sent! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-cyan-400 underline mt-2 inline-block font-normal'>View Explorer</a>`);
       await tx.wait(); 
       
-      // Included deposited Token Symbol in the Toast
       showToast(`Deposit of ${amt} ${tokenSymbol} Successful! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-emerald-400 underline mt-2 inline-block font-normal'>View Receipt</a>`);
       
       await fetchBalances(); 
@@ -635,7 +629,6 @@
       showToast(`Withdraw Tx Sent! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-cyan-400 underline mt-2 inline-block font-normal'>View Explorer</a>`);
       await tx.wait();
       
-      // Included withdrawn Token Symbol in the Toast
       showToast(`Withdrawal of ${amt} ${tokenSymbol} Successful!`);
       await fetchBalances();
       document.getElementById('hubAmount').value = '';
@@ -852,7 +845,6 @@
     document.getElementById('previewEvalCount').textContent = `${conditions.length} Conditions`;
   }
 
-  // Modified Cloud History with Filtering
   async function loadHistoryData() {
     const container = document.getElementById('historyContainer');
     if (!userAddress) {
@@ -913,10 +905,21 @@
     }
   }
 
-  // Init
-  window.addEventListener('load', () => {
+  // Init + Auto Connect Session Restoration
+  window.addEventListener('load', async () => {
     renderContacts();
     renderConditions();
+
+    if (typeof window.ethereum !== 'undefined') {
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        if (accounts && accounts.length > 0) {
+          await connectWallet(); 
+        }
+      } catch (err) {
+        console.warn("Auto-connect failed or user needs to manually trigger:", err);
+      }
+    }
   });
 </script>
 </body>
