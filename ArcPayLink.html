@@ -7,6 +7,10 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  
+  <!-- اتصال به فایل ابری دیتابیس شما -->
+  <script src="db.js"></script>
+  
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 
   <style>
@@ -49,6 +53,9 @@
     .light body, .light h1, .light h3, .light label, .light .text-white { color: #0f172a; }
     .light .text-gray-400 { color: #64748b !important; }
     .light .text-gray-300 { color: #475569 !important; }
+
+    /* کلاس مخصوص برای سفید ماندن متون بخش Preview در هر دو حالت */
+    .always-white { color: #ffffff !important; }
 
     select, input, textarea {
       background-color: rgba(255, 255, 255, 0.02);
@@ -286,7 +293,8 @@
                 <i class="fas fa-paper-plane text-emerald-400 text-xl -ml-1"></i>
               </div>
               
-              <div id="prevTitle" class="text-lg font-bold text-white max-w-[200px] mx-auto truncate">Payment Request</div>
+              <!-- اضافه شدن کلاس always-white به بخش‌های درخواستی -->
+              <div id="prevTitle" class="text-lg font-bold text-white max-w-[200px] mx-auto truncate always-white">Payment Request</div>
               
               <div class="py-2">
                 <div class="text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-bold">Amount</div>
@@ -296,15 +304,15 @@
               <div class="bg-white/5 light:bg-white rounded-2xl p-4 text-xs space-y-3 text-left border border-white/5 light:border-slate-100">
                 <div class="flex justify-between items-center text-gray-400">
                   <span>From</span>
-                  <span id="prevSender" class="font-mono text-white bg-black/20 light:bg-slate-100 px-2 py-1 rounded-md">Not Connected</span>
+                  <span id="prevSender" class="font-mono text-white bg-black/20 light:bg-slate-100 px-2 py-1 rounded-md always-white">Not Connected</span>
                 </div>
                 <div class="flex justify-between items-center text-gray-400">
                   <span>Note</span>
-                  <span id="prevDesc" class="text-white truncate max-w-[140px] font-medium">—</span>
+                  <span id="prevDesc" class="text-white truncate max-w-[140px] font-medium always-white">—</span>
                 </div>
                 <div class="flex justify-between items-center text-gray-400">
                   <span>Valid Until</span>
-                  <span id="prevExpires" class="text-white font-medium text-emerald-400">Never</span>
+                  <span id="prevExpires" class="text-white font-medium always-white">Never</span>
                 </div>
               </div>
 
@@ -326,7 +334,7 @@
       <div class="glass rounded-[2rem] p-6 sm:p-8 space-y-6 min-h-[500px]">
         <div class="flex items-center justify-between">
           <h3 class="font-bold text-lg flex items-center gap-2"><i class="fas fa-history text-emerald-400"></i> Your Payment Links</h3>
-          <button onclick="clearHistory()" class="text-xs text-rose-400 hover:text-rose-300 transition-colors bg-rose-500/10 px-3 py-1.5 rounded-lg">Clear Local History</button>
+          <button onclick="clearHistory()" class="text-xs text-rose-400 hover:text-rose-300 transition-colors bg-rose-500/10 px-3 py-1.5 rounded-lg">Clear History</button>
         </div>
         
         <div id="historyTableBody" class="space-y-4">
@@ -375,21 +383,46 @@
   let userAddress = null;
   let provider = null;
   let isProcessing = false;
-  let currentLinks = JSON.parse(localStorage.getItem('arcPaymentLinksV2') || '[]');
+  let currentLinks = [];
   let rawBalance = 0n;
 
-  // NEW ABI for ArcPayLink 
+  // توابع ارتباط با db.js برای ذخیره در فضای ابری (اگر تعریف نشده باشد، از لوکال مرورگر استفاده می‌شود)
+  async function fetchLinks() {
+    try {
+      if (typeof window.loadFromCloudDB === 'function') {
+        const data = await window.loadFromCloudDB();
+        if (data && Array.isArray(data)) return data;
+      }
+    } catch(e) { console.error("Cloud DB load error", e); }
+    return JSON.parse(localStorage.getItem('arcPaymentLinksV2') || '[]');
+  }
+
+  async function saveLinks(links) {
+    try {
+      if (typeof window.saveToCloudDB === 'function') {
+        await window.saveToCloudDB(links);
+      }
+    } catch(e) { console.error("Cloud DB save error", e); }
+    localStorage.setItem('arcPaymentLinksV2', JSON.stringify(links));
+  }
+
+  // ABI به‌روزشده به همراه قابلیت خواندن وضعیت لینک از بلاک‌چین
   const ArcPayLinkABI = [
     "function createLink(address linkId, address token, uint256 amount, uint40 expiration) external payable",
-    "event LinkCreated(address indexed linkId, address indexed creator, address indexed token, uint256 amount, uint40 expiration)"
+    "event LinkCreated(address indexed linkId, address indexed creator, address indexed token, uint256 amount, uint40 expiration)",
+    "function links(address) view returns (uint256 amount, address token, uint40 expiration, uint8 status, address creator)"
   ];
 
   window.addEventListener('load', async () => {
+    // بارگذاری لینک‌ها در ابتدای ورود از طریق دیتابیس ابری
+    currentLinks = await fetchLinks();
+
     if (window.ethereum && window.ethereum.selectedAddress) {
       setTimeout(connectWallet, 500);
+    } else {
+      renderHistory();
     }
     updatePreview();
-    renderHistory();
   });
 
   async function connectWallet() {
@@ -425,6 +458,9 @@
       notify("Success", "Wallet Connected Successfully", "fa-check-circle");
       await loadUserBalance();
       updatePreview();
+      
+      // بارگذاری مجدد تاریخچه پس از اتصال تا وضعیت آنلاین از بلاک‌چین خوانده شود
+      renderHistory();
 
     } catch (e) {
       console.error(e);
@@ -469,18 +505,15 @@
     if (!signer || !userAddress) return;
     const select = document.getElementById('tokenSelect');
     const tokenAddress = select.value;
-    const tokenSymbol = select.options[select.selectedIndex].text.split(' ')[0];
 
     try {
       document.getElementById("tokenBalanceDisplay").textContent = `Loading...`;
       
       if (tokenAddress.toLowerCase() === NATIVE_USDC.toLowerCase() || tokenAddress === ethers.ZeroAddress) {
-        // Fetch Native Balance (USDC on Arc L1)
         rawBalance = await provider.getBalance(userAddress);
-        const formatted = ethers.formatEther(rawBalance); // Native uses 18 decimals conventionally unless specified
+        const formatted = ethers.formatEther(rawBalance); 
         document.getElementById("tokenBalanceDisplay").innerHTML = `Balance: <span class="text-white">${parseFloat(formatted).toFixed(4)}</span>`;
       } else {
-        // Fetch ERC20 Balance
         const contract = new ethers.Contract(tokenAddress, ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"], signer);
         const [bal, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
         rawBalance = bal;
@@ -498,20 +531,16 @@
     if (!signer) return notify("Error", "Connect wallet first", "fa-wallet", true);
     if (rawBalance === 0n) return;
     
-    // Simplification: Not factoring in exact gas for native token in this UI snippet, 
-    // real app might want to leave a small buffer for gas if it's the native token.
     const select = document.getElementById('tokenSelect');
     const tokenAddress = select.value;
     let maxStr = "0";
 
     if (tokenAddress.toLowerCase() === NATIVE_USDC.toLowerCase()) {
-      // Leave 0.01 for gas buffer rough estimate
       const buffer = ethers.parseEther("0.01");
       const safeBalance = rawBalance > buffer ? rawBalance - buffer : 0n;
       maxStr = ethers.formatEther(safeBalance);
     } else {
-      // For ERC20, assume 18 decimals unless queried (ideal to store decimals in state)
-      maxStr = ethers.formatEther(rawBalance); // Warning: assumes 18 decimals.
+      maxStr = ethers.formatEther(rawBalance);
     }
     
     document.getElementById('fixedAmountInput').value = parseFloat(maxStr).toFixed(6);
@@ -572,7 +601,6 @@
         amountWei = ethers.parseUnits(amountInput.toString(), 18);
       }
 
-      // Generate Ephemeral Key Pair for the Link ID
       const ephemeralWallet = ethers.Wallet.createRandom();
       const generatedLinkId = ephemeralWallet.address;
       const privateKey = ephemeralWallet.privateKey;
@@ -597,7 +625,6 @@
       notify("Info", "Transaction pending...", "fa-circle-notch fa-spin");
       const receipt = await tx.wait();
 
-      // Construct final URL with Private Key for claiming
       const finalUrl = `https://arcsplit.kamkazi-1297.workers.dev/pay?id=${generatedLinkId}&pk=${privateKey}`;
 
       const newLink = {
@@ -611,11 +638,11 @@
         status: "Active",
         createdAt: Date.now(),
         url: finalUrl,
-        pk: privateKey // Stored locally so creator doesn't lose it
+        pk: privateKey 
       };
 
       currentLinks.unshift(newLink);
-      localStorage.setItem('arcPaymentLinksV2', JSON.stringify(currentLinks));
+      await saveLinks(currentLinks); // ذخیره در دیتابیس ابری (یا مرورگر)
 
       showSuccessModal(newLink);
       renderHistory();
@@ -689,7 +716,6 @@
     const modal = document.getElementById('successModal');
     const content = document.getElementById('modalContent');
     modal.classList.remove('hidden');
-    // Micro interaction trigger
     setTimeout(() => {
       content.classList.remove('scale-95');
       content.classList.add('scale-100');
@@ -741,7 +767,8 @@
       : "flex-1 px-5 py-2.5 rounded-xl text-sm font-bold transition-all text-gray-400 hover:text-white light:hover:text-black";
   }
 
-  function renderHistory() {
+  // نمایش تاریخچه با قابلیت خواندن وضعیت هوشمند از شبکه بلاک‌چین
+  async function renderHistory() {
     const container = document.getElementById('historyTableBody');
     if (currentLinks.length === 0) {
       container.innerHTML = `
@@ -753,12 +780,49 @@
       return;
     }
     
-    container.innerHTML = currentLinks.map(link => {
-      const isExpired = link.expiration > 0 && (Date.now() / 1000) > link.expiration;
-      const statusColor = isExpired ? 'text-rose-400 bg-rose-400/10' : 'text-emerald-400 bg-emerald-400/10';
-      const statusText = isExpired ? 'Expired' : 'Active';
+    // وضعیت لودینگ هنگام دریافت اطلاعات از بلاک‌چین
+    container.innerHTML = `<div class="flex justify-center items-center py-10"><div class="spinner mr-3"></div><span class="text-gray-400 text-sm">Fetching live statuses...</span></div>`;
+
+    let readContract = null;
+    if (provider) {
+       readContract = new ethers.Contract(CONTRACT_ADDRESS, ArcPayLinkABI, provider);
+    } else if (window.ethereum) {
+       try {
+         const tempProvider = new ethers.BrowserProvider(window.ethereum);
+         readContract = new ethers.Contract(CONTRACT_ADDRESS, ArcPayLinkABI, tempProvider);
+       } catch(e) {}
+    }
+
+    let html = '';
+    
+    for (let link of currentLinks) {
+      let isExpired = link.expiration > 0 && (Date.now() / 1000) > link.expiration;
+      let statusColor = isExpired ? 'text-rose-400 bg-rose-400/10' : 'text-emerald-400 bg-emerald-400/10';
+      let statusText = isExpired ? 'Expired' : 'Active';
+
+      // بررسی وضعیت روی شبکه به صورت زنده
+      if (readContract) {
+         try {
+            const linkData = await readContract.links(link.id);
+            const onChainStatus = Number(linkData[3]);
+            if (onChainStatus === 2) { // 2 = Claimed
+               statusText = 'Claimed';
+               statusColor = 'text-rose-500 bg-rose-500/10'; // رنگ قرمز مخصوص
+            } else if (onChainStatus === 3) {
+               statusText = 'Cancelled';
+               statusColor = 'text-rose-500 bg-rose-500/10';
+            } else if (onChainStatus === 1 && !isExpired) {
+               statusText = 'Active';
+               statusColor = 'text-emerald-400 bg-emerald-400/10';
+            }
+         } catch (e) {
+            console.warn("Could not read status for link", link.id);
+         }
+      }
+
+      const txLinkUrl = link.txHash ? `https://testnet.arcscan.app/tx/${link.txHash}` : '#';
       
-      return `
+      html += `
       <div class="bg-white/5 border border-white/5 p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-white/10 transition-colors">
         <div class="flex items-start gap-4">
           <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 flex items-center justify-center flex-shrink-0 mt-1">
@@ -769,20 +833,26 @@
               ${link.title} <span class="text-[10px] px-2 py-0.5 rounded-md font-bold uppercase ${statusColor}">${statusText}</span>
             </div>
             <div class="text-gray-400 text-sm mt-1">${link.amount} ${link.token} • ${new Date(link.createdAt).toLocaleDateString()}</div>
-            <div class="text-gray-500 text-xs mt-1 font-mono">${link.id.slice(0,10)}...</div>
+            <div class="text-gray-500 text-xs mt-2 font-mono flex flex-wrap items-center gap-x-4 gap-y-2">
+              <span>ID: ${link.id.slice(0,10)}...</span>
+              ${link.txHash ? `<a href="${txLinkUrl}" target="_blank" class="text-cyan-400 hover:text-cyan-300 transition-colors inline-flex items-center gap-1.5 px-2 py-1 bg-cyan-500/10 rounded-lg"><i class="fas fa-external-link-alt"></i> View Tx</a>` : ''}
+            </div>
           </div>
         </div>
         <div class="flex items-center gap-2 w-full sm:w-auto">
           <button onclick="navigator.clipboard.writeText('${link.url}'); notify('Success', 'Link copied!', 'fa-check');" class="flex-1 sm:flex-none px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl font-semibold text-sm transition-colors">Copy URL</button>
         </div>
       </div>
-    `}).join('');
+    `
+    }
+    
+    container.innerHTML = html;
   }
 
-  function clearHistory() {
-    if(confirm("Are you sure you want to clear your local history? You won't be able to retrieve lost private keys for active links!")) {
-      localStorage.removeItem('arcPaymentLinksV2');
+  async function clearHistory() {
+    if(confirm("Are you sure you want to clear your history? You won't be able to retrieve lost private keys for active links!")) {
       currentLinks = [];
+      await saveLinks(currentLinks);
       renderHistory();
     }
   }
@@ -796,7 +866,6 @@
     
     toast.classList.remove("hidden", "translate-y-full", "opacity-0");
     
-    // Clear existing timeout if multiple toasts
     if(window.toastTimer) clearTimeout(window.toastTimer);
     
     window.toastTimer = setTimeout(() => {
