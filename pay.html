@@ -229,7 +229,7 @@
           name: 'ArcPayLink',
           version: '1',
           chainId: ARC_CHAIN_ID,
-          verifyingContract: CONTRACT_ADDRESS
+          verifyingContract: CONTRACT_ADDRESS // 0x9B438F8Aa736Ed685e7aFF84eB173A9bb7c08320
         };
 
         const types = {
@@ -237,36 +237,60 @@
             { name: 'linkId', type: 'address' },
             { name: 'destination', type: 'address' },
             { name: 'feeAmount', type: 'uint256' },
-            { name: 'relayer', type: 'address' }
+            { name: 'relayer', type: 'address' } 
           ]
         };
 
         const feeAmount = 0; 
+        
+      
+        const RELAYER_WALLET_ADDRESS = "0xc33ff8266DC0B7EB83FCE44bA37B30e39B75577e"; 
+
         const values = {
           linkId: linkId,
           destination: userAddress,
           feeAmount: feeAmount,
-          relayer: userAddress 
+          relayer: RELAYER_WALLET_ADDRESS
         };
 
         const ephemeralWallet = new ethers.Wallet(privateKey);
         const signature = await ephemeralWallet.signTypedData(domain, types, values);
 
-        const contract = new ethers.Contract(CONTRACT_ADDRESS, ArcPayLinkABI, signer);
+        btnText.innerHTML = '<div class="spinner mr-2"></div> Sending to Relayer...';
+
         
-        const tx = await contract.claimLink(linkId, userAddress, feeAmount, signature);
+        const WORKER_URL = "https://pay-relayer.kamkazi-1297.workers.dev/";
+        
+        const response = await fetch(WORKER_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            linkId: linkId,
+            destination: userAddress,
+            feeAmount: feeAmount,
+            signature: signature
+          })
+        });
+
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.error);
+        }
+
         btnText.innerHTML = '<div class="spinner mr-2"></div> Confirming in Network...';
         
-        const receipt = await tx.wait(); // صبر کردن تا تراکنش در بلاک‌چین ثبت شود
+        // منتظر ماندن برای تایید تراکنش در شبکه بلاک‌چین
+        const receipt = await provider.waitForTransaction(data.txHash);
 
         // موفقیت!
         document.getElementById('statusDisplay').textContent = "Claimed Successfully";
         showSuccess("Funds successfully transferred to your wallet!");
         btnText.innerHTML = '<i class="fas fa-check"></i> Claimed';
         
-        // نمایش دکمه لینک اکسپلورر
+        // نمایش لینک تراکنش در اکسپلورر شبکه Arc
         const txHashLink = document.getElementById('txHashLink');
-        txHashLink.href = `https://testnet.arcscan.app/tx/${tx.hash}`;
+        txHashLink.href = `https://testnet.arcscan.app/tx/${data.txHash}`;
         document.getElementById('txHashContainer').classList.remove('hidden');
 
       } catch (error) {
@@ -274,10 +298,8 @@
         btnText.innerHTML = '<i class="fas fa-bolt"></i> Claim Funds';
         document.getElementById('claimBtn').disabled = false;
         
-        if (error.reason) {
-          showError(error.reason);
-        } else if (error.code === 'ACTION_REJECTED') {
-          showError("Transaction rejected by user.");
+        if (error.reason || error.message) {
+          showError(error.reason || error.message);
         } else {
           showError("Failed to claim funds. Link might be used or expired.");
         }
