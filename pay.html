@@ -2,445 +2,228 @@
 <html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ArcPay - Secure Payment Link</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+  <title>ArcPay - Claim Payment</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
     
     body { 
-      font-family: 'Inter', system-ui, -apple-system, sans-serif; 
-      background: #070711;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif; 
+      background: #05050a;
       background-image: 
-        radial-gradient(circle at 10% 20%, rgba(16, 185, 129, 0.08) 0%, transparent 40%),
-        radial-gradient(circle at 90% 80%, rgba(34, 211, 238, 0.08) 0%, transparent 40%);
+        radial-gradient(circle at 15% 25%, rgba(16, 185, 129, 0.05) 0%, transparent 45%),
+        radial-gradient(circle at 85% 75%, rgba(34, 211, 238, 0.05) 0%, transparent 45%);
       color: #f8fafc;
       min-height: 100vh;
     }
     
     .glass {
-      background: rgba(18, 18, 38, 0.75);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+      background: rgba(18, 18, 28, 0.7);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      box-shadow: 0 24px 40px -12px rgba(0, 0, 0, 0.5);
     }
 
-    .skeleton {
-      background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.5s infinite;
-      border-radius: 8px;
+    .spinner {
+      border: 3px solid rgba(255,255,255,0.1);
+      border-left-color: #fff;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
     }
-
-    @keyframes shimmer {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
-    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   </style>
 </head>
-<body class="flex flex-col min-h-screen justify-between items-center px-4 py-6">
+<body class="flex items-center justify-center p-4">
 
-  <!-- Toast Notification -->
-  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#121228] border border-white/15 text-white px-5 py-3 rounded-2xl shadow-2xl flex items-center gap-3 z-50 text-xs sm:text-sm backdrop-blur-xl">
-    <span id="toastText"></span>
-  </div>
-
-  <!-- Confirm Payment Modal -->
-  <div id="confirmModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-50 p-4">
-    <div class="glass rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-6">
-      <div class="flex justify-between items-center pb-4 border-b border-white/10">
-        <h3 class="font-bold text-base">Confirm Payment</h3>
-        <button onclick="closeModal()" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
-      </div>
-      
-      <div class="space-y-4 text-xs">
-        <div class="flex justify-between bg-white/[0.02] p-3 rounded-xl border border-white/5">
-          <span class="text-gray-400">Amount</span>
-          <span id="modalAmount" class="font-bold text-emerald-400 text-sm">—</span>
-        </div>
-        <div class="flex justify-between bg-white/[0.02] p-3 rounded-xl border border-white/5">
-          <span class="text-gray-400">Recipient</span>
-          <span id="modalRecipient" class="font-mono text-white">0x...</span>
-        </div>
-        <div class="flex justify-between bg-white/[0.02] p-3 rounded-xl border border-white/5">
-          <span class="text-gray-400">Network</span>
-          <span class="font-bold text-white">Arc Testnet</span>
-        </div>
-      </div>
-      
-      <div class="grid grid-cols-2 gap-3 pt-2">
-        <button onclick="closeModal()" class="py-3 bg-white/5 hover:bg-white/10 font-bold rounded-2xl text-xs">Cancel</button>
-        <button onclick="executePayment()" class="py-3 bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold rounded-2xl text-xs shadow-lg">Confirm & Pay</button>
-      </div>
+  <div class="glass w-full max-w-md rounded-[2rem] p-8 text-center space-y-6">
+    <div class="w-16 h-16 bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20 mx-auto">
+      <i class="fas fa-hand-holding-usd text-white text-2xl"></i>
     </div>
-  </div>
+    
+    <div>
+      <h1 class="text-2xl font-extrabold tracking-tight">You received a payment!</h1>
+      <p class="text-gray-400 text-sm mt-2">Connect your wallet to claim the funds.</p>
+    </div>
 
-  <!-- MAIN CONTAINER -->
-  <main class="w-full max-w-[560px] mx-auto flex flex-col justify-between flex-grow space-y-6">
-
-    <!-- Header -->
-    <header class="flex justify-between items-center py-2 border-b border-white/10">
-      <div>
-        <h1 class="font-extrabold text-sm tracking-tight text-white">ArcPay</h1>
-        <p class="text-[11px] text-gray-400">Secure Payment Link</p>
+    <div class="bg-black/20 rounded-2xl p-4 text-left border border-white/5 space-y-3">
+      <div class="flex justify-between items-center text-sm">
+        <span class="text-gray-400">Link ID</span>
+        <span id="linkIdDisplay" class="font-mono text-emerald-400">Loading...</span>
       </div>
-      <div class="text-[11px] text-gray-400 font-semibold">Arc Testnet</div>
-    </header>
-
-    <!-- LOADING STATE -->
-    <div id="loadingState" class="glass rounded-3xl p-8 space-y-6">
-      <div class="skeleton h-8 w-32"></div>
-      <div class="space-y-3">
-        <div class="skeleton h-12 w-full"></div>
-        <div class="skeleton h-16 w-full"></div>
-        <div class="skeleton h-24 w-full"></div>
+      <div class="flex justify-between items-center text-sm">
+        <span class="text-gray-400">Status</span>
+        <span id="statusDisplay" class="font-bold text-white">Pending</span>
       </div>
     </div>
 
-    <!-- ERROR STATE -->
-    <div id="errorState" class="hidden glass rounded-3xl p-8 text-center space-y-4">
-      <div class="text-3xl text-rose-400"><i class="fas fa-exclamation-triangle"></i></div>
-      <h3 class="font-bold text-base">Unable to load payment link</h3>
-      <p id="errorDetails" class="text-xs text-gray-400"></p>
-      <button onclick="location.reload()" class="px-6 py-2.5 bg-emerald-500 text-gray-950 font-bold rounded-xl text-xs">Retry</button>
-    </div>
-
-    <!-- NOT FOUND STATE -->
-    <div id="notFoundState" class="hidden glass rounded-3xl p-8 text-center space-y-4">
-      <div class="text-3xl text-gray-400"><i class="fas fa-link-slash"></i></div>
-      <h3 class="font-bold text-base">Payment Link Not Found</h3>
-      <p class="text-xs text-gray-400">This link may have expired or been cancelled.</p>
-      <button onclick="history.back()" class="px-6 py-2.5 bg-white/10 font-bold rounded-xl text-xs">Go Back</button>
-    </div>
-
-    <!-- PAYMENT CARD -->
-    <section id="paymentCard" class="hidden glass rounded-3xl p-6 sm:p-8 space-y-6">
-
-      <div class="flex justify-center">
-        <div id="statusBadge" class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
-          <span>🟡</span>
-          <span>Pending Payment</span>
-        </div>
-      </div>
-
-      <!-- Title / Header of the payment -->
-      <div class="text-center space-y-1">
-        <div id="titleDisplay" class="text-xl font-bold text-white tracking-tight">Payment Request</div>
-      </div>
-
-      <!-- Amount Display (Cleaned up from extra descriptions) -->
-      <div class="bg-white/[0.02] border border-white/10 p-5 rounded-2xl text-center space-y-1">
-        <div class="text-[11px] text-gray-400 uppercase tracking-wider font-semibold">Amount to Pay</div>
-        <div id="amountDisplay" class="text-4xl sm:text-5xl font-black text-white tracking-tight">— <span id="tokenSymbol" class="text-emerald-400 text-2xl sm:text-3xl">Token</span></div>
-      </div>
-
-      <!-- Recipient Section -->
-      <div class="bg-white/[0.02] border border-white/10 p-4 rounded-2xl flex items-center justify-between">
-        <div>
-          <div class="text-[11px] text-gray-400 uppercase tracking-wider">Recipient</div>
-          <div id="recipientAddress" class="font-mono text-xs text-gray-400 mt-0.5">0x...</div>
-        </div>
-        <button onclick="copyRecipient()" class="px-3 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-semibold flex items-center gap-1.5">
-          <i class="fas fa-copy text-emerald-400"></i> Copy
-        </button>
-      </div>
-
-      <!-- Description Section (Separated from Title) -->
-      <div id="memoSection" class="bg-white/[0.02] border border-white/10 p-4 rounded-2xl space-y-1">
-        <div class="text-[11px] text-gray-400 uppercase tracking-wider">Description</div>
-        <div id="descriptionText" class="text-xs font-medium text-white">—</div>
-      </div>
-
-      <!-- Connected Wallet Section -->
-      <div class="bg-white/[0.02] border border-white/10 p-4 rounded-2xl flex items-center justify-between">
-        <div>
-          <div class="text-[11px] text-gray-400 uppercase tracking-wider">Connected Wallet</div>
-          <div id="walletStatusText" class="font-mono text-xs font-bold text-gray-400 mt-0.5">Not Connected</div>
-        </div>
-        <div id="walletActionContainer">
-          <button onclick="connectWallet()" id="connectBtn" class="px-4 py-2 bg-emerald-500 text-gray-950 font-bold rounded-xl text-xs shadow-md">Connect Wallet</button>
-        </div>
-      </div>
-
-      <!-- Transaction Hash Display Section -->
-      <div id="txHashSection" class="hidden bg-emerald-500/5 border border-emerald-500/20 p-4 rounded-2xl space-y-1.5">
-        <div class="text-[11px] text-emerald-400 uppercase tracking-wider font-semibold">Transaction Successful</div>
-        <div class="flex items-center justify-between">
-          <span id="txHashText" class="font-mono text-xs text-gray-300">0x...</span>
-          <div class="flex gap-2">
-            <button onclick="copyTxHash()" class="px-2.5 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-semibold text-gray-300">
-              <i class="fas fa-copy"></i>
-            </button>
-            <a id="txExplorerLink" href="#" target="_blank" class="px-3 py-1.5 bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/30 rounded-lg text-xs font-semibold text-emerald-300 flex items-center gap-1">
-              Explorer <i class="fas fa-external-link-alt text-[10px]"></i>
-            </a>
-          </div>
-        </div>
-      </div>
-
-      <button onclick="handleActionClick()" id="mainActionButton" 
-        class="w-full py-4 bg-emerald-500 hover:bg-emerald-600 text-gray-950 font-bold rounded-2xl text-base shadow-xl shadow-emerald-500/20 transition-all">
-        Connect Wallet to Pay
+    <div class="space-y-3 pt-2">
+      <button id="connectBtn" onclick="connectWallet()" class="w-full bg-white text-black py-4 rounded-xl font-bold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2">
+        <i class="fas fa-wallet text-emerald-500"></i> Connect Wallet
       </button>
+      
+      <button id="claimBtn" onclick="claimFunds()" disabled class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-black py-4 rounded-xl font-extrabold opacity-50 cursor-not-allowed transition-all relative">
+        <span id="claimBtnText" class="flex items-center justify-center gap-2">
+          <i class="fas fa-bolt"></i> Claim Funds
+        </span>
+      </button>
+    </div>
+    
+    <p id="errorMsg" class="text-rose-400 text-sm hidden"></p>
+    <p id="successMsg" class="text-emerald-400 text-sm hidden"></p>
+  </div>
 
-    </section>
+  <script>
+    const CONTRACT_ADDRESS = "0x9B438F8Aa736Ed685e7aFF84eB173A9bb7c08320";
+    const ARC_CHAIN_ID = 5042002;
+    const ARC_CHAIN_ID_HEX = "0x4cebe2";
 
-    <footer class="text-center py-4 text-[11px] text-gray-500 border-t border-white/5">
-      Powered by ArcPay • Secure on Arc Network
-    </footer>
+    const ArcPayLinkABI = [
+      "function claimLink(address linkId, address destination, uint256 feeAmount, bytes calldata signature) external"
+    ];
 
-  </main>
+    let provider, signer, userAddress;
+    let linkId, privateKey;
 
-<script>
-  const CONTRACT_ADDRESS = "0xca96eBfD87065B90Ca9a07b8383669787c3218aE";
-  const ARC_CHAIN_ID_HEX = "0x4cebe2";
-  let signer = null;
-  let userAddress = null;
-  let currentLinkId = null;
-  let currentLink = null;
-  let tokenDecimals = 6;
-  let currentTxHash = "";
+    window.addEventListener('load', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      linkId = urlParams.get('id');
+      privateKey = urlParams.get('pk');
 
-  const ArcPaymentLinksABI = [
-    "function getPaymentLink(bytes32 linkId) view returns (tuple(address creator, address token, uint256 amount, uint256 expiration, bytes32 claimHash, address restrictedTo, uint8 state, uint64 closedAt, string qrMetaData))",
-    "function payPaymentLink(bytes32 linkId) external payable",
-    "function claimPaymentLink(bytes32 linkId, string secretKey) external payable"
-  ];
-
-  function showToast(msg, duration = 4000) {
-    const toast = document.getElementById("toast");
-    document.getElementById("toastText").textContent = msg;
-    toast.classList.remove("hidden");
-    setTimeout(() => toast.classList.add("hidden"), duration);
-  }
-
-  function getTokenSymbol(tokenAddress) {
-    if (!tokenAddress || tokenAddress === ethers.ZeroAddress || tokenAddress.toLowerCase() === "0x0000000000000000000000000000000000000000") {
-      return "ARC";
-    }
-    const lowerAddr = tokenAddress.toLowerCase();
-    if (lowerAddr === "0x3600000000000000000000000000000000000000".toLowerCase()) return "USDC";
-    if (lowerAddr === "0x89b50855aa3be2f677cd6303cec089b5f319d72a".toLowerCase()) return "EURC";
-    if (lowerAddr === "0xf0c4a4ce82a5746abaab9425360ab04fbba432bf".toLowerCase()) return "CIRBTC";
-    return "Token";
-  }
-
-  async function loadPaymentLink() {
-    const urlParams = new URLSearchParams(window.location.search);
-    currentLinkId = urlParams.get('id');
-
-    if (!currentLinkId || currentLinkId === 'sample') {
-      document.getElementById('loadingState').classList.add('hidden');
-      document.getElementById('notFoundState').classList.remove('hidden');
-      return;
-    }
-
-    try {
-      const provider = window.ethereum ? new ethers.BrowserProvider(window.ethereum) : new ethers.JsonRpcProvider("https://rpc.testnet.arc.network");
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, ArcPaymentLinksABI, provider);
-
-      currentLink = await contract.getPaymentLink(currentLinkId);
-
-      if (!currentLink || currentLink.creator === ethers.ZeroAddress) {
-        document.getElementById('loadingState').classList.add('hidden');
-        document.getElementById('notFoundState').classList.remove('hidden');
+      if (!linkId || !privateKey) {
+        showError("Invalid payment link. Missing ID or Key.");
         return;
       }
-
-      const isNative = (currentLink.token === ethers.ZeroAddress || currentLink.token.toLowerCase() === "0x0000000000000000000000000000000000000000");
-      if (!isNative) {
-        try {
-          const tokenContract = new ethers.Contract(currentLink.token, ["function decimals() view returns (uint8)"], provider);
-          tokenDecimals = await tokenContract.decimals();
-        } catch (err) {
-          tokenDecimals = 6;
-        }
-      } else {
-        tokenDecimals = 18;
-      }
-
-      const symbol = getTokenSymbol(currentLink.token);
-      const formattedAmount = ethers.formatUnits(currentLink.amount, tokenDecimals);
       
-      document.getElementById('amountDisplay').innerHTML = `${formattedAmount} <span class="text-emerald-400 text-2xl sm:text-3xl">${symbol}</span>`;
-      document.getElementById('modalAmount').textContent = `${formattedAmount} ${symbol}`;
-      
-      // Separating Title and Description logic safely if formatted as "Title | Description" or standard text
-      let rawMeta = currentLink.qrMetaData || "Payment Request";
-      let titlePart = rawMeta;
-      let descPart = "No description provided";
+      document.getElementById('linkIdDisplay').textContent = `${linkId.slice(0,6)}...${linkId.slice(-4)}`;
+    });
 
-      if (rawMeta.includes(" | ")) {
-        const parts = rawMeta.split(" | ");
-        titlePart = parts[0];
-        descPart = parts.slice(1).join(" | ");
-      } else if (rawMeta.includes(" - ")) {
-        const parts = rawMeta.split(" - ");
-        titlePart = parts[0];
-        descPart = parts.slice(1).join(" - ");
-      }
+    async function connectWallet() {
+      if (!window.ethereum) return showError("MetaMask not found!");
 
-      document.getElementById('titleDisplay').textContent = titlePart;
-      document.getElementById('descriptionText').textContent = descPart;
-      
-      document.getElementById('recipientAddress').textContent = currentLink.creator;
-      document.getElementById('modalRecipient').textContent = `${currentLink.creator.slice(0,6)}...${currentLink.creator.slice(-4)}`;
-
-      document.getElementById('loadingState').classList.add('hidden');
-      document.getElementById('paymentCard').classList.remove('hidden');
-
-    } catch (e) {
-      console.error("Load Link Error:", e);
-      document.getElementById('loadingState').classList.add('hidden');
-      document.getElementById('errorDetails').textContent = e.reason || e.message || "Network request failed";
-      document.getElementById('errorState').classList.remove('hidden');
-    }
-  }
-
-  async function connectWallet() {
-    if (!window.ethereum) return showToast("MetaMask not found");
-
-    try {
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const network = await provider.getNetwork();
-
-      if (network.chainId !== BigInt(5042002)) {
-        try {
-          await window.ethereum.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: ARC_CHAIN_ID_HEX }]
-          });
-        } catch (err) {
-          return showToast("Please manually switch to Arc Testnet");
-        }
-      }
-
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      userAddress = accounts[0];
-      signer = await provider.getSigner();
-
-      document.getElementById('walletStatusText').textContent = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
-      document.getElementById('walletStatusText').className = "font-mono text-xs font-bold text-emerald-400 mt-0.5";
-      
-      document.getElementById('walletActionContainer').innerHTML = `
-        <button onclick="disconnectWallet()" class="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 font-semibold rounded-xl text-xs transition-all">
-          Disconnect
-        </button>
-      `;
-
-      document.getElementById('mainActionButton').textContent = "Pay Now";
-      showToast("Wallet Connected Successfully");
-    } catch (e) {
-      showToast("Failed to connect wallet");
-    }
-  }
-
-  function disconnectWallet() {
-    signer = null;
-    userAddress = null;
-
-    document.getElementById('walletStatusText').textContent = "Not Connected";
-    document.getElementById('walletStatusText').className = "font-mono text-xs font-bold text-gray-400 mt-0.5";
-    
-    document.getElementById('walletActionContainer').innerHTML = `
-      <button onclick="connectWallet()" id="connectBtn" class="px-4 py-2 bg-emerald-500 text-gray-950 font-bold rounded-xl text-xs shadow-md">Connect Wallet</button>
-    `;
-
-    document.getElementById('mainActionButton').textContent = "Connect Wallet to Pay";
-    showToast("Wallet Disconnected");
-  }
-
-  function handleActionClick() {
-    if (!userAddress) {
-      connectWallet();
-    } else {
-      document.getElementById('confirmModal').classList.remove('hidden');
-    }
-  }
-
-  function closeModal() {
-    document.getElementById('confirmModal').classList.add('hidden');
-  }
-
-  async function executePayment() {
-    closeModal();
-    if (!signer) return showToast("Please connect wallet first");
-
-    try {
-      const actionBtn = document.getElementById('mainActionButton');
-      actionBtn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Processing...`;
-      actionBtn.disabled = true;
-
-      const isNative = (currentLink.token === ethers.ZeroAddress || currentLink.token.toLowerCase() === "0x0000000000000000000000000000000000000000");
-
-      if (!isNative) {
-        const tokenContract = new ethers.Contract(currentLink.token, [
-          "function allowance(address owner, address spender) view returns (uint256)",
-          "function approve(address spender, uint256 amount) returns (bool)"
-        ], signer);
-
-        const allowance = await tokenContract.allowance(userAddress, CONTRACT_ADDRESS);
-        if (allowance < currentLink.amount) {
-          showToast("Approving token spending...");
-          const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, currentLink.amount);
-          await approveTx.wait();
-        }
-      }
-
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, ArcPaymentLinksABI, signer);
-      
-      let tx;
       try {
-        tx = await contract.claimPaymentLink(currentLinkId, "", {
-          value: isNative ? currentLink.amount : 0
-        });
-      } catch (err) {
-        tx = await contract.payPaymentLink(currentLinkId, {
-          value: isNative ? currentLink.amount : 0
-        });
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        userAddress = accounts[0];
+        provider = new ethers.BrowserProvider(window.ethereum);
+        
+        const network = await provider.getNetwork();
+        if (network.chainId !== BigInt(ARC_CHAIN_ID)) {
+          try {
+            await window.ethereum.request({
+              method: 'wallet_switchEthereumChain',
+              params: [{ chainId: ARC_CHAIN_ID_HEX }]
+            });
+          } catch (e) {
+            return showError("Please switch to Arc L1 Network.");
+          }
+        }
+
+        signer = await provider.getSigner();
+        
+        document.getElementById('connectBtn').innerHTML = `<i class="fas fa-check-circle text-emerald-500"></i> Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
+        document.getElementById('connectBtn').classList.replace('bg-white', 'bg-white/10');
+        document.getElementById('connectBtn').classList.replace('text-black', 'text-white');
+        
+        const claimBtn = document.getElementById('claimBtn');
+        claimBtn.disabled = false;
+        claimBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+        claimBtn.classList.add('hover:from-emerald-400', 'hover:to-cyan-400', 'shadow-lg', 'shadow-emerald-500/20');
+        
+      } catch (e) {
+        showError("Failed to connect wallet.");
       }
+    }
+
+    async function claimFunds() {
+      if (!signer || !userAddress || !linkId || !privateKey) return;
       
-      currentTxHash = tx.hash;
-      await tx.wait();
+      const btnText = document.getElementById('claimBtnText');
+      btnText.innerHTML = '<div class="spinner mr-2"></div> Processing...';
+      document.getElementById('claimBtn').disabled = true;
+      hideMessages();
 
-      showToast("✅ Payment Successful!", 6000);
+      try {
+        // 1. Setup EIP-712 Domain (Must match your smart contract perfectly)
+        const domain = {
+          name: 'ArcPayLink',
+          version: '1',
+          chainId: ARC_CHAIN_ID,
+          verifyingContract: CONTRACT_ADDRESS
+        };
 
-      document.getElementById('txHashText').textContent = `${currentTxHash.slice(0, 10)}...${currentTxHash.slice(-8)}`;
-      // Correct Explorer URL configured here:
-      document.getElementById('txExplorerLink').href = `https://testnet.arcscan.app/tx/${currentTxHash}`;
-      document.getElementById('txHashSection').classList.remove('hidden');
+        // 2. Define Types
+        const types = {
+          Claim: [
+            { name: 'linkId', type: 'address' },
+            { name: 'destination', type: 'address' },
+            { name: 'feeAmount', type: 'uint256' },
+            { name: 'relayer', type: 'address' }
+          ]
+        };
 
-      actionBtn.innerHTML = `✅ Payment Completed`;
-      actionBtn.classList.add('!bg-emerald-600');
+        // 3. Define Values
+        const feeAmount = 0; // The receiver is claiming it directly, no relayer fee
+        const values = {
+          linkId: linkId,
+          destination: userAddress,
+          feeAmount: feeAmount,
+          relayer: userAddress // msg.sender is the relayer in the contract
+        };
 
-    } catch (error) {
-      console.error(error);
-      showToast(error.reason || error.message || "Payment failed", 5000);
-      const actionBtn = document.getElementById('mainActionButton');
-      actionBtn.innerHTML = `Pay Now`;
-      actionBtn.disabled = false;
+        // 4. Sign the data using the Ephemeral Private Key from the URL
+        const ephemeralWallet = new ethers.Wallet(privateKey);
+        const signature = await ephemeralWallet.signTypedData(domain, types, values);
+
+        // 5. Submit the transaction to the smart contract
+        const contract = new ethers.Contract(CONTRACT_ADDRESS, ArcPayLinkABI, signer);
+        
+        const tx = await contract.claimLink(linkId, userAddress, feeAmount, signature);
+        btnText.innerHTML = '<div class="spinner mr-2"></div> Confirming...';
+        
+        await tx.wait();
+
+        // Success
+        document.getElementById('statusDisplay').textContent = "Claimed";
+        document.getElementById('statusDisplay').classList.replace('text-white', 'text-emerald-400');
+        showSuccess("Funds successfully claimed to your wallet!");
+        btnText.innerHTML = '<i class="fas fa-check"></i> Claimed';
+
+      } catch (error) {
+        console.error(error);
+        btnText.innerHTML = '<i class="fas fa-bolt"></i> Claim Funds';
+        document.getElementById('claimBtn').disabled = false;
+        
+        if (error.reason) {
+          showError(error.reason);
+        } else if (error.code === 'ACTION_REJECTED') {
+          showError("Transaction rejected by user.");
+        } else {
+          showError("Failed to claim funds. Link might be used or expired.");
+        }
+      }
     }
-  }
 
-  function copyRecipient() {
-    if (currentLink) {
-      navigator.clipboard.writeText(currentLink.creator);
-      showToast("Address copied");
+    function showError(msg) {
+      const el = document.getElementById('errorMsg');
+      el.textContent = msg;
+      el.classList.remove('hidden');
     }
-  }
-
-  function copyTxHash() {
-    if (currentTxHash) {
-      navigator.clipboard.writeText(currentTxHash);
-      showToast("Transaction hash copied");
+    
+    function showSuccess(msg) {
+      const el = document.getElementById('successMsg');
+      el.textContent = msg;
+      el.classList.remove('hidden');
     }
-  }
 
-  window.addEventListener('load', loadPaymentLink);
-</script>
+    function hideMessages() {
+      document.getElementById('errorMsg').classList.add('hidden');
+      document.getElementById('successMsg').classList.add('hidden');
+    }
+  </script>
 </body>
 </html>
