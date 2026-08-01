@@ -47,8 +47,8 @@
     </div>
     
     <div>
-      <h1 class="text-2xl font-extrabold tracking-tight">You received a payment!</h1>
-      <p class="text-gray-400 text-sm mt-2">Connect your wallet to claim the funds.</p>
+      <h1 class="text-2xl font-extrabold tracking-tight">Payment Received!</h1>
+      <p class="text-gray-400 text-sm mt-2">Connect your wallet to view details and claim.</p>
     </div>
 
     <div class="bg-black/20 rounded-2xl p-4 text-left border border-white/5 space-y-3">
@@ -57,8 +57,12 @@
         <span id="linkIdDisplay" class="font-mono text-emerald-400">Loading...</span>
       </div>
       <div class="flex justify-between items-center text-sm">
+        <span class="text-gray-400">Amount</span>
+        <span id="amountDisplay" class="font-bold text-gray-500">Connect wallet first</span>
+      </div>
+      <div class="flex justify-between items-center text-sm border-t border-white/5 pt-2">
         <span class="text-gray-400">Status</span>
-        <span id="statusDisplay" class="font-bold text-white">Pending</span>
+        <span id="statusDisplay" class="font-bold text-gray-400">Waiting for wallet</span>
       </div>
     </div>
 
@@ -67,7 +71,7 @@
         <i class="fas fa-wallet text-emerald-500"></i> Connect Wallet
       </button>
       
-      <button id="claimBtn" onclick="claimFunds()" disabled class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-black py-4 rounded-xl font-extrabold opacity-50 cursor-not-allowed transition-all relative">
+      <button id="claimBtn" onclick="claimFunds()" disabled class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-black py-4 rounded-xl font-extrabold opacity-50 cursor-not-allowed transition-all relative hidden">
         <span id="claimBtnText" class="flex items-center justify-center gap-2">
           <i class="fas fa-bolt"></i> Claim Funds
         </span>
@@ -76,16 +80,34 @@
     
     <p id="errorMsg" class="text-rose-400 text-sm hidden"></p>
     <p id="successMsg" class="text-emerald-400 text-sm hidden"></p>
+    
+    <!-- محل قرارگیری لینک اکسپلورر تراکنش -->
+    <div id="txHashContainer" class="hidden mt-4 text-center">
+      <a id="txHashLink" href="#" target="_blank" class="text-sm text-cyan-400 hover:text-cyan-300 font-medium bg-cyan-500/10 px-4 py-2 rounded-lg inline-flex items-center gap-2 transition-colors">
+        <i class="fas fa-external-link-alt"></i> View on Explorer
+      </a>
+    </div>
   </div>
 
   <script>
     const CONTRACT_ADDRESS = "0x9B438F8Aa736Ed685e7aFF84eB173A9bb7c08320";
     const ARC_CHAIN_ID = 5042002;
     const ARC_CHAIN_ID_HEX = "0x4cebe2";
+    
+    // دیکشنری توکن‌ها
+    const TOKEN_MAP = {
+      "0x0000000000000000000000000000000000000000": "USDC (Native)",
+      "0x3600000000000000000000000000000000000000": "USDC",
+      "0x89b50855aa3be2f677cd6303cec089b5f319d72a": "EURC",
+      "0xf0c4a4ce82a5746abaad9425360ab04fbba432bf": "cirBTC"
+    };
 
+    // ABI شامل تابع خواندن اطلاعات لینک و گرفتن اعشار توکن
     const ArcPayLinkABI = [
-      "function claimLink(address linkId, address destination, uint256 feeAmount, bytes calldata signature) external"
+      "function claimLink(address linkId, address destination, uint256 feeAmount, bytes calldata signature) external",
+      "function links(address) view returns (uint256 amount, address token, uint40 expiration, uint8 status, address creator)"
     ];
+    const ERC20ABI = ["function decimals() view returns (uint8)"];
 
     let provider, signer, userAddress;
     let linkId, privateKey;
@@ -105,6 +127,7 @@
 
     async function connectWallet() {
       if (!window.ethereum) return showError("MetaMask not found!");
+      hideMessages();
 
       try {
         const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -125,17 +148,70 @@
 
         signer = await provider.getSigner();
         
-        document.getElementById('connectBtn').innerHTML = `<i class="fas fa-check-circle text-emerald-500"></i> Connected: ${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
-        document.getElementById('connectBtn').classList.replace('bg-white', 'bg-white/10');
-        document.getElementById('connectBtn').classList.replace('text-black', 'text-white');
+        // تغییر استایل دکمه اتصال
+        document.getElementById('connectBtn').classList.add('hidden');
+        document.getElementById('claimBtn').classList.remove('hidden');
         
-        const claimBtn = document.getElementById('claimBtn');
-        claimBtn.disabled = false;
-        claimBtn.classList.remove('opacity-50', 'cursor-not-allowed');
-        claimBtn.classList.add('hover:from-emerald-400', 'hover:to-cyan-400', 'shadow-lg', 'shadow-emerald-500/20');
+        // خواندن اطلاعات لینک از بلاک‌چین
+        await fetchLinkDetails();
         
       } catch (e) {
         showError("Failed to connect wallet.");
+      }
+    }
+
+    async function fetchLinkDetails() {
+      document.getElementById('amountDisplay').innerHTML = '<div class="spinner border-gray-400 border-left-transparent w-4 h-4 inline-block"></div>';
+      document.getElementById('statusDisplay').textContent = 'Fetching...';
+
+      try {
+        const contract = new ethers.Contract(CONTRACT_ADDRESS, ArcPayLinkABI, provider);
+        const [amount, tokenAddress, expiration, status, creator] = await contract.links(linkId);
+
+        const tokenLower = tokenAddress.toLowerCase();
+        let tokenSymbol = TOKEN_MAP[tokenLower] || "Unknown Token";
+        let decimals = 18;
+
+        // اگر توکن Native نیست، تلاش می‌کنیم Decimals آن را بخوانیم
+        if (tokenLower !== "0x0000000000000000000000000000000000000000" && tokenLower !== "0x3600000000000000000000000000000000000000") {
+          try {
+            const tokenContract = new ethers.Contract(tokenAddress, ERC20ABI, provider);
+            decimals = await tokenContract.decimals();
+          } catch (e) {
+            console.warn("Could not fetch decimals, using 18 default");
+          }
+        }
+
+        const formattedAmount = ethers.formatUnits(amount, decimals);
+        document.getElementById('amountDisplay').innerHTML = `<span class="text-white">${parseFloat(formattedAmount).toFixed(4)}</span> <span class="text-emerald-400 font-bold">${tokenSymbol}</span>`;
+
+        const claimBtn = document.getElementById('claimBtn');
+
+        // بررسی وضعیت لینک (0=None, 1=Active, 2=Claimed, 3=Cancelled)
+        if (status === 1n) {
+          document.getElementById('statusDisplay').textContent = "Active";
+          document.getElementById('statusDisplay').classList.replace('text-gray-400', 'text-emerald-400');
+          
+          claimBtn.disabled = false;
+          claimBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+          claimBtn.classList.add('hover:from-emerald-400', 'hover:to-cyan-400', 'shadow-lg', 'shadow-emerald-500/20');
+        } else if (status === 2n) {
+          document.getElementById('statusDisplay').textContent = "Already Claimed";
+          document.getElementById('statusDisplay').classList.replace('text-gray-400', 'text-rose-400');
+          showError("This payment has already been claimed.");
+        } else if (status === 3n) {
+          document.getElementById('statusDisplay').textContent = "Cancelled";
+          document.getElementById('statusDisplay').classList.replace('text-gray-400', 'text-rose-400');
+          showError("This payment link was cancelled by the creator.");
+        } else {
+          document.getElementById('statusDisplay').textContent = "Not Found";
+          showError("Invalid link or not found on network.");
+        }
+
+      } catch (error) {
+        console.error(error);
+        showError("Error fetching payment details from the blockchain.");
+        document.getElementById('amountDisplay').textContent = "Error";
       }
     }
 
@@ -146,9 +222,9 @@
       btnText.innerHTML = '<div class="spinner mr-2"></div> Processing...';
       document.getElementById('claimBtn').disabled = true;
       hideMessages();
+      document.getElementById('txHashContainer').classList.add('hidden');
 
       try {
-        // 1. Setup EIP-712 Domain (Must match your smart contract perfectly)
         const domain = {
           name: 'ArcPayLink',
           version: '1',
@@ -156,7 +232,6 @@
           verifyingContract: CONTRACT_ADDRESS
         };
 
-        // 2. Define Types
         const types = {
           Claim: [
             { name: 'linkId', type: 'address' },
@@ -166,32 +241,33 @@
           ]
         };
 
-        // 3. Define Values
-        const feeAmount = 0; // The receiver is claiming it directly, no relayer fee
+        const feeAmount = 0; 
         const values = {
           linkId: linkId,
           destination: userAddress,
           feeAmount: feeAmount,
-          relayer: userAddress // msg.sender is the relayer in the contract
+          relayer: userAddress 
         };
 
-        // 4. Sign the data using the Ephemeral Private Key from the URL
         const ephemeralWallet = new ethers.Wallet(privateKey);
         const signature = await ephemeralWallet.signTypedData(domain, types, values);
 
-        // 5. Submit the transaction to the smart contract
         const contract = new ethers.Contract(CONTRACT_ADDRESS, ArcPayLinkABI, signer);
         
         const tx = await contract.claimLink(linkId, userAddress, feeAmount, signature);
-        btnText.innerHTML = '<div class="spinner mr-2"></div> Confirming...';
+        btnText.innerHTML = '<div class="spinner mr-2"></div> Confirming in Network...';
         
-        await tx.wait();
+        const receipt = await tx.wait(); // صبر کردن تا تراکنش در بلاک‌چین ثبت شود
 
-        // Success
-        document.getElementById('statusDisplay').textContent = "Claimed";
-        document.getElementById('statusDisplay').classList.replace('text-white', 'text-emerald-400');
-        showSuccess("Funds successfully claimed to your wallet!");
+        // موفقیت!
+        document.getElementById('statusDisplay').textContent = "Claimed Successfully";
+        showSuccess("Funds successfully transferred to your wallet!");
         btnText.innerHTML = '<i class="fas fa-check"></i> Claimed';
+        
+        // نمایش دکمه لینک اکسپلورر
+        const txHashLink = document.getElementById('txHashLink');
+        txHashLink.href = `https://testnet.arcscan.app/tx/${tx.hash}`;
+        document.getElementById('txHashContainer').classList.remove('hidden');
 
       } catch (error) {
         console.error(error);
