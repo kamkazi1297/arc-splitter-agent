@@ -3,14 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-  <title>ArcPay - Decentralized Payment Links</title>
+  <title>ArcPay - Claim Payment</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
-  
-  <!-- اتصال به فایل ابری دیتابیس شما -->
-  <script src="db.js"></script>
-  
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
 
   <style>
@@ -24,100 +19,15 @@
         radial-gradient(circle at 85% 75%, rgba(34, 211, 238, 0.05) 0%, transparent 45%);
       color: #f8fafc;
       min-height: 100vh;
-      overflow-x: hidden;
     }
     
     .glass {
       background: rgba(18, 18, 28, 0.7);
       backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
       border: 1px solid rgba(255, 255, 255, 0.05);
-      box-shadow: 0 24px 40px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
-    }
-    
-    /* Light Mode Variables */
-    .light {
-      background: #f8fafc !important;
-      background-image: 
-        radial-gradient(circle at 15% 25%, rgba(16, 185, 129, 0.06) 0%, transparent 45%),
-        radial-gradient(circle at 85% 75%, rgba(34, 211, 238, 0.06) 0%, transparent 45%) !important;
-      color: #0f172a !important;
+      box-shadow: 0 24px 40px -12px rgba(0, 0, 0, 0.5);
     }
 
-    .light .glass {
-      background: rgba(255, 255, 255, 0.7);
-      border-color: rgba(255, 255, 255, 1);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1);
-    }
-
-    .light body, .light h1, .light h3, .light label, .light .text-white { color: #0f172a; }
-    .light .text-gray-400 { color: #64748b !important; }
-    .light .text-gray-300 { color: #475569 !important; }
-
-    /* کلاس مخصوص برای سفید ماندن متون بخش Preview در هر دو حالت */
-    .always-white { color: #ffffff !important; }
-
-    select, input, textarea {
-      background-color: rgba(255, 255, 255, 0.02);
-      color: white;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      transition: all 0.3s ease;
-    }
-    
-    select:hover, input:hover, textarea:hover {
-      border-color: rgba(255, 255, 255, 0.15);
-      background-color: rgba(255, 255, 255, 0.04);
-    }
-    
-    select:focus, input:focus, textarea:focus {
-      border-color: #10b981;
-      box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
-      outline: none;
-      background-color: rgba(255, 255, 255, 0.05);
-    }
-
-    .light select, .light input, .light textarea {
-      background-color: #ffffff;
-      color: #0f172a;
-      border: 1px solid #e2e8f0;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
-    }
-
-    select option {
-      background-color: #13131f;
-      color: white;
-    }
-    .light select option {
-      background-color: #ffffff;
-      color: #0f172a;
-    }
-
-    .error-msg {
-      color: #f43f5e;
-      font-size: 0.75rem;
-      margin-top: 6px;
-      display: block;
-      animation: fadeIn 0.3s ease;
-    }
-
-    .app-button {
-      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .app-button:active {
-      transform: scale(0.97);
-    }
-    .app-button:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes pulse-glow {
-      0%, 100% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.2); }
-      50% { box-shadow: 0 0 35px rgba(16, 185, 129, 0.4); }
-    }
-    
     .spinner {
       border: 3px solid rgba(255,255,255,0.1);
       border-left-color: #fff;
@@ -129,762 +39,289 @@
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   </style>
 </head>
-<body class="text-white min-h-screen selection:bg-emerald-500/30 selection:text-emerald-200">
+<body class="flex items-center justify-center p-4">
 
-  <div class="max-w-6xl mx-auto px-4 py-8 sm:py-12">
+  <div class="glass w-full max-w-md rounded-[2rem] p-8 text-center space-y-6">
+    <div class="w-16 h-16 bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20 mx-auto">
+      <i class="fas fa-hand-holding-usd text-white text-2xl"></i>
+    </div>
     
-    <!-- Header -->
-    <div class="glass flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5 mb-10 p-5 sm:px-8 sm:py-6 rounded-[2rem]">
-      <div class="flex items-center gap-4">
-        <div class="w-12 h-12 bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
-          <i class="fas fa-link text-white text-xl"></i>
-        </div>
-        <div>
-          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Arc <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Pay</span></h1>
-          <p class="text-gray-400 light:text-slate-500 text-xs sm:text-sm font-medium mt-1">Decentralized, non-custodial push-payment links</p>
-        </div>
+    <div>
+      <h1 class="text-2xl font-extrabold tracking-tight">Payment Received!</h1>
+      <p class="text-gray-400 text-sm mt-2">Connect your wallet to view details and claim.</p>
+    </div>
+
+    <div class="bg-black/20 rounded-2xl p-4 text-left border border-white/5 space-y-3">
+      <div class="flex justify-between items-center text-sm">
+        <span class="text-gray-400">Link ID</span>
+        <span id="linkIdDisplay" class="font-mono text-emerald-400">Loading...</span>
       </div>
+      <div class="flex justify-between items-center text-sm">
+        <span class="text-gray-400">Amount</span>
+        <span id="amountDisplay" class="font-bold text-gray-500">Connect wallet first</span>
+      </div>
+      <div class="flex justify-between items-center text-sm border-t border-white/5 pt-2">
+        <span class="text-gray-400">Status</span>
+        <span id="statusDisplay" class="font-bold text-gray-400">Waiting for wallet</span>
+      </div>
+    </div>
+
+    <div class="space-y-3 pt-2">
+      <button id="connectBtn" onclick="connectWallet()" class="w-full bg-white text-black py-4 rounded-xl font-bold hover:bg-gray-200 transition-colors flex items-center justify-center gap-2">
+        <i class="fas fa-wallet text-emerald-500"></i> Connect Wallet
+      </button>
       
-      <div class="flex items-center gap-3 w-full sm:w-auto">
-        <div class="flex flex-1 sm:flex-none bg-black/20 light:bg-slate-100 p-1.5 rounded-2xl">
-          <button onclick="switchTab('create')" id="tabCreate" class="flex-1 px-5 py-2.5 rounded-xl text-sm font-bold transition-all bg-emerald-500/10 text-emerald-400 shadow-sm">Create</button>
-          <button onclick="switchTab('history')" id="tabHistory" class="flex-1 px-5 py-2.5 rounded-xl text-sm font-bold transition-all text-gray-400 hover:text-white light:hover:text-black">History</button>
-        </div>
-
-        <button onclick="toggleTheme()" id="themeBtn" class="w-12 h-12 flex items-center justify-center bg-white/5 light:bg-white hover:bg-white/10 border border-white/5 light:border-slate-200 rounded-2xl transition-all shadow-sm">
-          <i class="fas fa-moon text-lg text-emerald-500"></i>
-        </button>
-
-        <div class="flex items-center gap-2">
-          <button onclick="connectWallet()" id="connectHeaderBtn" class="app-button px-5 py-3 bg-white light:bg-slate-900 text-black light:text-white font-bold rounded-2xl text-sm flex items-center gap-2 shadow-lg hover:shadow-xl transition-shadow">
-            <i class="fas fa-wallet text-emerald-500"></i>
-            <span id="headerWalletText">Connect</span>
-          </button>
-          <button onclick="disconnectWallet()" id="disconnectBtn" class="hidden w-12 h-12 items-center justify-center bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-2xl transition-all border border-rose-500/10" title="Disconnect">
-            <i class="fas fa-power-off"></i>
-          </button>
-        </div>
-      </div>
+      <button id="claimBtn" onclick="claimFunds()" disabled class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 text-black py-4 rounded-xl font-extrabold opacity-50 cursor-not-allowed transition-all relative hidden">
+        <span id="claimBtnText" class="flex items-center justify-center gap-2">
+          <i class="fas fa-bolt"></i> Claim Funds
+        </span>
+      </button>
     </div>
-
-    <!-- Toast Notification -->
-    <div id="toast" class="hidden fixed bottom-8 left-1/2 -translate-x-1/2 bg-gray-900/95 light:bg-white/95 border border-white/10 light:border-slate-200 text-white light:text-slate-800 px-6 py-4 rounded-2xl shadow-2xl items-center gap-3 z-50 text-sm font-medium backdrop-blur-xl transition-all">
-      <span id="toastIcon" class="text-lg"></span>
-      <span id="toastText"></span>
-    </div>
-
-    <!-- TAB 1: CREATE -->
-    <div id="viewCreate" class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
-      
-      <!-- Configuration Form -->
-      <div class="lg:col-span-7 space-y-6">
-        
-        <!-- Token & Amount Section -->
-        <div class="glass rounded-[2rem] p-6 sm:p-8 space-y-6">
-          <div class="flex items-center justify-between mb-2">
-            <h3 class="font-bold text-sm text-gray-400 uppercase tracking-widest flex items-center gap-2">
-              <i class="fas fa-coins text-emerald-400/70"></i> Payment Details
-            </h3>
-          </div>
-          
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            <div class="space-y-2">
-              <label class="text-xs text-gray-400 font-medium ml-1">Select Asset</label>
-              <div class="relative">
-                <select id="tokenSelect" onchange="handleTokenChange()" class="w-full rounded-2xl pl-10 pr-4 py-4 text-sm font-semibold cursor-pointer appearance-none">
-                  <option value="0x3600000000000000000000000000000000000000">USDC (Native Gas)</option>
-                  <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
-                  <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
-                  <option value="custom">Add Custom Token...</option>
-                </select>
-                <i class="fas fa-gem absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
-                <i class="fas fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-xs pointer-events-none"></i>
-              </div>
-              <div class="flex justify-between text-[11px] px-1 pt-1">
-                <span class="text-gray-500">Network: Arc L1</span>
-                <span id="tokenBalanceDisplay" class="text-gray-400 font-medium">Balance: —</span>
-              </div>
-            </div>
-
-            <div class="space-y-2">
-              <label class="text-xs text-gray-400 font-medium ml-1">Amount</label>
-              <div class="relative">
-                <input type="number" id="fixedAmountInput" oninput="updatePreview()" class="w-full rounded-2xl pl-4 pr-16 py-4 text-lg font-bold" placeholder="0.00" min="0" step="any">
-                <div class="absolute right-4 top-1/2 -translate-y-1/2">
-                  <button onclick="setMaxAmount()" class="text-[10px] uppercase font-bold bg-white/10 hover:bg-white/20 text-emerald-400 px-2 py-1 rounded-md transition-colors">Max</button>
-                </div>
-              </div>
-              <span id="errAmount" class="error-msg hidden"></span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Meta Data Section (Off-chain) -->
-        <div class="glass rounded-[2rem] p-6 sm:p-8 space-y-6">
-          <h3 class="font-bold text-sm text-gray-400 uppercase tracking-widest flex items-center gap-2 mb-2">
-            <i class="fas fa-align-left text-cyan-400/70"></i> Link Metadata <span class="text-[10px] text-gray-500 bg-white/5 px-2 py-0.5 rounded-full lowercase">Off-chain</span>
-          </h3>
-          
-          <div class="space-y-5">
-            <div>
-              <label class="text-xs text-gray-400 font-medium ml-1 block mb-2">Payment Title</label>
-              <input type="text" id="linkTitle" maxlength="50" oninput="updatePreview()" class="w-full rounded-2xl px-4 py-4 text-sm font-medium" placeholder="e.g., Freelance UI Design">
-              <span id="errTitle" class="error-msg hidden"></span>
-            </div>
-
-            <div>
-              <label class="text-xs text-gray-400 font-medium ml-1 block mb-2">Description (Optional)</label>
-              <textarea id="linkDesc" maxlength="150" rows="2" oninput="updatePreview()" class="w-full rounded-2xl p-4 text-sm resize-none font-medium" placeholder="Add a note for the recipient..."></textarea>
-            </div>
-          </div>
-        </div>
-
-        <!-- Settings Section -->
-        <div class="glass rounded-[2rem] p-6 sm:p-8">
-          <h3 class="font-bold text-sm text-gray-400 uppercase tracking-widest flex items-center gap-2 mb-4">
-            <i class="fas fa-cog text-purple-400/70"></i> Security Settings
-          </h3>
-          
-          <div class="space-y-2">
-            <label class="text-xs text-gray-400 font-medium ml-1 block">Link Expiration</label>
-            <div class="relative">
-              <select id="expirationSelect" onchange="updatePreview()" class="w-full rounded-2xl pl-10 pr-4 py-4 text-sm font-semibold appearance-none">
-                <option value="never">Never Expires</option>
-                <option value="1h">1 Hour</option>
-                <option value="24h">24 Hours</option>
-                <option value="7d">7 Days</option>
-                <option value="30d">30 Days</option>
-              </select>
-              <i class="fas fa-hourglass-half absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
-              <i class="fas fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-xs pointer-events-none"></i>
-            </div>
-            <p class="text-[11px] text-gray-500 ml-1 mt-2">Expired links automatically become invalid and can be refunded.</p>
-          </div>
-        </div>
-
-        <!-- Submit Action -->
-        <button id="generateBtn" onclick="generateLink()" class="app-button w-full bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-black py-5 rounded-[2rem] text-base font-extrabold shadow-xl shadow-emerald-500/20 relative overflow-hidden group">
-          <div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
-          <span id="btnText" class="relative z-10 flex items-center justify-center gap-2">
-            <i class="fas fa-magic"></i> Generate Secure Link
-          </span>
-        </button>
-      </div>
-
-      <!-- Live Preview -->
-      <div class="lg:col-span-5">
-        <div class="glass rounded-[2rem] p-6 sm:p-8 sticky top-6 space-y-6">
-          <div class="flex items-center justify-between">
-            <h3 class="font-bold text-sm text-gray-400 uppercase tracking-widest flex items-center gap-2">
-              <i class="fas fa-eye text-emerald-400"></i> Preview
-            </h3>
-            <span class="flex h-2 w-2">
-              <span class="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-emerald-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-          </div>
-
-          <div class="bg-[#0a0a0f] light:bg-slate-50 border border-white/5 light:border-slate-200 rounded-3xl p-6 relative overflow-hidden">
-            <!-- Decorative blur -->
-            <div class="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl"></div>
-            
-            <div class="relative z-10 text-center space-y-4">
-              <div class="w-12 h-12 bg-white/5 light:bg-white border border-white/10 light:border-slate-200 rounded-2xl flex items-center justify-center mx-auto mb-2 shadow-sm">
-                <i class="fas fa-paper-plane text-emerald-400 text-xl -ml-1"></i>
-              </div>
-              
-              <!-- اضافه شدن کلاس always-white به بخش‌های درخواستی -->
-              <div id="prevTitle" class="text-lg font-bold text-white max-w-[200px] mx-auto truncate always-white">Payment Request</div>
-              
-              <div class="py-2">
-                <div class="text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-bold">Amount</div>
-                <div id="prevAmount" class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">0.00 USDC</div>
-              </div>
-
-              <div class="bg-white/5 light:bg-white rounded-2xl p-4 text-xs space-y-3 text-left border border-white/5 light:border-slate-100">
-                <div class="flex justify-between items-center text-gray-400">
-                  <span>From</span>
-                  <span id="prevSender" class="font-mono text-white bg-black/20 light:bg-slate-100 px-2 py-1 rounded-md always-white">Not Connected</span>
-                </div>
-                <div class="flex justify-between items-center text-gray-400">
-                  <span>Note</span>
-                  <span id="prevDesc" class="text-white truncate max-w-[140px] font-medium always-white">—</span>
-                </div>
-                <div class="flex justify-between items-center text-gray-400">
-                  <span>Valid Until</span>
-                  <span id="prevExpires" class="text-white font-medium always-white">Never</span>
-                </div>
-              </div>
-
-              <!-- Fake QR Area for Preview -->
-              <div class="pt-4 border-t border-white/5 light:border-slate-200">
-                <div class="w-32 h-32 bg-white/10 light:bg-slate-200 rounded-xl mx-auto flex items-center justify-center relative overflow-hidden">
-                  <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPgo8cmVjdCB3aWR0aD0iOCIgaGVpZ2h0PSI4IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPHBhdGggZD0iTTAgMGg0djRIMHoiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIi8+Cjwvc3ZnPg==')] opacity-50"></div>
-                  <i class="fas fa-qrcode text-3xl text-gray-500/50"></i>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- TAB 2: HISTORY -->
-    <div id="viewHistory" class="hidden space-y-6">
-      <div class="glass rounded-[2rem] p-6 sm:p-8 space-y-6 min-h-[500px]">
-        <div class="flex items-center justify-between">
-          <h3 class="font-bold text-lg flex items-center gap-2"><i class="fas fa-history text-emerald-400"></i> Your Payment Links</h3>
-          <button onclick="clearHistory()" class="text-xs text-rose-400 hover:text-rose-300 transition-colors bg-rose-500/10 px-3 py-1.5 rounded-lg">Clear History</button>
-        </div>
-        
-        <div id="historyTableBody" class="space-y-4">
-          <!-- History injected via JS -->
-        </div>
-      </div>
+    
+    <p id="errorMsg" class="text-rose-400 text-sm hidden"></p>
+    <p id="successMsg" class="text-emerald-400 text-sm hidden"></p>
+    
+    <!-- محل قرارگیری لینک اکسپلورر تراکنش -->
+    <div id="txHashContainer" class="hidden mt-4 text-center">
+      <a id="txHashLink" href="#" target="_blank" class="text-sm text-cyan-400 hover:text-cyan-300 font-medium bg-cyan-500/10 px-4 py-2 rounded-lg inline-flex items-center gap-2 transition-colors">
+        <i class="fas fa-external-link-alt"></i> View on Explorer
+      </a>
     </div>
   </div>
 
-  <!-- Success Modal -->
-  <div id="successModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-xl flex items-center justify-center z-50 p-4 transition-opacity">
-    <div class="glass border border-white/10 light:border-slate-200 rounded-[2rem] p-8 max-w-md w-full shadow-2xl space-y-6 text-center transform transition-transform scale-95" id="modalContent">
-      <div class="w-16 h-16 bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-full flex items-center justify-center mx-auto text-3xl shadow-lg shadow-emerald-500/30 text-white mb-2">
-        <i class="fas fa-check"></i>
-      </div>
-      
-      <div>
-        <h3 class="text-xl font-bold mb-1">Link Created Successfully!</h3>
-        <p class="text-sm text-gray-400">Share this link or QR code to receive your payment.</p>
-      </div>
-
-      <div class="bg-white p-4 rounded-2xl inline-block mx-auto shadow-sm" id="modalQRContainer"></div>
-      
-      <div class="relative group">
-        <input type="text" id="modalLinkInput" readonly class="w-full rounded-xl pl-4 pr-12 py-3.5 text-xs font-mono bg-black/20 light:bg-slate-100 border border-white/5 text-center focus:outline-none focus:border-emerald-500/50 transition-colors">
-        <button onclick="copyModalLink()" class="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center bg-white/5 hover:bg-white/10 rounded-lg text-gray-400 hover:text-white transition-colors">
-          <i class="fas fa-copy"></i>
-        </button>
-      </div>
-      
-      <div class="grid grid-cols-2 gap-3 pt-2">
-        <button onclick="shareLink()" class="py-3.5 bg-white/5 hover:bg-white/10 border border-white/10 light:border-slate-200 rounded-xl text-sm font-bold transition-colors">Share</button>
-        <button onclick="closeSuccessModal()" class="py-3.5 bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold rounded-xl text-sm shadow-lg shadow-emerald-500/20 transition-all">Done</button>
-      </div>
-    </div>
-  </div>
-
-<script>
-  // PROXY CONTRACT ADDRESS 
-  const CONTRACT_ADDRESS = "0x9B438F8Aa736Ed685e7aFF84eB173A9bb7c08320";
-  const ARC_CHAIN_ID = 5042002;
-  const ARC_CHAIN_ID_HEX = "0x4cebe2";
-  const NATIVE_USDC = "0x3600000000000000000000000000000000000000";
-
-  let signer = null;
-  let userAddress = null;
-  let provider = null;
-  let isProcessing = false;
-  let currentLinks = [];
-  let rawBalance = 0n;
-
-  // توابع ارتباط با db.js برای ذخیره در فضای ابری (اگر تعریف نشده باشد، از لوکال مرورگر استفاده می‌شود)
-  async function fetchLinks() {
-    try {
-      if (typeof window.loadFromCloudDB === 'function') {
-        const data = await window.loadFromCloudDB();
-        if (data && Array.isArray(data)) return data;
-      }
-    } catch(e) { console.error("Cloud DB load error", e); }
-    return JSON.parse(localStorage.getItem('arcPaymentLinksV2') || '[]');
-  }
-
-  async function saveLinks(links) {
-    try {
-      if (typeof window.saveToCloudDB === 'function') {
-        await window.saveToCloudDB(links);
-      }
-    } catch(e) { console.error("Cloud DB save error", e); }
-    localStorage.setItem('arcPaymentLinksV2', JSON.stringify(links));
-  }
-
-  // ABI به‌روزشده به همراه قابلیت خواندن وضعیت لینک از بلاک‌چین
-  const ArcPayLinkABI = [
-    "function createLink(address linkId, address token, uint256 amount, uint40 expiration) external payable",
-    "event LinkCreated(address indexed linkId, address indexed creator, address indexed token, uint256 amount, uint40 expiration)",
-    "function links(address) view returns (uint256 amount, address token, uint40 expiration, uint8 status, address creator)"
-  ];
-
-  window.addEventListener('load', async () => {
-    // بارگذاری لینک‌ها در ابتدای ورود از طریق دیتابیس ابری
-    currentLinks = await fetchLinks();
-
-    if (window.ethereum && window.ethereum.selectedAddress) {
-      setTimeout(connectWallet, 500);
-    } else {
-      renderHistory();
-    }
-    updatePreview();
-  });
-
-  async function connectWallet() {
-    if (!window.ethereum) return notify("Error", "MetaMask not found! Please install it.", "fa-exclamation-triangle", true);
-
-    try {
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-      userAddress = accounts[0];
-
-      provider = new ethers.BrowserProvider(window.ethereum);
-      const network = await provider.getNetwork();
-      
-      if (network.chainId !== BigInt(ARC_CHAIN_ID)) {
-        notify("Info", "Switching to Arc L1...", "fa-network-wired");
-        try {
-          await window.ethereum.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: ARC_CHAIN_ID_HEX }]
-          });
-        } catch (switchError) {
-          return notify("Error", "Please manually switch to Arc L1 (Chain ID: 5042002)", "fa-times-circle", true);
-        }
-      }
-
-      signer = await provider.getSigner();
-      const shortAddress = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
-      
-      document.getElementById("headerWalletText").textContent = shortAddress;
-      document.getElementById("prevSender").textContent = shortAddress;
-      document.getElementById("disconnectBtn").classList.remove("hidden");
-      document.getElementById("disconnectBtn").classList.add("flex");
-
-      notify("Success", "Wallet Connected Successfully", "fa-check-circle");
-      await loadUserBalance();
-      updatePreview();
-      
-      // بارگذاری مجدد تاریخچه پس از اتصال تا وضعیت آنلاین از بلاک‌چین خوانده شود
-      renderHistory();
-
-    } catch (e) {
-      console.error(e);
-      notify("Error", "Failed to connect wallet.", "fa-times-circle", true);
-    }
-  }
-
-  function disconnectWallet() {
-    signer = null;
-    userAddress = null;
-    provider = null;
-    rawBalance = 0n;
-
-    document.getElementById("headerWalletText").textContent = "Connect";
-    document.getElementById("prevSender").textContent = "Not Connected";
-    document.getElementById("disconnectBtn").classList.remove("flex");
-    document.getElementById("disconnectBtn").classList.add("hidden");
-    document.getElementById("tokenBalanceDisplay").textContent = "Balance: —";
-
-    notify("Info", "Wallet disconnected", "fa-info-circle");
-  }
-
-  async function handleTokenChange() {
-    const select = document.getElementById('tokenSelect');
-    if (select.value === 'custom') {
-      const customAddress = prompt("Enter Custom Token Address (0x...):");
-      if (customAddress && ethers.isAddress(customAddress)) {
-        const option = new Option(`Custom (${customAddress.slice(0,6)}...)`, customAddress);
-        select.add(option);
-        select.value = customAddress;
-        notify("Success", "Custom token added", "fa-check");
-      } else {
-        notify("Error", "Invalid address", "fa-times", true);
-        select.value = NATIVE_USDC;
-      }
-    }
-    await loadUserBalance();
-    updatePreview();
-  }
-
-  async function loadUserBalance() {
-    if (!signer || !userAddress) return;
-    const select = document.getElementById('tokenSelect');
-    const tokenAddress = select.value;
-
-    try {
-      document.getElementById("tokenBalanceDisplay").textContent = `Loading...`;
-      
-      if (tokenAddress.toLowerCase() === NATIVE_USDC.toLowerCase() || tokenAddress === ethers.ZeroAddress) {
-        rawBalance = await provider.getBalance(userAddress);
-        const formatted = ethers.formatEther(rawBalance); 
-        document.getElementById("tokenBalanceDisplay").innerHTML = `Balance: <span class="text-white">${parseFloat(formatted).toFixed(4)}</span>`;
-      } else {
-        const contract = new ethers.Contract(tokenAddress, ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"], signer);
-        const [bal, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
-        rawBalance = bal;
-        const formatted = ethers.formatUnits(bal, decimals);
-        document.getElementById("tokenBalanceDisplay").innerHTML = `Balance: <span class="text-white">${parseFloat(formatted).toFixed(4)}</span>`;
-      }
-    } catch (e) {
-      console.warn("Balance load error:", e);
-      document.getElementById("tokenBalanceDisplay").textContent = "Balance: Error";
-      rawBalance = 0n;
-    }
-  }
-
-  function setMaxAmount() {
-    if (!signer) return notify("Error", "Connect wallet first", "fa-wallet", true);
-    if (rawBalance === 0n) return;
+  <script>
+    const CONTRACT_ADDRESS = "0x9B438F8Aa736Ed685e7aFF84eB173A9bb7c08320";
+    const ARC_CHAIN_ID = 5042002;
+    const ARC_CHAIN_ID_HEX = "0x4cebe2";
     
-    const select = document.getElementById('tokenSelect');
-    const tokenAddress = select.value;
-    let maxStr = "0";
+    // دیکشنری توکن‌ها
+    const TOKEN_MAP = {
+      "0x0000000000000000000000000000000000000000": "USDC (Native)",
+      "0x3600000000000000000000000000000000000000": "USDC",
+      "0x89b50855aa3be2f677cd6303cec089b5f319d72a": "EURC",
+      "0xf0c4a4ce82a5746abaad9425360ab04fbba432bf": "cirBTC"
+    };
 
-    if (tokenAddress.toLowerCase() === NATIVE_USDC.toLowerCase()) {
-      const buffer = ethers.parseEther("0.01");
-      const safeBalance = rawBalance > buffer ? rawBalance - buffer : 0n;
-      maxStr = ethers.formatEther(safeBalance);
-    } else {
-      maxStr = ethers.formatEther(rawBalance);
-    }
-    
-    document.getElementById('fixedAmountInput').value = parseFloat(maxStr).toFixed(6);
-    updatePreview();
-  }
+    // ABI شامل تابع خواندن اطلاعات لینک و گرفتن اعشار توکن
+    const ArcPayLinkABI = [
+      "function claimLink(address linkId, address destination, uint256 feeAmount, bytes calldata signature) external",
+      "function links(address) view returns (uint256 amount, address token, uint40 expiration, uint8 status, address creator)"
+    ];
+    const ERC20ABI = ["function decimals() view returns (uint8)"];
 
-  async function generateLink() {
-    if (isProcessing) return;
-    if (!signer || !userAddress) return notify("Error", "Please connect your wallet first", "fa-wallet", true);
+    let provider, signer, userAddress;
+    let linkId, privateKey;
 
-    const title = document.getElementById('linkTitle').value.trim();
-    const amountInput = parseFloat(document.getElementById('fixedAmountInput').value);
-    const select = document.getElementById('tokenSelect');
-    const tokenAddress = select.value;
-    const tokenSymbol = select.options[select.selectedIndex].text.split(' ')[0];
+    window.addEventListener('load', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      linkId = urlParams.get('id');
+      privateKey = urlParams.get('pk');
 
-    document.getElementById('errTitle').classList.add('hidden');
-    document.getElementById('errAmount').classList.add('hidden');
-
-    if (!title) {
-      document.getElementById('errTitle').textContent = "Title is required";
-      document.getElementById('errTitle').classList.remove('hidden');
-      return;
-    }
-    if (!amountInput || amountInput <= 0) {
-      document.getElementById('errAmount').textContent = "Enter a valid amount";
-      document.getElementById('errAmount').classList.remove('hidden');
-      return;
-    }
-
-    setLoadingState(true);
-
-    try {
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, ArcPayLinkABI, signer);
-      const isNative = (tokenAddress.toLowerCase() === NATIVE_USDC.toLowerCase() || tokenAddress === ethers.ZeroAddress);
-
-      let amountWei;
-      if (!isNative) {
-        const tokenContract = new ethers.Contract(tokenAddress, [
-          "function decimals() view returns (uint8)",
-          "function allowance(address, address) view returns (uint256)",
-          "function approve(address, uint256) returns (bool)"
-        ], signer);
-        
-        const decimals = await tokenContract.decimals();
-        amountWei = ethers.parseUnits(amountInput.toString(), decimals);
-
-        notify("Info", "Checking allowance...", "fa-spinner fa-spin");
-        const allowance = await tokenContract.allowance(userAddress, CONTRACT_ADDRESS);
-        
-        if (allowance < amountWei) {
-          notify("Info", "Please approve token in wallet...", "fa-signature");
-          const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, amountWei);
-          await approveTx.wait();
-          notify("Success", "Approval confirmed!", "fa-check");
-        }
-      } else {
-        amountWei = ethers.parseUnits(amountInput.toString(), 18);
+      if (!linkId || !privateKey) {
+        showError("Invalid payment link. Missing ID or Key.");
+        return;
       }
-
-      const ephemeralWallet = ethers.Wallet.createRandom();
-      const generatedLinkId = ephemeralWallet.address;
-      const privateKey = ephemeralWallet.privateKey;
-
-      let expiration = 0;
-      const expOption = document.getElementById('expirationSelect').value;
-      if (expOption !== 'never') {
-        const seconds = { '1h': 3600, '24h': 86400, '7d': 604800, '30d': 2592000 }[expOption];
-        expiration = Math.floor(Date.now() / 1000) + seconds;
-      }
-
-      notify("Info", "Confirm transaction in wallet...", "fa-file-signature");
       
-      const tx = await contract.createLink(
-        generatedLinkId,
-        isNative ? ethers.ZeroAddress : tokenAddress,
-        amountWei,
-        expiration,
-        { value: isNative ? amountWei : 0 }
-      );
-      
-      notify("Info", "Transaction pending...", "fa-circle-notch fa-spin");
-      const receipt = await tx.wait();
+      document.getElementById('linkIdDisplay').textContent = `${linkId.slice(0,6)}...${linkId.slice(-4)}`;
+    });
 
-      const finalUrl = `https://arcsplit.kamkazi-1297.workers.dev/pay?id=${generatedLinkId}&pk=${privateKey}`;
+    async function connectWallet() {
+      if (!window.ethereum) return showError("MetaMask not found!");
+      hideMessages();
 
-      const newLink = {
-        id: generatedLinkId,
-        txHash: tx.hash,
-        title: title,
-        desc: document.getElementById('linkDesc').value,
-        token: tokenSymbol,
-        amount: amountInput,
-        expiration: expiration,
-        status: "Active",
-        createdAt: Date.now(),
-        url: finalUrl,
-        pk: privateKey 
-      };
-
-      currentLinks.unshift(newLink);
-      await saveLinks(currentLinks); // ذخیره در دیتابیس ابری (یا مرورگر)
-
-      showSuccessModal(newLink);
-      renderHistory();
-      notify("Success", "Payment Link Created!", "fa-check-circle");
-      
-      // Reset form
-      document.getElementById('linkTitle').value = "";
-      document.getElementById('fixedAmountInput').value = "";
-      updatePreview();
-      await loadUserBalance();
-
-    } catch (error) {
-      console.error(error);
-      if (error.code === "ACTION_REJECTED") {
-        notify("Error", "Transaction cancelled.", "fa-ban", true);
-      } else {
-        notify("Error", error.reason || error.message || "Failed to create link", "fa-exclamation-triangle", true);
-      }
-    } finally {
-      setLoadingState(false);
-    }
-  }
-
-  function setLoadingState(loading) {
-    isProcessing = loading;
-    const btn = document.getElementById('generateBtn');
-    const text = document.getElementById('btnText');
-    
-    if (loading) {
-      btn.disabled = true;
-      text.innerHTML = '<div class="spinner mr-2"></div> Processing...';
-    } else {
-      btn.disabled = false;
-      text.innerHTML = '<i class="fas fa-magic"></i> Generate Secure Link';
-    }
-  }
-
-  function updatePreview() {
-    const title = document.getElementById('linkTitle').value || 'Payment Request';
-    const select = document.getElementById('tokenSelect');
-    const tokenSymbol = select.options[select.selectedIndex].text.split(' ')[0];
-    const amount = document.getElementById('fixedAmountInput').value || '0.00';
-    const exp = document.getElementById('expirationSelect').value;
-
-    document.getElementById('prevTitle').textContent = title;
-    document.getElementById('prevAmount').textContent = `${amount} ${tokenSymbol}`;
-    document.getElementById('prevDesc').textContent = document.getElementById('linkDesc').value || '—';
-    
-    const expText = exp === 'never' ? 'Never' : exp.replace('h', ' Hours').replace('d', ' Days');
-    document.getElementById('prevExpires').textContent = expText;
-  }
-
-  function showSuccessModal(link) {
-    document.getElementById('modalLinkInput').value = link.url;
-    const qrContainer = document.getElementById('modalQRContainer');
-    qrContainer.innerHTML = '';
-    
-    if (typeof QRCode !== 'undefined') {
-      QRCode.toCanvas(link.url, { 
-        width: 180, 
-        margin: 1,
-        color: { dark: '#05050a', light: '#ffffff' }
-      }, (err, canvas) => {
-        if (!err) {
-          canvas.classList.add('rounded-lg');
-          qrContainer.appendChild(canvas);
-        }
-      });
-    }
-    
-    const modal = document.getElementById('successModal');
-    const content = document.getElementById('modalContent');
-    modal.classList.remove('hidden');
-    setTimeout(() => {
-      content.classList.remove('scale-95');
-      content.classList.add('scale-100');
-    }, 10);
-  }
-
-  function closeSuccessModal() {
-    const modal = document.getElementById('successModal');
-    const content = document.getElementById('modalContent');
-    content.classList.remove('scale-100');
-    content.classList.add('scale-95');
-    setTimeout(() => modal.classList.add('hidden'), 200);
-    switchTab('history');
-  }
-
-  function copyModalLink() {
-    const link = document.getElementById('modalLinkInput').value;
-    navigator.clipboard.writeText(link);
-    notify("Success", "Link copied to clipboard!", "fa-copy");
-  }
-
-  async function shareLink() {
-    const link = document.getElementById('modalLinkInput').value;
-    if (navigator.share) {
       try {
-        await navigator.share({
-          title: 'Arc Pay Link',
-          text: 'Here is your payment link:',
-          url: link
-        });
-      } catch (err) {
-        console.log("Share skipped");
+        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        userAddress = accounts[0];
+        provider = new ethers.BrowserProvider(window.ethereum);
+        
+        const network = await provider.getNetwork();
+        if (network.chainId !== BigInt(ARC_CHAIN_ID)) {
+          try {
+            await window.ethereum.request({
+              method: 'wallet_switchEthereumChain',
+              params: [{ chainId: ARC_CHAIN_ID_HEX }]
+            });
+          } catch (e) {
+            return showError("Please switch to Arc L1 Network.");
+          }
+        }
+
+        signer = await provider.getSigner();
+        
+        // تغییر استایل دکمه اتصال
+        document.getElementById('connectBtn').classList.add('hidden');
+        document.getElementById('claimBtn').classList.remove('hidden');
+        
+        // خواندن اطلاعات لینک از بلاک‌چین
+        await fetchLinkDetails();
+        
+      } catch (e) {
+        showError("Failed to connect wallet.");
       }
-    } else {
-      copyModalLink();
-    }
-  }
-
-  function switchTab(tab) {
-    document.getElementById('viewCreate').classList.toggle('hidden', tab !== 'create');
-    document.getElementById('viewHistory').classList.toggle('hidden', tab !== 'history');
-    
-    document.getElementById('tabCreate').className = tab === 'create' 
-      ? "flex-1 px-5 py-2.5 rounded-xl text-sm font-bold transition-all bg-emerald-500/10 text-emerald-400 shadow-sm" 
-      : "flex-1 px-5 py-2.5 rounded-xl text-sm font-bold transition-all text-gray-400 hover:text-white light:hover:text-black";
-    
-    document.getElementById('tabHistory').className = tab === 'history' 
-      ? "flex-1 px-5 py-2.5 rounded-xl text-sm font-bold transition-all bg-emerald-500/10 text-emerald-400 shadow-sm" 
-      : "flex-1 px-5 py-2.5 rounded-xl text-sm font-bold transition-all text-gray-400 hover:text-white light:hover:text-black";
-  }
-
-  // نمایش تاریخچه با قابلیت خواندن وضعیت هوشمند از شبکه بلاک‌چین
-  async function renderHistory() {
-    const container = document.getElementById('historyTableBody');
-    if (currentLinks.length === 0) {
-      container.innerHTML = `
-        <div class="text-center py-12 px-4 border border-dashed border-white/10 rounded-2xl">
-          <div class="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fas fa-folder-open text-gray-500 text-2xl"></i></div>
-          <h4 class="text-white font-bold mb-1">No Links Yet</h4>
-          <p class="text-gray-500 text-sm">Create your first payment link to see it here.</p>
-        </div>`;
-      return;
-    }
-    
-    // وضعیت لودینگ هنگام دریافت اطلاعات از بلاک‌چین
-    container.innerHTML = `<div class="flex justify-center items-center py-10"><div class="spinner mr-3"></div><span class="text-gray-400 text-sm">Fetching live statuses...</span></div>`;
-
-    let readContract = null;
-    if (provider) {
-       readContract = new ethers.Contract(CONTRACT_ADDRESS, ArcPayLinkABI, provider);
-    } else if (window.ethereum) {
-       try {
-         const tempProvider = new ethers.BrowserProvider(window.ethereum);
-         readContract = new ethers.Contract(CONTRACT_ADDRESS, ArcPayLinkABI, tempProvider);
-       } catch(e) {}
     }
 
-    let html = '';
-    
-    for (let link of currentLinks) {
-      let isExpired = link.expiration > 0 && (Date.now() / 1000) > link.expiration;
-      let statusColor = isExpired ? 'text-rose-400 bg-rose-400/10' : 'text-emerald-400 bg-emerald-400/10';
-      let statusText = isExpired ? 'Expired' : 'Active';
+    async function fetchLinkDetails() {
+      document.getElementById('amountDisplay').innerHTML = '<div class="spinner border-gray-400 border-left-transparent w-4 h-4 inline-block"></div>';
+      document.getElementById('statusDisplay').textContent = 'Fetching...';
 
-      // بررسی وضعیت روی شبکه به صورت زنده
-      if (readContract) {
-         try {
-            const linkData = await readContract.links(link.id);
-            const onChainStatus = Number(linkData[3]);
-            if (onChainStatus === 2) { // 2 = Claimed
-               statusText = 'Claimed';
-               statusColor = 'text-rose-500 bg-rose-500/10'; // رنگ قرمز مخصوص
-            } else if (onChainStatus === 3) {
-               statusText = 'Cancelled';
-               statusColor = 'text-rose-500 bg-rose-500/10';
-            } else if (onChainStatus === 1 && !isExpired) {
-               statusText = 'Active';
-               statusColor = 'text-emerald-400 bg-emerald-400/10';
-            }
-         } catch (e) {
-            console.warn("Could not read status for link", link.id);
-         }
+      try {
+        const contract = new ethers.Contract(CONTRACT_ADDRESS, ArcPayLinkABI, provider);
+        const [amount, tokenAddress, expiration, status, creator] = await contract.links(linkId);
+
+        const tokenLower = tokenAddress.toLowerCase();
+        let tokenSymbol = TOKEN_MAP[tokenLower] || "Unknown Token";
+        let decimals = 18;
+
+        // اگر توکن Native نیست، تلاش می‌کنیم Decimals آن را بخوانیم
+        if (tokenLower !== "0x0000000000000000000000000000000000000000" && tokenLower !== "0x3600000000000000000000000000000000000000") {
+          try {
+            const tokenContract = new ethers.Contract(tokenAddress, ERC20ABI, provider);
+            decimals = await tokenContract.decimals();
+          } catch (e) {
+            console.warn("Could not fetch decimals, using 18 default");
+          }
+        }
+
+        const formattedAmount = ethers.formatUnits(amount, decimals);
+        document.getElementById('amountDisplay').innerHTML = `<span class="text-white">${parseFloat(formattedAmount).toFixed(4)}</span> <span class="text-emerald-400 font-bold">${tokenSymbol}</span>`;
+
+        const claimBtn = document.getElementById('claimBtn');
+
+        // بررسی وضعیت لینک (0=None, 1=Active, 2=Claimed, 3=Cancelled)
+        if (status === 1n) {
+          document.getElementById('statusDisplay').textContent = "Active";
+          document.getElementById('statusDisplay').classList.replace('text-gray-400', 'text-emerald-400');
+          
+          claimBtn.disabled = false;
+          claimBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+          claimBtn.classList.add('hover:from-emerald-400', 'hover:to-cyan-400', 'shadow-lg', 'shadow-emerald-500/20');
+        } else if (status === 2n) {
+          document.getElementById('statusDisplay').textContent = "Already Claimed";
+          document.getElementById('statusDisplay').classList.replace('text-gray-400', 'text-rose-400');
+          showError("This payment has already been claimed.");
+        } else if (status === 3n) {
+          document.getElementById('statusDisplay').textContent = "Cancelled";
+          document.getElementById('statusDisplay').classList.replace('text-gray-400', 'text-rose-400');
+          showError("This payment link was cancelled by the creator.");
+        } else {
+          document.getElementById('statusDisplay').textContent = "Not Found";
+          showError("Invalid link or not found on network.");
+        }
+
+      } catch (error) {
+        console.error(error);
+        showError("Error fetching payment details from the blockchain.");
+        document.getElementById('amountDisplay').textContent = "Error";
       }
+    }
 
-      const txLinkUrl = link.txHash ? `https://testnet.arcscan.app/tx/${link.txHash}` : '#';
+    async function claimFunds() {
+      if (!signer || !userAddress || !linkId || !privateKey) return;
       
-      html += `
-      <div class="bg-white/5 border border-white/5 p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-white/10 transition-colors">
-        <div class="flex items-start gap-4">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 flex items-center justify-center flex-shrink-0 mt-1">
-            <i class="fas fa-link text-emerald-400"></i>
-          </div>
-          <div>
-            <div class="font-bold text-white text-base flex items-center gap-2">
-              ${link.title} <span class="text-[10px] px-2 py-0.5 rounded-md font-bold uppercase ${statusColor}">${statusText}</span>
-            </div>
-            <div class="text-gray-400 text-sm mt-1">${link.amount} ${link.token} • ${new Date(link.createdAt).toLocaleDateString()}</div>
-            <div class="text-gray-500 text-xs mt-2 font-mono flex flex-wrap items-center gap-x-4 gap-y-2">
-              <span>ID: ${link.id.slice(0,10)}...</span>
-              ${link.txHash ? `<a href="${txLinkUrl}" target="_blank" class="text-cyan-400 hover:text-cyan-300 transition-colors inline-flex items-center gap-1.5 px-2 py-1 bg-cyan-500/10 rounded-lg"><i class="fas fa-external-link-alt"></i> View Tx</a>` : ''}
-            </div>
-          </div>
-        </div>
-        <div class="flex items-center gap-2 w-full sm:w-auto">
-          <button onclick="navigator.clipboard.writeText('${link.url}'); notify('Success', 'Link copied!', 'fa-check');" class="flex-1 sm:flex-none px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl font-semibold text-sm transition-colors">Copy URL</button>
-        </div>
-      </div>
-    `
+      const btnText = document.getElementById('claimBtnText');
+      btnText.innerHTML = '<div class="spinner mr-2"></div> Processing...';
+      document.getElementById('claimBtn').disabled = true;
+      hideMessages();
+      document.getElementById('txHashContainer').classList.add('hidden');
+
+      try {
+        const domain = {
+          name: 'ArcPayLink',
+          version: '1',
+          chainId: ARC_CHAIN_ID,
+          verifyingContract: CONTRACT_ADDRESS // 0x9B438F8Aa736Ed685e7aFF84eB173A9bb7c08320
+        };
+
+        const types = {
+          Claim: [
+            { name: 'linkId', type: 'address' },
+            { name: 'destination', type: 'address' },
+            { name: 'feeAmount', type: 'uint256' },
+            { name: 'relayer', type: 'address' } 
+          ]
+        };
+
+        const feeAmount = 0; 
+        
+      
+        const RELAYER_WALLET_ADDRESS = "0xc33ff8266DC0B7EB83FCE44bA37B30e39B75577e"; 
+
+        const values = {
+          linkId: linkId,
+          destination: userAddress,
+          feeAmount: feeAmount,
+          relayer: RELAYER_WALLET_ADDRESS
+        };
+
+        const ephemeralWallet = new ethers.Wallet(privateKey);
+        const signature = await ephemeralWallet.signTypedData(domain, types, values);
+
+        btnText.innerHTML = '<div class="spinner mr-2"></div> Sending to Relayer...';
+
+        
+        const WORKER_URL = "https://pay-relayer.kamkazi-1297.workers.dev/";
+        
+        const response = await fetch(WORKER_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            linkId: linkId,
+            destination: userAddress,
+            feeAmount: feeAmount,
+            signature: signature
+          })
+        });
+
+        const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.error);
+        }
+
+        btnText.innerHTML = '<div class="spinner mr-2"></div> Confirming in Network...';
+        
+        // منتظر ماندن برای تایید تراکنش در شبکه بلاک‌چین
+        const receipt = await provider.waitForTransaction(data.txHash);
+
+        // موفقیت!
+        document.getElementById('statusDisplay').textContent = "Claimed Successfully";
+        showSuccess("Funds successfully transferred to your wallet!");
+        btnText.innerHTML = '<i class="fas fa-check"></i> Claimed';
+        
+        // نمایش لینک تراکنش در اکسپلورر شبکه Arc
+        const txHashLink = document.getElementById('txHashLink');
+        txHashLink.href = `https://testnet.arcscan.app/tx/${data.txHash}`;
+        document.getElementById('txHashContainer').classList.remove('hidden');
+
+      } catch (error) {
+        console.error(error);
+        btnText.innerHTML = '<i class="fas fa-bolt"></i> Claim Funds';
+        document.getElementById('claimBtn').disabled = false;
+        
+        if (error.reason || error.message) {
+          showError(error.reason || error.message);
+        } else {
+          showError("Failed to claim funds. Link might be used or expired.");
+        }
+      }
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('errorMsg');
+      el.textContent = msg;
+      el.classList.remove('hidden');
     }
     
-    container.innerHTML = html;
-  }
-
-  async function clearHistory() {
-    if(confirm("Are you sure you want to clear your history? You won't be able to retrieve lost private keys for active links!")) {
-      currentLinks = [];
-      await saveLinks(currentLinks);
-      renderHistory();
+    function showSuccess(msg) {
+      const el = document.getElementById('successMsg');
+      el.textContent = msg;
+      el.classList.remove('hidden');
     }
-  }
 
-  function notify(title, msg, iconClass, isError = false) {
-    const toast = document.getElementById("toast");
-    const icon = document.getElementById("toastIcon");
-    
-    icon.className = `fas ${iconClass} ${isError ? 'text-rose-400' : 'text-emerald-400'}`;
-    document.getElementById("toastText").innerHTML = `<strong class="mr-1">${title}:</strong> ${msg}`;
-    
-    toast.classList.remove("hidden", "translate-y-full", "opacity-0");
-    
-    if(window.toastTimer) clearTimeout(window.toastTimer);
-    
-    window.toastTimer = setTimeout(() => {
-      toast.classList.add("translate-y-full", "opacity-0");
-      setTimeout(() => toast.classList.add("hidden"), 300);
-    }, 4000);
-  }
-
-  function toggleTheme() {
-    document.documentElement.classList.toggle('light');
-    const icon = document.getElementById("themeBtn").querySelector("i");
-    if(document.documentElement.classList.contains('light')) {
-      icon.classList.remove("fa-moon", "text-emerald-500");
-      icon.classList.add("fa-sun", "text-amber-500");
-    } else {
-      icon.classList.remove("fa-sun", "text-amber-500");
-      icon.classList.add("fa-moon", "text-emerald-500");
+    function hideMessages() {
+      document.getElementById('errorMsg').classList.add('hidden');
+      document.getElementById('successMsg').classList.add('hidden');
     }
-  }
-</script>
+  </script>
 </body>
 </html>
