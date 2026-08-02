@@ -66,7 +66,6 @@
       </div>
     </div>
 
-    <!-- فیلد آدرس و دکمه کلیم -->
     <div id="claimSection" class="space-y-3 pt-2 hidden">
       <input type="text" id="destAddress" placeholder="Enter Destination Address (0x...)" class="w-full bg-black/20 text-white border border-white/10 py-4 px-4 rounded-xl text-sm outline-none focus:border-emerald-500 transition-colors font-mono">
       
@@ -80,7 +79,6 @@
     <p id="errorMsg" class="text-rose-400 text-sm hidden"></p>
     <p id="successMsg" class="text-emerald-400 text-sm hidden"></p>
     
-    <!-- محل قرارگیری لینک اکسپلورر تراکنش -->
     <div id="txHashContainer" class="hidden mt-4 text-center">
       <a id="txHashLink" href="#" target="_blank" class="text-sm text-cyan-400 hover:text-cyan-300 font-medium bg-cyan-500/10 px-4 py-2 rounded-lg inline-flex items-center gap-2 transition-colors">
         <i class="fas fa-external-link-alt"></i> View on Explorer
@@ -92,7 +90,6 @@
     const CONTRACT_ADDRESS = "0x9B438F8Aa736Ed685e7aFF84eB173A9bb7c08320";
     const ARC_CHAIN_ID = 5042002;
     
-    // تعریف پابلیک پروایدر با تنظیمات staticNetwork برای جلوگیری از تاخیر و تایم‌اوت اولیه در Ethers v6
     const RPC_URL = "https://rpc.testnet.arc.network";
     const provider = new ethers.JsonRpcProvider(RPC_URL, {
       chainId: ARC_CHAIN_ID,
@@ -108,7 +105,6 @@
       "0xf0c4a4ce82a5746abaad9425360ab04fbba432bf": "cirBTC"
     };
 
-    // مپینگ استاتیک دسیمال‌ها جهت جلوگیری از نمایش اشتباه قبل از لود از شبکه
     const TOKEN_DECIMALS = {
       "0x0000000000000000000000000000000000000000": 18,
       "0x3600000000000000000000000000000000000000": 18,
@@ -123,7 +119,6 @@
 
     let linkId, privateKey;
 
-    // تابع کمکی برای مکث (Delay)
     const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
     window.addEventListener('load', () => {
@@ -138,7 +133,6 @@
       
       document.getElementById('linkIdDisplay').textContent = `${linkId.slice(0,6)}...${linkId.slice(-4)}`;
       
-      // فراخوانی مستقیم اطلاعات از بلاکچین به محض لود شدن لینک
       fetchLinkDetails();
     });
 
@@ -334,8 +328,15 @@
             
             if (attempt >= maxRetries) throw err; 
             
-            btnText.innerHTML = `<div class="spinner mr-2"></div> Retrying...`;
-            await sleep(1500);
+            // هندل کردن پیام تاخیر در صورت شلوغی شبکه
+            if (err.message && (err.message.includes("busy") || err.message.includes("Retrying"))) {
+              btnText.innerHTML = `<div class="spinner mr-2"></div> Network busy, retrying...`;
+            } else {
+              btnText.innerHTML = `<div class="spinner mr-2"></div> Retrying...`;
+            }
+            
+            // تاخیر تصاعدی
+            await sleep(1500 * attempt);
           }
         }
 
