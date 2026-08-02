@@ -99,7 +99,7 @@
   </div>
 
   <script>
-    const INVOICE_CONTRACT_ADDRESS = "0xD915573BCC42c5d4f859627435E975AEe316BCe0"; // از سورس ۱
+    const INVOICE_CONTRACT_ADDRESS = "0xD915573BCC42c5d4f859627435E975AEe316BCe0";
     const ARC_CHAIN_ID = 5042002;
     const ARC_CHAIN_ID_HEX = "0x4cebe2";
     
@@ -141,6 +141,9 @@
     let signer = null;
     let requiresApproval = false;
 
+    // تابع کمکی برای مکث (Delay) - اضافه شده برای رفع مشکل RPC
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
     window.addEventListener('load', () => {
       const urlParams = new URLSearchParams(window.location.search);
       invoiceId = urlParams.get('id');
@@ -154,83 +157,109 @@
       fetchInvoiceDetails();
       
       if (window.ethereum && window.ethereum.selectedAddress) {
-        connectWallet(false); // اتصال بی‌صدا در صورت وجود
+        connectWallet(false);
       }
     });
 
     async function fetchInvoiceDetails() {
       hideMessages();
       document.getElementById('amountDisplay').innerHTML = '<div class="spinner border-gray-400 border-left-transparent w-4 h-4 inline-block"></div>';
+      document.getElementById('statusDisplay').textContent = 'Fetching...';
+      document.getElementById('statusDisplay').className = 'font-bold text-gray-400';
       
-      try {
-        const contract = new ethers.Contract(INVOICE_CONTRACT_ADDRESS, ArcInvoiceABI, readProvider);
-        const [amount, issuer, dueDate, status, payer, tokenAddress] = await contract.invoices(invoiceId);
+      let attempt = 0;
+      const maxRetries = 5;
+      let success = false;
 
-        const tokenLower = tokenAddress.toLowerCase();
-        let tokenSymbol = TOKEN_MAP[tokenLower] || "Unknown Token";
-        let decimals = TOKEN_DECIMALS[tokenLower] || 18; 
+      // پیاده‌سازی حلقه Retry مشابه بخش پیش‌پرداخت (Claim)
+      while (attempt < maxRetries && !success) {
+        try {
+          attempt++;
+          if (attempt > 1) {
+             document.getElementById('statusDisplay').textContent = `Retrying (${attempt}/${maxRetries})...`;
+          }
 
-        if (!TOKEN_DECIMALS[tokenLower] && tokenLower !== "0x0000000000000000000000000000000000000000") {
-          try {
-            const tokenContract = new ethers.Contract(tokenAddress, ERC20ABI, readProvider);
-            decimals = await tokenContract.decimals();
-          } catch (e) {}
-        }
+          const contract = new ethers.Contract(INVOICE_CONTRACT_ADDRESS, ArcInvoiceABI, readProvider);
+          const [amount, issuer, dueDate, status, payer, tokenAddress] = await contract.invoices(invoiceId);
 
-        const formattedAmount = ethers.formatUnits(amount, decimals);
-        
-        invoiceData = {
-            amountRaw: amount,
-            amountFormatted: formattedAmount,
-            tokenAddress: tokenAddress,
-            tokenSymbol: tokenSymbol,
-            issuer: issuer,
-            payer: payer,
-            status: Number(status),
-            isNative: tokenLower === "0x0000000000000000000000000000000000000000" || tokenLower === "0x3600000000000000000000000000000000000000"
-        };
+          const tokenLower = tokenAddress.toLowerCase();
+          let tokenSymbol = TOKEN_MAP[tokenLower] || "Unknown Token";
+          let decimals = TOKEN_DECIMALS[tokenLower] || 18; 
 
-        // نمایش اطلاعات
-        document.getElementById('issuerDisplay').textContent = `${issuer.slice(0,6)}...${issuer.slice(-4)}`;
-        document.getElementById('payerDisplay').textContent = payer === ethers.ZeroAddress ? 'Anyone' : `${payer.slice(0,6)}...${payer.slice(-4)}`;
-        
-        if (dueDate > 0) {
-            document.getElementById('dueDateDisplay').textContent = new Date(Number(dueDate) * 1000).toLocaleString();
-        } else {
-            document.getElementById('dueDateDisplay').textContent = "No Due Date";
-        }
-
-        document.getElementById('amountDisplay').innerHTML = `<span class="text-white">${parseFloat(formattedAmount).toFixed(4)}</span> <span class="text-amber-400 font-bold">${tokenSymbol}</span>`;
-
-        // مدیریت وضعیت فاکتور
-        const statusEl = document.getElementById('statusDisplay');
-        if (invoiceData.status === 1) { // Pending
-            let isOverdue = dueDate > 0 && (Date.now() / 1000) > Number(dueDate);
-            if(isOverdue) {
-                statusEl.textContent = "Overdue";
-                statusEl.className = 'font-bold text-rose-400';
-            } else {
-                statusEl.textContent = "Pending";
-                statusEl.className = 'font-bold text-amber-400';
+          if (!TOKEN_DECIMALS[tokenLower] && tokenLower !== "0x0000000000000000000000000000000000000000") {
+            try {
+              const tokenContract = new ethers.Contract(tokenAddress, ERC20ABI, readProvider);
+              decimals = await tokenContract.decimals();
+            } catch (e) {
+               console.warn("Could not fetch decimals from network, falling back to 18");
             }
-            document.getElementById('actionSection').classList.remove('hidden');
-        } else if (invoiceData.status === 2) { // Paid
-            statusEl.textContent = "Paid";
-            statusEl.className = 'font-bold text-emerald-400';
-        } else if (invoiceData.status === 3) { // Cancelled
-            statusEl.textContent = "Cancelled";
-            statusEl.className = 'font-bold text-rose-400';
-        } else {
-            statusEl.textContent = "Not Found";
-            showError("Invoice not found on network.");
-        }
-        
-        updateActionButton();
+          }
 
-      } catch (error) {
-        console.error(error);
-        document.getElementById('amountDisplay').textContent = "Failed to load";
-        showError("Failed to fetch invoice details.");
+          const formattedAmount = ethers.formatUnits(amount, decimals);
+          
+          invoiceData = {
+              amountRaw: amount,
+              amountFormatted: formattedAmount,
+              tokenAddress: tokenAddress,
+              tokenSymbol: tokenSymbol,
+              issuer: issuer,
+              payer: payer,
+              status: Number(status),
+              isNative: tokenLower === "0x0000000000000000000000000000000000000000" || tokenLower === "0x3600000000000000000000000000000000000000"
+          };
+
+          // نمایش اطلاعات
+          document.getElementById('issuerDisplay').textContent = `${issuer.slice(0,6)}...${issuer.slice(-4)}`;
+          document.getElementById('payerDisplay').textContent = payer === ethers.ZeroAddress ? 'Anyone' : `${payer.slice(0,6)}...${payer.slice(-4)}`;
+          
+          if (dueDate > 0) {
+              document.getElementById('dueDateDisplay').textContent = new Date(Number(dueDate) * 1000).toLocaleString();
+          } else {
+              document.getElementById('dueDateDisplay').textContent = "No Due Date";
+          }
+
+          document.getElementById('amountDisplay').innerHTML = `<span class="text-white">${parseFloat(formattedAmount).toFixed(4)}</span> <span class="text-amber-400 font-bold">${tokenSymbol}</span>`;
+
+          // مدیریت وضعیت فاکتور
+          const statusEl = document.getElementById('statusDisplay');
+          if (invoiceData.status === 1) { // Pending
+              let isOverdue = dueDate > 0 && (Date.now() / 1000) > Number(dueDate);
+              if(isOverdue) {
+                  statusEl.textContent = "Overdue";
+                  statusEl.className = 'font-bold text-rose-400';
+              } else {
+                  statusEl.textContent = "Pending";
+                  statusEl.className = 'font-bold text-amber-400';
+              }
+              document.getElementById('actionSection').classList.remove('hidden');
+          } else if (invoiceData.status === 2) { // Paid
+              statusEl.textContent = "Paid";
+              statusEl.className = 'font-bold text-emerald-400';
+          } else if (invoiceData.status === 3) { // Cancelled
+              statusEl.textContent = "Cancelled";
+              statusEl.className = 'font-bold text-rose-400';
+          } else {
+              statusEl.textContent = "Not Found";
+              showError("Invoice not found on network.");
+          }
+          
+          updateActionButton();
+          success = true;
+
+        } catch (error) {
+          console.error(`Fetch attempt ${attempt} failed:`, error);
+          
+          if (attempt >= maxRetries) {
+            document.getElementById('amountDisplay').textContent = "Failed to load";
+            document.getElementById('statusDisplay').innerHTML = `
+              <button onclick="fetchInvoiceDetails()" class="text-amber-400 hover:text-amber-300 underline text-xs flex items-center gap-1 ml-auto">
+                <i class="fas fa-redo-alt"></i> Retry Now
+              </button>`;
+            showError("RPC response is slow. Please try again.");
+          } else {
+            await sleep(1000 + (attempt * 500));
+          }
+        }
       }
     }
 
@@ -308,7 +337,6 @@
             return await connectWallet();
         }
 
-        // بررسی اینکه آیا کاربر مجاز به پرداخت است (اگر target payer ست شده باشد)
         if (invoiceData.payer !== ethers.ZeroAddress && invoiceData.payer.toLowerCase() !== userAddress.toLowerCase()) {
             return showError("This invoice is assigned to a different payer address.");
         }
@@ -316,13 +344,17 @@
         const btn = document.getElementById('mainActionBtn');
         const btnText = document.getElementById('actionBtnText');
         btn.disabled = true;
+        document.getElementById('txHashContainer').classList.add('hidden');
 
         try {
             if (requiresApproval) {
                 btnText.innerHTML = '<div class="spinner mr-2"></div> Approving...';
                 const tokenContract = new ethers.Contract(invoiceData.tokenAddress, ERC20ABI, signer);
                 const tx = await tokenContract.approve(INVOICE_CONTRACT_ADDRESS, invoiceData.amountRaw);
+                
+                btnText.innerHTML = '<div class="spinner mr-2"></div> Confirming Approval...';
                 await tx.wait();
+                
                 requiresApproval = false;
                 updateActionButton();
             } else {
@@ -335,14 +367,35 @@
                 }
                 
                 const tx = await contract.payInvoice(invoiceId, options);
-                btnText.innerHTML = '<div class="spinner mr-2"></div> Confirming...';
                 
-                await tx.wait();
+                // پیاده‌سازی حلقه تایید شبکه (Confirmation Loop) مشابه بخش کلیم
+                let attempt = 0;
+                let txSuccess = false;
+                
+                while(attempt < 3 && !txSuccess) {
+                    try {
+                        attempt++;
+                        btnText.innerHTML = `<div class="spinner mr-2"></div> Confirming in Network (${attempt}/3)...`;
+                        
+                        // انتظار برای تایید تراکنش در شبکه
+                        const receipt = await provider.waitForTransaction(tx.hash, 1, 35000);
+                        
+                        if (receipt && receipt.status === 1) {
+                            txSuccess = true;
+                        } else {
+                            throw new Error("Transaction failed or reverted on chain.");
+                        }
+                    } catch (err) {
+                        if (attempt >= 3) throw err;
+                        await sleep(4000);
+                    }
+                }
                 
                 showSuccess("Invoice paid successfully!");
                 document.getElementById('statusDisplay').textContent = "Paid";
                 document.getElementById('statusDisplay').className = 'font-bold text-emerald-400';
                 
+                // نمایش لینک تراکنش در Explorer
                 document.getElementById('txHashContainer').classList.remove('hidden');
                 document.getElementById('txHashLink').href = `https://testnet.arcscan.app/tx/${tx.hash}`;
                 
@@ -353,7 +406,7 @@
             if (error.code === "ACTION_REJECTED") {
                 showError("Transaction rejected by user.");
             } else {
-                showError(error.reason || "Transaction failed.");
+                showError(error.reason || error.message || "Transaction failed.");
             }
         } finally {
             btn.disabled = false;
