@@ -92,9 +92,14 @@
     const CONTRACT_ADDRESS = "0x9B438F8Aa736Ed685e7aFF84eB173A9bb7c08320";
     const ARC_CHAIN_ID = 5042002;
     
-    // تعریف پابلیک پروایدر برای خواندن از شبکه بدون نیاز به ولت متصل 
-    const RPC_URL = "https://rpc.testnet.arc.network"; // در صورت نیاز آدرس RPC دقیق تست‌نت/مین‌نت را جایگزین کنید
-    const provider = new ethers.JsonRpcProvider(RPC_URL);
+    // تعریف پابلیک پروایدر با تنظیمات staticNetwork برای جلوگیری از تاخیر و تایم‌اوت اولیه در Ethers v6
+    const RPC_URL = "https://rpc.testnet.arc.network";
+    const provider = new ethers.JsonRpcProvider(RPC_URL, {
+      chainId: ARC_CHAIN_ID,
+      name: "arc-testnet"
+    }, {
+      staticNetwork: true
+    });
     
     const TOKEN_MAP = {
       "0x0000000000000000000000000000000000000000": "USDC (Native)",
@@ -108,7 +113,7 @@
       "0x0000000000000000000000000000000000000000": 18,
       "0x3600000000000000000000000000000000000000": 18,
       "0x89b50855aa3be2f677cd6303cec089b5f319d72a": 6,
-      "0xf0c4a4ce82a5746abaad9425360ab04fbba432bf": 8 // اگر cirBTC مقدار متفاوتی دارد اینجا اصلاح کنید
+      "0xf0c4a4ce82a5746abaad9425360ab04fbba432bf": 8
     };
 
     const ArcPayLinkABI = [
@@ -138,11 +143,13 @@
     });
 
     async function fetchLinkDetails() {
+      hideMessages();
       document.getElementById('amountDisplay').innerHTML = '<div class="spinner border-gray-400 border-left-transparent w-4 h-4 inline-block"></div>';
       document.getElementById('statusDisplay').textContent = 'Fetching...';
+      document.getElementById('statusDisplay').className = 'font-bold text-gray-400';
 
       let attempt = 0;
-      const maxRetries = 3;
+      const maxRetries = 5;
       let success = false;
 
       while (attempt < maxRetries && !success) {
@@ -157,11 +164,8 @@
 
           const tokenLower = tokenAddress.toLowerCase();
           let tokenSymbol = TOKEN_MAP[tokenLower] || "Unknown Token";
-          
-          // تنظیم دسیمال پیش‌فرض از دیکشنری 
           let decimals = TOKEN_DECIMALS[tokenLower] || 18; 
 
-          // خواندن دسیمال از شبکه برای توکن‌های ناشناخته
           if (!TOKEN_DECIMALS[tokenLower] && tokenLower !== "0x0000000000000000000000000000000000000000") {
             try {
               const tokenContract = new ethers.Contract(tokenAddress, ERC20ABI, provider);
@@ -174,7 +178,6 @@
           const formattedAmount = ethers.formatUnits(amount, decimals);
           document.getElementById('amountDisplay').innerHTML = `<span class="text-white">${parseFloat(formattedAmount).toFixed(4)}</span> <span class="text-emerald-400 font-bold">${tokenSymbol}</span>`;
 
-          // بررسی وضعیت لینک
           if (status === 1n) {
             document.getElementById('statusDisplay').textContent = "Active";
             document.getElementById('statusDisplay').classList.replace('text-gray-400', 'text-emerald-400');
@@ -192,17 +195,20 @@
             showError("Invalid link or not found on network.");
           }
 
-          success = true; // عملیات موفقیت‌آمیز بود، خروج از حلقه
+          success = true;
 
         } catch (error) {
           console.error(`Fetch attempt ${attempt} failed:`, error);
           
           if (attempt >= maxRetries) {
-            showError("Error fetching payment details from the blockchain after multiple attempts.");
-            document.getElementById('amountDisplay').textContent = "Error";
-            document.getElementById('statusDisplay').textContent = "Network Error";
+            showError("RPC response is slow. Please try again.");
+            document.getElementById('amountDisplay').textContent = "Failed to load";
+            document.getElementById('statusDisplay').innerHTML = `
+              <button onclick="fetchLinkDetails()" class="text-cyan-400 hover:text-cyan-300 underline text-xs flex items-center gap-1 ml-auto">
+                <i class="fas fa-redo-alt"></i> Retry Now
+              </button>`;
           } else {
-            await sleep(2000); // دو ثانیه صبر پیش از تلاش مجدد
+            await sleep(1000 + (attempt * 500));
           }
         }
       }
@@ -258,13 +264,12 @@
         let attempt = 0;
         const maxRetries = 3;
         let txSuccess = false;
-        let pendingTxHash = null; // متغیر جدید برای ذخیره هش تراکنش
+        let pendingTxHash = null;
 
         while (attempt < maxRetries && !txSuccess) {
           try {
             attempt++;
             
-            // چک کردن وضعیت کانتراکت روی بلاک‌چین پیش از هر تلاش مجدد
             if (attempt > 1) {
               btnText.innerHTML = '<div class="spinner mr-2"></div> Checking Status...';
               const contract = new ethers.Contract(CONTRACT_ADDRESS, ArcPayLinkABI, provider);
@@ -284,7 +289,6 @@
               }
             }
             
-            // اگر هنوز هیچ هش تراکنشی از ورکر نگرفته‌ایم، درخواست ارسال می‌شود
             if (!pendingTxHash) {
                 btnText.innerHTML = `<div class="spinner mr-2"></div> Sending (Try ${attempt}/${maxRetries})...`;
 
@@ -306,13 +310,11 @@
                     throw new Error(data.error);
                 }
                 
-                // هش دریافت و ذخیره شد
                 pendingTxHash = data.txHash;
             }
 
             btnText.innerHTML = '<div class="spinner mr-2"></div> Confirming in Network...';
             
-            // منتظر ماندن فقط برای همان هش دریافت شده (بدون ارسال مجدد تراکنش)
             const receipt = await provider.waitForTransaction(pendingTxHash, 1, 35000);
 
             if (receipt && receipt.status === 1) {
@@ -351,7 +353,6 @@
       }
     }
 
-    
     function showError(msg) {
       const el = document.getElementById('errorMsg');
       el.textContent = msg;
