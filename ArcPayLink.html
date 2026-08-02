@@ -1184,6 +1184,11 @@
     document.getElementById('tabCreate').className = tab === 'create' ? activeClass : inactiveClass;
     document.getElementById('tabInvoice').className = tab === 'invoice' ? activeClass.replace('emerald', 'amber') : inactiveClass;
     document.getElementById('tabHistory').className = tab === 'history' ? activeClass.replace('emerald', 'purple') : inactiveClass;
+
+    // آپدیت تاریخچه هنگام باز کردن تب به صورت لحظه‌ای
+    if (tab === 'history') {
+      renderHistory();
+    }
   }
 
   function switchHistoryTab(tab) {
@@ -1218,8 +1223,8 @@
     if (currentLinks.length === 0) {
       linkContainer.innerHTML = `<div class="text-center py-6 text-gray-500 text-sm border border-dashed border-white/10 rounded-2xl">No links created yet.</div>`;
     } else {
-      let html = '';
-      for (let link of currentLinks) {
+      // استفاده از Promise.all برای دریافت همزمان (موازی) وضعیت تمام لینک‌ها از بلاکچین
+      const linkPromises = currentLinks.map(async (link) => {
         let isExpired = link.expiration > 0 && (Date.now() / 1000) > link.expiration;
         let statusColor = isExpired ? 'text-rose-400 bg-rose-400/10' : 'text-emerald-400 bg-emerald-400/10';
         let statusText = isExpired ? 'Expired' : 'Active';
@@ -1238,7 +1243,7 @@
            } catch (e) {}
         }
 
-        html += `
+        return `
         <div class="bg-white/5 border border-white/5 p-4 rounded-2xl flex flex-col sm:flex-row justify-between gap-4">
           <div class="flex items-start gap-4">
             <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400"><i class="fas fa-link"></i></div>
@@ -1249,8 +1254,10 @@
           </div>
           <button onclick="navigator.clipboard.writeText('${link.url}'); notify('Success', 'Copied!', 'fa-check');" class="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-sm transition-colors whitespace-nowrap">Copy URL</button>
         </div>`;
-      }
-      linkContainer.innerHTML = html;
+      });
+      
+      const linkHtmlArray = await Promise.all(linkPromises);
+      linkContainer.innerHTML = linkHtmlArray.join('');
     }
 
     // --- Render Invoices History ---
@@ -1258,8 +1265,8 @@
     if (currentInvoices.length === 0) {
       invContainer.innerHTML = `<div class="text-center py-6 text-gray-500 text-sm border border-dashed border-white/10 rounded-2xl">No invoices created yet.</div>`;
     } else {
-      let invHtml = '';
-      for (let inv of currentInvoices) {
+      // استفاده از Promise.all برای دریافت همزمان (موازی) وضعیت تمام فاکتورها از بلاکچین
+      const invPromises = currentInvoices.map(async (inv) => {
         let isExpired = inv.expiration > 0 && (Date.now() / 1000) > inv.expiration;
         let statusColor = isExpired ? 'text-rose-400 bg-rose-400/10' : 'text-amber-400 bg-amber-400/10';
         let statusText = isExpired ? 'Overdue' : 'Pending';
@@ -1278,7 +1285,7 @@
            } catch (e) {}
         }
 
-        invHtml += `
+        return `
         <div class="bg-white/5 border border-white/5 p-4 rounded-2xl flex flex-col sm:flex-row justify-between gap-4">
           <div class="flex items-start gap-4">
             <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-400"><i class="fas fa-file-invoice"></i></div>
@@ -1289,8 +1296,10 @@
           </div>
           <button onclick="navigator.clipboard.writeText('${inv.url}'); notify('Success', 'Copied!', 'fa-check');" class="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-sm transition-colors whitespace-nowrap">Copy URL</button>
         </div>`;
-      }
-      invContainer.innerHTML = invHtml;
+      });
+
+      const invHtmlArray = await Promise.all(invPromises);
+      invContainer.innerHTML = invHtmlArray.join('');
     }
   }
 
@@ -1333,6 +1342,15 @@
       icon.classList.add("fa-moon", "text-emerald-500");
     }
   }
+
+  setInterval(() => {
+    
+    const isHistoryVisible = !document.getElementById('viewHistory').classList.contains('hidden');
+    if (isHistoryVisible) {
+      renderHistory();
+    }
+  }, 10000); // 
+  
 </script>
 </body>
 </html>
