@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-  <title>ArcPay - Decentralized Payment Links</title>
+  <title>ArcPay - Decentralized Payment & Invoicing</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
@@ -137,25 +137,26 @@
     <div class="glass flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5 mb-10 p-5 sm:px-8 sm:py-6 rounded-[2rem]">
       <div class="flex items-center gap-4">
         <div class="w-12 h-12 bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/20">
-          <i class="fas fa-link text-white text-xl"></i>
+          <i class="fas fa-layer-group text-white text-xl"></i>
         </div>
         <div>
           <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Arc <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Pay</span></h1>
-          <p class="text-gray-400 light:text-slate-500 text-xs sm:text-sm font-medium mt-1">Decentralized, non-custodial push-payment links</p>
+          <p class="text-gray-400 light:text-slate-500 text-xs sm:text-sm font-medium mt-1">Decentralized Links & Invoices</p>
         </div>
       </div>
       
       <div class="flex items-center gap-3 w-full sm:w-auto">
-        <div class="flex flex-1 sm:flex-none bg-black/20 light:bg-slate-100 p-1.5 rounded-2xl">
-          <button onclick="switchTab('create')" id="tabCreate" class="flex-1 px-5 py-2.5 rounded-xl text-sm font-bold transition-all bg-emerald-500/10 text-emerald-400 shadow-sm">Create</button>
-          <button onclick="switchTab('history')" id="tabHistory" class="flex-1 px-5 py-2.5 rounded-xl text-sm font-bold transition-all text-gray-400 hover:text-white light:hover:text-black">History</button>
+        <div class="flex flex-1 sm:flex-none bg-black/20 light:bg-slate-100 p-1.5 rounded-2xl overflow-x-auto hide-scroll">
+          <button onclick="switchTab('create')" id="tabCreate" class="px-5 py-2.5 rounded-xl text-sm font-bold transition-all bg-emerald-500/10 text-emerald-400 shadow-sm whitespace-nowrap">Send Link</button>
+          <button onclick="switchTab('invoice')" id="tabInvoice" class="px-5 py-2.5 rounded-xl text-sm font-bold transition-all text-gray-400 hover:text-white light:hover:text-black whitespace-nowrap">Request (Invoice)</button>
+          <button onclick="switchTab('history')" id="tabHistory" class="px-5 py-2.5 rounded-xl text-sm font-bold transition-all text-gray-400 hover:text-white light:hover:text-black whitespace-nowrap">History</button>
         </div>
 
-        <button onclick="toggleTheme()" id="themeBtn" class="w-12 h-12 flex items-center justify-center bg-white/5 light:bg-white hover:bg-white/10 border border-white/5 light:border-slate-200 rounded-2xl transition-all shadow-sm">
+        <button onclick="toggleTheme()" id="themeBtn" class="flex-shrink-0 w-12 h-12 flex items-center justify-center bg-white/5 light:bg-white hover:bg-white/10 border border-white/5 light:border-slate-200 rounded-2xl transition-all shadow-sm">
           <i class="fas fa-moon text-lg text-emerald-500"></i>
         </button>
 
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-2 flex-shrink-0">
           <button onclick="connectWallet()" id="connectHeaderBtn" class="app-button px-5 py-3 bg-white light:bg-slate-900 text-black light:text-white font-bold rounded-2xl text-sm flex items-center gap-2 shadow-lg hover:shadow-xl transition-shadow">
             <i class="fas fa-wallet text-emerald-500"></i>
             <span id="headerWalletText">Connect</span>
@@ -173,9 +174,8 @@
       <span id="toastText"></span>
     </div>
 
-    <!-- TAB 1: CREATE -->
+    <!-- ================= TAB 1: CREATE (SEND LINK) ================= -->
     <div id="viewCreate" class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
-      
       <!-- Configuration Form -->
       <div class="lg:col-span-7 space-y-6">
         
@@ -183,7 +183,7 @@
         <div class="glass rounded-[2rem] p-6 sm:p-8 space-y-6">
           <div class="flex items-center justify-between mb-2">
             <h3 class="font-bold text-sm text-gray-400 uppercase tracking-widest flex items-center gap-2">
-              <i class="fas fa-coins text-emerald-400/70"></i> Payment Details
+              <i class="fas fa-coins text-emerald-400/70"></i> Funding Details
             </h3>
           </div>
           
@@ -207,7 +207,7 @@
             </div>
 
             <div class="space-y-2">
-              <label class="text-xs text-gray-400 font-medium ml-1">Amount</label>
+              <label class="text-xs text-gray-400 font-medium ml-1">Amount to Lock</label>
               <div class="relative">
                 <input type="number" id="fixedAmountInput" oninput="updatePreview()" class="w-full rounded-2xl pl-4 pr-16 py-4 text-lg font-bold" placeholder="0.00" min="0" step="any">
                 <div class="absolute right-4 top-1/2 -translate-y-1/2">
@@ -219,7 +219,7 @@
           </div>
         </div>
 
-        <!-- Meta Data Section (Off-chain) -->
+        <!-- Meta Data Section -->
         <div class="glass rounded-[2rem] p-6 sm:p-8 space-y-6">
           <h3 class="font-bold text-sm text-gray-400 uppercase tracking-widest flex items-center gap-2 mb-2">
             <i class="fas fa-align-left text-cyan-400/70"></i> Link Metadata <span class="text-[10px] text-gray-500 bg-white/5 px-2 py-0.5 rounded-full lowercase">Off-chain</span>
@@ -228,10 +228,9 @@
           <div class="space-y-5">
             <div>
               <label class="text-xs text-gray-400 font-medium ml-1 block mb-2">Payment Title</label>
-              <input type="text" id="linkTitle" maxlength="50" oninput="updatePreview()" class="w-full rounded-2xl px-4 py-4 text-sm font-medium" placeholder="e.g., Freelance UI Design">
+              <input type="text" id="linkTitle" maxlength="50" oninput="updatePreview()" class="w-full rounded-2xl px-4 py-4 text-sm font-medium" placeholder="e.g., Happy Birthday Gift">
               <span id="errTitle" class="error-msg hidden"></span>
             </div>
-
             <div>
               <label class="text-xs text-gray-400 font-medium ml-1 block mb-2">Description (Optional)</label>
               <textarea id="linkDesc" maxlength="150" rows="2" oninput="updatePreview()" class="w-full rounded-2xl p-4 text-sm resize-none font-medium" placeholder="Add a note for the recipient..."></textarea>
@@ -244,7 +243,6 @@
           <h3 class="font-bold text-sm text-gray-400 uppercase tracking-widest flex items-center gap-2 mb-4">
             <i class="fas fa-cog text-purple-400/70"></i> Security Settings
           </h3>
-          
           <div class="space-y-2">
             <label class="text-xs text-gray-400 font-medium ml-1 block">Link Expiration</label>
             <div class="relative">
@@ -285,7 +283,6 @@
           </div>
 
           <div class="bg-[#0a0a0f] light:bg-slate-50 border border-white/5 light:border-slate-200 rounded-3xl p-6 relative overflow-hidden">
-            <!-- Decorative blur -->
             <div class="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl"></div>
             
             <div class="relative z-10 text-center space-y-4">
@@ -293,7 +290,6 @@
                 <i class="fas fa-paper-plane text-emerald-400 text-xl -ml-1"></i>
               </div>
               
-              <!-- اضافه شدن کلاس always-white به بخش‌های درخواستی -->
               <div id="prevTitle" class="text-lg font-bold text-white max-w-[200px] mx-auto truncate always-white">Payment Request</div>
               
               <div class="py-2">
@@ -316,7 +312,6 @@
                 </div>
               </div>
 
-              <!-- Fake QR Area for Preview -->
               <div class="pt-4 border-t border-white/5 light:border-slate-200">
                 <div class="w-32 h-32 bg-white/10 light:bg-slate-200 rounded-xl mx-auto flex items-center justify-center relative overflow-hidden">
                   <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPgo8cmVjdCB3aWR0aD0iOCIgaGVpZ2h0PSI4IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPHBhdGggZD0iTTAgMGg0djRIMHoiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIi8+Cjwvc3ZnPg==')] opacity-50"></div>
@@ -329,31 +324,180 @@
       </div>
     </div>
 
-    <!-- TAB 2: HISTORY -->
-    <div id="viewHistory" class="hidden space-y-6">
-      <div class="glass rounded-[2rem] p-6 sm:p-8 space-y-6 min-h-[500px]">
-        <div class="flex items-center justify-between">
-          <h3 class="font-bold text-lg flex items-center gap-2"><i class="fas fa-history text-emerald-400"></i> Your Payment Links</h3>
-          <button onclick="clearHistory()" class="text-xs text-rose-400 hover:text-rose-300 transition-colors bg-rose-500/10 px-3 py-1.5 rounded-lg">Clear History</button>
-        </div>
+    <!-- ================= TAB 2: INVOICE (REQUEST) ================= -->
+    <div id="viewInvoice" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
+      <div class="lg:col-span-7 space-y-6">
         
+        <!-- Invoice Details -->
+        <div class="glass rounded-[2rem] p-6 sm:p-8 space-y-6">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="font-bold text-sm text-gray-400 uppercase tracking-widest flex items-center gap-2">
+              <i class="fas fa-file-invoice-dollar text-amber-400/70"></i> Invoice Details
+            </h3>
+          </div>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div class="space-y-2">
+              <label class="text-xs text-gray-400 font-medium ml-1">Requested Asset</label>
+              <div class="relative">
+                <select id="invTokenSelect" onchange="updateInvPreview()" class="w-full rounded-2xl pl-10 pr-4 py-4 text-sm font-semibold cursor-pointer appearance-none">
+                  <option value="0x3600000000000000000000000000000000000000">USDC (Native)</option>
+                  <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
+                  <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
+                </select>
+                <i class="fas fa-gem absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+                <i class="fas fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-xs pointer-events-none"></i>
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <label class="text-xs text-gray-400 font-medium ml-1">Amount to Receive</label>
+              <div class="relative">
+                <input type="number" id="invAmountInput" oninput="updateInvPreview()" class="w-full rounded-2xl px-4 py-4 text-lg font-bold" placeholder="0.00" min="0" step="any">
+              </div>
+              <span id="errInvAmount" class="error-msg hidden"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Payer & Metadata -->
+        <div class="glass rounded-[2rem] p-6 sm:p-8 space-y-6">
+          <h3 class="font-bold text-sm text-gray-400 uppercase tracking-widest flex items-center gap-2 mb-2">
+            <i class="fas fa-user-tag text-blue-400/70"></i> Payer & Info
+          </h3>
+          
+          <div class="space-y-5">
+            <div>
+              <label class="text-xs text-gray-400 font-medium ml-1 block mb-2">Target Payer Address <span class="text-[10px] text-gray-500 ml-1">(Optional)</span></label>
+              <input type="text" id="invPayerAddress" oninput="updateInvPreview()" class="w-full rounded-2xl px-4 py-4 text-sm font-mono" placeholder="0x... (Leave empty for anyone)">
+            </div>
+            <div>
+              <label class="text-xs text-gray-400 font-medium ml-1 block mb-2">Invoice Title</label>
+              <input type="text" id="invTitle" maxlength="50" oninput="updateInvPreview()" class="w-full rounded-2xl px-4 py-4 text-sm font-medium" placeholder="e.g., Freelance Web Dev">
+              <span id="errInvTitle" class="error-msg hidden"></span>
+            </div>
+            <div>
+              <label class="text-xs text-gray-400 font-medium ml-1 block mb-2">Description / Memo</label>
+              <textarea id="invDesc" maxlength="150" rows="2" class="w-full rounded-2xl p-4 text-sm resize-none font-medium" placeholder="Additional details..."></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Settings Section -->
+        <div class="glass rounded-[2rem] p-6 sm:p-8">
+          <h3 class="font-bold text-sm text-gray-400 uppercase tracking-widest flex items-center gap-2 mb-4">
+            <i class="fas fa-calendar-alt text-purple-400/70"></i> Due Date
+          </h3>
+          <div class="space-y-2">
+            <label class="text-xs text-gray-400 font-medium ml-1 block">Invoice Expiration</label>
+            <div class="relative">
+              <select id="invExpirationSelect" onchange="updateInvPreview()" class="w-full rounded-2xl pl-10 pr-4 py-4 text-sm font-semibold appearance-none">
+                <option value="never">No Due Date</option>
+                <option value="24h">24 Hours</option>
+                <option value="7d">7 Days</option>
+                <option value="30d">30 Days</option>
+              </select>
+              <i class="fas fa-clock absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+              <i class="fas fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-xs pointer-events-none"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit Action -->
+        <button id="generateInvBtn" onclick="generateInvoice()" class="app-button w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black py-5 rounded-[2rem] text-base font-extrabold shadow-xl shadow-amber-500/20 relative overflow-hidden group">
+          <div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
+          <span id="btnInvText" class="relative z-10 flex items-center justify-center gap-2">
+            <i class="fas fa-receipt"></i> Create Smart Invoice
+          </span>
+        </button>
+      </div>
+
+      <!-- Live Preview Invoice -->
+      <div class="lg:col-span-5">
+        <div class="glass rounded-[2rem] p-6 sm:p-8 sticky top-6 space-y-6">
+          <div class="flex items-center justify-between">
+            <h3 class="font-bold text-sm text-gray-400 uppercase tracking-widest flex items-center gap-2">
+              <i class="fas fa-eye text-amber-400"></i> Invoice Preview
+            </h3>
+            <span class="flex h-2 w-2">
+              <span class="animate-ping absolute inline-flex h-2 w-2 rounded-full bg-amber-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+            </span>
+          </div>
+
+          <div class="bg-[#0a0a0f] light:bg-slate-50 border border-white/5 light:border-slate-200 rounded-3xl p-6 relative overflow-hidden">
+            <div class="absolute -top-10 -right-10 w-32 h-32 bg-amber-500/10 rounded-full blur-2xl"></div>
+            
+            <div class="relative z-10 text-center space-y-4">
+              <div class="w-12 h-12 bg-white/5 light:bg-white border border-white/10 light:border-slate-200 rounded-2xl flex items-center justify-center mx-auto mb-2 shadow-sm">
+                <i class="fas fa-file-invoice text-amber-400 text-xl"></i>
+              </div>
+              
+              <div id="prevInvTitle" class="text-lg font-bold text-white max-w-[200px] mx-auto truncate always-white">Invoice</div>
+              
+              <div class="py-2">
+                <div class="text-[10px] text-gray-500 uppercase tracking-wider mb-1 font-bold">Amount Due</div>
+                <div id="prevInvAmount" class="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400">0.00 USDC</div>
+              </div>
+
+              <div class="bg-white/5 light:bg-white rounded-2xl p-4 text-xs space-y-3 text-left border border-white/5 light:border-slate-100">
+                <div class="flex justify-between items-center text-gray-400">
+                  <span>To (Payer)</span>
+                  <span id="prevInvPayer" class="font-mono text-white bg-black/20 light:bg-slate-100 px-2 py-1 rounded-md always-white">Anyone</span>
+                </div>
+                <div class="flex justify-between items-center text-gray-400">
+                  <span>Issuer</span>
+                  <span id="prevInvIssuer" class="font-mono text-white bg-black/20 light:bg-slate-100 px-2 py-1 rounded-md always-white">Not Connected</span>
+                </div>
+                <div class="flex justify-between items-center text-gray-400">
+                  <span>Due By</span>
+                  <span id="prevInvExpires" class="text-white font-medium always-white">No Due Date</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= TAB 3: HISTORY ================= -->
+    <div id="viewHistory" class="hidden space-y-8">
+      
+      <!-- Payment Links History -->
+      <div class="glass rounded-[2rem] p-6 sm:p-8 space-y-6">
+        <div class="flex items-center justify-between">
+          <h3 class="font-bold text-lg flex items-center gap-2"><i class="fas fa-paper-plane text-emerald-400"></i> Sent Payment Links</h3>
+          <button onclick="clearHistory('links')" class="text-xs text-rose-400 hover:text-rose-300 transition-colors bg-rose-500/10 px-3 py-1.5 rounded-lg">Clear Links</button>
+        </div>
         <div id="historyTableBody" class="space-y-4">
           <!-- History injected via JS -->
         </div>
       </div>
+
+      <!-- Invoices History -->
+      <div class="glass rounded-[2rem] p-6 sm:p-8 space-y-6">
+        <div class="flex items-center justify-between">
+          <h3 class="font-bold text-lg flex items-center gap-2"><i class="fas fa-file-invoice-dollar text-amber-400"></i> Created Invoices</h3>
+          <button onclick="clearHistory('invoices')" class="text-xs text-rose-400 hover:text-rose-300 transition-colors bg-rose-500/10 px-3 py-1.5 rounded-lg">Clear Invoices</button>
+        </div>
+        <div id="invoiceHistoryTableBody" class="space-y-4">
+          <!-- Invoices injected via JS -->
+        </div>
+      </div>
+
     </div>
   </div>
 
-  <!-- Success Modal -->
+  <!-- Success Modal (Shared for both Link & Invoice) -->
   <div id="successModal" class="hidden fixed inset-0 bg-black/60 backdrop-blur-xl flex items-center justify-center z-50 p-4 transition-opacity">
     <div class="glass border border-white/10 light:border-slate-200 rounded-[2rem] p-8 max-w-md w-full shadow-2xl space-y-6 text-center transform transition-transform scale-95" id="modalContent">
-      <div class="w-16 h-16 bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-full flex items-center justify-center mx-auto text-3xl shadow-lg shadow-emerald-500/30 text-white mb-2">
-        <i class="fas fa-check"></i>
+      <div id="modalIconContainer" class="w-16 h-16 bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-full flex items-center justify-center mx-auto text-3xl shadow-lg shadow-emerald-500/30 text-white mb-2">
+        <i class="fas fa-check" id="modalIcon"></i>
       </div>
       
       <div>
-        <h3 class="text-xl font-bold mb-1">Link Created Successfully!</h3>
-        <p class="text-sm text-gray-400">Share this link or QR code to receive your payment.</p>
+        <h3 class="text-xl font-bold mb-1" id="modalTitle">Created Successfully!</h3>
+        <p class="text-sm text-gray-400" id="modalSubtext">Share this link or QR code.</p>
       </div>
 
       <div class="bg-white p-4 rounded-2xl inline-block mx-auto shadow-sm" id="modalQRContainer"></div>
@@ -367,14 +511,17 @@
       
       <div class="grid grid-cols-2 gap-3 pt-2">
         <button onclick="shareLink()" class="py-3.5 bg-white/5 hover:bg-white/10 border border-white/10 light:border-slate-200 rounded-xl text-sm font-bold transition-colors">Share</button>
-        <button onclick="closeSuccessModal()" class="py-3.5 bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold rounded-xl text-sm shadow-lg shadow-emerald-500/20 transition-all">Done</button>
+        <button onclick="closeSuccessModal()" id="modalDoneBtn" class="py-3.5 bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold rounded-xl text-sm shadow-lg shadow-emerald-500/20 transition-all">Done</button>
       </div>
     </div>
   </div>
 
 <script>
-  // PROXY CONTRACT ADDRESS 
+  // PAY LINK CONTRACT
   const CONTRACT_ADDRESS = "0x9B438F8Aa736Ed685e7aFF84eB173A9bb7c08320";
+  // INVOICE CONTRACT
+  const INVOICE_CONTRACT_ADDRESS = "0xD915573BCC42c5d4f859627435E975AEe316BCe0";
+  
   const ARC_CHAIN_ID = 5042002;
   const ARC_CHAIN_ID_HEX = "0x4cebe2";
   const NATIVE_USDC = "0x3600000000000000000000000000000000000000";
@@ -384,38 +531,59 @@
   let provider = null;
   let isProcessing = false;
   let currentLinks = [];
+  let currentInvoices = [];
   let rawBalance = 0n;
 
-  // توابع ارتباط با db.js برای ذخیره در فضای ابری (اگر تعریف نشده باشد، از لوکال مرورگر استفاده می‌شود)
+  // توابع ارتباط با دیتابیس ابری یا محلی
   async function fetchLinks() {
     try {
       if (typeof window.loadFromCloudDB === 'function') {
-        const data = await window.loadFromCloudDB();
+        const data = await window.loadFromCloudDB('links');
         if (data && Array.isArray(data)) return data;
       }
-    } catch(e) { console.error("Cloud DB load error", e); }
+    } catch(e) {}
     return JSON.parse(localStorage.getItem('arcPaymentLinksV2') || '[]');
+  }
+  
+  async function fetchInvoicesData() {
+    try {
+      if (typeof window.loadFromCloudDB === 'function') {
+        const data = await window.loadFromCloudDB('invoices');
+        if (data && Array.isArray(data)) return data;
+      }
+    } catch(e) {}
+    return JSON.parse(localStorage.getItem('arcInvoicesV1') || '[]');
   }
 
   async function saveLinks(links) {
     try {
-      if (typeof window.saveToCloudDB === 'function') {
-        await window.saveToCloudDB(links);
-      }
-    } catch(e) { console.error("Cloud DB save error", e); }
+      if (typeof window.saveToCloudDB === 'function') await window.saveToCloudDB('links', links);
+    } catch(e) {}
     localStorage.setItem('arcPaymentLinksV2', JSON.stringify(links));
   }
 
-  // ABI به‌روزشده به همراه قابلیت خواندن وضعیت لینک از بلاک‌چین
+  async function saveInvoices(invoices) {
+    try {
+      if (typeof window.saveToCloudDB === 'function') await window.saveToCloudDB('invoices', invoices);
+    } catch(e) {}
+    localStorage.setItem('arcInvoicesV1', JSON.stringify(invoices));
+  }
+
   const ArcPayLinkABI = [
     "function createLink(address linkId, address token, uint256 amount, uint40 expiration) external payable",
     "event LinkCreated(address indexed linkId, address indexed creator, address indexed token, uint256 amount, uint40 expiration)",
     "function links(address) view returns (uint256 amount, address token, uint40 expiration, uint8 status, address creator)"
   ];
 
+  const ArcInvoiceABI = [
+    "function createInvoice(address _payer, address _token, uint256 _amount, uint40 _dueDate, string calldata _metadataURI) external returns (uint256)",
+    "function invoices(uint256) view returns (uint256 amount, address issuer, uint40 dueDate, uint8 status, address payer, address token)",
+    "event InvoiceCreated(uint256 indexed invoiceId, address indexed issuer, address indexed payer, address token, uint256 amount, uint40 dueDate, string metadataURI)"
+  ];
+
   window.addEventListener('load', async () => {
-    // بارگذاری لینک‌ها در ابتدای ورود از طریق دیتابیس ابری
     currentLinks = await fetchLinks();
+    currentInvoices = await fetchInvoicesData();
 
     if (window.ethereum && window.ethereum.selectedAddress) {
       setTimeout(connectWallet, 500);
@@ -423,6 +591,7 @@
       renderHistory();
     }
     updatePreview();
+    updateInvPreview();
   });
 
   async function connectWallet() {
@@ -452,14 +621,14 @@
       
       document.getElementById("headerWalletText").textContent = shortAddress;
       document.getElementById("prevSender").textContent = shortAddress;
+      document.getElementById("prevInvIssuer").textContent = shortAddress;
       document.getElementById("disconnectBtn").classList.remove("hidden");
       document.getElementById("disconnectBtn").classList.add("flex");
 
       notify("Success", "Wallet Connected Successfully", "fa-check-circle");
       await loadUserBalance();
       updatePreview();
-      
-      // بارگذاری مجدد تاریخچه پس از اتصال تا وضعیت آنلاین از بلاک‌چین خوانده شود
+      updateInvPreview();
       renderHistory();
 
     } catch (e) {
@@ -476,6 +645,7 @@
 
     document.getElementById("headerWalletText").textContent = "Connect";
     document.getElementById("prevSender").textContent = "Not Connected";
+    document.getElementById("prevInvIssuer").textContent = "Not Connected";
     document.getElementById("disconnectBtn").classList.remove("flex");
     document.getElementById("disconnectBtn").classList.add("hidden");
     document.getElementById("tokenBalanceDisplay").textContent = "Balance: —";
@@ -521,7 +691,6 @@
         document.getElementById("tokenBalanceDisplay").innerHTML = `Balance: <span class="text-white">${parseFloat(formatted).toFixed(4)}</span>`;
       }
     } catch (e) {
-      console.warn("Balance load error:", e);
       document.getElementById("tokenBalanceDisplay").textContent = "Balance: Error";
       rawBalance = 0n;
     }
@@ -547,6 +716,7 @@
     updatePreview();
   }
 
+  // ================== CREATE LINK LOGIC ==================
   async function generateLink() {
     if (isProcessing) return;
     if (!signer || !userAddress) return notify("Error", "Please connect your wallet first", "fa-wallet", true);
@@ -571,7 +741,7 @@
       return;
     }
 
-    setLoadingState(true);
+    setLoadingState(true, 'link');
 
     try {
       const contract = new ethers.Contract(CONTRACT_ADDRESS, ArcPayLinkABI, signer);
@@ -579,12 +749,7 @@
 
       let amountWei;
       if (!isNative) {
-        const tokenContract = new ethers.Contract(tokenAddress, [
-          "function decimals() view returns (uint8)",
-          "function allowance(address, address) view returns (uint256)",
-          "function approve(address, uint256) returns (bool)"
-        ], signer);
-        
+        const tokenContract = new ethers.Contract(tokenAddress, ["function decimals() view returns (uint8)", "function allowance(address, address) view returns (uint256)", "function approve(address, uint256) returns (bool)"], signer);
         const decimals = await tokenContract.decimals();
         amountWei = ethers.parseUnits(amountInput.toString(), decimals);
 
@@ -642,41 +807,167 @@
       };
 
       currentLinks.unshift(newLink);
-      await saveLinks(currentLinks); // ذخیره در دیتابیس ابری (یا مرورگر)
+      await saveLinks(currentLinks);
 
-      showSuccessModal(newLink);
+      showSuccessModal(newLink, 'link');
       renderHistory();
       notify("Success", "Payment Link Created!", "fa-check-circle");
       
-      // Reset form
       document.getElementById('linkTitle').value = "";
       document.getElementById('fixedAmountInput').value = "";
       updatePreview();
       await loadUserBalance();
 
     } catch (error) {
-      console.error(error);
       if (error.code === "ACTION_REJECTED") {
         notify("Error", "Transaction cancelled.", "fa-ban", true);
       } else {
         notify("Error", error.reason || error.message || "Failed to create link", "fa-exclamation-triangle", true);
       }
     } finally {
-      setLoadingState(false);
+      setLoadingState(false, 'link');
     }
   }
 
-  function setLoadingState(loading) {
+  // ================== CREATE INVOICE LOGIC ==================
+  async function generateInvoice() {
+    if (isProcessing) return;
+    if (!signer || !userAddress) return notify("Error", "Please connect your wallet first", "fa-wallet", true);
+
+    const title = document.getElementById('invTitle').value.trim();
+    const amountInput = parseFloat(document.getElementById('invAmountInput').value);
+    const select = document.getElementById('invTokenSelect');
+    const tokenAddress = select.value;
+    const tokenSymbol = select.options[select.selectedIndex].text.split(' ')[0];
+    const payerInput = document.getElementById('invPayerAddress').value.trim();
+
+    document.getElementById('errInvTitle').classList.add('hidden');
+    document.getElementById('errInvAmount').classList.add('hidden');
+
+    if (!title) {
+      document.getElementById('errInvTitle').textContent = "Title is required";
+      document.getElementById('errInvTitle').classList.remove('hidden');
+      return;
+    }
+    if (!amountInput || amountInput <= 0) {
+      document.getElementById('errInvAmount').textContent = "Enter a valid amount";
+      document.getElementById('errInvAmount').classList.remove('hidden');
+      return;
+    }
+    if (payerInput && !ethers.isAddress(payerInput)) {
+      return notify("Error", "Invalid Payer Address", "fa-times", true);
+    }
+
+    setLoadingState(true, 'invoice');
+
+    try {
+      const contract = new ethers.Contract(INVOICE_CONTRACT_ADDRESS, ArcInvoiceABI, signer);
+      const isNative = (tokenAddress.toLowerCase() === NATIVE_USDC.toLowerCase() || tokenAddress === ethers.ZeroAddress);
+      const targetPayer = payerInput ? payerInput : ethers.ZeroAddress;
+
+      let decimals = 18;
+      if (!isNative) {
+        const tokenContract = new ethers.Contract(tokenAddress, ["function decimals() view returns (uint8)"], signer);
+        decimals = await tokenContract.decimals();
+      }
+      const amountWei = ethers.parseUnits(amountInput.toString(), decimals);
+
+      let expiration = 0;
+      const expOption = document.getElementById('invExpirationSelect').value;
+      if (expOption !== 'never') {
+        const seconds = { '24h': 86400, '7d': 604800, '30d': 2592000 }[expOption];
+        expiration = Math.floor(Date.now() / 1000) + seconds;
+      }
+
+      const metadataObj = { title: title, desc: document.getElementById('invDesc').value };
+      const metadataStr = JSON.stringify(metadataObj);
+
+      notify("Info", "Sign invoice creation in wallet...", "fa-file-signature");
+      
+      const tx = await contract.createInvoice(
+        targetPayer,
+        isNative ? ethers.ZeroAddress : tokenAddress,
+        amountWei,
+        expiration,
+        metadataStr
+      );
+      
+      notify("Info", "Transaction pending...", "fa-circle-notch fa-spin");
+      const receipt = await tx.wait();
+
+      // Extract Invoice ID from event logs
+      const iface = new ethers.Interface(ArcInvoiceABI);
+      let newInvoiceId = "Unknown";
+      for (const log of receipt.logs) {
+        try {
+          const parsedLog = iface.parseLog(log);
+          if (parsedLog && parsedLog.name === 'InvoiceCreated') {
+             newInvoiceId = parsedLog.args.invoiceId.toString();
+          }
+        } catch(e) {}
+      }
+
+      // ساخت لینک نهایی پرداخت فاکتور (قالب فرضی)
+      const finalUrl = `https://arcsplit.kamkazi-1297.workers.dev/invoice?id=${newInvoiceId}`;
+
+      const newInvoice = {
+        id: newInvoiceId,
+        txHash: tx.hash,
+        title: title,
+        token: tokenSymbol,
+        amount: amountInput,
+        payer: targetPayer,
+        expiration: expiration,
+        status: "Pending",
+        createdAt: Date.now(),
+        url: finalUrl
+      };
+
+      currentInvoices.unshift(newInvoice);
+      await saveInvoices(currentInvoices);
+
+      showSuccessModal(newInvoice, 'invoice');
+      renderHistory();
+      notify("Success", "Invoice Created Successfully!", "fa-check-circle");
+      
+      document.getElementById('invTitle').value = "";
+      document.getElementById('invAmountInput').value = "";
+      document.getElementById('invPayerAddress').value = "";
+      updateInvPreview();
+
+    } catch (error) {
+      if (error.code === "ACTION_REJECTED") {
+        notify("Error", "Transaction cancelled.", "fa-ban", true);
+      } else {
+        notify("Error", error.reason || error.message || "Failed to create invoice", "fa-exclamation-triangle", true);
+      }
+    } finally {
+      setLoadingState(false, 'invoice');
+    }
+  }
+
+  function setLoadingState(loading, type) {
     isProcessing = loading;
-    const btn = document.getElementById('generateBtn');
-    const text = document.getElementById('btnText');
-    
-    if (loading) {
-      btn.disabled = true;
-      text.innerHTML = '<div class="spinner mr-2"></div> Processing...';
+    if (type === 'link') {
+      const btn = document.getElementById('generateBtn');
+      const text = document.getElementById('btnText');
+      if (loading) {
+        btn.disabled = true;
+        text.innerHTML = '<div class="spinner mr-2"></div> Processing...';
+      } else {
+        btn.disabled = false;
+        text.innerHTML = '<i class="fas fa-magic"></i> Generate Secure Link';
+      }
     } else {
-      btn.disabled = false;
-      text.innerHTML = '<i class="fas fa-magic"></i> Generate Secure Link';
+      const btn = document.getElementById('generateInvBtn');
+      const text = document.getElementById('btnInvText');
+      if (loading) {
+        btn.disabled = true;
+        text.innerHTML = '<div class="spinner mr-2"></div> Submitting...';
+      } else {
+        btn.disabled = false;
+        text.innerHTML = '<i class="fas fa-receipt"></i> Create Smart Invoice';
+      }
     }
   }
 
@@ -695,16 +986,49 @@
     document.getElementById('prevExpires').textContent = expText;
   }
 
-  function showSuccessModal(link) {
-    document.getElementById('modalLinkInput').value = link.url;
+  function updateInvPreview() {
+    const title = document.getElementById('invTitle').value || 'Invoice';
+    const select = document.getElementById('invTokenSelect');
+    const tokenSymbol = select.options[select.selectedIndex].text.split(' ')[0];
+    const amount = document.getElementById('invAmountInput').value || '0.00';
+    const exp = document.getElementById('invExpirationSelect').value;
+    const payer = document.getElementById('invPayerAddress').value;
+
+    document.getElementById('prevInvTitle').textContent = title;
+    document.getElementById('prevInvAmount').textContent = `${amount} ${tokenSymbol}`;
+    document.getElementById('prevInvPayer').textContent = payer ? `${payer.slice(0,6)}...${payer.slice(-4)}` : 'Anyone';
+    
+    const expText = exp === 'never' ? 'No Due Date' : exp.replace('h', ' Hours').replace('d', ' Days');
+    document.getElementById('prevInvExpires').textContent = expText;
+  }
+
+  function showSuccessModal(data, type) {
+    document.getElementById('modalLinkInput').value = data.url;
+    
+    const iconContainer = document.getElementById('modalIconContainer');
+    const icon = document.getElementById('modalIcon');
+    const doneBtn = document.getElementById('modalDoneBtn');
+    
+    if (type === 'invoice') {
+       document.getElementById('modalTitle').textContent = "Invoice Created!";
+       document.getElementById('modalSubtext').textContent = "Share this invoice link with the payer.";
+       iconContainer.className = "w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-full flex items-center justify-center mx-auto text-3xl shadow-lg shadow-amber-500/30 text-white mb-2";
+       icon.className = "fas fa-receipt";
+       doneBtn.className = "py-3.5 bg-amber-500 hover:bg-amber-400 text-black font-extrabold rounded-xl text-sm shadow-lg shadow-amber-500/20 transition-all";
+    } else {
+       document.getElementById('modalTitle').textContent = "Link Created Successfully!";
+       document.getElementById('modalSubtext').textContent = "Share this link or QR code to receive your payment.";
+       iconContainer.className = "w-16 h-16 bg-gradient-to-br from-emerald-400 to-cyan-500 rounded-full flex items-center justify-center mx-auto text-3xl shadow-lg shadow-emerald-500/30 text-white mb-2";
+       icon.className = "fas fa-check";
+       doneBtn.className = "py-3.5 bg-emerald-500 hover:bg-emerald-400 text-black font-extrabold rounded-xl text-sm shadow-lg shadow-emerald-500/20 transition-all";
+    }
+
     const qrContainer = document.getElementById('modalQRContainer');
     qrContainer.innerHTML = '';
     
     if (typeof QRCode !== 'undefined') {
-      QRCode.toCanvas(link.url, { 
-        width: 180, 
-        margin: 1,
-        color: { dark: '#05050a', light: '#ffffff' }
+      QRCode.toCanvas(data.url, { 
+        width: 180, margin: 1, color: { dark: '#05050a', light: '#ffffff' }
       }, (err, canvas) => {
         if (!err) {
           canvas.classList.add('rounded-lg');
@@ -741,14 +1065,8 @@
     const link = document.getElementById('modalLinkInput').value;
     if (navigator.share) {
       try {
-        await navigator.share({
-          title: 'Arc Pay Link',
-          text: 'Here is your payment link:',
-          url: link
-        });
-      } catch (err) {
-        console.log("Share skipped");
-      }
+        await navigator.share({ title: 'Arc Pay Link', url: link });
+      } catch (err) {}
     } else {
       copyModalLink();
     }
@@ -756,103 +1074,124 @@
 
   function switchTab(tab) {
     document.getElementById('viewCreate').classList.toggle('hidden', tab !== 'create');
+    document.getElementById('viewInvoice').classList.toggle('hidden', tab !== 'invoice');
     document.getElementById('viewHistory').classList.toggle('hidden', tab !== 'history');
     
-    document.getElementById('tabCreate').className = tab === 'create' 
-      ? "flex-1 px-5 py-2.5 rounded-xl text-sm font-bold transition-all bg-emerald-500/10 text-emerald-400 shadow-sm" 
-      : "flex-1 px-5 py-2.5 rounded-xl text-sm font-bold transition-all text-gray-400 hover:text-white light:hover:text-black";
+    const activeClass = "px-5 py-2.5 rounded-xl text-sm font-bold transition-all bg-emerald-500/10 text-emerald-400 shadow-sm whitespace-nowrap";
+    const inactiveClass = "px-5 py-2.5 rounded-xl text-sm font-bold transition-all text-gray-400 hover:text-white light:hover:text-black whitespace-nowrap";
     
-    document.getElementById('tabHistory').className = tab === 'history' 
-      ? "flex-1 px-5 py-2.5 rounded-xl text-sm font-bold transition-all bg-emerald-500/10 text-emerald-400 shadow-sm" 
-      : "flex-1 px-5 py-2.5 rounded-xl text-sm font-bold transition-all text-gray-400 hover:text-white light:hover:text-black";
+    document.getElementById('tabCreate').className = tab === 'create' ? activeClass : inactiveClass;
+    document.getElementById('tabInvoice').className = tab === 'invoice' ? activeClass.replace('emerald', 'amber') : inactiveClass;
+    document.getElementById('tabHistory').className = tab === 'history' ? activeClass.replace('emerald', 'purple') : inactiveClass;
   }
 
-  // نمایش تاریخچه با قابلیت خواندن وضعیت هوشمند از شبکه بلاک‌چین
   async function renderHistory() {
-    const container = document.getElementById('historyTableBody');
-    if (currentLinks.length === 0) {
-      container.innerHTML = `
-        <div class="text-center py-12 px-4 border border-dashed border-white/10 rounded-2xl">
-          <div class="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fas fa-folder-open text-gray-500 text-2xl"></i></div>
-          <h4 class="text-white font-bold mb-1">No Links Yet</h4>
-          <p class="text-gray-500 text-sm">Create your first payment link to see it here.</p>
-        </div>`;
-      return;
-    }
-    
-    // وضعیت لودینگ هنگام دریافت اطلاعات از بلاک‌چین
-    container.innerHTML = `<div class="flex justify-center items-center py-10"><div class="spinner mr-3"></div><span class="text-gray-400 text-sm">Fetching live statuses...</span></div>`;
+    let readLinkContract = null;
+    let readInvoiceContract = null;
 
-    let readContract = null;
     if (provider) {
-       readContract = new ethers.Contract(CONTRACT_ADDRESS, ArcPayLinkABI, provider);
+       readLinkContract = new ethers.Contract(CONTRACT_ADDRESS, ArcPayLinkABI, provider);
+       readInvoiceContract = new ethers.Contract(INVOICE_CONTRACT_ADDRESS, ArcInvoiceABI, provider);
     } else if (window.ethereum) {
        try {
          const tempProvider = new ethers.BrowserProvider(window.ethereum);
-         readContract = new ethers.Contract(CONTRACT_ADDRESS, ArcPayLinkABI, tempProvider);
+         readLinkContract = new ethers.Contract(CONTRACT_ADDRESS, ArcPayLinkABI, tempProvider);
+         readInvoiceContract = new ethers.Contract(INVOICE_CONTRACT_ADDRESS, ArcInvoiceABI, tempProvider);
        } catch(e) {}
     }
 
-    let html = '';
-    
-    for (let link of currentLinks) {
-      let isExpired = link.expiration > 0 && (Date.now() / 1000) > link.expiration;
-      let statusColor = isExpired ? 'text-rose-400 bg-rose-400/10' : 'text-emerald-400 bg-emerald-400/10';
-      let statusText = isExpired ? 'Expired' : 'Active';
+    // --- Render Links History ---
+    const linkContainer = document.getElementById('historyTableBody');
+    if (currentLinks.length === 0) {
+      linkContainer.innerHTML = `<div class="text-center py-6 text-gray-500 text-sm border border-dashed border-white/10 rounded-2xl">No links created yet.</div>`;
+    } else {
+      let html = '';
+      for (let link of currentLinks) {
+        let isExpired = link.expiration > 0 && (Date.now() / 1000) > link.expiration;
+        let statusColor = isExpired ? 'text-rose-400 bg-rose-400/10' : 'text-emerald-400 bg-emerald-400/10';
+        let statusText = isExpired ? 'Expired' : 'Active';
 
-      // بررسی وضعیت روی شبکه به صورت زنده
-      if (readContract) {
-         try {
-            const linkData = await readContract.links(link.id);
-            const onChainStatus = Number(linkData[3]);
-            if (onChainStatus === 2) { // 2 = Claimed
-               statusText = 'Claimed';
-               statusColor = 'text-rose-500 bg-rose-500/10'; // رنگ قرمز مخصوص
-            } else if (onChainStatus === 3) {
-               statusText = 'Cancelled';
-               statusColor = 'text-rose-500 bg-rose-500/10';
-            } else if (onChainStatus === 1 && !isExpired) {
-               statusText = 'Active';
-               statusColor = 'text-emerald-400 bg-emerald-400/10';
-            }
-         } catch (e) {
-            console.warn("Could not read status for link", link.id);
-         }
+        if (readLinkContract) {
+           try {
+              const linkData = await readLinkContract.links(link.id);
+              const onChainStatus = Number(linkData[3]);
+              if (onChainStatus === 2) {
+                 statusText = 'Claimed'; statusColor = 'text-cyan-400 bg-cyan-400/10';
+              } else if (onChainStatus === 3) {
+                 statusText = 'Cancelled'; statusColor = 'text-rose-500 bg-rose-500/10';
+              } else if (onChainStatus === 1 && !isExpired) {
+                 statusText = 'Active'; statusColor = 'text-emerald-400 bg-emerald-400/10';
+              }
+           } catch (e) {}
+        }
+
+        const txUrl = link.txHash ? `https://testnet.arcscan.app/tx/${link.txHash}` : '#';
+        html += `
+        <div class="bg-white/5 border border-white/5 p-4 rounded-2xl flex flex-col sm:flex-row justify-between gap-4">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center text-emerald-400"><i class="fas fa-link"></i></div>
+            <div>
+              <div class="font-bold text-white flex items-center gap-2">${link.title} <span class="text-[10px] px-2 py-0.5 rounded-md uppercase ${statusColor}">${statusText}</span></div>
+              <div class="text-gray-400 text-sm mt-1">${link.amount} ${link.token}</div>
+            </div>
+          </div>
+          <button onclick="navigator.clipboard.writeText('${link.url}'); notify('Success', 'Copied!', 'fa-check');" class="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-sm transition-colors whitespace-nowrap">Copy URL</button>
+        </div>`;
       }
-
-      const txLinkUrl = link.txHash ? `https://testnet.arcscan.app/tx/${link.txHash}` : '#';
-      
-      html += `
-      <div class="bg-white/5 border border-white/5 p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-white/10 transition-colors">
-        <div class="flex items-start gap-4">
-          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 flex items-center justify-center flex-shrink-0 mt-1">
-            <i class="fas fa-link text-emerald-400"></i>
-          </div>
-          <div>
-            <div class="font-bold text-white text-base flex items-center gap-2">
-              ${link.title} <span class="text-[10px] px-2 py-0.5 rounded-md font-bold uppercase ${statusColor}">${statusText}</span>
-            </div>
-            <div class="text-gray-400 text-sm mt-1">${link.amount} ${link.token} • ${new Date(link.createdAt).toLocaleDateString()}</div>
-            <div class="text-gray-500 text-xs mt-2 font-mono flex flex-wrap items-center gap-x-4 gap-y-2">
-              <span>ID: ${link.id.slice(0,10)}...</span>
-              ${link.txHash ? `<a href="${txLinkUrl}" target="_blank" class="text-cyan-400 hover:text-cyan-300 transition-colors inline-flex items-center gap-1.5 px-2 py-1 bg-cyan-500/10 rounded-lg"><i class="fas fa-external-link-alt"></i> View Tx</a>` : ''}
-            </div>
-          </div>
-        </div>
-        <div class="flex items-center gap-2 w-full sm:w-auto">
-          <button onclick="navigator.clipboard.writeText('${link.url}'); notify('Success', 'Link copied!', 'fa-check');" class="flex-1 sm:flex-none px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl font-semibold text-sm transition-colors">Copy URL</button>
-        </div>
-      </div>
-    `
+      linkContainer.innerHTML = html;
     }
-    
-    container.innerHTML = html;
+
+    // --- Render Invoices History ---
+    const invContainer = document.getElementById('invoiceHistoryTableBody');
+    if (currentInvoices.length === 0) {
+      invContainer.innerHTML = `<div class="text-center py-6 text-gray-500 text-sm border border-dashed border-white/10 rounded-2xl">No invoices created yet.</div>`;
+    } else {
+      let invHtml = '';
+      for (let inv of currentInvoices) {
+        let isExpired = inv.expiration > 0 && (Date.now() / 1000) > inv.expiration;
+        let statusColor = isExpired ? 'text-rose-400 bg-rose-400/10' : 'text-amber-400 bg-amber-400/10';
+        let statusText = isExpired ? 'Overdue' : 'Pending';
+
+        if (readInvoiceContract && inv.id !== "Unknown") {
+           try {
+              const invData = await readInvoiceContract.invoices(inv.id);
+              const onChainStatus = Number(invData[3]); // 1=Pending, 2=Paid, 3=Cancelled
+              if (onChainStatus === 2) {
+                 statusText = 'Paid'; statusColor = 'text-emerald-400 bg-emerald-400/10';
+              } else if (onChainStatus === 3) {
+                 statusText = 'Cancelled'; statusColor = 'text-rose-500 bg-rose-500/10';
+              } else if (onChainStatus === 1 && !isExpired) {
+                 statusText = 'Pending'; statusColor = 'text-amber-400 bg-amber-400/10';
+              }
+           } catch (e) {}
+        }
+
+        const txUrl = inv.txHash ? `https://testnet.arcscan.app/tx/${inv.txHash}` : '#';
+        invHtml += `
+        <div class="bg-white/5 border border-white/5 p-4 rounded-2xl flex flex-col sm:flex-row justify-between gap-4">
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center text-amber-400"><i class="fas fa-file-invoice"></i></div>
+            <div>
+              <div class="font-bold text-white flex items-center gap-2">Inv #${inv.id} - ${inv.title} <span class="text-[10px] px-2 py-0.5 rounded-md uppercase ${statusColor}">${statusText}</span></div>
+              <div class="text-gray-400 text-sm mt-1">${inv.amount} ${inv.token} • Payer: ${inv.payer === '0x0000000000000000000000000000000000000000' ? 'Anyone' : inv.payer.slice(0,6)+'...'}</div>
+            </div>
+          </div>
+          <button onclick="navigator.clipboard.writeText('${inv.url}'); notify('Success', 'Copied!', 'fa-check');" class="px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl text-sm transition-colors whitespace-nowrap">Copy URL</button>
+        </div>`;
+      }
+      invContainer.innerHTML = invHtml;
+    }
   }
 
-  async function clearHistory() {
-    if(confirm("Are you sure you want to clear your history? You won't be able to retrieve lost private keys for active links!")) {
-      currentLinks = [];
-      await saveLinks(currentLinks);
+  async function clearHistory(type) {
+    if(confirm(`Are you sure you want to clear your ${type} history?`)) {
+      if (type === 'links') {
+         currentLinks = [];
+         await saveLinks(currentLinks);
+      } else {
+         currentInvoices = [];
+         await saveInvoices(currentInvoices);
+      }
       renderHistory();
     }
   }
@@ -865,9 +1204,7 @@
     document.getElementById("toastText").innerHTML = `<strong class="mr-1">${title}:</strong> ${msg}`;
     
     toast.classList.remove("hidden", "translate-y-full", "opacity-0");
-    
     if(window.toastTimer) clearTimeout(window.toastTimer);
-    
     window.toastTimer = setTimeout(() => {
       toast.classList.add("translate-y-full", "opacity-0");
       setTimeout(() => toast.classList.add("hidden"), 300);
