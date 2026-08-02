@@ -141,8 +141,11 @@
       document.getElementById('amountDisplay').innerHTML = '<div class="spinner border-gray-400 border-left-transparent w-4 h-4 inline-block"></div>';
       document.getElementById('statusDisplay').textContent = 'Fetching...';
 
+      // یک ثانیه تاخیر اولیه برای پایداری اتصال قبل از ارسال اولین درخواست
+      await sleep(1000);
+
       let attempt = 0;
-      const maxRetries = 3;
+      const maxRetries = 5;
       let success = false;
 
       while (attempt < maxRetries && !success) {
@@ -152,19 +155,22 @@
              document.getElementById('statusDisplay').textContent = `Retrying (${attempt}/${maxRetries})...`;
           }
 
-          const contract = new ethers.Contract(CONTRACT_ADDRESS, ArcPayLinkABI, provider);
+          // ساخت پروایدر تازه در هر بار تلاش برای جلوگیری از کش شدن خطای تایم‌اوت
+          const freshProvider = new ethers.JsonRpcProvider(RPC_URL);
+          const contract = new ethers.Contract(CONTRACT_ADDRESS, ArcPayLinkABI, freshProvider);
+          
           const [amount, tokenAddress, expiration, status, creator] = await contract.links(linkId);
 
           const tokenLower = tokenAddress.toLowerCase();
           let tokenSymbol = TOKEN_MAP[tokenLower] || "Unknown Token";
           
-          // تنظیم دسیمال پیش‌فرض از دیکشنری 
+          // تنظیم دسیمال پیش‌فرض از دیکشنری
           let decimals = TOKEN_DECIMALS[tokenLower] || 18; 
 
           // خواندن دسیمال از شبکه برای توکن‌های ناشناخته
           if (!TOKEN_DECIMALS[tokenLower] && tokenLower !== "0x0000000000000000000000000000000000000000") {
             try {
-              const tokenContract = new ethers.Contract(tokenAddress, ERC20ABI, provider);
+              const tokenContract = new ethers.Contract(tokenAddress, ERC20ABI, freshProvider);
               decimals = await tokenContract.decimals();
             } catch (e) {
               console.warn("Could not fetch decimals from network, falling back to 18");
@@ -202,7 +208,8 @@
             document.getElementById('amountDisplay').textContent = "Error";
             document.getElementById('statusDisplay').textContent = "Network Error";
           } else {
-            await sleep(2000); // دو ثانیه صبر پیش از تلاش مجدد
+            // تاخیر تصاعدی بین تلاش‌ها: دفعه اول ۲ ثانیه، دفعه دوم ۴ ثانیه، دفعه سوم ۶ ثانیه و...
+            await sleep(attempt * 2000);
           }
         }
       }
