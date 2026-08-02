@@ -208,7 +208,7 @@
       
       btnText.innerHTML = '<div class="spinner mr-2"></div> Preparing...';
 
-      // ۱. مکث یک ثانیه‌ای درخواستی پیش از ارسال ریکوئست
+      // مکث یک ثانیه‌ای پیش از ارسال ریکوئست
       await sleep(1000);
 
       try {
@@ -241,7 +241,6 @@
         const ephemeralWallet = new ethers.Wallet(privateKey);
         const signature = await ephemeralWallet.signTypedData(domain, types, values);
 
-        // ۲. حلقه برای تلاش مجدد (Retry Mechanism)
         let attempt = 0;
         const maxRetries = 3;
         let txSuccess = false;
@@ -249,6 +248,21 @@
         while (attempt < maxRetries && !txSuccess) {
           try {
             attempt++;
+            
+            // +++ آپدیت جدید: چک کردن وضعیت لینک روی شبکه قبل از تلاش مجدد +++
+            if (attempt > 1) {
+              btnText.innerHTML = '<div class="spinner mr-2"></div> Checking Chain Status...';
+              const contract = new ethers.Contract(CONTRACT_ADDRESS, ArcPayLinkABI, provider);
+              const linkData = await contract.links(linkId);
+              
+              if (linkData[3] === 2n) { // وضعیت 2 یعنی کلیم شده است
+                document.getElementById('statusDisplay').textContent = "Claimed Successfully";
+                showSuccess("Funds successfully transferred! (Detected on-chain)");
+                btnText.innerHTML = '<i class="fas fa-check"></i> Claimed';
+                return; // خروج از تابع، کاربر پول رو گرفته
+              }
+            }
+            
             btnText.innerHTML = `<div class="spinner mr-2"></div> Sending (Try ${attempt}/${maxRetries})...`;
 
             const WORKER_URL = "https://pay-relayer.kamkazi-1297.workers.dev/";
@@ -297,7 +311,7 @@
             }
             
             btnText.innerHTML = `<div class="spinner mr-2"></div> Retrying...`;
-            await sleep(2000); // دو ثانیه صبر پیش از تلاش مجدد در صورت کندی RPC
+            await sleep(2000); // دو ثانیه صبر پیش از تلاش مجدد 
           }
         }
 
@@ -306,6 +320,7 @@
         btnText.innerHTML = '<i class="fas fa-bolt"></i> Claim Funds';
         document.getElementById('claimBtn').disabled = false;
         
+        // نمایش ارور تنها زمانی اتفاق می‌افتد که واقعا پول ارسال نشده باشد
         if (error.reason || error.message) {
           showError(error.reason || error.message);
         } else {
@@ -313,7 +328,6 @@
         }
       }
     }
-
     function showError(msg) {
       const el = document.getElementById('errorMsg');
       el.textContent = msg;
