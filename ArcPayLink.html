@@ -54,7 +54,6 @@
     .light .text-gray-400 { color: #64748b !important; }
     .light .text-gray-300 { color: #475569 !important; }
 
-    /* کلاس مخصوص برای سفید ماندن متون بخش Preview در هر دو حالت */
     .always-white { color: #ffffff !important; }
 
     select, input, textarea {
@@ -62,6 +61,7 @@
       color: white;
       border: 1px solid rgba(255, 255, 255, 0.08);
       transition: all 0.3s ease;
+      color-scheme: dark;
     }
     
     select:hover, input:hover, textarea:hover {
@@ -81,6 +81,7 @@
       color: #0f172a;
       border: 1px solid #e2e8f0;
       box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+      color-scheme: light;
     }
 
     select option {
@@ -113,10 +114,6 @@
     }
 
     @keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
-    @keyframes pulse-glow {
-      0%, 100% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.2); }
-      50% { box-shadow: 0 0 35px rgba(16, 185, 129, 0.4); }
-    }
     
     .spinner {
       border: 3px solid rgba(255,255,255,0.1);
@@ -147,8 +144,8 @@
       
       <div class="flex items-center gap-3 w-full sm:w-auto">
         <div class="flex flex-1 sm:flex-none bg-black/20 light:bg-slate-100 p-1.5 rounded-2xl overflow-x-auto hide-scroll">
-          <button onclick="switchTab('create')" id="tabCreate" class="px-5 py-2.5 rounded-xl text-sm font-bold transition-all bg-emerald-500/10 text-emerald-400 shadow-sm whitespace-nowrap">Send Link</button>
-          <button onclick="switchTab('invoice')" id="tabInvoice" class="px-5 py-2.5 rounded-xl text-sm font-bold transition-all text-gray-400 hover:text-white light:hover:text-black whitespace-nowrap">Request (Invoice)</button>
+          <button onclick="switchTab('create')" id="tabCreate" class="px-5 py-2.5 rounded-xl text-sm font-bold transition-all bg-emerald-500/10 text-emerald-400 shadow-sm whitespace-nowrap">Payment Link</button>
+          <button onclick="switchTab('invoice')" id="tabInvoice" class="px-5 py-2.5 rounded-xl text-sm font-bold transition-all text-gray-400 hover:text-white light:hover:text-black whitespace-nowrap">Invoice</button>
           <button onclick="switchTab('history')" id="tabHistory" class="px-5 py-2.5 rounded-xl text-sm font-bold transition-all text-gray-400 hover:text-white light:hover:text-black whitespace-nowrap">History</button>
         </div>
 
@@ -174,9 +171,8 @@
       <span id="toastText"></span>
     </div>
 
-    <!-- ================= TAB 1: CREATE (SEND LINK) ================= -->
+    <!-- ================= TAB 1: CREATE (PAYMENT LINK) ================= -->
     <div id="viewCreate" class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
-      <!-- Configuration Form -->
       <div class="lg:col-span-7 space-y-6">
         
         <!-- Token & Amount Section -->
@@ -246,16 +242,19 @@
           <div class="space-y-2">
             <label class="text-xs text-gray-400 font-medium ml-1 block">Link Expiration</label>
             <div class="relative">
-              <select id="expirationSelect" onchange="updatePreview()" class="w-full rounded-2xl pl-10 pr-4 py-4 text-sm font-semibold appearance-none">
+              <select id="expirationSelect" onchange="handleExpChange('link')" class="w-full rounded-2xl pl-10 pr-4 py-4 text-sm font-semibold appearance-none">
                 <option value="never">Never Expires</option>
                 <option value="1h">1 Hour</option>
                 <option value="24h">24 Hours</option>
                 <option value="7d">7 Days</option>
                 <option value="30d">30 Days</option>
+                <option value="custom">Custom Date & Time</option>
               </select>
               <i class="fas fa-hourglass-half absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
               <i class="fas fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-xs pointer-events-none"></i>
             </div>
+            <!-- فیلد کاستوم دیت -->
+            <input type="datetime-local" id="customExpLink" oninput="updatePreview()" class="hidden w-full rounded-2xl px-4 py-3 mt-3 text-sm font-semibold">
             <p class="text-[11px] text-gray-500 ml-1 mt-2">Expired links automatically become invalid and can be refunded.</p>
           </div>
         </div>
@@ -324,7 +323,7 @@
       </div>
     </div>
 
-    <!-- ================= TAB 2: INVOICE (REQUEST) ================= -->
+    <!-- ================= TAB 2: INVOICE ================= -->
     <div id="viewInvoice" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
       <div class="lg:col-span-7 space-y-6">
         
@@ -340,13 +339,19 @@
             <div class="space-y-2">
               <label class="text-xs text-gray-400 font-medium ml-1">Requested Asset</label>
               <div class="relative">
-                <select id="invTokenSelect" onchange="updateInvPreview()" class="w-full rounded-2xl pl-10 pr-4 py-4 text-sm font-semibold cursor-pointer appearance-none">
+                <select id="invTokenSelect" onchange="handleInvTokenChange()" class="w-full rounded-2xl pl-10 pr-4 py-4 text-sm font-semibold cursor-pointer appearance-none">
                   <option value="0x3600000000000000000000000000000000000000">USDC (Native)</option>
                   <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
                   <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
+                  <option value="custom">Add Custom Token...</option>
                 </select>
                 <i class="fas fa-gem absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
                 <i class="fas fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-xs pointer-events-none"></i>
+              </div>
+              <div class="flex justify-between text-[11px] px-1 pt-1">
+                <span class="text-gray-500">Network: Arc L1</span>
+                <!-- نمایش موجودی برای فاکتور -->
+                <span id="invTokenBalanceDisplay" class="text-gray-400 font-medium">Balance: —</span>
               </div>
             </div>
 
@@ -391,15 +396,18 @@
           <div class="space-y-2">
             <label class="text-xs text-gray-400 font-medium ml-1 block">Invoice Expiration</label>
             <div class="relative">
-              <select id="invExpirationSelect" onchange="updateInvPreview()" class="w-full rounded-2xl pl-10 pr-4 py-4 text-sm font-semibold appearance-none">
+              <select id="invExpirationSelect" onchange="handleExpChange('invoice')" class="w-full rounded-2xl pl-10 pr-4 py-4 text-sm font-semibold appearance-none">
                 <option value="never">No Due Date</option>
                 <option value="24h">24 Hours</option>
                 <option value="7d">7 Days</option>
                 <option value="30d">30 Days</option>
+                <option value="custom">Custom Date & Time</option>
               </select>
               <i class="fas fa-clock absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
               <i class="fas fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-xs pointer-events-none"></i>
             </div>
+            <!-- فیلد کاستوم دیت -->
+            <input type="datetime-local" id="customExpInv" oninput="updateInvPreview()" class="hidden w-full rounded-2xl px-4 py-3 mt-3 text-sm font-semibold">
           </div>
         </div>
 
@@ -517,9 +525,7 @@
   </div>
 
 <script>
-  // PAY LINK CONTRACT
   const CONTRACT_ADDRESS = "0x9B438F8Aa736Ed685e7aFF84eB173A9bb7c08320";
-  // INVOICE CONTRACT
   const INVOICE_CONTRACT_ADDRESS = "0xD915573BCC42c5d4f859627435E975AEe316BCe0";
   
   const ARC_CHAIN_ID = 5042002;
@@ -649,10 +655,12 @@
     document.getElementById("disconnectBtn").classList.remove("flex");
     document.getElementById("disconnectBtn").classList.add("hidden");
     document.getElementById("tokenBalanceDisplay").textContent = "Balance: —";
+    document.getElementById("invTokenBalanceDisplay").textContent = "Balance: —";
 
     notify("Info", "Wallet disconnected", "fa-info-circle");
   }
 
+  // --- هندل کردن کاستوم توکن برای لینک‌ها ---
   async function handleTokenChange() {
     const select = document.getElementById('tokenSelect');
     if (select.value === 'custom') {
@@ -671,28 +679,105 @@
     updatePreview();
   }
 
+  // --- هندل کردن کاستوم توکن برای فاکتورها ---
+  async function handleInvTokenChange() {
+    const select = document.getElementById('invTokenSelect');
+    if (select.value === 'custom') {
+      const customAddress = prompt("Enter Custom Token Address for Invoice (0x...):");
+      if (customAddress && ethers.isAddress(customAddress)) {
+        const option = new Option(`Custom (${customAddress.slice(0,6)}...)`, customAddress);
+        select.add(option);
+        select.value = customAddress;
+        notify("Success", "Custom token added to Invoice", "fa-check");
+      } else {
+        notify("Error", "Invalid address", "fa-times", true);
+        select.value = NATIVE_USDC;
+      }
+    }
+    await loadUserBalance();
+    updateInvPreview();
+  }
+
+  // نمایش یا مخفی کردن فیلد تاریخ کاستوم
+  function handleExpChange(type) {
+    if (type === 'link') {
+      const val = document.getElementById('expirationSelect').value;
+      document.getElementById('customExpLink').classList.toggle('hidden', val !== 'custom');
+      updatePreview();
+    } else {
+      const val = document.getElementById('invExpirationSelect').value;
+      document.getElementById('customExpInv').classList.toggle('hidden', val !== 'custom');
+      updateInvPreview();
+    }
+  }
+
+  // استخراج Timestamp نهایی برای قرارداد
+  function getExpirationTimestamp(type) {
+    let val, customInput;
+    if (type === 'link') {
+      val = document.getElementById('expirationSelect').value;
+      customInput = document.getElementById('customExpLink').value;
+    } else {
+      val = document.getElementById('invExpirationSelect').value;
+      customInput = document.getElementById('customExpInv').value;
+    }
+
+    if (val === 'never') return 0;
+    if (val === 'custom') {
+      if (!customInput) throw new Error("Please select a valid custom date and time.");
+      const targetTime = new Date(customInput).getTime();
+      if (targetTime <= Date.now()) throw new Error("Custom date must be in the future.");
+      return Math.floor(targetTime / 1000);
+    }
+    const seconds = { '1h': 3600, '24h': 86400, '7d': 604800, '30d': 2592000 }[val];
+    return Math.floor(Date.now() / 1000) + seconds;
+  }
+
+  // --- تابع جامع و دارای Retry برای گرفتن موجودی ---
+  async function fetchBalanceWithRetry(tokenAddress, maxRetries = 3) {
+    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+      try {
+        if (tokenAddress.toLowerCase() === NATIVE_USDC.toLowerCase() || tokenAddress === ethers.ZeroAddress) {
+          const bal = await provider.getBalance(userAddress);
+          return { raw: bal, formatted: ethers.formatEther(bal) };
+        } else {
+          const contract = new ethers.Contract(tokenAddress, ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"], signer);
+          const [bal, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
+          return { raw: bal, formatted: ethers.formatUnits(bal, decimals) };
+        }
+      } catch (error) {
+        if (attempt === maxRetries) throw error;
+        // صبر کردن به مدت 1 ثانیه قبل از تلاش مجدد
+        await new Promise(res => setTimeout(res, 1000));
+      }
+    }
+  }
+
+  // آپدیت همزمان هر دو بالانس (بخش لینک و بخش فاکتور)
   async function loadUserBalance() {
     if (!signer || !userAddress) return;
-    const select = document.getElementById('tokenSelect');
-    const tokenAddress = select.value;
+    
+    const linkToken = document.getElementById('tokenSelect').value;
+    const invToken = document.getElementById('invTokenSelect').value;
 
+    // آپدیت بالانس لینک پرداخت
     try {
       document.getElementById("tokenBalanceDisplay").textContent = `Loading...`;
-      
-      if (tokenAddress.toLowerCase() === NATIVE_USDC.toLowerCase() || tokenAddress === ethers.ZeroAddress) {
-        rawBalance = await provider.getBalance(userAddress);
-        const formatted = ethers.formatEther(rawBalance); 
-        document.getElementById("tokenBalanceDisplay").innerHTML = `Balance: <span class="text-white">${parseFloat(formatted).toFixed(4)}</span>`;
-      } else {
-        const contract = new ethers.Contract(tokenAddress, ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"], signer);
-        const [bal, decimals] = await Promise.all([contract.balanceOf(userAddress), contract.decimals()]);
-        rawBalance = bal;
-        const formatted = ethers.formatUnits(bal, decimals);
-        document.getElementById("tokenBalanceDisplay").innerHTML = `Balance: <span class="text-white">${parseFloat(formatted).toFixed(4)}</span>`;
-      }
+      const result = await fetchBalanceWithRetry(linkToken);
+      rawBalance = result.raw; // ذخیره برای دکمه Max
+      document.getElementById("tokenBalanceDisplay").innerHTML = `Balance: <span class="text-white">${parseFloat(result.formatted).toFixed(4)}</span>`;
     } catch (e) {
       document.getElementById("tokenBalanceDisplay").textContent = "Balance: Error";
       rawBalance = 0n;
+    }
+
+    // آپدیت بالانس فاکتور
+    try {
+      document.getElementById("invTokenBalanceDisplay").textContent = `Loading...`;
+      const resultInv = await fetchBalanceWithRetry(invToken);
+      document.getElementById("invTokenBalanceDisplay").innerHTML = `Balance: <span class="text-white">${parseFloat(resultInv.formatted).toFixed(4)}</span>`;
+    } catch (e) {
+      document.getElementById("invTokenBalanceDisplay").textContent = "Balance: Error";
     }
   }
 
@@ -741,6 +826,13 @@
       return;
     }
 
+    let expiration = 0;
+    try {
+      expiration = getExpirationTimestamp('link');
+    } catch (err) {
+      return notify("Error", err.message, "fa-times", true);
+    }
+
     setLoadingState(true, 'link');
 
     try {
@@ -769,13 +861,6 @@
       const ephemeralWallet = ethers.Wallet.createRandom();
       const generatedLinkId = ephemeralWallet.address;
       const privateKey = ephemeralWallet.privateKey;
-
-      let expiration = 0;
-      const expOption = document.getElementById('expirationSelect').value;
-      if (expOption !== 'never') {
-        const seconds = { '1h': 3600, '24h': 86400, '7d': 604800, '30d': 2592000 }[expOption];
-        expiration = Math.floor(Date.now() / 1000) + seconds;
-      }
 
       notify("Info", "Confirm transaction in wallet...", "fa-file-signature");
       
@@ -858,6 +943,13 @@
       return notify("Error", "Invalid Payer Address", "fa-times", true);
     }
 
+    let expiration = 0;
+    try {
+      expiration = getExpirationTimestamp('invoice');
+    } catch (err) {
+      return notify("Error", err.message, "fa-times", true);
+    }
+
     setLoadingState(true, 'invoice');
 
     try {
@@ -871,13 +963,6 @@
         decimals = await tokenContract.decimals();
       }
       const amountWei = ethers.parseUnits(amountInput.toString(), decimals);
-
-      let expiration = 0;
-      const expOption = document.getElementById('invExpirationSelect').value;
-      if (expOption !== 'never') {
-        const seconds = { '24h': 86400, '7d': 604800, '30d': 2592000 }[expOption];
-        expiration = Math.floor(Date.now() / 1000) + seconds;
-      }
 
       const metadataObj = { title: title, desc: document.getElementById('invDesc').value };
       const metadataStr = JSON.stringify(metadataObj);
@@ -895,7 +980,6 @@
       notify("Info", "Transaction pending...", "fa-circle-notch fa-spin");
       const receipt = await tx.wait();
 
-      // Extract Invoice ID from event logs
       const iface = new ethers.Interface(ArcInvoiceABI);
       let newInvoiceId = "Unknown";
       for (const log of receipt.logs) {
@@ -907,7 +991,6 @@
         } catch(e) {}
       }
 
-      // ساخت لینک نهایی پرداخت فاکتور (قالب فرضی)
       const finalUrl = `https://arcsplit.kamkazi-1297.workers.dev/invoice?id=${newInvoiceId}`;
 
       const newInvoice = {
@@ -982,7 +1065,13 @@
     document.getElementById('prevAmount').textContent = `${amount} ${tokenSymbol}`;
     document.getElementById('prevDesc').textContent = document.getElementById('linkDesc').value || '—';
     
-    const expText = exp === 'never' ? 'Never' : exp.replace('h', ' Hours').replace('d', ' Days');
+    let expText = "Never";
+    if (exp === 'custom') {
+      const cDate = document.getElementById('customExpLink').value;
+      expText = cDate ? new Date(cDate).toLocaleString() : 'Custom Date';
+    } else if (exp !== 'never') {
+      expText = exp.replace('h', ' Hours').replace('d', ' Days');
+    }
     document.getElementById('prevExpires').textContent = expText;
   }
 
@@ -998,7 +1087,13 @@
     document.getElementById('prevInvAmount').textContent = `${amount} ${tokenSymbol}`;
     document.getElementById('prevInvPayer').textContent = payer ? `${payer.slice(0,6)}...${payer.slice(-4)}` : 'Anyone';
     
-    const expText = exp === 'never' ? 'No Due Date' : exp.replace('h', ' Hours').replace('d', ' Days');
+    let expText = "No Due Date";
+    if (exp === 'custom') {
+      const cDate = document.getElementById('customExpInv').value;
+      expText = cDate ? new Date(cDate).toLocaleString() : 'Custom Date';
+    } else if (exp !== 'never') {
+      expText = exp.replace('h', ' Hours').replace('d', ' Days');
+    }
     document.getElementById('prevInvExpires').textContent = expText;
   }
 
@@ -1125,7 +1220,6 @@
            } catch (e) {}
         }
 
-        const txUrl = link.txHash ? `https://testnet.arcscan.app/tx/${link.txHash}` : '#';
         html += `
         <div class="bg-white/5 border border-white/5 p-4 rounded-2xl flex flex-col sm:flex-row justify-between gap-4">
           <div class="flex items-start gap-4">
@@ -1155,7 +1249,7 @@
         if (readInvoiceContract && inv.id !== "Unknown") {
            try {
               const invData = await readInvoiceContract.invoices(inv.id);
-              const onChainStatus = Number(invData[3]); // 1=Pending, 2=Paid, 3=Cancelled
+              const onChainStatus = Number(invData[3]); 
               if (onChainStatus === 2) {
                  statusText = 'Paid'; statusColor = 'text-emerald-400 bg-emerald-400/10';
               } else if (onChainStatus === 3) {
@@ -1166,7 +1260,6 @@
            } catch (e) {}
         }
 
-        const txUrl = inv.txHash ? `https://testnet.arcscan.app/tx/${inv.txHash}` : '#';
         invHtml += `
         <div class="bg-white/5 border border-white/5 p-4 rounded-2xl flex flex-col sm:flex-row justify-between gap-4">
           <div class="flex items-start gap-4">
