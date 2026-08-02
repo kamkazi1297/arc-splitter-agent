@@ -194,7 +194,6 @@
     async function claimFunds() {
       const destAddress = document.getElementById('destAddress').value.trim();
       
-      // اعتبارسنجی فرمت آدرس ولت
       if (!ethers.isAddress(destAddress)) {
         return showError("Please enter a valid EVM destination address.");
       }
@@ -207,8 +206,6 @@
       document.getElementById('txHashContainer').classList.add('hidden');
       
       btnText.innerHTML = '<div class="spinner mr-2"></div> Preparing...';
-
-      // مکث یک ثانیه‌ای پیش از ارسال ریکوئست
       await sleep(1000);
 
       try {
@@ -244,58 +241,70 @@
         let attempt = 0;
         const maxRetries = 3;
         let txSuccess = false;
+        let pendingTxHash = null; // متغیر جدید برای ذخیره هش تراکنش
 
         while (attempt < maxRetries && !txSuccess) {
           try {
             attempt++;
             
-            // +++ آپدیت جدید: چک کردن وضعیت لینک روی شبکه قبل از تلاش مجدد +++
+            // چک کردن وضعیت کانتراکت روی بلاک‌چین پیش از هر تلاش مجدد
             if (attempt > 1) {
-              btnText.innerHTML = '<div class="spinner mr-2"></div> Checking Chain Status...';
+              btnText.innerHTML = '<div class="spinner mr-2"></div> Checking Status...';
               const contract = new ethers.Contract(CONTRACT_ADDRESS, ArcPayLinkABI, provider);
               const linkData = await contract.links(linkId);
               
-              if (linkData[3] === 2n) { // وضعیت 2 یعنی کلیم شده است
+              if (linkData[3] === 2n) {
                 document.getElementById('statusDisplay').textContent = "Claimed Successfully";
                 showSuccess("Funds successfully transferred! (Detected on-chain)");
                 btnText.innerHTML = '<i class="fas fa-check"></i> Claimed';
-                return; // خروج از تابع، کاربر پول رو گرفته
+                
+                if(pendingTxHash) {
+                    const txHashLink = document.getElementById('txHashLink');
+                    txHashLink.href = `https://testnet.arcscan.app/tx/${pendingTxHash}`;
+                    document.getElementById('txHashContainer').classList.remove('hidden');
+                }
+                return;
               }
             }
             
-            btnText.innerHTML = `<div class="spinner mr-2"></div> Sending (Try ${attempt}/${maxRetries})...`;
+            // اگر هنوز هیچ هش تراکنشی از ورکر نگرفته‌ایم، درخواست ارسال می‌شود
+            if (!pendingTxHash) {
+                btnText.innerHTML = `<div class="spinner mr-2"></div> Sending (Try ${attempt}/${maxRetries})...`;
 
-            const WORKER_URL = "https://pay-relayer.kamkazi-1297.workers.dev/";
-            const response = await fetch(WORKER_URL, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                linkId: linkId,
-                destination: destAddress,
-                feeAmount: feeAmount,
-                signature: signature
-              })
-            });
+                const WORKER_URL = "https://pay-relayer.kamkazi-1297.workers.dev/";
+                const response = await fetch(WORKER_URL, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    linkId: linkId,
+                    destination: destAddress,
+                    feeAmount: feeAmount,
+                    signature: signature
+                  })
+                });
 
-            const data = await response.json();
-            
-            if (!data.success) {
-                throw new Error(data.error);
+                const data = await response.json();
+                
+                if (!data.success) {
+                    throw new Error(data.error);
+                }
+                
+                // هش دریافت و ذخیره شد
+                pendingTxHash = data.txHash;
             }
 
             btnText.innerHTML = '<div class="spinner mr-2"></div> Confirming in Network...';
             
-            // منتظر ماندن برای تایید تراکنش در شبکه با تایم اوت ۴۵ ثانیه ای
-            const receipt = await provider.waitForTransaction(data.txHash, 1, 45000);
+            // منتظر ماندن فقط برای همان هش دریافت شده (بدون ارسال مجدد تراکنش)
+            const receipt = await provider.waitForTransaction(pendingTxHash, 1, 35000);
 
             if (receipt && receipt.status === 1) {
-              // موفقیت تراکنش
               document.getElementById('statusDisplay').textContent = "Claimed Successfully";
               showSuccess("Funds successfully transferred to the destination wallet!");
               btnText.innerHTML = '<i class="fas fa-check"></i> Claimed';
               
               const txHashLink = document.getElementById('txHashLink');
-              txHashLink.href = `https://testnet.arcscan.app/tx/${data.txHash}`;
+              txHashLink.href = `https://testnet.arcscan.app/tx/${pendingTxHash}`;
               document.getElementById('txHashContainer').classList.remove('hidden');
               txSuccess = true;
             } else {
@@ -305,13 +314,10 @@
           } catch (err) {
             console.error(`Attempt ${attempt} failed:`, err);
             
-            // اگر به سقف تلاش رسید، ارور رو پرتاب کن به Catch اصلی
-            if (attempt >= maxRetries) {
-              throw err; 
-            }
+            if (attempt >= maxRetries) throw err; 
             
             btnText.innerHTML = `<div class="spinner mr-2"></div> Retrying...`;
-            await sleep(2000); // دو ثانیه صبر پیش از تلاش مجدد 
+            await sleep(2000);
           }
         }
 
@@ -320,7 +326,6 @@
         btnText.innerHTML = '<i class="fas fa-bolt"></i> Claim Funds';
         document.getElementById('claimBtn').disabled = false;
         
-        // نمایش ارور تنها زمانی اتفاق می‌افتد که واقعا پول ارسال نشده باشد
         if (error.reason || error.message) {
           showError(error.reason || error.message);
         } else {
@@ -328,6 +333,8 @@
         }
       }
     }
+
+    
     function showError(msg) {
       const el = document.getElementById('errorMsg');
       el.textContent = msg;
