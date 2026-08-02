@@ -66,11 +66,11 @@
       </div>
       <div class="flex justify-between items-center text-sm">
         <span class="text-gray-400">Amount</span>
-        <span id="amountDisplay" class="font-bold text-gray-500">Fetching Details...</span>
+        <span id="amountDisplay" class="font-bold text-gray-500 flex items-center gap-2">Fetching Details...</span>
       </div>
       <div class="flex justify-between items-center text-sm border-t border-white/5 pt-2">
         <span class="text-gray-400">Status</span>
-        <span id="statusDisplay" class="font-bold text-gray-400">Loading...</span>
+        <span id="statusDisplay" class="font-bold text-gray-400 flex items-center gap-2">Loading...</span>
       </div>
     </div>
 
@@ -146,21 +146,19 @@
 
     async function fetchLinkDetails() {
       hideMessages();
+      
+      // اضافه کردن اسپینر چرخشی در هنگام لودینگ بدون متن شمارش معکوس
       document.getElementById('amountDisplay').innerHTML = '<div class="spinner border-gray-400 border-left-transparent w-4 h-4 inline-block"></div>';
-      document.getElementById('statusDisplay').textContent = 'Fetching...';
-      document.getElementById('statusDisplay').className = 'font-bold text-gray-400';
+      
+      const statusEl = document.getElementById('statusDisplay');
+      statusEl.className = 'font-bold flex items-center gap-2 text-gray-400';
+      statusEl.innerHTML = '<div class="spinner border-gray-400 border-left-transparent w-4 h-4 inline-block"></div> Fetching...';
 
-      let attempt = 0;
-      const maxRetries = 5;
       let success = false;
 
-      while (attempt < maxRetries && !success) {
+      // حلقه بی‌نهایت برای تلاش مجدد بدون نمایش خطا در صفحه
+      while (!success) {
         try {
-          attempt++;
-          if (attempt > 1) {
-             document.getElementById('statusDisplay').textContent = `Retrying (${attempt}/${maxRetries})...`;
-          }
-
           const contract = new ethers.Contract(CONTRACT_ADDRESS, ArcPayLinkABI, provider);
           const [amount, tokenAddress, expiration, status, creator] = await contract.links(linkId);
 
@@ -180,38 +178,31 @@
           const formattedAmount = ethers.formatUnits(amount, decimals);
           document.getElementById('amountDisplay').innerHTML = `<span class="text-white">${parseFloat(formattedAmount).toFixed(4)}</span> <span class="text-emerald-400 font-bold">${tokenSymbol}</span>`;
 
+          // پس از دریافت موفقیت آمیز، کلاس‌ها را به حالت اصلی برمی‌گردانیم
           if (status === 1n) {
-            document.getElementById('statusDisplay').textContent = "Active";
-            document.getElementById('statusDisplay').classList.replace('text-gray-400', 'text-emerald-400');
+            statusEl.innerHTML = "Active";
+            statusEl.className = 'font-bold text-emerald-400';
             document.getElementById('claimSection').classList.remove('hidden');
           } else if (status === 2n) {
-            document.getElementById('statusDisplay').textContent = "Already Claimed";
-            document.getElementById('statusDisplay').classList.replace('text-gray-400', 'text-rose-400');
+            statusEl.innerHTML = "Already Claimed";
+            statusEl.className = 'font-bold text-rose-400';
             showError("This payment has already been claimed.");
           } else if (status === 3n) {
-            document.getElementById('statusDisplay').textContent = "Cancelled";
-            document.getElementById('statusDisplay').classList.replace('text-gray-400', 'text-rose-400');
+            statusEl.innerHTML = "Cancelled";
+            statusEl.className = 'font-bold text-rose-400';
             showError("This payment link was cancelled by the creator.");
           } else {
-            document.getElementById('statusDisplay').textContent = "Not Found";
+            statusEl.innerHTML = "Not Found";
+            statusEl.className = 'font-bold text-rose-400';
             showError("Invalid link or not found on network.");
           }
 
           success = true;
 
         } catch (error) {
-          console.error(`Fetch attempt ${attempt} failed:`, error);
-          
-          if (attempt >= maxRetries) {
-            showError("RPC response is slow. Please try again.");
-            document.getElementById('amountDisplay').textContent = "Failed to load";
-            document.getElementById('statusDisplay').innerHTML = `
-              <button onclick="fetchLinkDetails()" class="text-cyan-400 hover:text-cyan-300 underline text-xs flex items-center gap-1 ml-auto">
-                <i class="fas fa-redo-alt"></i> Retry Now
-              </button>`;
-          } else {
-            await sleep(1000 + (attempt * 500));
-          }
+          console.warn("RPC is slow, retrying fetching values silently...");
+          // وقفه کوتاه برای جلوگیری از فشار به مرورگر قبل از تلاش مجدد
+          await sleep(3000); 
         }
       }
     }
@@ -231,7 +222,6 @@
       document.getElementById('txHashContainer').classList.add('hidden');
       document.getElementById('networkWarning').classList.add('hidden');
       
-      // متن دکمه ثابت می‌ماند
       btnText.innerHTML = '<div class="spinner mr-2"></div> Confirming...';
 
       try {
@@ -265,7 +255,7 @@
         const signature = await ephemeralWallet.signTypedData(domain, types, values);
 
         let attempt = 0;
-        const maxRetries = 4; // محدودیت فقط برای ارورهای غیر شبکه‌ای
+        const maxRetries = 4;
         let txSuccess = false;
         let pendingTxHash = null;
 
@@ -332,15 +322,9 @@
           } catch (err) {
             console.error(`Attempt ${attempt} failed:`, err);
             
-            // بررسی ارور ۴۲۹ (Rate Limit) یا شلوغی شبکه
             if (err.message && (err.message.includes("busy") || err.message.includes("Retrying") || err.message.includes("429") || err.message.includes("limit"))) {
-              // نمایش بنر هشدار شلوغی شبکه
               document.getElementById('networkWarning').classList.remove('hidden');
-              
-              // کم کردن یکی از تعداد تلاش‌ها برای ایجاد حلقه بی‌نهایت
               attempt--; 
-              
-              // صبر ۳ ثانیه‌ای تا آرام شدن شبکه
               await sleep(3000);
             } else {
               if (attempt >= maxRetries) throw err; 
