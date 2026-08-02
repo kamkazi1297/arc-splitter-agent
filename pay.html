@@ -51,6 +51,14 @@
       <p class="text-gray-400 text-sm mt-2">Enter your wallet address below to claim.</p>
     </div>
 
+    <!-- نوتیفیکیشن هشدار شلوغی شبکه (مخفی در حالت عادی) -->
+    <div id="networkWarning" class="hidden bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm rounded-xl p-4 text-left shadow-lg">
+      <div class="flex items-start gap-3">
+        <i class="fas fa-exclamation-triangle mt-1"></i>
+        <p><strong>Network Congestion:</strong> The network is currently experiencing high traffic. Your transaction is processing and may take longer than usual. Please do not close this page.</p>
+      </div>
+    </div>
+
     <div class="bg-black/20 rounded-2xl p-4 text-left border border-white/5 space-y-3">
       <div class="flex justify-between items-center text-sm">
         <span class="text-gray-400">Link ID</span>
@@ -221,8 +229,10 @@
       document.getElementById('claimBtn').disabled = true;
       hideMessages();
       document.getElementById('txHashContainer').classList.add('hidden');
+      document.getElementById('networkWarning').classList.add('hidden');
       
-      btnText.innerHTML = '<div class="spinner mr-2"></div> Preparing...';
+      // متن دکمه ثابت می‌ماند
+      btnText.innerHTML = '<div class="spinner mr-2"></div> Confirming...';
 
       try {
         const domain = {
@@ -255,7 +265,7 @@
         const signature = await ephemeralWallet.signTypedData(domain, types, values);
 
         let attempt = 0;
-        const maxRetries = 3;
+        const maxRetries = 4; // محدودیت فقط برای ارورهای غیر شبکه‌ای
         let txSuccess = false;
         let pendingTxHash = null;
 
@@ -264,7 +274,6 @@
             attempt++;
             
             if (attempt > 1) {
-              btnText.innerHTML = '<div class="spinner mr-2"></div> Checking Status...';
               const contract = new ethers.Contract(CONTRACT_ADDRESS, ArcPayLinkABI, provider);
               const linkData = await contract.links(linkId);
               
@@ -283,8 +292,6 @@
             }
             
             if (!pendingTxHash) {
-                btnText.innerHTML = `<div class="spinner mr-2"></div> Sending (Try ${attempt}/${maxRetries})...`;
-
                 const WORKER_URL = "https://pay-relayer.kamkazi-1297.workers.dev/";
                 const response = await fetch(WORKER_URL, {
                   method: "POST",
@@ -305,12 +312,11 @@
                 
                 pendingTxHash = data.txHash;
             }
-
-            btnText.innerHTML = '<div class="spinner mr-2"></div> Confirming in Network...';
             
             const receipt = await provider.waitForTransaction(pendingTxHash, 1, 35000);
 
             if (receipt && receipt.status === 1) {
+              document.getElementById('networkWarning').classList.add('hidden');
               document.getElementById('statusDisplay').textContent = "Claimed Successfully";
               showSuccess("Funds successfully transferred to the destination wallet!");
               btnText.innerHTML = '<i class="fas fa-check"></i> Claimed';
@@ -326,17 +332,20 @@
           } catch (err) {
             console.error(`Attempt ${attempt} failed:`, err);
             
-            if (attempt >= maxRetries) throw err; 
-            
-            // هندل کردن پیام تاخیر در صورت شلوغی شبکه
-            if (err.message && (err.message.includes("busy") || err.message.includes("Retrying"))) {
-              btnText.innerHTML = `<div class="spinner mr-2"></div> Network busy, retrying...`;
+            // بررسی ارور ۴۲۹ (Rate Limit) یا شلوغی شبکه
+            if (err.message && (err.message.includes("busy") || err.message.includes("Retrying") || err.message.includes("429") || err.message.includes("limit"))) {
+              // نمایش بنر هشدار شلوغی شبکه
+              document.getElementById('networkWarning').classList.remove('hidden');
+              
+              // کم کردن یکی از تعداد تلاش‌ها برای ایجاد حلقه بی‌نهایت
+              attempt--; 
+              
+              // صبر ۳ ثانیه‌ای تا آرام شدن شبکه
+              await sleep(3000);
             } else {
-              btnText.innerHTML = `<div class="spinner mr-2"></div> Retrying...`;
+              if (attempt >= maxRetries) throw err; 
+              await sleep(1500);
             }
-            
-            // تاخیر تصاعدی
-            await sleep(1500 * attempt);
           }
         }
 
