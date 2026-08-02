@@ -53,7 +53,7 @@
 
     <div class="bg-black/20 rounded-2xl p-4 text-left border border-white/5 space-y-3">
       <div class="flex justify-between items-center text-sm">
-        <span class="text-gray-400">Link ID</span>
+        <span class="text-gray-400" id="idLabel">Link ID</span>
         <span id="linkIdDisplay" class="font-mono text-emerald-400">Loading...</span>
       </div>
       <div class="flex justify-between items-center text-sm">
@@ -62,7 +62,7 @@
       </div>
       <div class="flex justify-between items-center text-sm border-t border-white/5 pt-2">
         <span class="text-gray-400">Status</span>
-        <span id="statusDisplay" class="font-bold text-gray-400">Checking...</span>
+        <span id="statusDisplay" class="font-bold text-gray-400 flex items-center gap-2">Checking...</span>
       </div>
     </div>
 
@@ -105,7 +105,9 @@
   </div>
 
   <script>
-    const CONTRACT_ADDRESS = "0x9B438F8Aa736Ed685e7aFF84eB173A9bb7c08320";
+    const CONTRACT_ADDRESS = "0x9B438F8Aa736Ed685e7aFF84eB173A9bb7c08320"; // ArcPayLink
+    const INVOICE_CONTRACT_ADDRESS = "0xD915573BCC42c5d4f859627435E975AEe316BCe0"; // ArcInvoice (اضافه شد)
+    
     const ARC_CHAIN_ID = 5042002;
     const ARC_CHAIN_ID_HEX = "0x4cebe2";
     const RPC_URL = "https://rpc.testnet.arcscan.app"; 
@@ -123,6 +125,12 @@
       "function claimLink(address linkId, address destination, uint256 feeAmount, bytes calldata signature) external",
       "function links(address) view returns (uint256 amount, address token, uint40 expiration, uint8 status, address creator)"
     ];
+    
+    const ArcInvoiceABI = [
+      "function getInvoice(uint256 _invoiceId) external view returns (uint256 amount, address issuer, uint40 dueDate, uint8 status, address payer, address token)",
+      "function payInvoice(uint256 _invoiceId) external payable"
+    ];
+
     const ERC20ABI = ["function decimals() view returns (uint8)"];
 
     let readOnlyProvider, walletProvider, signer, userAddress;
@@ -135,77 +143,111 @@
       const urlParams = new URLSearchParams(window.location.search);
       linkId = urlParams.get('id');
       privateKey = urlParams.get('pk');
-      type = urlParams.get('type') || 'claim'; // مقدار پیش‌فرض روی 'claim' یا 'invoice'
+      type = urlParams.get('type') || 'claim'; 
 
       if (!linkId) {
-        showError("Invalid payment link. Missing Link ID.");
+        showError("Invalid link. Missing ID.");
         return;
       }
-      
-      document.getElementById('linkIdDisplay').textContent = `${linkId.slice(0,6)}...${linkId.slice(-4)}`;
 
       if (type === 'invoice') {
-        // مد فاکتور (نیاز به ولت دارد)
         document.getElementById('pageTitle').textContent = "Invoice Payment";
         document.getElementById('pageSubtitle').textContent = "Connect your wallet to process this invoice.";
+        document.getElementById('idLabel').textContent = "Invoice ID";
+        document.getElementById('linkIdDisplay').textContent = `#${linkId}`;
         document.getElementById('invoiceSection').classList.remove('hidden');
+        document.getElementById('headerIcon').className = "fas fa-file-invoice-dollar text-white text-2xl";
       } else {
-        // مد پیش‌پرداخت / کلیم (بدون نیاز به ولت)
         document.getElementById('pageTitle').textContent = "Claim Payment";
         document.getElementById('pageSubtitle').textContent = "Enter your EVM address to receive the funds.";
+        document.getElementById('idLabel').textContent = "Link ID";
+        document.getElementById('linkIdDisplay').textContent = `${linkId.slice(0,6)}...${linkId.slice(-4)}`;
         document.getElementById('claimSection').classList.remove('hidden');
       }
 
       await fetchLinkDetails();
     });
 
-    // دریافت اطلاعات لینک با RPC عمومی (بدون نیاز به اتصال ولت)
+    // سیستم جدید همراه با Retry
     async function fetchLinkDetails() {
       document.getElementById('amountDisplay').innerHTML = '<div class="spinner border-gray-400 border-left-transparent w-4 h-4 inline-block"></div>';
-      document.getElementById('statusDisplay').textContent = 'Fetching...';
+      document.getElementById('statusDisplay').innerHTML = '<div class="spinner border-gray-400 border-left-transparent w-4 h-4 inline-block"></div>';
 
-      try {
-        const contract = new ethers.Contract(CONTRACT_ADDRESS, ArcPayLinkABI, readOnlyProvider);
-        const [amount, tokenAddress, expiration, status, creator] = await contract.links(linkId);
+      const maxRetries = 3;
+      let attempt = 0;
+      let success = false;
 
-        const tokenLower = tokenAddress.toLowerCase();
-        let tokenSymbol = TOKEN_MAP[tokenLower] || "Unknown Token";
-        let decimals = 18;
+      while (attempt < maxRetries && !success) {
+        try {
+          let amount, tokenAddress, status;
 
-        if (tokenLower !== "0x0000000000000000000000000000000000000000" && tokenLower !== "0x3600000000000000000000000000000000000000") {
-          try {
-            const tokenContract = new ethers.Contract(tokenAddress, ERC20ABI, readOnlyProvider);
-            decimals = await tokenContract.decimals();
-          } catch (e) {
-            console.warn("Could not fetch decimals, using default 18");
+          if (type === 'invoice') {
+            // فراخوانی کانترکت فاکتور
+            const contract = new ethers.Contract(INVOICE_CONTRACT_ADDRESS, ArcInvoiceABI, readOnlyProvider);
+            const invoiceData = await contract.getInvoice(linkId);
+            amount = invoiceData.amount;
+            tokenAddress = invoiceData.token;
+            status = invoiceData.status;
+          } else {
+            // فراخوانی کانترکت لینک (Claim)
+            const contract = new ethers.Contract(CONTRACT_ADDRESS, ArcPayLinkABI, readOnlyProvider);
+            const linkData = await contract.links(linkId);
+            amount = linkData.amount;
+            tokenAddress = linkData.token;
+            status = linkData.status;
+          }
+
+          const tokenLower = tokenAddress.toLowerCase();
+          let tokenSymbol = TOKEN_MAP[tokenLower] || "Unknown Token";
+          let decimals = 18;
+
+          if (tokenLower !== "0x0000000000000000000000000000000000000000" && tokenLower !== "0x3600000000000000000000000000000000000000") {
+            try {
+              const tokenContract = new ethers.Contract(tokenAddress, ERC20ABI, readOnlyProvider);
+              decimals = await tokenContract.decimals();
+            } catch (e) {
+              console.warn("Could not fetch decimals, using default 18");
+            }
+          }
+
+          const formattedAmount = ethers.formatUnits(amount, decimals);
+          document.getElementById('amountDisplay').innerHTML = `<span class="text-white font-bold">${parseFloat(formattedAmount).toFixed(4)}</span> <span class="text-emerald-400 font-bold">${tokenSymbol}</span>`;
+
+          // status: 0=None, 1=Active/Pending, 2=Claimed/Paid, 3=Cancelled
+          if (status === 1n) {
+            document.getElementById('statusDisplay').textContent = type === 'invoice' ? "Pending Payment" : "Active";
+            document.getElementById('statusDisplay').className = "font-bold text-emerald-400";
+            isClaimable = true;
+          } else if (status === 2n) {
+            document.getElementById('statusDisplay').textContent = type === 'invoice' ? "Already Paid" : "Already Claimed";
+            document.getElementById('statusDisplay').className = "font-bold text-rose-400";
+            disableActions(type === 'invoice' ? "This invoice has already been paid." : "This payment link has already been claimed.");
+          } else if (status === 3n) {
+            document.getElementById('statusDisplay').textContent = "Cancelled";
+            document.getElementById('statusDisplay').className = "font-bold text-rose-400";
+            disableActions("This transaction was cancelled by the creator.");
+          } else {
+            document.getElementById('statusDisplay').textContent = "Not Found";
+            disableActions("Invalid link or does not exist on blockchain.");
+          }
+          
+          success = true; // در صورت اجرای موفق، از حلقه خارج می‌شود
+
+        } catch (error) {
+          attempt++;
+          console.warn(`RPC Fetch failed (Attempt ${attempt}/${maxRetries}):`, error);
+          
+          if (attempt >= maxRetries) {
+            console.error("Final failure after 3 retries:", error);
+            showError("Network error: Could not load payment info from blockchain. Please refresh.");
+            document.getElementById('amountDisplay').textContent = "Error";
+            document.getElementById('statusDisplay').textContent = "Failed";
+          } else {
+            // مکث 1.5 ثانیه‌ای قبل از تلاش مجدد
+            document.getElementById('statusDisplay').innerHTML = `<div class="spinner border-amber-400 border-left-transparent w-4 h-4 inline-block"></div> <span class="text-amber-400 text-xs">Retrying (${attempt}/3)...</span>`;
+            await new Promise(resolve => setTimeout(resolve, 1500));
           }
         }
-
-        const formattedAmount = ethers.formatUnits(amount, decimals);
-        document.getElementById('amountDisplay').innerHTML = `<span class="text-white font-bold">${parseFloat(formattedAmount).toFixed(4)}</span> <span class="text-emerald-400 font-bold">${tokenSymbol}</span>`;
-
-        // status: 0=None, 1=Active, 2=Claimed, 3=Cancelled
-        if (status === 1n) {
-          document.getElementById('statusDisplay').textContent = "Active";
-          document.getElementById('statusDisplay').className = "font-bold text-emerald-400";
-          isClaimable = true;
-        } else if (status === 2n) {
-          document.getElementById('statusDisplay').textContent = "Already Claimed";
-          document.getElementById('statusDisplay').className = "font-bold text-rose-400";
-          disableActions("This payment link has already been claimed.");
-        } else if (status === 3n) {
-          document.getElementById('statusDisplay').textContent = "Cancelled";
-          document.getElementById('statusDisplay').className = "font-bold text-rose-400";
-          disableActions("This payment link was cancelled by creator.");
-        } else {
-          document.getElementById('statusDisplay').textContent = "Not Found";
-          disableActions("Invalid link or link does not exist.");
-        }
-
-      } catch (error) {
-        console.error(error);
-        showError("Error loading payment info from blockchain.");
-        document.getElementById('amountDisplay').textContent = "Error";
       }
     }
 
