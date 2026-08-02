@@ -561,27 +561,27 @@
       rawBalance = 0n;
     }
   }
-
-  function setMaxAmount() {
+  
+  async function setMaxAmount() {
     if (!signer) return notify("Error", "Connect wallet first", "fa-wallet", true);
     if (rawBalance === 0n) return;
-    
     const select = document.getElementById('tokenSelect');
     const tokenAddress = select.value;
     let maxStr = "0";
-
     if (tokenAddress.toLowerCase() === NATIVE_USDC.toLowerCase()) {
       const buffer = ethers.parseEther("0.01");
       const safeBalance = rawBalance > buffer ? rawBalance - buffer : 0n;
       maxStr = ethers.formatEther(safeBalance);
-    } else {
-      maxStr = ethers.formatEther(rawBalance);
-    }
-    
+      } else {
+      const tokenContract = new ethers.Contract(tokenAddress, ["function decimals() view returns (uint8)"], signer);
+      const decimals = await tokenContract.decimals();
+      maxStr = ethers.formatUnits(rawBalance, decimals);
+       }
     document.getElementById('fixedAmountInput').value = parseFloat(maxStr).toFixed(6);
     updatePreview();
-  }
+    }
 
+  
   async function generateLink() {
     if (isProcessing) return;
     if (!signer || !userAddress) return notify("Error", "Please connect your wallet first", "fa-wallet", true);
