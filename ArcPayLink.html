@@ -469,10 +469,16 @@
     </div>
 
     <!-- ================= TAB 3: HISTORY ================= -->
-    <div id="viewHistory" class="hidden space-y-8">
+    <div id="viewHistory" class="hidden">
       
+      <!-- Sub-tabs for History -->
+      <div class="flex bg-black/20 light:bg-slate-100 p-1.5 rounded-2xl overflow-x-auto hide-scroll w-max mx-auto mb-8">
+        <button onclick="switchHistoryTab('links')" id="subTabLinks" class="px-5 py-2.5 rounded-xl text-sm font-bold transition-all bg-emerald-500/10 text-emerald-400 shadow-sm whitespace-nowrap">Payment Links</button>
+        <button onclick="switchHistoryTab('invoices')" id="subTabInvoices" class="px-5 py-2.5 rounded-xl text-sm font-bold transition-all text-gray-400 hover:text-white light:hover:text-black whitespace-nowrap">Invoices</button>
+      </div>
+
       <!-- Payment Links History -->
-      <div class="glass rounded-[2rem] p-6 sm:p-8 space-y-6">
+      <div id="historyLinksView" class="glass rounded-[2rem] p-6 sm:p-8 space-y-6">
         <div class="flex items-center justify-between">
           <h3 class="font-bold text-lg flex items-center gap-2"><i class="fas fa-paper-plane text-emerald-400"></i> Sent Payment Links</h3>
           <button onclick="clearHistory('links')" class="text-xs text-rose-400 hover:text-rose-300 transition-colors bg-rose-500/10 px-3 py-1.5 rounded-lg">Clear Links</button>
@@ -483,7 +489,7 @@
       </div>
 
       <!-- Invoices History -->
-      <div class="glass rounded-[2rem] p-6 sm:p-8 space-y-6">
+      <div id="historyInvoicesView" class="hidden glass rounded-[2rem] p-6 sm:p-8 space-y-6">
         <div class="flex items-center justify-between">
           <h3 class="font-bold text-lg flex items-center gap-2"><i class="fas fa-file-invoice-dollar text-amber-400"></i> Created Invoices</h3>
           <button onclick="clearHistory('invoices')" class="text-xs text-rose-400 hover:text-rose-300 transition-colors bg-rose-500/10 px-3 py-1.5 rounded-lg">Clear Invoices</button>
@@ -1178,6 +1184,18 @@
     document.getElementById('tabCreate').className = tab === 'create' ? activeClass : inactiveClass;
     document.getElementById('tabInvoice').className = tab === 'invoice' ? activeClass.replace('emerald', 'amber') : inactiveClass;
     document.getElementById('tabHistory').className = tab === 'history' ? activeClass.replace('emerald', 'purple') : inactiveClass;
+  }
+
+  function switchHistoryTab(tab) {
+    document.getElementById('historyLinksView').classList.toggle('hidden', tab !== 'links');
+    document.getElementById('historyInvoicesView').classList.toggle('hidden', tab !== 'invoices');
+    
+    const activeLinkClass = "px-5 py-2.5 rounded-xl text-sm font-bold transition-all bg-emerald-500/10 text-emerald-400 shadow-sm whitespace-nowrap";
+    const activeInvClass = "px-5 py-2.5 rounded-xl text-sm font-bold transition-all bg-amber-500/10 text-amber-400 shadow-sm whitespace-nowrap";
+    const inactiveClass = "px-5 py-2.5 rounded-xl text-sm font-bold transition-all text-gray-400 hover:text-white light:hover:text-black whitespace-nowrap";
+    
+    document.getElementById('subTabLinks').className = tab === 'links' ? activeLinkClass : inactiveClass;
+    document.getElementById('subTabInvoices').className = tab === 'invoices' ? activeInvClass : inactiveClass;
   }
 
   async function renderHistory() {
