@@ -39,9 +39,16 @@
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   </style>
 </head>
-<body class="flex items-center justify-center p-4">
+<body class="flex items-center justify-center p-4 relative">
 
-  <div class="glass w-full max-w-md rounded-[2rem] p-8 text-center space-y-6">
+  <!-- 🟢 دکمه اتصال ولت بالای صفحه (جدید) 🟢 -->
+  <div class="absolute top-4 right-4 sm:top-6 sm:right-6">
+    <button id="headerConnectBtn" onclick="connectWallet(true)" class="glass hover:bg-white/5 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors flex items-center gap-2">
+      <i class="fas fa-wallet text-amber-400"></i> <span id="headerWalletAddress">Connect Wallet</span>
+    </button>
+  </div>
+
+  <div class="glass w-full max-w-md rounded-[2rem] p-8 text-center space-y-6 mt-12 sm:mt-0">
     <div class="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/20 mx-auto">
       <i class="fas fa-file-invoice-dollar text-white text-2xl"></i>
     </div>
@@ -90,20 +97,25 @@
     <p id="errorMsg" class="text-rose-400 text-sm hidden"></p>
     <p id="successMsg" class="text-emerald-400 text-sm hidden"></p>
     
-    <!-- لینک تراکنش -->
-    <div id="txHashContainer" class="hidden mt-4 text-center">
-      <a id="txHashLink" href="#" target="_blank" class="text-sm text-amber-400 hover:text-amber-300 font-medium bg-amber-500/10 px-4 py-2 rounded-lg inline-flex items-center gap-2 transition-colors">
-        <i class="fas fa-external-link-alt"></i> View on Explorer
+    <!-- 🟢 لینک تراکنش همراه با نمایش هش (جدید) 🟢 -->
+    <div id="txHashContainer" class="hidden mt-4 bg-black/20 p-4 rounded-2xl border border-white/5">
+      <p class="text-gray-400 text-sm mb-2">Transaction Successful!</p>
+      <a id="txHashLink" href="#" target="_blank" class="text-sm text-amber-400 hover:text-amber-300 font-medium bg-amber-500/10 px-4 py-2 rounded-lg flex items-center justify-center gap-2 transition-colors font-mono">
+        <span id="txHashText">0x...</span>
+        <i class="fas fa-external-link-alt"></i>
       </a>
     </div>
   </div>
 
   <script>
-    const INVOICE_CONTRACT_ADDRESS = "0xD915573BCC42c5d4f859627435E975AEe316BCe0"; // از سورس ۱
+    const INVOICE_CONTRACT_ADDRESS = "0xD915573BCC42c5d4f859627435E975AEe316BCe0"; 
     const ARC_CHAIN_ID = 5042002;
     const ARC_CHAIN_ID_HEX = "0x4cebe2";
     
     const RPC_URL = "https://rpc.testnet.arc.network";
+    // 🟢 آدرس اکسپلورر شما 🟢
+    const EXPLORER_URL = "https://testnet.arcscan.app/tx/"; 
+
     const readProvider = new ethers.JsonRpcProvider(RPC_URL, {
       chainId: ARC_CHAIN_ID,
       name: "arc-testnet"
@@ -153,8 +165,13 @@
       document.getElementById('invoiceIdDisplay').textContent = `#${invoiceId}`;
       fetchInvoiceDetails();
       
-      if (window.ethereum && window.ethereum.selectedAddress) {
-        connectWallet(false); // اتصال بی‌صدا در صورت وجود
+      if (window.ethereum) {
+        if(window.ethereum.selectedAddress) {
+          connectWallet(false);
+        }
+        // رفرش صفحه هنگام تغییر اکانت متامسک
+        window.ethereum.on('accountsChanged', () => window.location.reload());
+        window.ethereum.on('chainChanged', () => window.location.reload());
       }
     });
 
@@ -190,7 +207,6 @@
             isNative: tokenLower === "0x0000000000000000000000000000000000000000" || tokenLower === "0x3600000000000000000000000000000000000000"
         };
 
-        // نمایش اطلاعات
         document.getElementById('issuerDisplay').textContent = `${issuer.slice(0,6)}...${issuer.slice(-4)}`;
         document.getElementById('payerDisplay').textContent = payer === ethers.ZeroAddress ? 'Anyone' : `${payer.slice(0,6)}...${payer.slice(-4)}`;
         
@@ -202,7 +218,6 @@
 
         document.getElementById('amountDisplay').innerHTML = `<span class="text-white">${parseFloat(formattedAmount).toFixed(4)}</span> <span class="text-amber-400 font-bold">${tokenSymbol}</span>`;
 
-        // مدیریت وضعیت فاکتور
         const statusEl = document.getElementById('statusDisplay');
         if (invoiceData.status === 1) { // Pending
             let isOverdue = dueDate > 0 && (Date.now() / 1000) > Number(dueDate);
@@ -258,6 +273,10 @@
             }
 
             signer = await provider.getSigner();
+            
+            // 🟢 بروزرسانی دکمه بالای صفحه 🟢
+            document.getElementById('headerWalletAddress').textContent = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
+            
             await checkAllowance();
             updateActionButton();
             hideMessages();
@@ -308,7 +327,6 @@
             return await connectWallet();
         }
 
-        // بررسی اینکه آیا کاربر مجاز به پرداخت است (اگر target payer ست شده باشد)
         if (invoiceData.payer !== ethers.ZeroAddress && invoiceData.payer.toLowerCase() !== userAddress.toLowerCase()) {
             return showError("This invoice is assigned to a different payer address.");
         }
@@ -343,8 +361,10 @@
                 document.getElementById('statusDisplay').textContent = "Paid";
                 document.getElementById('statusDisplay').className = 'font-bold text-emerald-400';
                 
+                // 🟢 نمایش هش تراکنش و لینک اکسپلورر 🟢
                 document.getElementById('txHashContainer').classList.remove('hidden');
-                document.getElementById('txHashLink').href = `https://testnet.arcscan.app/tx/${tx.hash}`;
+                document.getElementById('txHashText').textContent = `${tx.hash.slice(0,10)}...${tx.hash.slice(-8)}`;
+                document.getElementById('txHashLink').href = EXPLORER_URL + tx.hash;
                 
                 document.getElementById('actionSection').classList.add('hidden');
             }
