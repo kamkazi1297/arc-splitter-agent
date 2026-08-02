@@ -587,7 +587,9 @@
     if (!signer || !userAddress) return notify("Error", "Please connect your wallet first", "fa-wallet", true);
 
     const title = document.getElementById('linkTitle').value.trim();
-    const amountInput = parseFloat(document.getElementById('fixedAmountInput').value);
+    const amountStr = document.getElementById('fixedAmountInput').value.trim();
+    const amountInput = parseFloat(amountStr);
+    
     const select = document.getElementById('tokenSelect');
     const tokenAddress = select.value;
     const tokenSymbol = select.options[select.selectedIndex].text.split(' ')[0];
@@ -600,7 +602,7 @@
       document.getElementById('errTitle').classList.remove('hidden');
       return;
     }
-    if (!amountInput || amountInput <= 0) {
+    if (!amountInput || amountInput <= 0 || !amountStr) {
       document.getElementById('errAmount').textContent = "Enter a valid amount";
       document.getElementById('errAmount').classList.remove('hidden');
       return;
@@ -631,7 +633,7 @@
             ], signer);
             
             const decimals = await tokenContract.decimals();
-            amountWei = ethers.parseUnits(amountInput.toString(), decimals);
+            amountWei = ethers.parseUnits(amountStr, decimals); // استفاده از استرینگ برای جلوگیری از خطای اعشاری
 
             notify("Info", "Checking allowance...", "fa-spinner fa-spin");
             const allowance = await tokenContract.allowance(userAddress, CONTRACT_ADDRESS);
@@ -643,7 +645,7 @@
               notify("Success", "Approval confirmed!", "fa-check");
             }
           } else {
-            amountWei = ethers.parseUnits(amountInput.toString(), 18);
+            amountWei = ethers.parseUnits(amountStr, 18);
           }
 
           const ephemeralWallet = ethers.Wallet.createRandom();
@@ -693,9 +695,9 @@
           if (!isNative) {
             const tokenContract = new ethers.Contract(tokenAddress, ["function decimals() view returns (uint8)"], signer);
             const decimals = await tokenContract.decimals();
-            amountWei = ethers.parseUnits(amountInput.toString(), decimals);
+            amountWei = ethers.parseUnits(amountStr, decimals); // فیکس شدن خطای اعشار در فاکتور
           } else {
-            amountWei = ethers.parseUnits(amountInput.toString(), 18);
+            amountWei = ethers.parseUnits(amountStr, 18);
           }
 
           const payerAddr = document.getElementById('payerAddress').value.trim();
@@ -715,14 +717,21 @@
           const receipt = await tx.wait();
 
           let invoiceId = null;
-          const eventTopic = ethers.id("InvoiceCreated(uint256,address,address,address,uint256,uint40,string)");
+          
+          // استفاده از parseLog به جای چک کردن دستی topics که در Ethers V6 پایدارتر است
           for (const log of receipt.logs) {
-              if (log.topics[0] === eventTopic) {
-                  invoiceId = BigInt(log.topics[1]).toString();
-                  break;
+              try {
+                  const parsedLog = contract.interface.parseLog(log);
+                  if (parsedLog && parsedLog.name === "InvoiceCreated") {
+                      invoiceId = parsedLog.args.invoiceId.toString();
+                      break;
+                  }
+              } catch (err) {
+                  // نادیده گرفتن لاگ‌هایی که متعلق به این رویداد نیستند
               }
           }
-          if (!invoiceId) throw new Error("Failed to extract Invoice ID.");
+          
+          if (!invoiceId) throw new Error("Failed to extract Invoice ID from network.");
 
           const finalUrl = `https://arcsplit.kamkazi-1297.workers.dev/invoice?id=${invoiceId}`;
 
