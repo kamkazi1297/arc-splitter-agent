@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+  <title>ArcPay - Pay Invoice</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    
+    body { 
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif; 
+      background: #05050a;
+      background-image: 
+        radial-gradient(circle at 15% 25%, rgba(245, 158, 11, 0.05) 0%, transparent 45%),
+        radial-gradient(circle at 85% 75%, rgba(239, 68, 68, 0.05) 0%, transparent 45%);
+      color: #f8fafc;
+      min-height: 100vh;
+    }
+    
+    .glass {
+      background: rgba(18, 18, 28, 0.7);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      box-shadow: 0 24px 40px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .spinner {
+      border: 3px solid rgba(255,255,255,0.1);
+      border-left-color: #fff;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+  </style>
+</head>
+<body class="flex items-center justify-center p-4">
+
+  <div class="glass w-full max-w-md rounded-[2rem] p-8 text-center space-y-6">
+    <div class="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/20 mx-auto">
+      <i class="fas fa-file-invoice-dollar text-white text-2xl"></i>
+    </div>
+    
+    <div>
+      <h1 class="text-2xl font-extrabold tracking-tight">Invoice Details</h1>
+      <p class="text-gray-400 text-sm mt-2">Connect your wallet to pay this invoice.</p>
+    </div>
+
+    <div class="bg-black/20 rounded-2xl p-4 text-left border border-white/5 space-y-3">
+      <div class="flex justify-between items-center text-sm">
+        <span class="text-gray-400">Invoice ID</span>
+        <span id="invoiceIdDisplay" class="font-mono text-amber-400">Loading...</span>
+      </div>
+      <div class="flex justify-between items-center text-sm">
+        <span class="text-gray-400">Issuer</span>
+        <span id="issuerDisplay" class="font-mono text-gray-300">...</span>
+      </div>
+      <div class="flex justify-between items-center text-sm">
+        <span class="text-gray-400">Target Payer</span>
+        <span id="payerDisplay" class="font-mono text-gray-300">...</span>
+      </div>
+      <div class="flex justify-between items-center text-sm">
+        <span class="text-gray-400">Due Date</span>
+        <span id="dueDateDisplay" class="text-gray-300">...</span>
+      </div>
+      <div class="flex justify-between items-center text-sm border-t border-white/5 pt-2">
+        <span class="text-gray-400">Amount Due</span>
+        <span id="amountDisplay" class="font-bold text-gray-500">Fetching...</span>
+      </div>
+      <div class="flex justify-between items-center text-sm border-t border-white/5 pt-2">
+        <span class="text-gray-400">Status</span>
+        <span id="statusDisplay" class="font-bold text-gray-400">Loading...</span>
+      </div>
+    </div>
+
+    <!-- بخش پرداخت -->
+    <div id="actionSection" class="space-y-3 pt-2 hidden">
+      <button id="mainActionBtn" onclick="handleAction()" class="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black py-4 rounded-xl font-extrabold transition-all relative shadow-lg shadow-amber-500/20">
+        <span id="actionBtnText" class="flex items-center justify-center gap-2">
+          <i class="fas fa-wallet"></i> Connect Wallet
+        </span>
+      </button>
+    </div>
+    
+    <p id="errorMsg" class="text-rose-400 text-sm hidden"></p>
+    <p id="successMsg" class="text-emerald-400 text-sm hidden"></p>
+    
+    <!-- لینک تراکنش -->
+    <div id="txHashContainer" class="hidden mt-4 text-center">
+      <a id="txHashLink" href="#" target="_blank" class="text-sm text-amber-400 hover:text-amber-300 font-medium bg-amber-500/10 px-4 py-2 rounded-lg inline-flex items-center gap-2 transition-colors">
+        <i class="fas fa-external-link-alt"></i> View on Explorer
+      </a>
+    </div>
+  </div>
+
+  <script>
+    const INVOICE_CONTRACT_ADDRESS = "0xD915573BCC42c5d4f859627435E975AEe316BCe0"; // از سورس ۱
+    const ARC_CHAIN_ID = 5042002;
+    const ARC_CHAIN_ID_HEX = "0x4cebe2";
+    
+    const RPC_URL = "https://rpc.testnet.arc.network";
+    const readProvider = new ethers.JsonRpcProvider(RPC_URL, {
+      chainId: ARC_CHAIN_ID,
+      name: "arc-testnet"
+    }, { staticNetwork: true });
+    
+    const TOKEN_MAP = {
+      "0x0000000000000000000000000000000000000000": "USDC (Native)",
+      "0x3600000000000000000000000000000000000000": "USDC",
+      "0x89b50855aa3be2f677cd6303cec089b5f319d72a": "EURC",
+      "0xf0c4a4ce82a5746abaad9425360ab04fbba432bf": "cirBTC"
+    };
+
+    const TOKEN_DECIMALS = {
+      "0x0000000000000000000000000000000000000000": 18,
+      "0x3600000000000000000000000000000000000000": 18,
+      "0x89b50855aa3be2f677cd6303cec089b5f319d72a": 6,
+      "0xf0c4a4ce82a5746abaad9425360ab04fbba432bf": 8
+    };
+
+    const ArcInvoiceABI = [
+      "function invoices(uint256) view returns (uint256 amount, address issuer, uint40 dueDate, uint8 status, address payer, address token)",
+      "function payInvoice(uint256 invoiceId) external payable"
+    ];
+    
+    const ERC20ABI = [
+      "function decimals() view returns (uint8)",
+      "function allowance(address owner, address spender) view returns (uint256)",
+      "function approve(address spender, uint256 amount) external returns (bool)"
+    ];
+
+    let invoiceId = null;
+    let invoiceData = null;
+    let userAddress = null;
+    let provider = null;
+    let signer = null;
+    let requiresApproval = false;
+
+    window.addEventListener('load', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      invoiceId = urlParams.get('id');
+
+      if (!invoiceId) {
+        showError("Invalid invoice link. Missing Invoice ID.");
+        return;
+      }
+      
+      document.getElementById('invoiceIdDisplay').textContent = `#${invoiceId}`;
+      fetchInvoiceDetails();
+      
+      if (window.ethereum && window.ethereum.selectedAddress) {
+        connectWallet(false); // اتصال بی‌صدا در صورت وجود
+      }
+    });
+
+    async function fetchInvoiceDetails() {
+      hideMessages();
+      document.getElementById('amountDisplay').innerHTML = '<div class="spinner border-gray-400 border-left-transparent w-4 h-4 inline-block"></div>';
+      
+      try {
+        const contract = new ethers.Contract(INVOICE_CONTRACT_ADDRESS, ArcInvoiceABI, readProvider);
+        const [amount, issuer, dueDate, status, payer, tokenAddress] = await contract.invoices(invoiceId);
+
+        const tokenLower = tokenAddress.toLowerCase();
+        let tokenSymbol = TOKEN_MAP[tokenLower] || "Unknown Token";
+        let decimals = TOKEN_DECIMALS[tokenLower] || 18; 
+
+        if (!TOKEN_DECIMALS[tokenLower] && tokenLower !== "0x0000000000000000000000000000000000000000") {
+          try {
+            const tokenContract = new ethers.Contract(tokenAddress, ERC20ABI, readProvider);
+            decimals = await tokenContract.decimals();
+          } catch (e) {}
+        }
+
+        const formattedAmount = ethers.formatUnits(amount, decimals);
+        
+        invoiceData = {
+            amountRaw: amount,
+            amountFormatted: formattedAmount,
+            tokenAddress: tokenAddress,
+            tokenSymbol: tokenSymbol,
+            issuer: issuer,
+            payer: payer,
+            status: Number(status),
+            isNative: tokenLower === "0x0000000000000000000000000000000000000000" || tokenLower === "0x3600000000000000000000000000000000000000"
+        };
+
+        // نمایش اطلاعات
+        document.getElementById('issuerDisplay').textContent = `${issuer.slice(0,6)}...${issuer.slice(-4)}`;
+        document.getElementById('payerDisplay').textContent = payer === ethers.ZeroAddress ? 'Anyone' : `${payer.slice(0,6)}...${payer.slice(-4)}`;
+        
+        if (dueDate > 0) {
+            document.getElementById('dueDateDisplay').textContent = new Date(Number(dueDate) * 1000).toLocaleString();
+        } else {
+            document.getElementById('dueDateDisplay').textContent = "No Due Date";
+        }
+
+        document.getElementById('amountDisplay').innerHTML = `<span class="text-white">${parseFloat(formattedAmount).toFixed(4)}</span> <span class="text-amber-400 font-bold">${tokenSymbol}</span>`;
+
+        // مدیریت وضعیت فاکتور
+        const statusEl = document.getElementById('statusDisplay');
+        if (invoiceData.status === 1) { // Pending
+            let isOverdue = dueDate > 0 && (Date.now() / 1000) > Number(dueDate);
+            if(isOverdue) {
+                statusEl.textContent = "Overdue";
+                statusEl.className = 'font-bold text-rose-400';
+            } else {
+                statusEl.textContent = "Pending";
+                statusEl.className = 'font-bold text-amber-400';
+            }
+            document.getElementById('actionSection').classList.remove('hidden');
+        } else if (invoiceData.status === 2) { // Paid
+            statusEl.textContent = "Paid";
+            statusEl.className = 'font-bold text-emerald-400';
+        } else if (invoiceData.status === 3) { // Cancelled
+            statusEl.textContent = "Cancelled";
+            statusEl.className = 'font-bold text-rose-400';
+        } else {
+            statusEl.textContent = "Not Found";
+            showError("Invoice not found on network.");
+        }
+        
+        updateActionButton();
+
+      } catch (error) {
+        console.error(error);
+        document.getElementById('amountDisplay').textContent = "Failed to load";
+        showError("Failed to fetch invoice details.");
+      }
+    }
+
+    async function connectWallet(showErr = true) {
+        if (!window.ethereum) {
+            if(showErr) showError("MetaMask not found! Please install it.");
+            return;
+        }
+
+        try {
+            const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+            userAddress = accounts[0];
+            provider = new ethers.BrowserProvider(window.ethereum);
+            
+            const network = await provider.getNetwork();
+            if (network.chainId !== BigInt(ARC_CHAIN_ID)) {
+                try {
+                    await window.ethereum.request({
+                        method: 'wallet_switchEthereumChain',
+                        params: [{ chainId: ARC_CHAIN_ID_HEX }]
+                    });
+                } catch (e) {
+                    return showError("Please switch to Arc L1 network.");
+                }
+            }
+
+            signer = await provider.getSigner();
+            await checkAllowance();
+            updateActionButton();
+            hideMessages();
+            
+        } catch (e) {
+            console.error(e);
+            if(showErr) showError("Failed to connect wallet.");
+        }
+    }
+
+    async function checkAllowance() {
+        if (!signer || !invoiceData || invoiceData.isNative) {
+            requiresApproval = false;
+            return;
+        }
+        
+        try {
+            const tokenContract = new ethers.Contract(invoiceData.tokenAddress, ERC20ABI, signer);
+            const allowance = await tokenContract.allowance(userAddress, INVOICE_CONTRACT_ADDRESS);
+            requiresApproval = allowance < invoiceData.amountRaw;
+        } catch (e) {
+            console.error("Allowance check failed", e);
+        }
+    }
+
+    function updateActionButton() {
+        if (invoiceData && invoiceData.status !== 1) {
+            document.getElementById('actionSection').classList.add('hidden');
+            return;
+        }
+
+        const btn = document.getElementById('mainActionBtn');
+        const btnText = document.getElementById('actionBtnText');
+
+        if (!userAddress) {
+            btnText.innerHTML = '<i class="fas fa-wallet"></i> Connect Wallet';
+        } else if (requiresApproval) {
+            btnText.innerHTML = '<i class="fas fa-lock-open"></i> Approve ' + invoiceData.tokenSymbol;
+        } else {
+            btnText.innerHTML = '<i class="fas fa-check-circle"></i> Pay Invoice';
+        }
+    }
+
+    async function handleAction() {
+        hideMessages();
+        
+        if (!userAddress) {
+            return await connectWallet();
+        }
+
+        // بررسی اینکه آیا کاربر مجاز به پرداخت است (اگر target payer ست شده باشد)
+        if (invoiceData.payer !== ethers.ZeroAddress && invoiceData.payer.toLowerCase() !== userAddress.toLowerCase()) {
+            return showError("This invoice is assigned to a different payer address.");
+        }
+
+        const btn = document.getElementById('mainActionBtn');
+        const btnText = document.getElementById('actionBtnText');
+        btn.disabled = true;
+
+        try {
+            if (requiresApproval) {
+                btnText.innerHTML = '<div class="spinner mr-2"></div> Approving...';
+                const tokenContract = new ethers.Contract(invoiceData.tokenAddress, ERC20ABI, signer);
+                const tx = await tokenContract.approve(INVOICE_CONTRACT_ADDRESS, invoiceData.amountRaw);
+                await tx.wait();
+                requiresApproval = false;
+                updateActionButton();
+            } else {
+                btnText.innerHTML = '<div class="spinner mr-2"></div> Processing...';
+                const contract = new ethers.Contract(INVOICE_CONTRACT_ADDRESS, ArcInvoiceABI, signer);
+                
+                const options = {};
+                if (invoiceData.isNative) {
+                    options.value = invoiceData.amountRaw;
+                }
+                
+                const tx = await contract.payInvoice(invoiceId, options);
+                btnText.innerHTML = '<div class="spinner mr-2"></div> Confirming...';
+                
+                await tx.wait();
+                
+                showSuccess("Invoice paid successfully!");
+                document.getElementById('statusDisplay').textContent = "Paid";
+                document.getElementById('statusDisplay').className = 'font-bold text-emerald-400';
+                
+                document.getElementById('txHashContainer').classList.remove('hidden');
+                document.getElementById('txHashLink').href = `https://testnet.arcscan.app/tx/${tx.hash}`;
+                
+                document.getElementById('actionSection').classList.add('hidden');
+            }
+        } catch (error) {
+            console.error(error);
+            if (error.code === "ACTION_REJECTED") {
+                showError("Transaction rejected by user.");
+            } else {
+                showError(error.reason || "Transaction failed.");
+            }
+        } finally {
+            btn.disabled = false;
+            if(!document.getElementById('actionSection').classList.contains('hidden')) {
+                updateActionButton();
+            }
+        }
+    }
+
+    function showError(msg) {
+      const el = document.getElementById('errorMsg');
+      el.textContent = msg;
+      el.classList.remove('hidden');
+    }
+    
+    function showSuccess(msg) {
+      const el = document.getElementById('successMsg');
+      el.textContent = msg;
+      el.classList.remove('hidden');
+    }
+
+    function hideMessages() {
+      document.getElementById('errorMsg').classList.add('hidden');
+      document.getElementById('successMsg').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
