@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-  <title>ArcPay - Decentralized Payment Links</title>
+  <title>ArcPay - Decentralized Payment Links & Invoices</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
@@ -141,13 +141,14 @@
         </div>
         <div>
           <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Arc <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Pay</span></h1>
-          <p class="text-gray-400 light:text-slate-500 text-xs sm:text-sm font-medium mt-1">Decentralized, non-custodial push-payment links</p>
+          <p class="text-gray-400 light:text-slate-500 text-xs sm:text-sm font-medium mt-1">Decentralized, non-custodial push-payment links & Invoices</p>
         </div>
       </div>
       
       <div class="flex items-center gap-3 w-full sm:w-auto">
         <div class="flex flex-1 sm:flex-none bg-black/20 light:bg-slate-100 p-1.5 rounded-2xl">
-          <button onclick="switchTab('create')" id="tabCreate" class="flex-1 px-5 py-2.5 rounded-xl text-sm font-bold transition-all bg-emerald-500/10 text-emerald-400 shadow-sm">Create</button>
+          <button onclick="switchTab('create')" id="tabCreate" class="flex-1 px-5 py-2.5 rounded-xl text-sm font-bold transition-all bg-emerald-500/10 text-emerald-400 shadow-sm">Create Link</button>
+          <button onclick="switchTab('invoices')" id="tabInvoices" class="flex-1 px-5 py-2.5 rounded-xl text-sm font-bold transition-all text-gray-400 hover:text-white light:hover:text-black">Invoices</button>
           <button onclick="switchTab('history')" id="tabHistory" class="flex-1 px-5 py-2.5 rounded-xl text-sm font-bold transition-all text-gray-400 hover:text-white light:hover:text-black">History</button>
         </div>
 
@@ -173,7 +174,7 @@
       <span id="toastText"></span>
     </div>
 
-    <!-- TAB 1: CREATE -->
+    <!-- TAB 1: CREATE PAYMENT LINK -->
     <div id="viewCreate" class="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8">
       
       <!-- Configuration Form -->
@@ -329,7 +330,77 @@
       </div>
     </div>
 
-    <!-- TAB 2: HISTORY -->
+    <!-- TAB 2: INVOICES (بخش جدید اضافه شده) -->
+    <div id="viewInvoices" class="hidden space-y-8">
+      <!-- Create Invoice Box -->
+      <div class="glass rounded-[2rem] p-6 sm:p-8 space-y-6">
+        <h3 class="font-bold text-lg flex items-center gap-2">
+          <i class="fas fa-file-invoice-dollar text-emerald-400"></i> Create Smart Invoice
+        </h3>
+        
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div class="space-y-2">
+            <label class="text-xs text-gray-400 font-medium ml-1">Payer Address (Optional)</label>
+            <input type="text" id="invPayer" class="w-full rounded-2xl px-4 py-4 text-sm font-mono" placeholder="0x... (or leave empty for anyone)">
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-xs text-gray-400 font-medium ml-1">Token</label>
+            <div class="relative">
+              <select id="invTokenSelect" class="w-full rounded-2xl pl-10 pr-4 py-4 text-sm font-semibold appearance-none">
+                <option value="0x3600000000000000000000000000000000000000">USDC (Native Gas)</option>
+                <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
+                <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
+              </select>
+              <i class="fas fa-gem absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+              <i class="fas fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-xs pointer-events-none"></i>
+            </div>
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-xs text-gray-400 font-medium ml-1">Amount</label>
+            <input type="number" id="invAmount" class="w-full rounded-2xl px-4 py-4 text-sm font-bold" placeholder="0.00" min="0" step="any">
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-xs text-gray-400 font-medium ml-1">Due Date (Optional)</label>
+            <div class="relative">
+              <select id="invDueSelect" class="w-full rounded-2xl pl-10 pr-4 py-4 text-sm font-semibold appearance-none">
+                <option value="0">No Expiration</option>
+                <option value="86400">24 Hours</option>
+                <option value="604800">7 Days</option>
+                <option value="2592000">30 Days</option>
+              </select>
+              <i class="fas fa-calendar-alt absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 text-sm"></i>
+              <i class="fas fa-chevron-down absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-xs pointer-events-none"></i>
+            </div>
+          </div>
+
+          <div class="space-y-2 sm:col-span-2">
+            <label class="text-xs text-gray-400 font-medium ml-1">Invoice Memo / Metadata URI</label>
+            <input type="text" id="invMetadata" class="w-full rounded-2xl px-4 py-4 text-sm font-medium" placeholder="e.g. Invoice #104 - Consulting services">
+          </div>
+        </div>
+
+        <button id="createInvoiceBtn" onclick="createInvoice()" class="app-button w-full sm:w-auto px-8 bg-gradient-to-r from-emerald-500 to-cyan-500 hover:from-emerald-400 hover:to-cyan-400 text-black py-4 rounded-2xl text-sm font-extrabold shadow-lg shadow-emerald-500/20">
+          <i class="fas fa-plus-circle mr-2"></i> Create Invoice
+        </button>
+      </div>
+
+      <!-- Invoices List -->
+      <div class="glass rounded-[2rem] p-6 sm:p-8 space-y-6 min-h-[400px]">
+        <div class="flex items-center justify-between">
+          <h3 class="font-bold text-lg flex items-center gap-2"><i class="fas fa-list-alt text-cyan-400"></i> Your Created & Payable Invoices</h3>
+          <button onclick="renderInvoices()" class="text-xs text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 px-3 py-1.5 rounded-lg transition-colors"><i class="fas fa-sync-alt mr-1"></i> Refresh</button>
+        </div>
+        
+        <div id="invoicesTableBody" class="space-y-4">
+          <!-- Invoices injected via JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: HISTORY -->
     <div id="viewHistory" class="hidden space-y-6">
       <div class="glass rounded-[2rem] p-6 sm:p-8 space-y-6 min-h-[500px]">
         <div class="flex items-center justify-between">
@@ -375,6 +446,7 @@
 <script>
   // PROXY CONTRACT ADDRESS 
   const CONTRACT_ADDRESS = "0x9B438F8Aa736Ed685e7aFF84eB173A9bb7c08320";
+  const INVOICE_CONTRACT_ADDRESS = "0xD915573BCC42c5d4f859627435E975AEe316BCe0"; // آدرس قرارداد هوشمند فاکتور
   const ARC_CHAIN_ID = 5042002;
   const ARC_CHAIN_ID_HEX = "0x4cebe2";
   const NATIVE_USDC = "0x3600000000000000000000000000000000000000";
@@ -384,6 +456,7 @@
   let provider = null;
   let isProcessing = false;
   let currentLinks = [];
+  let currentInvoices = [];
   let rawBalance = 0n;
 
   // توابع ارتباط با db.js برای ذخیره در فضای ابری (اگر تعریف نشده باشد، از لوکال مرورگر استفاده می‌شود)
@@ -406,6 +479,15 @@
     localStorage.setItem('arcPaymentLinksV2', JSON.stringify(links));
   }
 
+  // بارگذاری و ذخیره فاکتورها (Invoices) در حافظه محلی
+  function fetchInvoices() {
+    return JSON.parse(localStorage.getItem('arcInvoicesV1') || '[]');
+  }
+
+  function saveInvoices(invs) {
+    localStorage.setItem('arcInvoicesV1', JSON.stringify(invs));
+  }
+
   // ABI به‌روزشده به همراه قابلیت خواندن وضعیت لینک از بلاک‌چین
   const ArcPayLinkABI = [
     "function createLink(address linkId, address token, uint256 amount, uint40 expiration) external payable",
@@ -413,14 +495,25 @@
     "function links(address) view returns (uint256 amount, address token, uint40 expiration, uint8 status, address creator)"
   ];
 
+  // ABI قرارداد هوشمند فاکتور ArcInvoice
+  const ArcInvoiceABI = [
+    "function createInvoice(address _payer, address _token, uint256 _amount, uint40 _dueDate, string calldata _metadataURI) external returns (uint256 invoiceId)",
+    "function payInvoice(uint256 _invoiceId) external payable",
+    "function cancelInvoice(uint256 _invoiceId) external",
+    "function getInvoice(uint256 _invoiceId) external view returns (tuple(uint256 amount, address issuer, uint40 dueDate, uint8 status, address payer, address token))",
+    "event InvoiceCreated(uint256 indexed invoiceId, address indexed issuer, address indexed payer, address token, uint256 amount, uint40 dueDate, string metadataURI)"
+  ];
+
   window.addEventListener('load', async () => {
     // بارگذاری لینک‌ها در ابتدای ورود از طریق دیتابیس ابری
     currentLinks = await fetchLinks();
+    currentInvoices = fetchInvoices();
 
     if (window.ethereum && window.ethereum.selectedAddress) {
       setTimeout(connectWallet, 500);
     } else {
       renderHistory();
+      renderInvoices();
     }
     updatePreview();
   });
@@ -461,6 +554,7 @@
       
       // بارگذاری مجدد تاریخچه پس از اتصال تا وضعیت آنلاین از بلاک‌چین خوانده شود
       renderHistory();
+      renderInvoices();
 
     } catch (e) {
       console.error(e);
@@ -680,6 +774,221 @@
     }
   }
 
+  // --- توابع مربوط به قرارداد هوشمند فاکتور (Invoices) ---
+  async function createInvoice() {
+    if (!signer || !userAddress) return notify("Error", "Please connect your wallet first", "fa-wallet", true);
+
+    let payer = document.getElementById('invPayer').value.trim();
+    if (!payer) payer = ethers.ZeroAddress;
+    else if (!ethers.isAddress(payer)) return notify("Error", "Invalid Payer Address", "fa-times-circle", true);
+
+    const amountInput = parseFloat(document.getElementById('invAmount').value);
+    if (!amountInput || amountInput <= 0) return notify("Error", "Enter a valid amount", "fa-times-circle", true);
+
+    const tokenAddress = document.getElementById('invTokenSelect').value;
+    const tokenSymbol = document.getElementById('invTokenSelect').options[document.getElementById('invTokenSelect').selectedIndex].text.split(' ')[0];
+    const dueSeconds = parseInt(document.getElementById('invDueSelect').value);
+    const dueDate = dueSeconds > 0 ? Math.floor(Date.now() / 1000) + dueSeconds : 0;
+    const metadata = document.getElementById('invMetadata').value.trim() || "ArcPay Smart Invoice";
+
+    const btn = document.getElementById('createInvoiceBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner mr-2 inline-block"></div> Creating...';
+
+    try {
+      const isNative = (tokenAddress.toLowerCase() === NATIVE_USDC.toLowerCase() || tokenAddress === ethers.ZeroAddress);
+      let amountWei;
+      if (!isNative) {
+        const tokenContract = new ethers.Contract(tokenAddress, ["function decimals() view returns (uint8)"], provider);
+        const dec = await tokenContract.decimals();
+        amountWei = ethers.parseUnits(amountInput.toString(), dec);
+      } else {
+        amountWei = ethers.parseUnits(amountInput.toString(), 18);
+      }
+
+      const contract = new ethers.Contract(INVOICE_CONTRACT_ADDRESS, ArcInvoiceABI, signer);
+      notify("Info", "Confirm invoice creation in wallet...", "fa-file-signature");
+
+      const tx = await contract.createInvoice(
+        payer,
+        tokenAddress,
+        amountWei,
+        dueDate,
+        metadata
+      );
+
+      notify("Info", "Transaction pending...", "fa-circle-notch fa-spin");
+      const receipt = await tx.wait();
+
+      let invoiceId = null;
+      for (let log of receipt.logs) {
+        try {
+          const parsed = contract.interface.parseLog(log);
+          if (parsed && parsed.name === "InvoiceCreated") {
+            invoiceId = parsed.args.invoiceId.toString();
+            break;
+          }
+        } catch(e) {}
+      }
+
+      if (invoiceId) {
+        const newInvoice = {
+          id: invoiceId,
+          issuer: userAddress,
+          payer: payer,
+          token: tokenSymbol,
+          tokenAddress: tokenAddress,
+          amount: amountInput,
+          dueDate: dueDate,
+          metadata: metadata,
+          createdAt: Date.now()
+        };
+        currentInvoices.unshift(newInvoice);
+        saveInvoices(currentInvoices);
+        renderInvoices();
+        notify("Success", `Invoice #${invoiceId} Created!`, "fa-check-circle");
+
+        document.getElementById('invPayer').value = '';
+        document.getElementById('invAmount').value = '';
+        document.getElementById('invMetadata').value = '';
+      }
+    } catch(err) {
+      console.error(err);
+      notify("Error", err.reason || err.message || "Failed to create invoice", "fa-exclamation-triangle", true);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fas fa-plus-circle mr-2"></i> Create Invoice';
+    }
+  }
+
+  async function payInvoice(invoiceId, tokenAddress, amountStr) {
+    if (!signer || !userAddress) return notify("Error", "Please connect your wallet first", "fa-wallet", true);
+    try {
+      const isNative = (tokenAddress.toLowerCase() === NATIVE_USDC.toLowerCase() || tokenAddress === ethers.ZeroAddress);
+      let amountWei;
+      if (!isNative) {
+        const tokenContract = new ethers.Contract(tokenAddress, [
+          "function decimals() view returns (uint8)",
+          "function allowance(address, address) view returns (uint256)",
+          "function approve(address, uint256) returns (bool)"
+        ], signer);
+        const dec = await tokenContract.decimals();
+        amountWei = ethers.parseUnits(amountStr.toString(), dec);
+
+        const allowance = await tokenContract.allowance(userAddress, INVOICE_CONTRACT_ADDRESS);
+        if (allowance < amountWei) {
+          notify("Info", "Approving token for payment...", "fa-signature");
+          const approveTx = await tokenContract.approve(INVOICE_CONTRACT_ADDRESS, amountWei);
+          await approveTx.wait();
+        }
+      } else {
+        amountWei = ethers.parseUnits(amountStr.toString(), 18);
+      }
+
+      const contract = new ethers.Contract(INVOICE_CONTRACT_ADDRESS, ArcInvoiceABI, signer);
+      notify("Info", "Confirm payment in wallet...", "fa-file-signature");
+      const tx = await contract.payInvoice(invoiceId, { value: isNative ? amountWei : 0 });
+      notify("Info", "Payment transaction pending...", "fa-circle-notch fa-spin");
+      await tx.wait();
+
+      notify("Success", `Invoice #${invoiceId} Paid Successfully!`, "fa-check-circle");
+      renderInvoices();
+    } catch(err) {
+      console.error(err);
+      notify("Error", err.reason || err.message || "Payment Failed", "fa-exclamation-triangle", true);
+    }
+  }
+
+  async function cancelInvoice(invoiceId) {
+    if (!signer) return notify("Error", "Please connect your wallet first", "fa-wallet", true);
+    try {
+      const contract = new ethers.Contract(INVOICE_CONTRACT_ADDRESS, ArcInvoiceABI, signer);
+      notify("Info", "Confirm cancellation in wallet...", "fa-file-signature");
+      const tx = await contract.cancelInvoice(invoiceId);
+      notify("Info", "Cancelling invoice...", "fa-circle-notch fa-spin");
+      await tx.wait();
+      notify("Success", `Invoice #${invoiceId} Cancelled!`, "fa-check-circle");
+      renderInvoices();
+    } catch(err) {
+      console.error(err);
+      notify("Error", err.reason || err.message || "Failed to cancel invoice", "fa-exclamation-triangle", true);
+    }
+  }
+
+  async function renderInvoices() {
+    const container = document.getElementById('invoicesTableBody');
+    if (!container) return;
+    if (currentInvoices.length === 0) {
+      container.innerHTML = `
+        <div class="text-center py-12 px-4 border border-dashed border-white/10 rounded-2xl">
+          <div class="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mx-auto mb-4"><i class="fas fa-file-invoice text-gray-500 text-2xl"></i></div>
+          <h4 class="text-white font-bold mb-1">No Invoices Yet</h4>
+          <p class="text-gray-500 text-sm">Create an invoice to request payments from customers.</p>
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = `<div class="flex justify-center items-center py-8"><div class="spinner mr-3"></div><span class="text-gray-400 text-sm">Fetching on-chain invoice statuses...</span></div>`;
+
+    let readContract = null;
+    if (provider) {
+      readContract = new ethers.Contract(INVOICE_CONTRACT_ADDRESS, ArcInvoiceABI, provider);
+    }
+
+    let html = '';
+    for (let inv of currentInvoices) {
+      let statusText = "Pending";
+      let statusColor = "text-amber-400 bg-amber-400/10";
+      let isExpired = inv.dueDate > 0 && (Date.now() / 1000) > inv.dueDate;
+
+      if (readContract) {
+        try {
+          const invData = await readContract.getInvoice(inv.id);
+          const onChainStatus = Number(invData[3]);
+          if (onChainStatus === 2) {
+            statusText = "Paid";
+            statusColor = "text-emerald-400 bg-emerald-400/10";
+          } else if (onChainStatus === 3) {
+            statusText = "Cancelled";
+            statusColor = "text-rose-500 bg-rose-500/10";
+          } else if (onChainStatus === 1 && isExpired) {
+            statusText = "Expired";
+            statusColor = "text-rose-400 bg-rose-400/10";
+          }
+        } catch(e) {}
+      }
+
+      const isIssuer = userAddress && inv.issuer.toLowerCase() === userAddress.toLowerCase();
+      const canPay = statusText === "Pending" && !isExpired && userAddress && (inv.payer === ethers.ZeroAddress || inv.payer.toLowerCase() === userAddress.toLowerCase());
+      const canCancel = statusText === "Pending" && isIssuer;
+
+      html += `
+      <div class="bg-white/5 border border-white/5 p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:border-white/10 transition-colors">
+        <div class="flex items-start gap-4">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 flex items-center justify-center flex-shrink-0 mt-1">
+            <i class="fas fa-file-invoice-dollar text-emerald-400"></i>
+          </div>
+          <div>
+            <div class="font-bold text-white text-base flex items-center gap-2">
+              Invoice #${inv.id} — ${inv.metadata}
+              <span class="text-[10px] px-2 py-0.5 rounded-md font-bold uppercase ${statusColor}">${statusText}</span>
+            </div>
+            <div class="text-gray-400 text-sm mt-1">Amount: <strong class="text-white">${inv.amount} ${inv.token}</strong> • Due: ${inv.dueDate ? new Date(inv.dueDate * 1000).toLocaleDateString() : 'No Due Date'}</div>
+            <div class="text-gray-500 text-xs mt-2 font-mono flex flex-wrap gap-x-4 gap-y-1">
+              <span>Issuer: ${inv.issuer.slice(0,6)}...${inv.issuer.slice(-4)}</span>
+              <span>Payer: ${inv.payer === ethers.ZeroAddress ? 'Anyone' : inv.payer.slice(0,6)+'...'+inv.payer.slice(-4)}</span>
+            </div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          ${canPay ? `<button onclick="payInvoice('${inv.id}', '${inv.tokenAddress}', '${inv.amount}')" class="flex-1 sm:flex-none px-5 py-2.5 bg-emerald-500 hover:bg-emerald-400 text-black rounded-xl font-bold text-sm transition-all shadow-md shadow-emerald-500/20">Pay Invoice</button>` : ''}
+          ${canCancel ? `<button onclick="cancelInvoice('${inv.id}')" class="px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/10 rounded-xl font-semibold text-sm transition-colors">Cancel</button>` : ''}
+        </div>
+      </div>`;
+    }
+    container.innerHTML = html;
+  }
+
   function updatePreview() {
     const title = document.getElementById('linkTitle').value || 'Payment Request';
     const select = document.getElementById('tokenSelect');
@@ -756,15 +1065,22 @@
 
   function switchTab(tab) {
     document.getElementById('viewCreate').classList.toggle('hidden', tab !== 'create');
+    document.getElementById('viewInvoices').classList.toggle('hidden', tab !== 'invoices');
     document.getElementById('viewHistory').classList.toggle('hidden', tab !== 'history');
     
     document.getElementById('tabCreate').className = tab === 'create' 
       ? "flex-1 px-5 py-2.5 rounded-xl text-sm font-bold transition-all bg-emerald-500/10 text-emerald-400 shadow-sm" 
       : "flex-1 px-5 py-2.5 rounded-xl text-sm font-bold transition-all text-gray-400 hover:text-white light:hover:text-black";
     
+    document.getElementById('tabInvoices').className = tab === 'invoices' 
+      ? "flex-1 px-5 py-2.5 rounded-xl text-sm font-bold transition-all bg-emerald-500/10 text-emerald-400 shadow-sm" 
+      : "flex-1 px-5 py-2.5 rounded-xl text-sm font-bold transition-all text-gray-400 hover:text-white light:hover:text-black";
+
     document.getElementById('tabHistory').className = tab === 'history' 
       ? "flex-1 px-5 py-2.5 rounded-xl text-sm font-bold transition-all bg-emerald-500/10 text-emerald-400 shadow-sm" 
       : "flex-1 px-5 py-2.5 rounded-xl text-sm font-bold transition-all text-gray-400 hover:text-white light:hover:text-black";
+
+    if (tab === 'invoices') renderInvoices();
   }
 
   // نمایش تاریخچه با قابلیت خواندن وضعیت هوشمند از شبکه بلاک‌چین
