@@ -891,7 +891,7 @@
         token: tokenSymbol,
         amount: amountInput,
         expiration: expiration,
-        status: "Active",
+        status: "Active", // <--- اینجا وضعیت اولیه است
         createdAt: Date.now(),
         url: finalUrl,
         pk: privateKey 
@@ -1007,7 +1007,7 @@
         amount: amountInput,
         payer: targetPayer,
         expiration: expiration,
-        status: "Pending",
+        status: "Pending", // <--- وضعیت اولیه فاکتور
         createdAt: Date.now(),
         url: finalUrl
       };
@@ -1223,20 +1223,30 @@
     if (currentLinks.length === 0) {
       linkContainer.innerHTML = `<div class="text-center py-6 text-gray-500 text-sm border border-dashed border-white/10 rounded-2xl">No links created yet.</div>`;
     } else {
-      // استفاده از Promise.all برای دریافت همزمان (موازی) وضعیت تمام لینک‌ها از بلاکچین
+      let linksChanged = false; // 플گ برای تشخیص تغییر و ذخیره نهایی
+      
       const linkPromises = currentLinks.map(async (link) => {
         let isExpired = link.expiration > 0 && (Date.now() / 1000) > link.expiration;
         let statusColor = isExpired ? 'text-rose-400 bg-rose-400/10' : 'text-emerald-400 bg-emerald-400/10';
         let statusText = isExpired ? 'Expired' : 'Active';
 
-        if (readLinkContract) {
+        // بررسی اینکه اگر قبلاً کلیم شده بود، دیگه نیازی به کوئری روی بلاکچین نباشه
+        if (link.status === 'Claimed') {
+           statusText = 'Claimed'; statusColor = 'text-cyan-400 bg-cyan-400/10';
+        } else if (link.status === 'Cancelled') {
+           statusText = 'Cancelled'; statusColor = 'text-rose-500 bg-rose-500/10';
+        } else if (readLinkContract) {
            try {
               const linkData = await readLinkContract.links(link.id);
               const onChainStatus = Number(linkData[3]);
               if (onChainStatus === 2) {
                  statusText = 'Claimed'; statusColor = 'text-cyan-400 bg-cyan-400/10';
+                 link.status = 'Claimed'; // ذخیره در حافظه محلی
+                 linksChanged = true;
               } else if (onChainStatus === 3) {
                  statusText = 'Cancelled'; statusColor = 'text-rose-500 bg-rose-500/10';
+                 link.status = 'Cancelled'; // ذخیره در حافظه محلی
+                 linksChanged = true;
               } else if (onChainStatus === 1 && !isExpired) {
                  statusText = 'Active'; statusColor = 'text-emerald-400 bg-emerald-400/10';
               }
@@ -1258,6 +1268,11 @@
       
       const linkHtmlArray = await Promise.all(linkPromises);
       linkContainer.innerHTML = linkHtmlArray.join('');
+      
+      // اگر هرکدوم از لینک‌ها کلیم شدن، آرایه رو کلا کش میکنیم
+      if (linksChanged) {
+        saveLinks(currentLinks);
+      }
     }
 
     // --- Render Invoices History ---
@@ -1265,20 +1280,30 @@
     if (currentInvoices.length === 0) {
       invContainer.innerHTML = `<div class="text-center py-6 text-gray-500 text-sm border border-dashed border-white/10 rounded-2xl">No invoices created yet.</div>`;
     } else {
-      // استفاده از Promise.all برای دریافت همزمان (موازی) وضعیت تمام فاکتورها از بلاکچین
+      let invoicesChanged = false; // 플گ برای تشخیص تغییر و ذخیره نهایی
+      
       const invPromises = currentInvoices.map(async (inv) => {
         let isExpired = inv.expiration > 0 && (Date.now() / 1000) > inv.expiration;
         let statusColor = isExpired ? 'text-rose-400 bg-rose-400/10' : 'text-amber-400 bg-amber-400/10';
         let statusText = isExpired ? 'Overdue' : 'Pending';
 
-        if (readInvoiceContract && inv.id !== "Unknown") {
+        // بررسی اینکه اگر قبلاً پرداخت شده بود، دیگه نیازی به کوئری روی بلاکچین نباشه
+        if (inv.status === 'Paid') {
+           statusText = 'Paid'; statusColor = 'text-emerald-400 bg-emerald-400/10';
+        } else if (inv.status === 'Cancelled') {
+           statusText = 'Cancelled'; statusColor = 'text-rose-500 bg-rose-500/10';
+        } else if (readInvoiceContract && inv.id !== "Unknown") {
            try {
               const invData = await readInvoiceContract.invoices(inv.id);
               const onChainStatus = Number(invData[3]); 
               if (onChainStatus === 2) {
                  statusText = 'Paid'; statusColor = 'text-emerald-400 bg-emerald-400/10';
+                 inv.status = 'Paid'; // ذخیره در حافظه محلی
+                 invoicesChanged = true;
               } else if (onChainStatus === 3) {
                  statusText = 'Cancelled'; statusColor = 'text-rose-500 bg-rose-500/10';
+                 inv.status = 'Cancelled'; // ذخیره در حافظه محلی
+                 invoicesChanged = true;
               } else if (onChainStatus === 1 && !isExpired) {
                  statusText = 'Pending'; statusColor = 'text-amber-400 bg-amber-400/10';
               }
@@ -1300,6 +1325,11 @@
 
       const invHtmlArray = await Promise.all(invPromises);
       invContainer.innerHTML = invHtmlArray.join('');
+      
+      // اگر هرکدوم از فاکتورها پرداخت شدن، آرایه رو کلا کش میکنیم
+      if (invoicesChanged) {
+        saveInvoices(currentInvoices);
+      }
     }
   }
 
