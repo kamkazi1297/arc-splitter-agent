@@ -78,11 +78,11 @@
       </div>
     </div>
 
-    <!-- بخش پرداخت -->
+    <!-- بخش دکمه اقدام (Action) -->
     <div id="actionSection" class="space-y-3 pt-2 hidden">
-      <button id="mainActionBtn" onclick="handleAction()" class="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black py-4 rounded-xl font-extrabold transition-all relative shadow-lg shadow-amber-500/20">
-        <span id="actionBtnText" class="flex items-center justify-center gap-2">
-          <i class="fas fa-wallet"></i> Connect Wallet
+      <button id="mainActionBtn" onclick="handleAction()" class="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black py-4 rounded-xl font-extrabold transition-all relative shadow-lg shadow-amber-500/20 flex items-center justify-center">
+        <span id="actionBtnText" class="flex items-center justify-center gap-2 w-full">
+          <div class="spinner"></div> Loading...
         </span>
       </button>
     </div>
@@ -141,10 +141,9 @@
     let signer = null;
     let requiresApproval = false;
 
-    // تابع کمکی برای مکث (Delay) - اضافه شده برای رفع مشکل RPC
     const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-    window.addEventListener('load', () => {
+    window.addEventListener('load', async () => {
       const urlParams = new URLSearchParams(window.location.search);
       invoiceId = urlParams.get('id');
 
@@ -154,24 +153,24 @@
       }
       
       document.getElementById('invoiceIdDisplay').textContent = `#${invoiceId}`;
-      fetchInvoiceDetails();
       
+      // اجرای همزمان خواندن فاکتور و اتصال ولت (برای جلوگیری از هدر رفتن زمان)
+      let fetchPromise = fetchInvoiceDetails();
+      let walletPromise = Promise.resolve();
+
       if (window.ethereum && window.ethereum.selectedAddress) {
-        connectWallet(false);
+        walletPromise = connectWallet(false);
       }
+
+      await Promise.all([fetchPromise, walletPromise]);
     });
 
     async function fetchInvoiceDetails() {
       hideMessages();
-      document.getElementById('amountDisplay').innerHTML = '<div class="spinner border-gray-400 border-left-transparent w-4 h-4 inline-block"></div>';
-      document.getElementById('statusDisplay').textContent = 'Fetching...';
-      document.getElementById('statusDisplay').className = 'font-bold text-gray-400';
-      
       let attempt = 0;
       const maxRetries = 5;
       let success = false;
 
-      // پیاده‌سازی حلقه Retry مشابه بخش پیش‌پرداخت (Claim)
       while (attempt < maxRetries && !success) {
         try {
           attempt++;
@@ -191,7 +190,7 @@
               const tokenContract = new ethers.Contract(tokenAddress, ERC20ABI, readProvider);
               decimals = await tokenContract.decimals();
             } catch (e) {
-               console.warn("Could not fetch decimals from network, falling back to 18");
+               console.warn("Could not fetch decimals from network");
             }
           }
 
@@ -208,7 +207,6 @@
               isNative: tokenLower === "0x0000000000000000000000000000000000000000" || tokenLower === "0x3600000000000000000000000000000000000000"
           };
 
-          // نمایش اطلاعات
           document.getElementById('issuerDisplay').textContent = `${issuer.slice(0,6)}...${issuer.slice(-4)}`;
           document.getElementById('payerDisplay').textContent = payer === ethers.ZeroAddress ? 'Anyone' : `${payer.slice(0,6)}...${payer.slice(-4)}`;
           
@@ -220,9 +218,8 @@
 
           document.getElementById('amountDisplay').innerHTML = `<span class="text-white">${parseFloat(formattedAmount).toFixed(4)}</span> <span class="text-amber-400 font-bold">${tokenSymbol}</span>`;
 
-          // مدیریت وضعیت فاکتور
           const statusEl = document.getElementById('statusDisplay');
-          if (invoiceData.status === 1) { // Pending
+          if (invoiceData.status === 1) { 
               let isOverdue = dueDate > 0 && (Date.now() / 1000) > Number(dueDate);
               if(isOverdue) {
                   statusEl.textContent = "Overdue";
@@ -232,10 +229,10 @@
                   statusEl.className = 'font-bold text-amber-400';
               }
               document.getElementById('actionSection').classList.remove('hidden');
-          } else if (invoiceData.status === 2) { // Paid
+          } else if (invoiceData.status === 2) { 
               statusEl.textContent = "Paid";
               statusEl.className = 'font-bold text-emerald-400';
-          } else if (invoiceData.status === 3) { // Cancelled
+          } else if (invoiceData.status === 3) { 
               statusEl.textContent = "Cancelled";
               statusEl.className = 'font-bold text-rose-400';
           } else {
@@ -243,12 +240,16 @@
               showError("Invoice not found on network.");
           }
           
+          // حل مشکل Race Condition: حتماً پس از دریافت موفق اطلاعات فاکتور، وضعیت Approve چک می‌شود
+          if (signer) {
+              await checkAllowance();
+          }
+          
           updateActionButton();
           success = true;
 
         } catch (error) {
           console.error(`Fetch attempt ${attempt} failed:`, error);
-          
           if (attempt >= maxRetries) {
             document.getElementById('amountDisplay').textContent = "Failed to load";
             document.getElementById('statusDisplay').innerHTML = `
@@ -257,7 +258,7 @@
               </button>`;
             showError("RPC response is slow. Please try again.");
           } else {
-            await sleep(1000 + (attempt * 500));
+            await sleep(1500);
           }
         }
       }
@@ -267,6 +268,15 @@
         if (!window.ethereum) {
             if(showErr) showError("MetaMask not found! Please install it.");
             return;
+        }
+
+        const btnText = document.getElementById('actionBtnText');
+        const isActionVisible = !document.getElementById('actionSection').classList.contains('hidden');
+        
+        // نمایش لودینگ روی دکمه در زمان کانکت شدن ولت
+        if (isActionVisible) {
+            btnText.innerHTML = '<div class="spinner mr-2"></div> Connecting Wallet...';
+            document.getElementById('mainActionBtn').disabled = true;
         }
 
         try {
@@ -287,13 +297,20 @@
             }
 
             signer = await provider.getSigner();
-            await checkAllowance();
-            updateActionButton();
+            
+            // حل مشکل Race Condition: حتماً پس از اتصال ولت چک میکنیم که اگر دیتای فاکتور آمده، Allowance بررسی شود
+            if (invoiceData) {
+                await checkAllowance();
+            }
+            
             hideMessages();
             
         } catch (e) {
             console.error(e);
             if(showErr) showError("Failed to connect wallet.");
+        } finally {
+            document.getElementById('mainActionBtn').disabled = false;
+            updateActionButton();
         }
     }
 
@@ -306,6 +323,7 @@
         try {
             const tokenContract = new ethers.Contract(invoiceData.tokenAddress, ERC20ABI, signer);
             const allowance = await tokenContract.allowance(userAddress, INVOICE_CONTRACT_ADDRESS);
+            // مقایسه درست مقادیر BigInt
             requiresApproval = allowance < invoiceData.amountRaw;
         } catch (e) {
             console.error("Allowance check failed", e);
@@ -313,20 +331,21 @@
     }
 
     function updateActionButton() {
-        if (invoiceData && invoiceData.status !== 1) {
+        if (!invoiceData) return; // هنوز دیتا نیامده است
+        
+        if (invoiceData.status !== 1) {
             document.getElementById('actionSection').classList.add('hidden');
             return;
         }
 
-        const btn = document.getElementById('mainActionBtn');
         const btnText = document.getElementById('actionBtnText');
 
         if (!userAddress) {
-            btnText.innerHTML = '<i class="fas fa-wallet"></i> Connect Wallet';
+            btnText.innerHTML = '<i class="fas fa-wallet mr-2"></i> Connect Wallet';
         } else if (requiresApproval) {
-            btnText.innerHTML = '<i class="fas fa-lock-open"></i> Approve ' + invoiceData.tokenSymbol;
+            btnText.innerHTML = `<i class="fas fa-lock-open mr-2"></i> Approve ${invoiceData.tokenSymbol}`;
         } else {
-            btnText.innerHTML = '<i class="fas fa-check-circle"></i> Pay Invoice';
+            btnText.innerHTML = `<i class="fas fa-check-circle mr-2"></i> Pay ${invoiceData.amountFormatted} ${invoiceData.tokenSymbol}`;
         }
     }
 
@@ -348,17 +367,17 @@
 
         try {
             if (requiresApproval) {
-                btnText.innerHTML = '<div class="spinner mr-2"></div> Approving...';
+                btnText.innerHTML = '<div class="spinner mr-2"></div> Requesting Approval...';
                 const tokenContract = new ethers.Contract(invoiceData.tokenAddress, ERC20ABI, signer);
                 const tx = await tokenContract.approve(INVOICE_CONTRACT_ADDRESS, invoiceData.amountRaw);
                 
                 btnText.innerHTML = '<div class="spinner mr-2"></div> Confirming Approval...';
-                await tx.wait();
+                await tx.wait(1);
                 
                 requiresApproval = false;
                 updateActionButton();
             } else {
-                btnText.innerHTML = '<div class="spinner mr-2"></div> Processing...';
+                btnText.innerHTML = '<div class="spinner mr-2"></div> Initiating Payment...';
                 const contract = new ethers.Contract(INVOICE_CONTRACT_ADDRESS, ArcInvoiceABI, signer);
                 
                 const options = {};
@@ -368,16 +387,15 @@
                 
                 const tx = await contract.payInvoice(invoiceId, options);
                 
-                // پیاده‌سازی حلقه تایید شبکه (Confirmation Loop) مشابه بخش کلیم
+                // سیستم تاخیر و تلاش مجدد برای تایید تراکنش (مشابه بخش کلیم)
                 let attempt = 0;
                 let txSuccess = false;
                 
                 while(attempt < 3 && !txSuccess) {
                     try {
                         attempt++;
-                        btnText.innerHTML = `<div class="spinner mr-2"></div> Confirming in Network (${attempt}/3)...`;
+                        btnText.innerHTML = `<div class="spinner mr-2"></div> Confirming TX (${attempt}/3)...`;
                         
-                        // انتظار برای تایید تراکنش در شبکه
                         const receipt = await provider.waitForTransaction(tx.hash, 1, 35000);
                         
                         if (receipt && receipt.status === 1) {
@@ -387,7 +405,7 @@
                         }
                     } catch (err) {
                         if (attempt >= 3) throw err;
-                        await sleep(4000);
+                        await sleep(4000); // 4 ثانیه تاخیر پیش از تلاش مجدد
                     }
                 }
                 
@@ -395,7 +413,6 @@
                 document.getElementById('statusDisplay').textContent = "Paid";
                 document.getElementById('statusDisplay').className = 'font-bold text-emerald-400';
                 
-                // نمایش لینک تراکنش در Explorer
                 document.getElementById('txHashContainer').classList.remove('hidden');
                 document.getElementById('txHashLink').href = `https://testnet.arcscan.app/tx/${tx.hash}`;
                 
@@ -406,7 +423,7 @@
             if (error.code === "ACTION_REJECTED") {
                 showError("Transaction rejected by user.");
             } else {
-                showError(error.reason || error.message || "Transaction failed.");
+                showError(error.reason || "Transaction failed. Check console for details.");
             }
         } finally {
             btn.disabled = false;
