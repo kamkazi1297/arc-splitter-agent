@@ -90,11 +90,11 @@
       </div>
       <div class="flex justify-between items-center text-sm border-t border-white/5 pt-2">
         <span class="text-gray-400">Amount Due</span>
-        <span id="amountDisplay" class="font-bold text-gray-500">Fetching...</span>
+        <span id="amountDisplay" class="font-bold text-gray-500 flex items-center gap-2">Fetching...</span>
       </div>
       <div class="flex justify-between items-center text-sm border-t border-white/5 pt-2">
         <span class="text-gray-400">Status</span>
-        <span id="statusDisplay" class="font-bold text-gray-400">Loading...</span>
+        <span id="statusDisplay" class="font-bold text-gray-400 flex items-center gap-2">Loading...</span>
       </div>
     </div>
 
@@ -187,15 +187,19 @@
 
     async function fetchInvoiceDetails() {
       hideMessages();
-      let attempt = 0;
-      const maxRetries = 5;
+      
+      // اضافه کردن اسپینر به جای متن کندی شبکه
+      document.getElementById('amountDisplay').innerHTML = '<div class="spinner border-gray-400 border-left-transparent w-4 h-4 inline-block"></div>';
+      
+      const statusEl = document.getElementById('statusDisplay');
+      statusEl.className = 'font-bold flex items-center gap-2 text-gray-400';
+      statusEl.innerHTML = '<div class="spinner border-gray-400 border-left-transparent w-4 h-4 inline-block"></div> Fetching...';
+
       let success = false;
 
-      while (attempt < maxRetries && !success) {
+      // حلقه بی‌نهایت برای فچ کردن مقادیر
+      while (!success) {
         try {
-          attempt++;
-          if (attempt > 1) document.getElementById('statusDisplay').textContent = `Retrying (${attempt}/${maxRetries})...`;
-
           const contract = new ethers.Contract(INVOICE_CONTRACT_ADDRESS, ArcInvoiceABI, readProvider);
           const [amount, issuer, dueDate, status, payer, tokenAddress] = await contract.invoices(invoiceId);
 
@@ -221,30 +225,25 @@
           document.getElementById('dueDateDisplay').textContent = dueDate > 0 ? new Date(Number(dueDate) * 1000).toLocaleString() : "No Due Date";
           document.getElementById('amountDisplay').innerHTML = `<span class="text-white">${parseFloat(formattedAmount).toFixed(4)}</span> <span class="text-amber-400 font-bold">${tokenSymbol}</span>`;
 
-          const statusEl = document.getElementById('statusDisplay');
           if (invoiceData.status === 1) { 
-              statusEl.textContent = "Pending";
+              statusEl.innerHTML = "Pending";
               statusEl.className = 'font-bold text-amber-400';
               document.getElementById('actionSection').classList.remove('hidden');
           } else if (invoiceData.status === 2) { 
-              statusEl.textContent = "Paid";
+              statusEl.innerHTML = "Paid";
               statusEl.className = 'font-bold text-emerald-400';
           } else if (invoiceData.status === 3) { 
-              statusEl.textContent = "Cancelled";
+              statusEl.innerHTML = "Cancelled";
               statusEl.className = 'font-bold text-rose-400';
           }
           
           updateActionButton();
-          success = true;
+          success = true; // در صورت دریافت بدون ارور، از حلقه خارج می‌شویم
 
         } catch (error) {
-          if (attempt >= maxRetries) {
-            document.getElementById('amountDisplay').textContent = "Failed";
-            document.getElementById('statusDisplay').innerHTML = `<button onclick="fetchInvoiceDetails()" class="text-amber-400 underline">Retry</button>`;
-            showError("Network response is slow. Please try again.");
-          } else {
-            await sleep(1500);
-          }
+          console.warn("RPC is slow, retrying fetching values silently...");
+          // وقفه کوتاه قبل از تلاش مجدد، بدون نمایش پیام خطا به کاربر
+          await sleep(3000);
         }
       }
     }
@@ -274,7 +273,6 @@
         }
     }
 
-    // تابع دیسکانکت اضافه شد
     function disconnectWallet() {
         userAddress = null;
         signer = null;
@@ -283,7 +281,6 @@
         updateActionButton();
     }
 
-    // تنظیمات UI هدر
     function updateWalletUI() {
         const connectBtn = document.getElementById('topConnectBtn');
         const walletInfo = document.getElementById('topWalletInfo');
@@ -311,7 +308,6 @@
         if (!userAddress) {
             btnText.innerHTML = '<i class="fas fa-wallet mr-2"></i> Connect to Proceed';
         } else {
-            // در حالت پیشفرض بعد از کانکت شدن روی Pay قرار میدهیم. Allowance لحظه کلیک چک میشود.
             btnText.innerHTML = `<i class="fas fa-bolt mr-2"></i> Process Invoice (${invoiceData.tokenSymbol})`;
         }
     }
@@ -330,7 +326,6 @@
         document.getElementById('txHashContainer').classList.add('hidden');
 
         try {
-            // چک کردن Allowance به صورت کاملا زنده و دقیقاً قبل از تراکنش (ضد باگ)
             let needsApproval = false;
             
             if (!invoiceData.isNative) {
@@ -338,14 +333,12 @@
                 const tokenContract = new ethers.Contract(invoiceData.tokenAddress, ERC20ABI, signer);
                 const currentAllowance = await tokenContract.allowance(userAddress, INVOICE_CONTRACT_ADDRESS);
                 
-                // مقایسه امن متغیرهای BigInt
                 if (currentAllowance < invoiceData.amountRaw) {
                     needsApproval = true;
                 }
             }
 
             if (needsApproval) {
-                // پروسه دریافت مجوز
                 btnText.innerHTML = '<div class="spinner border-black border-left-transparent mr-2"></div> Requesting Approval...';
                 const tokenContract = new ethers.Contract(invoiceData.tokenAddress, ERC20ABI, signer);
                 const tx = await tokenContract.approve(INVOICE_CONTRACT_ADDRESS, invoiceData.amountRaw);
@@ -356,10 +349,9 @@
                 showSuccess("Approval granted! You can now securely pay.");
                 updateActionButton();
                 btn.disabled = false; 
-                return; // از تابع خارج میشویم تا کاربر با خیال راحت دکمه را دوباره برای Pay بزند
+                return;
             }
 
-            // پروسه پرداخت (مجوز صد در صد وجود دارد یا توکن شبکه است)
             btnText.innerHTML = '<div class="spinner border-black border-left-transparent mr-2"></div> Initiating Payment...';
             const contract = new ethers.Contract(INVOICE_CONTRACT_ADDRESS, ArcInvoiceABI, signer);
             
