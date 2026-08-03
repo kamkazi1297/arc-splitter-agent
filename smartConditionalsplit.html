@@ -498,38 +498,48 @@
     showToast("Wallet disconnected.");
   }
 
-  async function fetchBalances() {
+  // اضافه شدن مکانیزم ۳ بار سعی مجدد به صورت خودکار (Retry Pattern)
+  async function fetchBalances(retries = 3) {
     if (!contract || !userAddress || !provider) return;
     const badge = document.getElementById('syncBadge');
-    badge.textContent = "Syncing...";
     
     const select = document.getElementById('hubToken');
     const tokenAddress = select.value;
     const NATIVE_SYS = "0x3600000000000000000000000000000000000000";
 
-    try {
-      let walletBalRaw, balRaw;
-      if (tokenAddress.toLowerCase() === NATIVE_SYS.toLowerCase()) {
-          walletBalRaw = await provider.getBalance(userAddress);
-          balRaw = await contract.nativeBalances(userAddress);
-      } else {
-          const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
-          walletBalRaw = await tokenContract.balanceOf(userAddress);
-          balRaw = await contract.tokenBalances(userAddress, tokenAddress);
-      }
-
-      const displayWalletBal = ethers.formatUnits(walletBalRaw, activeDecimals);
-      document.getElementById('walletBalanceDisplay').textContent = parseFloat(displayWalletBal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
-
-      const displayVal = ethers.formatUnits(balRaw, activeDecimals);
-      document.getElementById('sponsorBalanceDisplay').textContent = parseFloat(displayVal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+    for (let attempt = 1; attempt <= retries; attempt++) {
+      badge.textContent = attempt === 1 ? "Syncing..." : `Retrying... (${attempt}/${retries})`;
       
-      badge.textContent = "Synced";
-      badge.className = "px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-[10px] font-bold";
-    } catch (err) {
-      console.error(`Balance fetch err:`, err);
-      badge.textContent = "Sync Error";
-      badge.className = "px-2 py-1 bg-rose-500/20 text-rose-400 rounded text-[10px] font-bold";
+      try {
+        let walletBalRaw, balRaw;
+        if (tokenAddress.toLowerCase() === NATIVE_SYS.toLowerCase()) {
+            walletBalRaw = await provider.getBalance(userAddress);
+            balRaw = await contract.nativeBalances(userAddress);
+        } else {
+            const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+            walletBalRaw = await tokenContract.balanceOf(userAddress);
+            balRaw = await contract.tokenBalances(userAddress, tokenAddress);
+        }
+
+        const displayWalletBal = ethers.formatUnits(walletBalRaw, activeDecimals);
+        document.getElementById('walletBalanceDisplay').textContent = parseFloat(displayWalletBal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+
+        const displayVal = ethers.formatUnits(balRaw, activeDecimals);
+        document.getElementById('sponsorBalanceDisplay').textContent = parseFloat(displayVal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+        
+        badge.textContent = "Synced";
+        badge.className = "px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-[10px] font-bold";
+        return; // اگر موفق بود از حلقه خارج می‌شه
+      } catch (err) {
+        console.error(`Balance fetch err (Attempt ${attempt}):`, err);
+        if (attempt === retries) {
+          badge.textContent = "Sync Error";
+          badge.className = "px-2 py-1 bg-rose-500/20 text-rose-400 rounded text-[10px] font-bold";
+        } else {
+          // صبر کردن برای ۱ ثانیه قبل از سعی مجدد
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
     }
   }
 
