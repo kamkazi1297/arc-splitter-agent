@@ -80,15 +80,15 @@
     #toast, .light #toast { background: #000000 !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; color: #ffffff !important; }
     .light #toast span { color: #ffffff !important; }
 
-    select, input {
+    select, input, textarea {
       background-color: rgba(255, 255, 255, 0.03);
       color: white;
       border: 1px solid rgba(255, 255, 255, 0.1);
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    select:focus, input:focus { border-color: #10b981; box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15); outline: none; }
+    select:focus, input:focus, textarea:focus { border-color: #10b981; box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.15); outline: none; }
     
-    .light select, .light input { background-color: #ffffff; color: #000000; border: 1px solid #000000; font-weight: 700; }
+    .light select, .light input, .light textarea { background-color: #ffffff; color: #000000; border: 1px solid #000000; font-weight: 700; }
     select option { background-color: #0f172a; color: white; padding: 10px; }
     .light select option { background-color: #ffffff; color: #000000; }
     
@@ -203,8 +203,17 @@
             
             <datalist id="savedContacts"></datalist>
 
+            <!-- BATCH MODE TOGGLE -->
+            <div class="flex items-center gap-3 mb-5">
+              <label class="relative inline-flex items-center cursor-pointer">
+                <input type="checkbox" id="batchModeToggle" onchange="toggleBatchMode()" class="sr-only peer">
+                <div class="w-9 h-5 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-emerald-500"></div>
+              </label>
+              <span class="text-sm font-bold text-gray-300">Batch Mode (Multi-Wallet Gas Saver)</span>
+            </div>
+
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
-              <div class="relative">
+              <div id="singleRecipientContainer" class="relative">
                 <label class="block text-xs font-bold text-gray-400 mb-2">Recipient Address</label>
                 <div class="flex gap-2">
                   <input type="text" id="ruleRecipient" list="savedContacts" placeholder="0x..." class="w-full rounded-xl px-4 py-3 text-sm font-mono">
@@ -213,10 +222,17 @@
                   </button>
                 </div>
               </div>
-              <div>
+              <div id="singleAmountContainer">
                 <label class="block text-xs font-bold text-gray-400 mb-2">Amount to Push</label>
                 <input type="number" id="ruleAmount" placeholder="e.g. 100" class="w-full rounded-xl px-4 py-3 text-sm font-bold">
               </div>
+
+              <!-- BATCH INPUT CONTAINER -->
+              <div id="batchInputContainer" class="hidden sm:col-span-2">
+                 <label class="block text-xs font-bold text-gray-400 mb-2">Recipients & Amounts (Format: 0xAddress, Amount)</label>
+                 <textarea id="batchData" rows="4" placeholder="0x123..., 100&#10;0x456..., 250" class="w-full rounded-xl px-4 py-3 text-sm font-mono"></textarea>
+              </div>
+
               <div>
                 <label class="block text-xs font-bold text-gray-400 mb-2">Max Relayer Fee</label>
                 <input type="number" id="ruleFee" placeholder="e.g. 1" value="0" class="w-full rounded-xl px-4 py-3 text-sm font-bold">
@@ -330,9 +346,10 @@
     "function approve(address spender, uint256 amount) returns (bool)"
   ];
 
-  // Updated Splitter ABI based on new UUPS Contract Architecture
+  // Updated Splitter ABI based on new UUPS Contract Architecture with Batch functionality
   const SPLITTER_ABI = [
     "function registerRule(address token, address recipient, uint256 amountToSplit, uint256 maxRelayerFee, uint256 ruleIdNonce, bool isRecurring, uint256 ruleCooldown, uint256 deadline, uint8[] opcodes, address[] evaluators, bytes[] evaluatorsData) returns (bytes32)",
+    "function batchRegisterRule(address token, address[] recipients, uint256[] amountsToSplit, uint256 maxRelayerFee, uint256 ruleIdNonce, bool isRecurring, uint256 ruleCooldown, uint256 deadline, uint8[] opcodes, address[] evaluators, bytes[] evaluatorsData) returns (bytes32[])",
     "function nativeBalances(address account) view returns (uint256)",
     "function tokenBalances(address account, address token) view returns (uint256)",
     "function depositERC20(address token, uint256 amount)",
@@ -375,6 +392,21 @@
       document.getElementById('btn-dashboard').classList.add('text-gray-500');
       loadHistoryData();
     }
+  }
+
+  // Toggle Function for Batch Input
+  function toggleBatchMode() {
+    const isBatch = document.getElementById('batchModeToggle').checked;
+    if(isBatch) {
+      document.getElementById('singleRecipientContainer').classList.add('hidden');
+      document.getElementById('singleAmountContainer').classList.add('hidden');
+      document.getElementById('batchInputContainer').classList.remove('hidden');
+    } else {
+      document.getElementById('singleRecipientContainer').classList.remove('hidden');
+      document.getElementById('singleAmountContainer').classList.remove('hidden');
+      document.getElementById('batchInputContainer').classList.add('hidden');
+    }
+    updatePreview();
   }
 
   async function handleTokenChange() {
@@ -552,7 +584,6 @@
       try {
         let walletBalRaw, balRaw;
         
-        // مقایسه امن آدرس‌ها با ادرسه استاندارد ethers
         const isNative = (tokenAddress.toLowerCase() === NATIVE_SYS.toLowerCase());
 
         if (isNative) {
@@ -601,13 +632,11 @@
       let tx;
 
       if (tokenAddress.toLowerCase() === "0x3600000000000000000000000000000000000000") {
-          // Native L1 USDC Transfer via receive() function
           tx = await signer.sendTransaction({
             to: CONTRACT_ADDRESS,
             value: parsedAmt
           });
       } else {
-          // ERC20 Flow requires Approve -> DepositERC20
           showToast(`Approving ${amt} ${tokenSymbol}... Please sign.`);
           const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
           const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, parsedAmt);
@@ -698,8 +727,7 @@
   async function registerSmartRule() {
     if (!contract) return showToast("Connect wallet first!");
     
-    const recipient = document.getElementById('ruleRecipient').value;
-    const amt = document.getElementById('ruleAmount').value;
+    const isBatch = document.getElementById('batchModeToggle').checked;
     const fee = document.getElementById('ruleFee').value || "0";
     const nonce = document.getElementById('ruleNonce').value || "0";
     const isRecurring = document.getElementById('ruleRecurring').checked;
@@ -707,8 +735,35 @@
     const tokenAddress = document.getElementById('hubToken').value;
     const deadlineInput = document.getElementById('ruleDeadline').value;
 
-    if (!recipient || !ethers.isAddress(recipient)) return showToast("Invalid Recipient Address");
-    if (!amt || amt <= 0) return showToast("Invalid Amount");
+    let recipients = [];
+    let amounts = [];
+    let totalAmount = 0;
+
+    if (isBatch) {
+        const lines = document.getElementById('batchData').value.split('\n');
+        for(let line of lines) {
+            if(line.trim() === '') continue;
+            const parts = line.split(',');
+            if(parts.length !== 2) return showToast("Invalid batch format. Use: Address, Amount");
+            const addr = parts[0].trim();
+            const amt = parseFloat(parts[1].trim());
+            if(!ethers.isAddress(addr)) return showToast("Invalid Address in batch: " + addr);
+            if(isNaN(amt) || amt <= 0) return showToast("Invalid Amount in batch for: " + addr);
+            
+            recipients.push(addr);
+            amounts.push(amt);
+            totalAmount += amt;
+        }
+        if(recipients.length === 0) return showToast("Batch data is empty");
+    } else {
+        const recipient = document.getElementById('ruleRecipient').value;
+        const amt = document.getElementById('ruleAmount').value;
+        if (!recipient || !ethers.isAddress(recipient)) return showToast("Invalid Recipient Address");
+        if (!amt || amt <= 0) return showToast("Invalid Amount");
+        recipients.push(recipient);
+        amounts.push(parseFloat(amt));
+        totalAmount = parseFloat(amt);
+    }
 
     let deadlineUnix = 0;
     if (deadlineInput) {
@@ -730,7 +785,6 @@
     });
 
     try {
-      const parsedAmt = ethers.parseUnits(amt.toString(), activeDecimals);
       const parsedFee = ethers.parseUnits(fee.toString(), activeDecimals);
       
       const btn = document.getElementById('registerBtn');
@@ -738,15 +792,25 @@
       btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Submitting...`;
       btn.disabled = true;
 
-      const tx = await contract.registerRule(
-        tokenAddress, recipient, parsedAmt, parsedFee, nonce, isRecurring, cooldown, deadlineUnix,
-        opcodes, evaluators, evaluatorsData
-      );
+      let tx;
+      if (isBatch) {
+          const parsedAmounts = amounts.map(a => ethers.parseUnits(a.toString(), activeDecimals));
+          tx = await contract.batchRegisterRule(
+            tokenAddress, recipients, parsedAmounts, parsedFee, nonce, isRecurring, cooldown, deadlineUnix,
+            opcodes, evaluators, evaluatorsData
+          );
+      } else {
+          const parsedAmt = ethers.parseUnits(amounts[0].toString(), activeDecimals);
+          tx = await contract.registerRule(
+            tokenAddress, recipients[0], parsedAmt, parsedFee, nonce, isRecurring, cooldown, deadlineUnix,
+            opcodes, evaluators, evaluatorsData
+          );
+      }
       
       showToast(`Rule Tx Sent! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-cyan-400 underline mt-2 inline-block font-normal'>View on Explorer</a>`);
       await tx.wait();
       
-      showToast(`Smart Rule Registered On-Chain!`);
+      showToast(isBatch ? `Batch Rules Registered On-Chain!` : `Smart Rule Registered On-Chain!`);
       
       btn.innerHTML = ogHtml;
       btn.disabled = false;
@@ -755,14 +819,14 @@
       if (typeof saveHistoryToCloud === 'function') {
         await saveHistoryToCloud(userAddress, {
           appName: APP_IDENTIFIER,
-          type: 'New Rule',
-          amount: amt,
+          type: isBatch ? 'Batch Rule' : 'New Rule',
+          amount: totalAmount,
           token: document.querySelector('.sponsorBalanceSymbol').textContent,
-          recipient: recipient,
+          recipient: isBatch ? 'Multiple' : recipients[0],
           conditionsCount: conditions.length,
           hash: tx.hash,
           timestamp: new Date().toISOString(),
-          memo: `Rule created for ${recipient.substring(0,6)}...`
+          memo: isBatch ? `Batch rules created for ${recipients.length} wallets` : `Rule created for ${recipients[0].substring(0,6)}...`
         });
       }
     } catch(e) {
@@ -882,16 +946,37 @@
     updatePreview();
   }
 
+  // Updated Event Listeners for Preview Calculation
   document.getElementById('ruleRecipient').addEventListener('input', updatePreview);
   document.getElementById('ruleAmount').addEventListener('input', updatePreview);
+  document.getElementById('batchData').addEventListener('input', updatePreview);
 
   function updatePreview() {
-    const rec = document.getElementById('ruleRecipient').value || '0x...';
-    const amt = document.getElementById('ruleAmount').value || '0';
-    document.getElementById('previewTarget').textContent = rec.substring(0, 8) + '...' + rec.substring(rec.length - 4);
+    const isBatch = document.getElementById('batchModeToggle') && document.getElementById('batchModeToggle').checked;
     
-    let fiatStr = `(~$${(parseFloat(amt) * currentFiatPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`;
-    document.getElementById('previewAmt').innerHTML = `${amt} <span class="text-gray-500 font-normal ml-1">${amt > 0 ? fiatStr : ''}</span>`;
+    if (isBatch) {
+        const lines = document.getElementById('batchData').value.split('\n').filter(l => l.trim() !== '');
+        document.getElementById('previewTarget').textContent = `${lines.length} Wallets (Batch)`;
+        
+        let totalAmt = 0;
+        lines.forEach(l => {
+            const parts = l.split(',');
+            if(parts.length === 2) {
+                const amt = parseFloat(parts[1].trim());
+                if(!isNaN(amt)) totalAmt += amt;
+            }
+        });
+        
+        let fiatStr = `(~$${(totalAmt * currentFiatPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`;
+        document.getElementById('previewAmt').innerHTML = `${totalAmt} <span class="text-gray-500 font-normal ml-1">${totalAmt > 0 ? fiatStr : ''}</span>`;
+    } else {
+        const rec = document.getElementById('ruleRecipient').value || '0x...';
+        const amt = document.getElementById('ruleAmount').value || '0';
+        document.getElementById('previewTarget').textContent = rec.substring(0, 8) + '...' + rec.substring(rec.length - 4);
+        
+        let fiatStr = `(~$${(parseFloat(amt) * currentFiatPrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})`;
+        document.getElementById('previewAmt').innerHTML = `${amt} <span class="text-gray-500 font-normal ml-1">${amt > 0 ? fiatStr : ''}</span>`;
+    }
     
     document.getElementById('previewEvalCount').textContent = `${conditions.length} Conditions`;
   }
