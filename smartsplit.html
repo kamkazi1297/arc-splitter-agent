@@ -8,509 +8,968 @@
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
   
+  <!-- Cloud Database Integration -->
+  <script src="db.js"></script>
+
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    
     body { 
       font-family: 'Plus Jakarta Sans', system-ui, sans-serif; 
       background: #070711;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(244, 63, 94, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(59, 130, 246, 0.05) 0%, transparent 50%);
       color: #f8fafc;
       min-height: 100vh;
+      overflow-x: hidden;
     }
+    
     .glass {
       background: rgba(18, 18, 38, 0.65);
       backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
       border: 1px solid rgba(255, 255, 255, 0.07);
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
-    input, select {
-      background-color: rgba(255, 255, 255, 0.05);
+    
+    .light {
+      background: #f1f5f9 !important;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(244, 63, 94, 0.05) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(139, 92, 246, 0.05) 0%, transparent 40%) !important;
+      color: #000000 !important;
+    }
+
+    .light .glass {
+      background: rgba(255, 255, 255, 0.9);
+      border-color: rgba(0, 0, 0, 0.12);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 1);
+    }
+
+    .light body, .light h3, .light label, .light span, .light div,
+    .light .text-white, .light .text-gray-400, .light .text-gray-300 { 
+      color: #000000 !important; 
+    }
+    
+    .light .text-gray-400 { color: #000000 !important; font-weight: 700 !important; }
+    
+    .header-title-text, .smart-split-gradient,
+    .light .header-title-text, .light .smart-split-gradient { color: #ffffff !important; }
+    
+    .smart-split-gradient {
+      background: linear-gradient(to right, #f43f5e, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .light .smart-split-gradient {
+      background: linear-gradient(to right, #f43f5e, #8b5cf6) !important;
+      -webkit-background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+    }
+
+    .wallet-connected-glass, .light .wallet-connected-glass {
+      background: rgba(18, 18, 38, 0.85) !important;
+      backdrop-filter: blur(24px) !important;
+      border: 1px solid rgba(139, 92, 246, 0.3) !important;
+      color: #c4b5fd !important;
+    }
+    .light .wallet-connected-glass span, .light .wallet-connected-glass i { color: #8b5cf6 !important; }
+
+    #toast, .light #toast { background: #000000 !important; border: 1px solid rgba(255, 255, 255, 0.15) !important; color: #ffffff !important; }
+    .light #toast span { color: #ffffff !important; }
+
+    select, input, textarea {
+      background-color: rgba(255, 255, 255, 0.03);
       color: white;
       border: 1px solid rgba(255, 255, 255, 0.1);
-      transition: all 0.3s ease;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    input:focus, select:focus { border-color: #10b981; outline: none; box-shadow: 0 0 10px rgba(16, 185, 129, 0.2); }
-    select option { background-color: #0f172a; color: white; }
+    select:focus, input:focus, textarea:focus { border-color: #8b5cf6; box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.15); outline: none; }
     
-    .tab-active {
-        border-bottom: 2px solid #10b981;
-        color: #10b981;
+    .light select, .light input, .light textarea { background-color: #ffffff; color: #000000; border: 1px solid #000000; font-weight: 700; }
+    select option { background-color: #0f172a; color: white; padding: 10px; }
+    .light select option { background-color: #ffffff; color: #000000; }
+    
+    .preview-scroll { max-height: 400px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.2) transparent; }
+
+    .tab-btn.active {
+      color: #8b5cf6;
+      border-bottom: 2px solid #8b5cf6;
     }
-    .fade-in { animation: fadeIn 0.4s ease-in-out; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    .light .tab-btn.active {
+      color: #7c3aed;
+      border-bottom: 2px solid #000000;
+    }
   </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="text-white min-h-screen selection:bg-purple-500 selection:text-black">
 
-  <!-- Navigation / Header -->
-  <div class="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
-    <div class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">
-      ArcSplit <span class="text-sm font-medium text-emerald-200">Pro</span>
-    </div>
+  <div class="max-w-7xl mx-auto px-4 py-6 sm:py-8">
     
-    <div class="flex items-center gap-4 bg-white/5 rounded-2xl p-2 border border-white/10 glass">
-        <!-- Balance Display -->
-        <div id="balanceDisplay" class="px-4 py-2 text-sm font-bold text-gray-300 border-r border-white/10 hidden md:block">
-            0.00 USDC
+    <!-- Header -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/[0.02] border border-white/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
+      <div>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight header-title-text">ArcSplit <span class="smart-split-gradient">Smart Conditional</span></h1>
+        <p class="text-gray-400 text-xs sm:text-sm font-semibold" style="color: #ffffff !important;">No-Code Smart Contract Logic Builder</p>
+      </div>
+      <div class="flex items-center gap-3">
+        <a href="index.html" class="px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-sm font-bold transition-all text-gray-300">
+          <i class="fas fa-arrow-left mr-2"></i> Back to Agentic
+        </a>
+        <button onclick="toggleTheme()" class="w-11 h-11 flex items-center justify-center bg-white/5 border border-white/10 rounded-2xl transition-all">
+          <i class="fas fa-moon text-lg text-purple-400"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="flex gap-6 mb-8 border-b border-white/10 pb-1">
+      <button onclick="switchTab('dashboard')" id="btn-dashboard" class="tab-btn active pb-2 font-bold text-lg transition-colors duration-200">Rule Builder</button>
+      <button onclick="switchTab('history')" id="btn-history" class="tab-btn text-gray-500 hover:text-gray-300 pb-2 font-bold text-lg transition-colors duration-200">Execution History</button>
+    </div>
+
+    <!-- ==================== DASHBOARD TAB ==================== -->
+    <div id="tab-dashboard">
+      <!-- Wallet & Sponsor Hub -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        
+        <!-- Connect -->
+        <div class="glass rounded-3xl p-6 flex flex-col justify-center gap-4 relative">
+          <div class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">1. Connection</div>
+          <button onclick="connectWallet()" id="connectBtn" class="w-full px-6 py-4 bg-white text-gray-950 font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg hover:bg-gray-100">
+            <i class="fas fa-wallet text-purple-600"></i> <span id="connectText">Connect Wallet</span>
+          </button>
+          <button onclick="disconnectWallet()" id="disconnectBtn" class="hidden w-full px-4 py-3 bg-rose-500/10 border border-rose-500/30 text-rose-400 font-bold rounded-2xl transition-all flex items-center justify-center gap-2">
+            <i class="fas fa-power-off"></i> Disconnect
+          </button>
+          <div id="networkBadge" class="absolute top-6 right-6 px-2 py-1 bg-gray-500/20 text-gray-400 rounded text-[10px] font-bold border border-gray-500/30">Unknown Net</div>
         </div>
-        <!-- Connect Button -->
-        <button onclick="connectWallet()" id="connectBtn" class="px-6 py-2 bg-gradient-to-r from-emerald-500 to-cyan-500 text-gray-950 font-bold rounded-xl flex items-center justify-center gap-2 hover:brightness-110 transition-all">
-          <i class="fas fa-wallet"></i> <span id="connectText">Connect Wallet</span>
-        </button>
-    </div>
-  </div>
 
-  <div class="max-w-4xl mx-auto glass rounded-3xl overflow-hidden">
-    
-    <!-- Tabs -->
-    <div class="flex border-b border-white/10 bg-white/5">
-        <button onclick="switchTab('create')" id="tab-create" class="flex-1 py-4 text-center font-bold text-gray-400 hover:text-white transition-all tab-active">
-            <i class="fas fa-plus-circle mr-2"></i> Create Smart Split
-        </button>
-        <button onclick="switchTab('history')" id="tab-history" class="flex-1 py-4 text-center font-bold text-gray-400 hover:text-white transition-all">
-            <i class="fas fa-history mr-2"></i> My History
-        </button>
-    </div>
-
-    <!-- CREATE TAB -->
-    <div id="create-view" class="p-6 md:p-10 fade-in">
-        <p class="text-gray-400 text-sm mb-8">Set up complex conditional payments without writing a single line of code.</p>
-
-        <div class="space-y-6">
-            
-            <!-- Basics Section -->
-            <div class="p-6 rounded-2xl border border-white/5 bg-white/[0.02]">
-                <h2 class="text-lg font-bold text-white mb-4"><i class="fas fa-coins text-emerald-400 mr-2"></i> Payment Details</h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    
-                    <!-- Token Selection -->
-                    <div>
-                        <label class="block text-xs font-bold text-gray-400 mb-2">Select Asset</label>
-                        <select id="tokenSelect" onchange="handleTokenChange()" class="w-full rounded-xl px-4 py-3 text-sm font-bold">
-                            <option value="0x3600000000000000000000000000000000000000">USDC</option>
-                            <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
-                            <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
-                            <option value="custom">Custom Token...</option>
-                        </select>
-                    </div>
-
-                    <!-- Custom Token Input (Hidden by default) -->
-                    <div id="customTokenBox" class="hidden">
-                        <label class="block text-xs font-bold text-gray-400 mb-2">Custom Token Address</label>
-                        <input type="text" id="customTokenAddress" placeholder="0x..." onchange="updateBalance()" class="w-full rounded-xl px-4 py-3 text-sm font-mono text-emerald-400">
-                    </div>
-
-                    <!-- Amount -->
-                    <div>
-                        <label class="block text-xs font-bold text-gray-400 mb-2">Amount</label>
-                        <input type="number" id="amount" placeholder="e.g. 100" class="w-full rounded-xl px-4 py-3 text-sm font-bold">
-                    </div>
-
-                    <!-- Recipient -->
-                    <div class="md:col-span-2">
-                        <label class="block text-xs font-bold text-gray-400 mb-2">Recipient Wallet Address</label>
-                        <input type="text" id="recipient" placeholder="0x..." class="w-full rounded-xl px-4 py-3 text-sm font-mono text-emerald-300">
-                    </div>
+        <!-- Balances Hub -->
+        <div class="glass rounded-3xl p-6 lg:col-span-2">
+          <div class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 flex justify-between items-center">
+            <span>2. Treasuries & Balances</span>
+            <span id="syncBadge" class="px-2 py-1 bg-rose-500/20 text-rose-400 rounded text-[10px] font-bold">Disconnected</span>
+          </div>
+          
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 items-center">
+            <!-- Balances Display -->
+            <div class="space-y-4">
+              <div>
+                <p class="text-xs text-gray-500 mb-1">Your Wallet Balance</p>
+                <div class="text-2xl font-extrabold text-blue-400 flex items-baseline gap-2">
+                  <span id="walletBalanceDisplay">0.00</span>
+                  <span class="text-xs text-gray-400 walletBalanceSymbol">USDC</span>
                 </div>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500 mb-1">Contract (Sponsor) Balance</p>
+                <div class="text-3xl font-extrabold text-purple-400 flex items-baseline gap-2">
+                  <span id="sponsorBalanceDisplay">0.00</span>
+                  <span class="text-sm text-gray-400 sponsorBalanceSymbol">USDC</span>
+                </div>
+              </div>
             </div>
-
-            <!-- Condition Section -->
-            <div class="p-6 rounded-2xl border border-emerald-500/30 bg-emerald-500/5">
-                <h2 class="text-lg font-bold text-white mb-4"><i class="fas fa-lock text-emerald-400 mr-2"></i> Smart Condition (Evaluator)</h2>
-                
-                <select id="ruleType" onchange="renderDynamicInputs()" class="w-full rounded-xl px-4 py-3 text-sm font-bold mb-6">
-                    <option value="none">Instant Transfer (No Condition)</option>
-                    <option value="timelock">Time Lock (Wait for specific time)</option>
-                    <option value="gasprice">Max Gas Price (Execute only when gas is cheap)</option>
-                    <option value="native_balance">Native Balance Checker (Require minimum ETH/Native)</option>
-                    <option value="erc20_balance">ERC20 Balance Checker (Require minimum token balance)</option>
-                    <option value="erc721">NFT Gating (Must own specific NFT)</option>
-                    <option value="chainlink">Chainlink Price Target (Trigger on price point)</option>
-                    <option value="escrow">Escrow Approval (Wait for project ID approval)</option>
-                    <option value="eoa">EOA Checker (Block Smart Contracts from receiving)</option>
+            
+            <!-- Actions -->
+            <div class="space-y-3">
+              <div class="flex gap-2">
+                <input type="number" id="hubAmount" placeholder="Amount..." class="w-full rounded-xl px-4 py-3 text-sm font-bold">
+                <select id="hubToken" class="rounded-xl px-2 py-3 text-sm font-bold w-32 text-center" onchange="handleTokenChange()">
+                  <option value="0x3600000000000000000000000000000000000000">USDC</option>
+                  <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
+                  <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
+                  <option value="custom">➕ Add Custom</option>
                 </select>
-
-                <!-- Dynamic Config Area -->
-                <div id="dynamicConfig" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
-                    <!-- Javascript will inject inputs here based on the selected evaluator -->
-                </div>
+              </div>
+              <div class="flex gap-2">
+                <button onclick="depositFunds()" class="flex-1 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 py-2.5 rounded-xl text-sm font-bold transition-all"><i class="fas fa-arrow-down mr-1"></i> Deposit</button>
+                <button onclick="withdrawFunds()" class="flex-1 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 py-2.5 rounded-xl text-sm font-bold transition-all"><i class="fas fa-arrow-up mr-1"></i> Withdraw</button>
+              </div>
             </div>
-
-            <!-- Submit Button -->
-            <button onclick="registerSmartRule()" id="registerBtn" class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 py-4 rounded-2xl font-bold text-slate-950 flex justify-center items-center text-lg shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.5)] transition-all">
-                Register Split On-Chain
-            </button>
-
-            <!-- Success Box -->
-            <div id="successBox" class="hidden mt-4 p-4 bg-emerald-900/40 border border-emerald-500/50 rounded-xl text-center">
-                <i class="fas fa-check-circle text-emerald-400 text-2xl mb-2"></i>
-                <h3 class="text-white font-bold mb-1">Transaction Successful!</h3>
-                <a id="txLink" href="#" target="_blank" class="text-emerald-400 text-sm hover:underline font-mono break-all"></a>
-            </div>
+          </div>
         </div>
+      </div>
+
+      <!-- Rule Registration Form -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Left Column: Rule Details & Engine -->
+        <div class="lg:col-span-8 space-y-6">
+          <div class="glass rounded-3xl p-6">
+            <div class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-5">3. Basic Payment Details</div>
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-5">
+              <div id="singleRecipientContainer">
+                <label class="block text-xs font-bold text-gray-400 mb-2">Recipient Address</label>
+                <input type="text" id="ruleRecipient" placeholder="0x..." class="w-full rounded-xl px-4 py-3 text-sm font-mono">
+              </div>
+              <div id="singleAmountContainer">
+                <label class="block text-xs font-bold text-gray-400 mb-2">Amount to Release</label>
+                <input type="number" id="ruleAmount" placeholder="e.g. 100" class="w-full rounded-xl px-4 py-3 text-sm font-bold">
+              </div>
+            </div>
+
+            <div class="p-4 rounded-xl bg-white/5 border border-white/10 flex items-center justify-between gap-4 flex-wrap mt-4">
+              <div class="flex items-center gap-3">
+                <label class="relative inline-flex items-center cursor-pointer">
+                  <input type="checkbox" id="ruleRecurring" onchange="toggleRecurring()" class="sr-only peer">
+                  <div class="w-9 h-5 bg-white/20 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-500"></div>
+                </label>
+                <span class="text-sm font-bold text-gray-300">Recurring Payment</span>
+              </div>
+              
+              <div id="cooldownBox" class="hidden flex-1 min-w-[200px] flex items-center gap-2">
+                <label class="text-xs font-bold text-gray-400 whitespace-nowrap">Cooldown (Sec):</label>
+                <input type="number" id="ruleCooldown" placeholder="e.g. 86400" value="0" class="flex-1 rounded-xl px-3 py-2 text-sm font-bold">
+              </div>
+            </div>
+          </div>
+
+          <!-- Smart Condition Builder -->
+          <div class="glass rounded-3xl p-6">
+            <div class="flex flex-wrap items-center justify-between gap-4 mb-5">
+              <div>
+                <div class="text-sm font-bold text-gray-400 uppercase tracking-wider">4. Smart Conditions (Evaluators)</div>
+                <p class="text-[11px] text-gray-500 mt-1">Payment will only release if ALL conditions are met.</p>
+              </div>
+              <button onclick="addCondition()" class="px-4 py-2 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/30 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all">
+                <i class="fas fa-plus"></i> Add Condition
+              </button>
+            </div>
+            <div id="conditionsContainer" class="space-y-4"></div>
+          </div>
+        </div>
+
+        <!-- Right Column: Compile & Register -->
+        <div class="lg:col-span-4 space-y-6">
+          <div class="glass rounded-3xl p-6 sticky top-6">
+            <h3 class="font-bold text-base mb-4 border-b border-white/10 pb-3">Logic Summary</h3>
+            <div class="space-y-4 mb-6 text-xs preview-scroll">
+              <div class="flex justify-between border-b border-white/5 pb-2">
+                <span class="text-gray-500">Target</span>
+                <span class="font-mono text-purple-400" id="previewTarget">0x...</span>
+              </div>
+              <div class="flex justify-between border-b border-white/5 pb-2">
+                <span class="text-gray-500">Token</span>
+                <span class="font-bold text-white" id="previewTokenSymbol">USDC</span>
+              </div>
+              <div class="flex justify-between border-b border-white/5 pb-2">
+                <span class="text-gray-500">Amount</span>
+                <span class="font-bold text-white" id="previewAmt">0</span>
+              </div>
+              <div class="flex justify-between border-b border-white/5 pb-2">
+                <span class="text-gray-500">Conditions</span>
+                <span class="font-bold text-white" id="previewEvalCount">0 Requirements</span>
+              </div>
+              <div class="bg-blue-500/10 border border-blue-500/20 p-3 rounded-lg mt-4">
+                <p class="text-blue-300 font-semibold mb-1"><i class="fas fa-info-circle mr-1"></i> How it works</p>
+                <p class="text-gray-400 text-[10px] leading-relaxed">Your funds are locked in the smart contract. Anyone can execute the transaction on your behalf, but it will <b>only succeed</b> if all the conditions above are mathematically proven on-chain.</p>
+              </div>
+            </div>
+            <button id="registerBtn" onclick="registerSmartRule()" class="w-full bg-gradient-to-r from-purple-500 to-blue-500 hover:brightness-110 py-4 rounded-2xl font-bold text-sm shadow-lg shadow-purple-500/20 transition-all text-white flex justify-center items-center gap-2">
+              <i class="fas fa-lock"></i> Deploy Conditional Lock
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- HISTORY TAB -->
-    <div id="history-view" class="p-6 md:p-10 hidden fade-in min-h-[400px]">
-        <h2 class="text-xl font-bold text-white mb-6">Your Previous Smart Splits</h2>
-        <div id="historyContainer" class="space-y-4">
-            <!-- Injected via JS -->
-            <div class="text-center text-gray-500 mt-10">No history found. Connect wallet to sync.</div>
+    <!-- ==================== HISTORY TAB ==================== -->
+    <div id="tab-history" class="hidden">
+      <div class="glass rounded-3xl p-6 min-h-[500px]">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-bold text-white">Execution & Setup History</h2>
+          <button onclick="loadHistoryData()" class="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold transition">
+            <i class="fas fa-sync-alt mr-1"></i> Refresh
+          </button>
         </div>
+        
+        <div id="historyContainer" class="space-y-4">
+          <div class="text-gray-500 italic text-center py-10">Connect your wallet to view cloud history.</div>
+        </div>
+      </div>
     </div>
 
   </div>
 
-<!-- ==============================================
-     JAVASCRIPT LOGIC
-=============================================== -->
+  <!-- Toast Notification -->
+  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#121228] border border-white/15 text-white px-5 py-3 rounded-2xl shadow-2xl z-50 text-sm backdrop-blur-xl font-bold text-center min-w-[300px]">
+    <span id="toastText"></span>
+  </div>
+
 <script>
-    // 1. Core Config & Evaluator Addresses
-    const CONTRACT_ADDRESS = "0x08af7753FCE9e664fa5E2D5EB96a60b739E6BD51"; // Main Proxy
+  // Smart Split Configuration
+  const CONTRACT_ADDRESS = "0x08af7753FCE9e664fa5E2D5EB96a60b739E6BD51"; 
+  const EXPLORER_URL = "https://testnet.arcscan.app/tx/";
+
+  // Pre-deployed Evaluator Contracts
+  const EVALUATORS = {
+    'TIME': { name: 'Wait for Specific Date & Time', address: '0xC0313eb943992733FfF8824b650E5F2f74b84C0C' },
+    'NATIVE_BAL': { name: 'Wallet must hold Minimum Native Coin', address: '0xB8e52Cc35E9Afb4B37929754283e00c2cC4D4af7' },
+    'ERC20_BAL': { name: 'Wallet must hold Minimum Custom Token', address: '0xE0b26ECc853d536A80ff89628f66334432c17966' },
+    'PRICE': { name: 'Asset Price reaches Target (Chainlink)', address: '0x49aCf2A814D081AEB86aD9Ac05A842381F2762b7' },
+    'NFT': { name: 'Wallet must hold Specific NFT', address: '0x12A287E18742fC346833D18eBa054663ad66cece' },
+    'GAS': { name: 'Execute only when Network Gas is Low', address: '0x06010AfE4039Be171B71641Be862641f4bA09c09' },
+    'ESCROW': { name: 'Require Project/Escrow Approval', address: '0x01E9bAe9d35B4cCE684D4a0eAbBB588E92d105FC' },
+    'EOA': { name: 'Require Real User Wallet (No Smart Contracts)', address: '0x2c5b249403b09d82001A5BA08b34BE58FBeCC151' }
+  };
+
+  const ERC20_ABI = [
+    "function decimals() view returns (uint8)",
+    "function symbol() view returns (string)",
+    "function balanceOf(address) view returns (uint256)",
+    "function transfer(address to, uint amount) returns (bool)",
+    "function approve(address spender, uint256 amount) returns (bool)"
+  ];
+
+  const SPLITTER_ABI = [
+    "function registerRule(address token, address recipient, uint256 amountToSplit, uint256 maxRelayerFee, uint256 ruleIdNonce, bool isRecurring, uint256 ruleCooldown, uint256 deadline, uint8[] opcodes, address[] evaluators, bytes[] evaluatorsData) returns (bytes32)",
+    "function nativeBalances(address account) view returns (uint256)",
+    "function tokenBalances(address account, address token) view returns (uint256)",
+    "function depositERC20(address token, uint256 amount)",
+    "function withdraw(address token, uint256 amount)",
+    "function claimFailedPull(address token)"
+  ];
+
+  const APP_IDENTIFIER = "ArcSplit_SmartEval_App";
+
+  let provider, signer, userAddress = null;
+  let contract;
+  let conditions = []; // Array of { type, inputs: [], generatedData, address }
+  let activeDecimals = 18; // Default, will sync on token change
+
+  function showToast(msg, duration = 6000) {
+    const t = document.getElementById("toast");
+    document.getElementById("toastText").innerHTML = msg;
+    t.classList.remove("hidden");
+    setTimeout(() => t.classList.add("hidden"), duration);
+  }
+
+  function toggleTheme() { document.documentElement.classList.toggle('light'); }
+
+  function switchTab(tab) {
+    if (tab === 'dashboard') {
+      document.getElementById('tab-dashboard').classList.remove('hidden');
+      document.getElementById('tab-history').classList.add('hidden');
+      document.getElementById('btn-dashboard').classList.add('active', 'text-purple-400');
+      document.getElementById('btn-dashboard').classList.remove('text-gray-500');
+      document.getElementById('btn-history').classList.remove('active', 'text-purple-400');
+      document.getElementById('btn-history').classList.add('text-gray-500');
+    } else {
+      document.getElementById('tab-dashboard').classList.add('hidden');
+      document.getElementById('tab-history').classList.remove('hidden');
+      document.getElementById('btn-history').classList.add('active', 'text-purple-400');
+      document.getElementById('btn-history').classList.remove('text-gray-500');
+      document.getElementById('btn-dashboard').classList.remove('active', 'text-purple-400');
+      document.getElementById('btn-dashboard').classList.add('text-gray-500');
+      loadHistoryData();
+    }
+  }
+
+  async function handleTokenChange() {
+    const select = document.getElementById('hubToken');
+    if (select.value === 'custom') {
+      const address = prompt("Enter Custom Token Contract Address (0x...):");
+      if (!address || !ethers.isAddress(address)) {
+        showToast("Invalid contract address!");
+        select.selectedIndex = 0; 
+        return updateTokenInfo();
+      }
+      
+      let symbol = "CUSTOM";
+      try {
+        if(provider) {
+           const tokenContract = new ethers.Contract(address, ERC20_ABI, provider);
+           symbol = await tokenContract.symbol();
+        } else {
+           symbol = prompt("Enter Token Symbol (e.g. USDT):") || "CUSTOM";
+        }
+      } catch(e) {
+        symbol = prompt("Could not auto-fetch symbol. Enter Token Symbol manually:") || "CUSTOM";
+      }
+
+      const newOption = document.createElement('option');
+      newOption.value = address;
+      newOption.textContent = symbol;
+      select.insertBefore(newOption, select.options[select.options.length - 1]);
+      select.value = address;
+    }
+    await updateTokenInfo();
+  }
+
+  async function updateTokenInfo() {
+    const select = document.getElementById('hubToken');
+    const tokenAddress = select.value;
     
-    const EVALUATORS = {
-        timelock: "0xC0313eb943992733FfF8824b650E5F2f74b84C0C",
-        native_balance: "0xB8e52Cc35E9Afb4B37929754283e00c2cC4D4af7",
-        erc20_balance: "0xE0b26ECc853d536A80ff89628f66334432c17966",
-        chainlink: "0x49aCf2A814D081AEB86aD9Ac05A842381F2762b7",
-        erc721: "0x12A287E18742fC346833D18eBa054663ad66cece",
-        gasprice: "0x06010AfE4039Be171B71641Be862641f4bA09c09",
-        escrow: "0x01E9bAe9d35B4cCE684D4a0eAbBB588E92d105FC",
-        eoa: "0x2c5b249403b09d82001A5BA08b34BE58FBeCC151"
-    };
-
-    // ABIs
-    const SPLITTER_ABI = [
-        "function registerRule(address token, address recipient, uint256 amountToSplit, uint256 maxRelayerFee, uint256 ruleIdNonce, bool isRecurring, uint256 ruleCooldown, uint256 deadline, uint8[] opcodes, address[] evaluators, bytes[] evaluatorsData) returns (bytes32)"
-    ];
-    const ERC20_ABI = [
-        "function balanceOf(address account) view returns (uint256)",
-        "function decimals() view returns (uint8)",
-        "function symbol() view returns (string)"
-    ];
-
-    // Evaluator UI Blueprints
-    const RULE_CONFIGS = {
-        timelock: [
-            { id: "tl_days", label: "Wait Time (in Days)", type: "number", placeholder: "e.g. 7" }
-        ],
-        native_balance: [
-            { id: "nb_wallet", label: "Target Wallet to Check", type: "text", placeholder: "0x..." },
-            { id: "nb_amount", label: "Minimum Native Balance", type: "number", placeholder: "e.g. 1.5" }
-        ],
-        erc20_balance: [
-            { id: "eb_token", label: "Token Contract Address", type: "text", placeholder: "0x..." },
-            { id: "eb_wallet", label: "Target Wallet to Check", type: "text", placeholder: "0x..." },
-            { id: "eb_amount", label: "Minimum Token Balance", type: "number", placeholder: "e.g. 1000" }
-        ],
-        chainlink: [
-            { id: "cl_feed", label: "Chainlink Price Feed Address", type: "text", placeholder: "0x..." },
-            { id: "cl_price", label: "Target Price (Scaled)", type: "number", placeholder: "e.g. 2000000000" },
-            { id: "cl_dir", label: "Condition", type: "select", options: [{val:"true", label:"Greater Than (>)"}, {val:"false", label:"Less Than (<)"}] }
-        ],
-        erc721: [
-            { id: "nft_contract", label: "NFT Collection Address", type: "text", placeholder: "0x..." },
-            { id: "nft_wallet", label: "Target Wallet to Check", type: "text", placeholder: "0x..." },
-            { id: "nft_min", label: "Minimum Amount of NFTs", type: "number", placeholder: "e.g. 1" }
-        ],
-        gasprice: [
-            { id: "gp_max", label: "Max Gas Price (in Gwei)", type: "number", placeholder: "e.g. 30" }
-        ],
-        escrow: [
-            { id: "es_id", label: "Project ID (Text/Name)", type: "text", placeholder: "e.g. Project-Alpha-123" }
-        ],
-        eoa: [
-            { id: "eoa_wallet", label: "Wallet Address to Verify", type: "text", placeholder: "0x..." }
-        ]
-    };
-
-    let provider, signer, userAddress = null;
-    let proxyContract;
-
-    // 2. UI & Tab Functions
-    function switchTab(tab) {
-        document.getElementById('tab-create').classList.remove('tab-active');
-        document.getElementById('tab-history').classList.remove('tab-active');
-        document.getElementById('create-view').classList.add('hidden');
-        document.getElementById('history-view').classList.add('hidden');
-
-        document.getElementById(`tab-${tab}`).classList.add('tab-active');
-        document.getElementById(`${tab}-view`).classList.remove('hidden');
-
-        if(tab === 'history') loadHistory();
+    let tokenSymbol = select.options[select.selectedIndex].text.replace('➕ ', '');
+    if (tokenAddress.toLowerCase() === "0x3600000000000000000000000000000000000000") {
+        tokenSymbol = "USDC"; 
     }
+    
+    document.querySelectorAll('.sponsorBalanceSymbol').forEach(el => el.textContent = tokenSymbol);
+    document.querySelectorAll('.walletBalanceSymbol').forEach(el => el.textContent = tokenSymbol);
+    document.getElementById('previewTokenSymbol').textContent = tokenSymbol;
 
-    function handleTokenChange() {
-        const tokenVal = document.getElementById('tokenSelect').value;
-        const customBox = document.getElementById('customTokenBox');
+    if (provider && tokenAddress) {
+      if (tokenAddress.toLowerCase() === "0x3600000000000000000000000000000000000000") {
+          activeDecimals = 18; 
+      } else {
+          try {
+            const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+            activeDecimals = Number(await tokenContract.decimals());
+          } catch (e) {
+            console.warn("Decimals fetch failed, defaulting to 18.", e);
+            activeDecimals = 18; 
+          }
+      }
+    }
+    fetchBalances();
+  }
+
+  function toggleRecurring() {
+    const isRecurring = document.getElementById('ruleRecurring').checked;
+    const box = document.getElementById('cooldownBox');
+    if (isRecurring) box.classList.remove('hidden');
+    else box.classList.add('hidden');
+  }
+
+  async function checkAndSwitchNetwork() {
+    if (!window.ethereum) return;
+    try {
+      const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+      const badge = document.getElementById('networkBadge');
+      badge.textContent = `Chain ID: ${parseInt(chainId, 16)}`;
+      badge.className = "absolute top-6 right-6 px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-[10px] font-bold border border-purple-500/30";
+    } catch (err) {
+      console.warn("Network check failed", err);
+    }
+  }
+
+  async function connectWallet() {
+    if (typeof window.ethereum !== 'undefined') {
+      try {
+        await checkAndSwitchNetwork();
+        provider = new ethers.BrowserProvider(window.ethereum);
+        await provider.send("eth_requestAccounts", []);
+        signer = await provider.getSigner();
+        userAddress = await signer.getAddress();
+        contract = new ethers.Contract(CONTRACT_ADDRESS, SPLITTER_ABI, signer);
         
-        if (tokenVal === 'custom') {
-            customBox.classList.remove('hidden');
-        } else {
-            customBox.classList.add('hidden');
-        }
-        updateBalance();
+        const shortAddr = userAddress.substring(0, 6) + "..." + userAddress.substring(userAddress.length - 4);
+        const btn = document.getElementById('connectBtn');
+        btn.className = "w-full px-6 py-4 wallet-connected-glass font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg";
+        document.getElementById('connectText').innerHTML = `<i class="fas fa-check-circle text-purple-400"></i> ${shortAddr}`;
+        document.getElementById('disconnectBtn').classList.remove('hidden');
+        
+        const badge = document.getElementById('syncBadge');
+        badge.textContent = "Synced";
+        badge.className = "px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-[10px] font-bold";
+        
+        await updateTokenInfo(); 
+        
+        window.ethereum.on('chainChanged', () => window.location.reload());
+        window.ethereum.on('accountsChanged', () => window.location.reload());
+      } catch (err) {
+        console.warn("Connection failed.", err);
+      }
+    } else {
+      showToast("MetaMask not found.");
     }
+  }
 
-    function getTokenAddress() {
-        const val = document.getElementById('tokenSelect').value;
-        return val === 'custom' ? document.getElementById('customTokenAddress').value : val;
+  function disconnectWallet() {
+    userAddress = null; signer = null; contract = null;
+    const btn = document.getElementById('connectBtn');
+    btn.className = "w-full px-6 py-4 bg-white text-gray-950 font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg hover:bg-gray-100";
+    document.getElementById('connectText').innerHTML = `Connect Wallet`;
+    document.getElementById('disconnectBtn').classList.add('hidden');
+    document.getElementById('networkBadge').textContent = "Unknown Net";
+    document.getElementById('networkBadge').className = "absolute top-6 right-6 px-2 py-1 bg-gray-500/20 text-gray-400 rounded text-[10px] font-bold border border-gray-500/30";
+    
+    document.getElementById('sponsorBalanceDisplay').textContent = "0.00";
+    document.getElementById('walletBalanceDisplay').textContent = "0.00";
+    
+    const badge = document.getElementById('syncBadge');
+    badge.textContent = "Disconnected";
+    badge.className = "px-2 py-1 bg-rose-500/20 text-rose-400 rounded text-[10px] font-bold";
+    document.getElementById('historyContainer').innerHTML = '<div class="text-gray-500 italic text-center py-10">Connect your wallet to view cloud history.</div>';
+    showToast("Wallet disconnected.");
+  }
+
+  async function fetchBalances() {
+    if (!contract || !userAddress || !provider) return;
+    const badge = document.getElementById('syncBadge');
+    badge.textContent = "Syncing...";
+    
+    const select = document.getElementById('hubToken');
+    const tokenAddress = select.value;
+    const NATIVE_SYS = "0x3600000000000000000000000000000000000000";
+
+    try {
+      let walletBalRaw, balRaw;
+      if (tokenAddress.toLowerCase() === NATIVE_SYS.toLowerCase()) {
+          walletBalRaw = await provider.getBalance(userAddress);
+          balRaw = await contract.nativeBalances(userAddress);
+      } else {
+          const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+          walletBalRaw = await tokenContract.balanceOf(userAddress);
+          balRaw = await contract.tokenBalances(userAddress, tokenAddress);
+      }
+
+      const displayWalletBal = ethers.formatUnits(walletBalRaw, activeDecimals);
+      document.getElementById('walletBalanceDisplay').textContent = parseFloat(displayWalletBal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+
+      const displayVal = ethers.formatUnits(balRaw, activeDecimals);
+      document.getElementById('sponsorBalanceDisplay').textContent = parseFloat(displayVal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+      
+      badge.textContent = "Synced";
+      badge.className = "px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-[10px] font-bold";
+    } catch (err) {
+      console.error(`Balance fetch err:`, err);
+      badge.textContent = "Sync Error";
+      badge.className = "px-2 py-1 bg-rose-500/20 text-rose-400 rounded text-[10px] font-bold";
     }
+  }
 
-    function renderDynamicInputs() {
-        const type = document.getElementById('ruleType').value;
-        const container = document.getElementById('dynamicConfig');
-        container.innerHTML = ''; // clear
+  async function depositFunds() {
+    if (!signer || !userAddress) return showToast("Connect wallet first!");
+    const amt = document.getElementById('hubAmount').value;
+    if (!amt || amt <= 0) return showToast("Enter valid deposit amount");
+    
+    try {
+      const parsedAmt = ethers.parseUnits(amt.toString(), activeDecimals);
+      const tokenAddress = document.getElementById('hubToken').value;
+      const tokenSymbol = document.querySelector('.sponsorBalanceSymbol').textContent;
+      let tx;
 
-        if (type === 'none') {
-            container.classList.add('hidden');
-            return;
-        }
+      if (tokenAddress.toLowerCase() === "0x3600000000000000000000000000000000000000") {
+          tx = await signer.sendTransaction({ to: CONTRACT_ADDRESS, value: parsedAmt });
+      } else {
+          showToast(`Approving ${amt} ${tokenSymbol}... Please sign.`);
+          const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
+          const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, parsedAmt);
+          await approveTx.wait();
+          showToast(`Approve Successful! Depositing...`);
+          tx = await contract.depositERC20(tokenAddress, parsedAmt);
+      }
+      
+      showToast(`Tx Sent! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-blue-400 underline mt-2 inline-block font-normal'>View Explorer</a>`);
+      await tx.wait(); 
+      showToast(`Deposit of ${amt} ${tokenSymbol} Successful!`);
+      await fetchBalances(); 
+      document.getElementById('hubAmount').value = '';
 
-        container.classList.remove('hidden');
-        const fields = RULE_CONFIGS[type];
-
-        fields.forEach(f => {
-            const wrapper = document.createElement('div');
-            let inputHtml = '';
-            
-            if (f.type === 'select') {
-                const options = f.options.map(o => `<option value="${o.val}">${o.label}</option>`).join('');
-                inputHtml = `<select id="${f.id}" class="w-full rounded-xl px-4 py-3 text-sm font-bold border-emerald-500/30 bg-[#0f172a]">${options}</select>`;
-            } else {
-                inputHtml = `<input type="${f.type}" id="${f.id}" placeholder="${f.placeholder}" class="w-full rounded-xl px-4 py-3 text-sm font-mono border-emerald-500/30">`;
-            }
-
-            wrapper.innerHTML = `
-                <label class="block text-xs font-bold text-gray-400 mb-2">${f.label}</label>
-                ${inputHtml}
-            `;
-            container.appendChild(wrapper);
+      if (typeof saveHistoryToCloud === 'function') {
+        await saveHistoryToCloud(userAddress, {
+          appName: APP_IDENTIFIER,
+          type: 'Deposit',
+          amount: amt,
+          token: tokenSymbol,
+          hash: tx.hash,
+          timestamp: new Date().toISOString(),
+          memo: `Deposited ${amt} ${tokenSymbol}`
         });
+      }
+    } catch(e) {
+      console.error(e);
+      showToast("Deposit failed or rejected.");
     }
+  }
 
-    // 3. Wallet & Blockchain Read
-    async function connectWallet() {
-        if (typeof window.ethereum !== 'undefined') {
-            try {
-                provider = new ethers.BrowserProvider(window.ethereum);
-                await provider.send("eth_requestAccounts", []);
-                signer = await provider.getSigner();
-                userAddress = await signer.getAddress();
-                proxyContract = new ethers.Contract(CONTRACT_ADDRESS, SPLITTER_ABI, signer);
-                
-                const shortAddr = userAddress.substring(0, 6) + "..." + userAddress.substring(userAddress.length - 4);
-                document.getElementById('connectText').innerHTML = `<span class="text-emerald-100">${shortAddr}</span>`;
-                
-                updateBalance();
-                loadHistory(); // Pre-load history
-            } catch (err) {
-                console.error(err);
-                alert("Connection failed.");
-            }
-        } else {
-            alert("MetaMask or Web3 wallet not found!");
-        }
-    }
+  async function withdrawFunds() {
+    if (!contract) return showToast("Connect wallet first!");
+    const amt = document.getElementById('hubAmount').value;
+    if (!amt || amt <= 0) return showToast("Enter valid withdraw amount");
+    
+    try {
+      const parsedAmt = ethers.parseUnits(amt.toString(), activeDecimals);
+      const tokenAddress = document.getElementById('hubToken').value;
+      const tokenSymbol = document.querySelector('.sponsorBalanceSymbol').textContent;
+      
+      const tx = await contract.withdraw(tokenAddress, parsedAmt);
+      showToast(`Withdraw Tx Sent! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-blue-400 underline mt-2 inline-block font-normal'>View Explorer</a>`);
+      await tx.wait();
+      
+      showToast(`Withdrawal of ${amt} ${tokenSymbol} Successful!`);
+      await fetchBalances();
+      document.getElementById('hubAmount').value = '';
 
-    async function updateBalance() {
-        if (!userAddress) return;
-        const tokenAddr = getTokenAddress();
-        const display = document.getElementById('balanceDisplay');
-        display.classList.remove('hidden');
-
-        try {
-            if (!ethers.isAddress(tokenAddr)) {
-                display.innerText = "0.00";
-                return;
-            }
-            
-            const tokenContract = new ethers.Contract(tokenAddr, ERC20_ABI, provider);
-            const balance = await tokenContract.balanceOf(userAddress);
-            const decimals = await tokenContract.decimals().catch(() => 18);
-            const symbol = await tokenContract.symbol().catch(() => "TOKEN");
-            
-            const formatted = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4);
-            display.innerText = `${formatted} ${symbol}`;
-            
-        } catch (e) {
-            console.log("Could not fetch balance", e);
-            display.innerText = "0.00";
-        }
-    }
-
-    // 4. ABI Encoding & Execution
-    async function registerSmartRule() {
-        if (!proxyContract) return alert("Please connect your wallet first!");
-
-        const token = getTokenAddress();
-        const recipient = document.getElementById('recipient').value;
-        const amountStr = document.getElementById('amount').value;
-        const ruleType = document.getElementById('ruleType').value;
-
-        if (!ethers.isAddress(token)) return alert("Invalid Token Address");
-        if (!ethers.isAddress(recipient)) return alert("Invalid Recipient Address");
-        if (!amountStr || amountStr <= 0) return alert("Invalid Amount");
-
-        let opcodes = [];
-        let evaluators = [];
-        let evaluatorsData = [];
-
-        const abiCoder = ethers.AbiCoder.defaultAbiCoder();
-
-        try {
-            // ENCODE DATA BASED ON EVALUATOR
-            if (ruleType !== 'none') {
-                opcodes = [3]; // OP_EVAL
-                evaluators = [EVALUATORS[ruleType]];
-
-                if (ruleType === 'timelock') {
-                    const days = parseFloat(document.getElementById('tl_days').value);
-                    const targetTimestamp = Math.floor(Date.now() / 1000) + (days * 86400);
-                    evaluatorsData = [abiCoder.encode(['uint256'], [targetTimestamp])];
-                } 
-                else if (ruleType === 'native_balance') {
-                    const wallet = document.getElementById('nb_wallet').value;
-                    const amt = ethers.parseEther(document.getElementById('nb_amount').value);
-                    evaluatorsData = [abiCoder.encode(['address', 'uint256'], [wallet, amt])];
-                }
-                else if (ruleType === 'erc20_balance') {
-                    const t = document.getElementById('eb_token').value;
-                    const w = document.getElementById('eb_wallet').value;
-                    // For simplicity, we assume 18 decimals on target token minimum balance
-                    const amt = ethers.parseUnits(document.getElementById('eb_amount').value, 18); 
-                    evaluatorsData = [abiCoder.encode(['address', 'address', 'uint256'], [t, w, amt])];
-                }
-                else if (ruleType === 'chainlink') {
-                    const feed = document.getElementById('cl_feed').value;
-                    const price = document.getElementById('cl_price').value;
-                    const isGreater = document.getElementById('cl_dir').value === "true";
-                    evaluatorsData = [abiCoder.encode(['address', 'int256', 'bool'], [feed, price, isGreater])];
-                }
-                else if (ruleType === 'erc721') {
-                    const nft = document.getElementById('nft_contract').value;
-                    const w = document.getElementById('nft_wallet').value;
-                    const amt = document.getElementById('nft_min').value;
-                    evaluatorsData = [abiCoder.encode(['address', 'address', 'uint256'], [nft, w, amt])];
-                }
-                else if (ruleType === 'gasprice') {
-                    const maxGas = ethers.parseUnits(document.getElementById('gp_max').value, "gwei");
-                    evaluatorsData = [abiCoder.encode(['uint256'], [maxGas])];
-                }
-                else if (ruleType === 'escrow') {
-                    const pid = document.getElementById('es_id').value;
-                    // convert string to bytes32
-                    const bytes32Id = ethers.encodeBytes32String(pid);
-                    evaluatorsData = [abiCoder.encode(['bytes32'], [bytes32Id])];
-                }
-                else if (ruleType === 'eoa') {
-                    const w = document.getElementById('eoa_wallet').value;
-                    evaluatorsData = [abiCoder.encode(['address'], [w])];
-                }
-            }
-
-            // Fetch decimals of the token being split to encode amount properly
-            let tokenDecimals = 18;
-            try {
-                const tContract = new ethers.Contract(token, ERC20_ABI, provider);
-                tokenDecimals = await tContract.decimals();
-            } catch(e) {}
-            
-            const parsedAmt = ethers.parseUnits(amountStr, tokenDecimals);
-            const nonce = Math.floor(Math.random() * 1000000000);
-            
-            const btn = document.getElementById('registerBtn');
-            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Processing...`;
-            btn.disabled = true;
-
-            // Submit TX
-            const tx = await proxyContract.registerRule(
-                token, recipient, parsedAmt, 0, nonce, false, 0, 0,
-                opcodes, evaluators, evaluatorsData
-            );
-
-            await tx.wait();
-
-            // Handle Success
-            btn.innerHTML = "Register Split On-Chain";
-            btn.disabled = false;
-            
-            // Show Success Link
-            const successBox = document.getElementById('successBox');
-            const txLink = document.getElementById('txLink');
-            successBox.classList.remove('hidden');
-            const scanUrl = `https://testnet.arcscan.app/tx/${tx.hash}`;
-            txLink.href = scanUrl;
-            txLink.innerText = `View on ArcScan: ${tx.hash}`;
-
-            // Save to Mock DB (LocalStorage)
-            saveToDB(tx.hash, ruleType, amountStr, recipient);
-            updateBalance();
-
-        } catch (error) {
-            console.error(error);
-            alert("Transaction failed or rejected! Check console for details.");
-            const btn = document.getElementById('registerBtn');
-            btn.innerHTML = "Register Split On-Chain";
-            btn.disabled = false;
-        }
-    }
-
-    // 5. Local Storage (Simulating DB.js for frontend logic)
-    function saveToDB(hash, type, amount, recipient) {
-        if (!userAddress) return;
-        const key = `arcHistory_${userAddress.toLowerCase()}`;
-        let history = JSON.parse(localStorage.getItem(key) || '[]');
-        
-        history.unshift({
-            hash,
-            type: type === 'none' ? 'Instant' : type.toUpperCase(),
-            amount,
-            recipient,
-            date: new Date().toLocaleString()
+      if (typeof saveHistoryToCloud === 'function') {
+        await saveHistoryToCloud(userAddress, {
+          appName: APP_IDENTIFIER,
+          type: 'Withdraw',
+          amount: amt,
+          token: tokenSymbol,
+          hash: tx.hash,
+          timestamp: new Date().toISOString(),
+          memo: `Withdrew ${amt} ${tokenSymbol}`
         });
-        
-        localStorage.setItem(key, JSON.stringify(history));
+      }
+    } catch(e) {
+      console.error(e);
+      showToast("Withdraw failed. Check balance.");
+    }
+  }
+
+  // ============== CONDITION BUILDER LOGIC ==============
+
+  function addCondition() {
+    conditions.push({ type: 'TIME', inputs: [], generatedData: '0x' });
+    renderConditions();
+  }
+
+  function removeCondition(index) {
+    conditions.splice(index, 1);
+    renderConditions();
+  }
+
+  function changeConditionType(index, newType) {
+    conditions[index].type = newType;
+    conditions[index].inputs = [];
+    conditions[index].generatedData = '0x';
+    renderConditions();
+  }
+
+  function updateConditionParam(index, paramIndex, value) {
+    conditions[index].inputs[paramIndex] = value;
+    
+    // Auto Encode based on specific Evaluator ABIs
+    const type = conditions[index].type;
+    const inputs = conditions[index].inputs;
+    let coder = ethers.AbiCoder.defaultAbiCoder();
+    
+    try {
+        if (type === 'TIME' && inputs[0]) {
+            const ts = Math.floor(new Date(inputs[0]).getTime() / 1000);
+            conditions[index].generatedData = coder.encode(['uint256'], [ts]);
+        } 
+        else if (type === 'NATIVE_BAL' && inputs[0] && inputs[1]) {
+            conditions[index].generatedData = coder.encode(['address', 'uint256'], [inputs[0], ethers.parseEther(inputs[1])]);
+        }
+        else if (type === 'ERC20_BAL' && inputs[0] && inputs[1] && inputs[2]) {
+            // using parseEther (18 dec) for simplicity in UI, realistically would fetch token decimals
+            conditions[index].generatedData = coder.encode(['address', 'address', 'uint256'], [inputs[0], inputs[1], ethers.parseEther(inputs[2])]);
+        }
+        else if (type === 'PRICE' && inputs[0] && inputs[1] && inputs[2]) {
+            const isGreaterThan = inputs[2] === 'true';
+            // Chainlink typically uses 8 decimals for USD pairs
+            const target = BigInt(Math.floor(parseFloat(inputs[1]) * 10**8));
+            conditions[index].generatedData = coder.encode(['address', 'int256', 'bool'], [inputs[0], target, isGreaterThan]);
+        }
+        else if (type === 'NFT' && inputs[0] && inputs[1] && inputs[2]) {
+            conditions[index].generatedData = coder.encode(['address', 'address', 'uint256'], [inputs[0], inputs[1], parseInt(inputs[2])]);
+        }
+        else if (type === 'GAS' && inputs[0]) {
+            conditions[index].generatedData = coder.encode(['uint256'], [ethers.parseUnits(inputs[0], 'gwei')]);
+        }
+        else if (type === 'ESCROW' && inputs[0]) {
+            conditions[index].generatedData = coder.encode(['bytes32'], [ethers.encodeBytes32String(inputs[0])]);
+        }
+        else if (type === 'EOA' && inputs[0]) {
+            conditions[index].generatedData = coder.encode(['address'], [inputs[0]]);
+        }
+    } catch(e) {
+        conditions[index].generatedData = '0x'; // Invalid encoding
     }
 
-    function loadHistory() {
-        const container = document.getElementById('historyContainer');
-        if (!userAddress) {
-            container.innerHTML = `<div class="text-center text-gray-500 mt-10">Connect wallet to view history.</div>`;
-            return;
-        }
+    updatePreview();
+  }
 
-        const key = `arcHistory_${userAddress.toLowerCase()}`;
-        const history = JSON.parse(localStorage.getItem(key) || '[]');
+  function renderConditions() {
+    const container = document.getElementById('conditionsContainer');
+    container.innerHTML = '';
+    
+    if(conditions.length === 0) {
+      container.innerHTML = `<div class="text-gray-500 italic text-sm text-center py-4 border border-dashed border-gray-600 rounded-xl">No conditions added. The payment will be unlocked instantly.</div>`;
+    }
 
-        if (history.length === 0) {
-            container.innerHTML = `<div class="text-center text-gray-500 mt-10">No smart splits found. Create one!</div>`;
-            return;
-        }
+    conditions.forEach((c, i) => {
+      let inputsHtml = '';
 
-        container.innerHTML = history.map(item => `
-            <div class="p-4 bg-white/[0.02] border border-white/10 rounded-xl flex flex-col md:flex-row justify-between items-center gap-4 hover:bg-white/[0.04] transition-all">
-                <div class="flex items-center gap-4 w-full md:w-auto">
-                    <div class="h-10 w-10 bg-emerald-500/20 rounded-full flex items-center justify-center text-emerald-400">
-                        <i class="fas fa-file-contract"></i>
-                    </div>
-                    <div>
-                        <div class="text-sm text-gray-400">Rule Type: <span class="text-white font-bold">${item.type}</span></div>
-                        <div class="text-xs text-gray-500">${item.date}</div>
-                    </div>
-                </div>
-                
-                <div class="text-left md:text-right w-full md:w-auto">
-                    <div class="text-sm font-bold text-white">${item.amount} Tokens</div>
-                    <div class="text-xs text-gray-500 font-mono">To: ${item.recipient.substring(0,6)}...${item.recipient.substring(38)}</div>
-                </div>
-                
-                <a href="https://testnet.arcscan.app/tx/${item.hash}" target="_blank" class="px-4 py-2 bg-emerald-500/10 text-emerald-400 rounded-lg text-xs font-bold hover:bg-emerald-500/20 whitespace-nowrap">
-                    View <i class="fas fa-external-link-alt ml-1"></i>
-                </a>
+      if (c.type === 'TIME') {
+        inputsHtml = `
+          <div>
+            <label class="text-[10px] text-gray-400 uppercase tracking-wide">Select Release Date & Time</label>
+            <input type="datetime-local" value="${c.inputs[0] || ''}" oninput="updateConditionParam(${i}, 0, this.value)" class="w-full rounded-lg px-3 py-2 text-sm mt-1 border-white/20">
+          </div>
+        `;
+      } else if (c.type === 'NATIVE_BAL') {
+        inputsHtml = `
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="text-[10px] text-gray-400 uppercase tracking-wide">Wallet Address to Check</label>
+              <input type="text" placeholder="0x..." value="${c.inputs[0] || ''}" oninput="updateConditionParam(${i}, 0, this.value)" class="w-full rounded-lg px-3 py-2 text-xs font-mono mt-1 border-white/20">
             </div>
-        `).join('');
+            <div>
+              <label class="text-[10px] text-gray-400 uppercase tracking-wide">Minimum Balance Needed</label>
+              <input type="number" placeholder="e.g. 1.5" value="${c.inputs[1] || ''}" oninput="updateConditionParam(${i}, 1, this.value)" class="w-full rounded-lg px-3 py-2 text-sm mt-1 border-white/20">
+            </div>
+          </div>
+        `;
+      } else if (c.type === 'ERC20_BAL') {
+        inputsHtml = `
+          <div class="grid grid-cols-3 gap-3">
+            <div>
+              <label class="text-[10px] text-gray-400 uppercase tracking-wide">Token Contract</label>
+              <input type="text" placeholder="0x..." value="${c.inputs[0] || ''}" oninput="updateConditionParam(${i}, 0, this.value)" class="w-full rounded-lg px-3 py-2 text-xs font-mono mt-1 border-white/20">
+            </div>
+            <div>
+              <label class="text-[10px] text-gray-400 uppercase tracking-wide">Wallet Address</label>
+              <input type="text" placeholder="0x..." value="${c.inputs[1] || ''}" oninput="updateConditionParam(${i}, 1, this.value)" class="w-full rounded-lg px-3 py-2 text-xs font-mono mt-1 border-white/20">
+            </div>
+            <div>
+              <label class="text-[10px] text-gray-400 uppercase tracking-wide">Min Amount</label>
+              <input type="number" placeholder="e.g. 100" value="${c.inputs[2] || ''}" oninput="updateConditionParam(${i}, 2, this.value)" class="w-full rounded-lg px-3 py-2 text-sm mt-1 border-white/20">
+            </div>
+          </div>
+        `;
+      } else if (c.type === 'PRICE') {
+        inputsHtml = `
+          <div class="grid grid-cols-3 gap-3">
+            <div>
+              <label class="text-[10px] text-gray-400 uppercase tracking-wide">Oracle Feed (Chainlink)</label>
+              <input type="text" placeholder="0x... (e.g. ETH/USD)" value="${c.inputs[0] || ''}" oninput="updateConditionParam(${i}, 0, this.value)" class="w-full rounded-lg px-3 py-2 text-xs font-mono mt-1 border-white/20">
+            </div>
+            <div>
+              <label class="text-[10px] text-gray-400 uppercase tracking-wide">Target Price ($)</label>
+              <input type="number" placeholder="e.g. 3500" value="${c.inputs[1] || ''}" oninput="updateConditionParam(${i}, 1, this.value)" class="w-full rounded-lg px-3 py-2 text-sm mt-1 border-white/20">
+            </div>
+            <div>
+              <label class="text-[10px] text-gray-400 uppercase tracking-wide">Condition</label>
+              <select onchange="updateConditionParam(${i}, 2, this.value)" class="w-full rounded-lg px-3 py-2 text-sm mt-1 border-white/20 text-white">
+                <option value="true" ${c.inputs[2] === 'true' ? 'selected' : ''}>Must be Greater Than</option>
+                <option value="false" ${c.inputs[2] === 'false' ? 'selected' : ''}>Must be Less Than</option>
+              </select>
+            </div>
+          </div>
+        `;
+      } else if (c.type === 'NFT') {
+        inputsHtml = `
+          <div class="grid grid-cols-3 gap-3">
+            <div>
+              <label class="text-[10px] text-gray-400 uppercase tracking-wide">NFT Collection Address</label>
+              <input type="text" placeholder="0x..." value="${c.inputs[0] || ''}" oninput="updateConditionParam(${i}, 0, this.value)" class="w-full rounded-lg px-3 py-2 text-xs font-mono mt-1 border-white/20">
+            </div>
+            <div>
+              <label class="text-[10px] text-gray-400 uppercase tracking-wide">Wallet to Check</label>
+              <input type="text" placeholder="0x..." value="${c.inputs[1] || ''}" oninput="updateConditionParam(${i}, 1, this.value)" class="w-full rounded-lg px-3 py-2 text-xs font-mono mt-1 border-white/20">
+            </div>
+            <div>
+              <label class="text-[10px] text-gray-400 uppercase tracking-wide">Min Amount (e.g. 1)</label>
+              <input type="number" placeholder="1" value="${c.inputs[2] || ''}" oninput="updateConditionParam(${i}, 2, this.value)" class="w-full rounded-lg px-3 py-2 text-sm mt-1 border-white/20">
+            </div>
+          </div>
+        `;
+      } else if (c.type === 'GAS') {
+        inputsHtml = `
+          <div>
+            <label class="text-[10px] text-gray-400 uppercase tracking-wide">Maximum Network Gas Price (Gwei)</label>
+            <input type="number" placeholder="e.g. 15" value="${c.inputs[0] || ''}" oninput="updateConditionParam(${i}, 0, this.value)" class="w-full rounded-lg px-3 py-2 text-sm mt-1 border-white/20">
+          </div>
+        `;
+      } else if (c.type === 'ESCROW') {
+        inputsHtml = `
+          <div>
+            <label class="text-[10px] text-gray-400 uppercase tracking-wide">Project ID / Job Title</label>
+            <input type="text" placeholder="e.g. WebDesign_Phase1" value="${c.inputs[0] || ''}" oninput="updateConditionParam(${i}, 0, this.value)" class="w-full rounded-lg px-3 py-2 text-sm mt-1 border-white/20">
+          </div>
+        `;
+      } else if (c.type === 'EOA') {
+        inputsHtml = `
+          <div>
+            <label class="text-[10px] text-gray-400 uppercase tracking-wide">Address to verify (Ensure it's a real person, not a bot/contract)</label>
+            <input type="text" placeholder="0x..." value="${c.inputs[0] || ''}" oninput="updateConditionParam(${i}, 0, this.value)" class="w-full rounded-lg px-3 py-2 text-xs font-mono mt-1 border-white/20">
+          </div>
+        `;
+      }
+
+      // Generate Dropdown Options dynamically
+      let optionsHtml = Object.keys(EVALUATORS).map(key => 
+        `<option value="${key}" ${c.type === key ? 'selected' : ''}>${EVALUATORS[key].name}</option>`
+      ).join('');
+
+      container.innerHTML += `
+        <div class="p-4 bg-white/5 border border-white/10 rounded-xl relative hover:border-white/20 transition-all">
+          <button onclick="removeCondition(${i})" class="absolute top-3 right-3 text-rose-500 hover:text-rose-400 p-2 bg-rose-500/10 rounded-lg"><i class="fas fa-trash"></i></button>
+          
+          <div class="flex items-center gap-3 mb-4 pr-10">
+            <div class="text-xs font-bold text-white bg-purple-500 px-2 py-1 rounded">Condition ${i+1}</div>
+            <select class="rounded-lg px-3 py-2 text-sm font-bold bg-white/10 border border-white/10 text-white w-full max-w-md" onchange="changeConditionType(${i}, this.value)">
+              ${optionsHtml}
+            </select>
+          </div>
+
+          <div class="space-y-3">
+            ${inputsHtml}
+          </div>
+          
+          <div class="mt-3 text-[10px] text-gray-500 border-t border-white/5 pt-2 flex items-center justify-between">
+            <span>Evaluator App: <span class="font-mono text-purple-300">${EVALUATORS[c.type].address.substring(0,10)}...</span></span>
+            <span>Encoded Proof Generated <i class="fas ${c.generatedData !== '0x' ? 'fa-check text-green-400' : 'fa-times text-rose-400'}"></i></span>
+          </div>
+        </div>
+      `;
+    });
+    updatePreview();
+  }
+
+  document.getElementById('ruleRecipient').addEventListener('input', updatePreview);
+  document.getElementById('ruleAmount').addEventListener('input', updatePreview);
+
+  function updatePreview() {
+    const rec = document.getElementById('ruleRecipient').value || '0x...';
+    const amt = document.getElementById('ruleAmount').value || '0';
+    document.getElementById('previewTarget').textContent = rec.substring(0, 8) + '...' + rec.substring(rec.length - 4);
+    document.getElementById('previewAmt').textContent = amt;
+    document.getElementById('previewEvalCount').textContent = `${conditions.length} Requirements`;
+  }
+
+  async function registerSmartRule() {
+    if (!contract) return showToast("Connect wallet first!");
+    
+    const recipient = document.getElementById('ruleRecipient').value;
+    const amt = document.getElementById('ruleAmount').value;
+    const nonce = Math.floor(Math.random() * 1000000);
+    const isRecurring = document.getElementById('ruleRecurring').checked;
+    const cooldown = document.getElementById('ruleCooldown').value || "0";
+    const tokenAddress = document.getElementById('hubToken').value;
+
+    if (!recipient || !ethers.isAddress(recipient)) return showToast("Invalid Recipient Address");
+    if (!amt || amt <= 0) return showToast("Invalid Amount");
+
+    let opcodes = [];
+    let evaluators = [];
+    let evaluatorsData = [];
+
+    // Construct execution opcodes (Assuming OP_AND for all conditions to keep it user-friendly)
+    for(let i=0; i<conditions.length; i++) {
+      let c = conditions[i];
+      if (c.generatedData === '0x') return showToast(`Condition ${i+1} is missing data or invalid.`);
+      
+      evaluators.push(EVALUATORS[c.type].address);
+      evaluatorsData.push(c.generatedData);
+      
+      opcodes.push(3); // OP_EVAL
+      if (i > 0) opcodes.push(0); // OP_AND
     }
 
+    try {
+      const parsedAmt = ethers.parseUnits(amt.toString(), activeDecimals);
+      const fee = "0"; // Fee logic abstracted for UI simplicity
+      
+      const btn = document.getElementById('registerBtn');
+      const ogHtml = btn.innerHTML;
+      btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Securing Logic On-Chain...`;
+      btn.disabled = true;
+
+      const tx = await contract.registerRule(
+        tokenAddress, recipient, parsedAmt, fee, nonce, isRecurring, cooldown, 0,
+        opcodes, evaluators, evaluatorsData
+      );
+      
+      showToast(`Lock Request Sent! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-blue-400 underline mt-2 inline-block font-normal'>View on Explorer</a>`);
+      await tx.wait();
+      
+      showToast(`Smart Conditional Lock Successfully Deployed!`);
+      
+      btn.innerHTML = ogHtml;
+      btn.disabled = false;
+
+      if (typeof saveHistoryToCloud === 'function') {
+        await saveHistoryToCloud(userAddress, {
+          appName: APP_IDENTIFIER,
+          type: 'Smart Condition Lock',
+          amount: amt,
+          token: document.querySelector('.sponsorBalanceSymbol').textContent,
+          recipient: recipient,
+          conditionsCount: conditions.length,
+          hash: tx.hash,
+          timestamp: new Date().toISOString(),
+          memo: `Rule deployed with ${conditions.length} conditions`
+        });
+      }
+    } catch(e) {
+      console.error(e);
+      showToast("Transaction failed. Check console.");
+      document.getElementById('registerBtn').innerHTML = `<i class="fas fa-lock"></i> Deploy Conditional Lock`;
+      document.getElementById('registerBtn').disabled = false;
+    }
+  }
+
+  async function loadHistoryData() {
+    const container = document.getElementById('historyContainer');
+    if (!userAddress) {
+      container.innerHTML = `<div class="text-gray-500 italic text-center py-10">Please connect wallet first.</div>`;
+      return;
+    }
+    
+    if (typeof fetchHistoryFromCloud !== 'function') {
+      container.innerHTML = `<div class="text-rose-500 italic text-center py-10">Error: Database connection (db.js) not found.</div>`;
+      return;
+    }
+
+    container.innerHTML = `<div class="text-purple-400 text-center py-10"><i class="fas fa-spinner fa-spin text-2xl"></i><p class="mt-2 text-sm">Loading history...</p></div>`;
+    
+    try {
+      let historyRaw = await fetchHistoryFromCloud(userAddress);
+      const history = historyRaw.filter(item => item.appName === APP_IDENTIFIER);
+      
+      if (!history || history.length === 0) {
+        container.innerHTML = `<div class="text-gray-500 italic text-center py-10 border border-dashed border-white/10 rounded-2xl">No conditional history found for this wallet.</div>`;
+        return;
+      }
+      
+      container.innerHTML = '';
+      history.forEach(item => {
+        let icon = 'fa-lock';
+        let color = 'text-purple-400';
+        let bg = 'bg-purple-400/10';
+        
+        if(item.type === 'Deposit') { icon = 'fa-arrow-down'; color = 'text-blue-400'; bg = 'bg-blue-400/10'; }
+        if(item.type === 'Withdraw') { icon = 'fa-arrow-up'; color = 'text-rose-400'; bg = 'bg-rose-400/10'; }
+
+        container.innerHTML += `
+          <div class="bg-white/5 border border-white/10 p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-white/10 transition shadow-lg">
+            <div class="flex items-center gap-4">
+              <div class="w-12 h-12 rounded-full ${bg} flex items-center justify-center ${color}">
+                <i class="fas ${icon} text-lg"></i>
+              </div>
+              <div>
+                <div class="font-bold text-white">${item.type} <span class="text-xs text-gray-500 font-normal ml-2"><i class="far fa-clock"></i> ${new Date(item.timestamp).toLocaleString()}</span></div>
+                <div class="text-sm text-gray-400 mt-1">${item.memo}</div>
+                ${item.conditionsCount !== undefined ? `<div class="text-xs text-purple-400 mt-1 bg-purple-500/10 inline-block px-2 py-0.5 rounded border border-purple-500/20"><i class="fas fa-microchip mr-1"></i> ${item.conditionsCount} Logic Condition(s)</div>` : ''}
+              </div>
+            </div>
+            <div class="w-full sm:w-auto text-left sm:text-right">
+              <div class="text-lg font-bold text-white mb-1">${item.amount || '0'} <span class="text-xs text-gray-400">${item.token || 'USDC'}</span></div>
+              <a href="${EXPLORER_URL}${item.hash}" target="_blank" class="text-xs text-blue-400 border border-blue-400/30 px-3 py-1.5 rounded-lg hover:bg-blue-400/10 transition inline-block">
+                View Tx <i class="fas fa-external-link-alt ml-1"></i>
+              </a>
+            </div>
+          </div>
+        `;
+      });
+    } catch (e) {
+      console.error(e);
+      container.innerHTML = `<div class="text-rose-500 italic text-center py-10">Failed to load history from cloud.</div>`;
+    }
+  }
+
+  window.addEventListener('load', async () => {
+    renderConditions();
+    if (typeof window.ethereum !== 'undefined') {
+      try {
+        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+        if (accounts && accounts.length > 0) {
+          await connectWallet(); 
+        }
+      } catch (err) {
+        console.warn("Auto-connect failed");
+      }
+    }
+  });
 </script>
 </body>
 </html>
