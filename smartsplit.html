@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+  <title>ArcSplit - Smart Conditional Split</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    body { 
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif; 
+      background: #070711;
+      color: #f8fafc;
+      min-height: 100vh;
+    }
+    .glass {
+      background: rgba(18, 18, 38, 0.65);
+      backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+    }
+    input, select {
+      background-color: rgba(255, 255, 255, 0.05);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      transition: all 0.3s ease;
+    }
+    input:focus, select:focus { border-color: #10b981; outline: none; box-shadow: 0 0 10px rgba(16, 185, 129, 0.2); }
+    select option { background-color: #0f172a; color: white; }
+    
+    .tab-active {
+        border-bottom: 2px solid #10b981;
+        color: #10b981;
+    }
+    .fade-in { animation: fadeIn 0.4s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body class="p-4 md:p-8">
+
+  <!-- Navigation / Header -->
+  <div class="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+    <div class="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">
+      ArcSplit <span class="text-sm font-medium text-emerald-200">Pro</span>
+    </div>
+    
+    <div class="flex items-center gap-4 bg-white/5 rounded-2xl p-2 border border-white/10 glass">
+        <!-- Balance Display -->
+        <div id="balanceDisplay" class="px-4 py-2 text-sm font-bold text-gray-300 border-r border-white/10 hidden md:block">
+            0.00 USDC
+        </div>
+        <!-- Connect Button -->
+        <button onclick="connectWallet()" id="connectBtn" class="px-6 py-2 bg-gradient-to-r from-emerald-500 to-cyan-500 text-gray-950 font-bold rounded-xl flex items-center justify-center gap-2 hover:brightness-110 transition-all">
+          <i class="fas fa-wallet"></i> <span id="connectText">Connect Wallet</span>
+        </button>
+    </div>
+  </div>
+
+  <div class="max-w-4xl mx-auto glass rounded-3xl overflow-hidden">
+    
+    <!-- Tabs -->
+    <div class="flex border-b border-white/10 bg-white/5">
+        <button onclick="switchTab('create')" id="tab-create" class="flex-1 py-4 text-center font-bold text-gray-400 hover:text-white transition-all tab-active">
+            <i class="fas fa-plus-circle mr-2"></i> Create Smart Split
+        </button>
+        <button onclick="switchTab('history')" id="tab-history" class="flex-1 py-4 text-center font-bold text-gray-400 hover:text-white transition-all">
+            <i class="fas fa-history mr-2"></i> My History
+        </button>
+    </div>
+
+    <!-- CREATE TAB -->
+    <div id="create-view" class="p-6 md:p-10 fade-in">
+        <p class="text-gray-400 text-sm mb-8">Set up complex conditional payments without writing a single line of code.</p>
+
+        <div class="space-y-6">
+            
+            <!-- Basics Section -->
+            <div class="p-6 rounded-2xl border border-white/5 bg-white/[0.02]">
+                <h2 class="text-lg font-bold text-white mb-4"><i class="fas fa-coins text-emerald-400 mr-2"></i> Payment Details</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    
+                    <!-- Token Selection -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 mb-2">Select Asset</label>
+                        <select id="tokenSelect" onchange="handleTokenChange()" class="w-full rounded-xl px-4 py-3 text-sm font-bold">
+                            <option value="0x3600000000000000000000000000000000000000">USDC</option>
+                            <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
+                            <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
+                            <option value="custom">Custom Token...</option>
+                        </select>
+                    </div>
+
+                    <!-- Custom Token Input (Hidden by default) -->
+                    <div id="customTokenBox" class="hidden">
+                        <label class="block text-xs font-bold text-gray-400 mb-2">Custom Token Address</label>
+                        <input type="text" id="customTokenAddress" placeholder="0x..." onchange="updateBalance()" class="w-full rounded-xl px-4 py-3 text-sm font-mono text-emerald-400">
+                    </div>
+
+                    <!-- Amount -->
+                    <div>
+                        <label class="block text-xs font-bold text-gray-400 mb-2">Amount</label>
+                        <input type="number" id="amount" placeholder="e.g. 100" class="w-full rounded-xl px-4 py-3 text-sm font-bold">
+                    </div>
+
+                    <!-- Recipient -->
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-bold text-gray-400 mb-2">Recipient Wallet Address</label>
+                        <input type="text" id="recipient" placeholder="0x..." class="w-full rounded-xl px-4 py-3 text-sm font-mono text-emerald-300">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Condition Section -->
+            <div class="p-6 rounded-2xl border border-emerald-500/30 bg-emerald-500/5">
+                <h2 class="text-lg font-bold text-white mb-4"><i class="fas fa-lock text-emerald-400 mr-2"></i> Smart Condition (Evaluator)</h2>
+                
+                <select id="ruleType" onchange="renderDynamicInputs()" class="w-full rounded-xl px-4 py-3 text-sm font-bold mb-6">
+                    <option value="none">Instant Transfer (No Condition)</option>
+                    <option value="timelock">Time Lock (Wait for specific time)</option>
+                    <option value="gasprice">Max Gas Price (Execute only when gas is cheap)</option>
+                    <option value="native_balance">Native Balance Checker (Require minimum ETH/Native)</option>
+                    <option value="erc20_balance">ERC20 Balance Checker (Require minimum token balance)</option>
+                    <option value="erc721">NFT Gating (Must own specific NFT)</option>
+                    <option value="chainlink">Chainlink Price Target (Trigger on price point)</option>
+                    <option value="escrow">Escrow Approval (Wait for project ID approval)</option>
+                    <option value="eoa">EOA Checker (Block Smart Contracts from receiving)</option>
+                </select>
+
+                <!-- Dynamic Config Area -->
+                <div id="dynamicConfig" class="grid grid-cols-1 md:grid-cols-2 gap-4 hidden">
+                    <!-- Javascript will inject inputs here based on the selected evaluator -->
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button onclick="registerSmartRule()" id="registerBtn" class="w-full bg-gradient-to-r from-emerald-500 to-cyan-500 py-4 rounded-2xl font-bold text-slate-950 flex justify-center items-center text-lg shadow-[0_0_20px_rgba(16,185,129,0.3)] hover:shadow-[0_0_30px_rgba(16,185,129,0.5)] transition-all">
+                Register Split On-Chain
+            </button>
+
+            <!-- Success Box -->
+            <div id="successBox" class="hidden mt-4 p-4 bg-emerald-900/40 border border-emerald-500/50 rounded-xl text-center">
+                <i class="fas fa-check-circle text-emerald-400 text-2xl mb-2"></i>
+                <h3 class="text-white font-bold mb-1">Transaction Successful!</h3>
+                <a id="txLink" href="#" target="_blank" class="text-emerald-400 text-sm hover:underline font-mono break-all"></a>
+            </div>
+        </div>
+    </div>
+
+    <!-- HISTORY TAB -->
+    <div id="history-view" class="p-6 md:p-10 hidden fade-in min-h-[400px]">
+        <h2 class="text-xl font-bold text-white mb-6">Your Previous Smart Splits</h2>
+        <div id="historyContainer" class="space-y-4">
+            <!-- Injected via JS -->
+            <div class="text-center text-gray-500 mt-10">No history found. Connect wallet to sync.</div>
+        </div>
+    </div>
+
+  </div>
+
+<!-- ==============================================
+     JAVASCRIPT LOGIC
+=============================================== -->
+<script>
+    // 1. Core Config & Evaluator Addresses
+    const CONTRACT_ADDRESS = "0x08af7753FCE9e664fa5E2D5EB96a60b739E6BD51"; // Main Proxy
+    
+    const EVALUATORS = {
+        timelock: "0xC0313eb943992733FfF8824b650E5F2f74b84C0C",
+        native_balance: "0xB8e52Cc35E9Afb4B37929754283e00c2cC4D4af7",
+        erc20_balance: "0xE0b26ECc853d536A80ff89628f66334432c17966",
+        chainlink: "0x49aCf2A814D081AEB86aD9Ac05A842381F2762b7",
+        erc721: "0x12A287E18742fC346833D18eBa054663ad66cece",
+        gasprice: "0x06010AfE4039Be171B71641Be862641f4bA09c09",
+        escrow: "0x01E9bAe9d35B4cCE684D4a0eAbBB588E92d105FC",
+        eoa: "0x2c5b249403b09d82001A5BA08b34BE58FBeCC151"
+    };
+
+    // ABIs
+    const SPLITTER_ABI = [
+        "function registerRule(address token, address recipient, uint256 amountToSplit, uint256 maxRelayerFee, uint256 ruleIdNonce, bool isRecurring, uint256 ruleCooldown, uint256 deadline, uint8[] opcodes, address[] evaluators, bytes[] evaluatorsData) returns (bytes32)"
+    ];
+    const ERC20_ABI = [
+        "function balanceOf(address account) view returns (uint256)",
+        "function decimals() view returns (uint8)",
+        "function symbol() view returns (string)"
+    ];
+
+    // Evaluator UI Blueprints
+    const RULE_CONFIGS = {
+        timelock: [
+            { id: "tl_days", label: "Wait Time (in Days)", type: "number", placeholder: "e.g. 7" }
+        ],
+        native_balance: [
+            { id: "nb_wallet", label: "Target Wallet to Check", type: "text", placeholder: "0x..." },
+            { id: "nb_amount", label: "Minimum Native Balance", type: "number", placeholder: "e.g. 1.5" }
+        ],
+        erc20_balance: [
+            { id: "eb_token", label: "Token Contract Address", type: "text", placeholder: "0x..." },
+            { id: "eb_wallet", label: "Target Wallet to Check", type: "text", placeholder: "0x..." },
+            { id: "eb_amount", label: "Minimum Token Balance", type: "number", placeholder: "e.g. 1000" }
+        ],
+        chainlink: [
+            { id: "cl_feed", label: "Chainlink Price Feed Address", type: "text", placeholder: "0x..." },
+            { id: "cl_price", label: "Target Price (Scaled)", type: "number", placeholder: "e.g. 2000000000" },
+            { id: "cl_dir", label: "Condition", type: "select", options: [{val:"true", label:"Greater Than (>)"}, {val:"false", label:"Less Than (<)"}] }
+        ],
+        erc721: [
+            { id: "nft_contract", label: "NFT Collection Address", type: "text", placeholder: "0x..." },
+            { id: "nft_wallet", label: "Target Wallet to Check", type: "text", placeholder: "0x..." },
+            { id: "nft_min", label: "Minimum Amount of NFTs", type: "number", placeholder: "e.g. 1" }
+        ],
+        gasprice: [
+            { id: "gp_max", label: "Max Gas Price (in Gwei)", type: "number", placeholder: "e.g. 30" }
+        ],
+        escrow: [
+            { id: "es_id", label: "Project ID (Text/Name)", type: "text", placeholder: "e.g. Project-Alpha-123" }
+        ],
+        eoa: [
+            { id: "eoa_wallet", label: "Wallet Address to Verify", type: "text", placeholder: "0x..." }
+        ]
+    };
+
+    let provider, signer, userAddress = null;
+    let proxyContract;
+
+    // 2. UI & Tab Functions
+    function switchTab(tab) {
+        document.getElementById('tab-create').classList.remove('tab-active');
+        document.getElementById('tab-history').classList.remove('tab-active');
+        document.getElementById('create-view').classList.add('hidden');
+        document.getElementById('history-view').classList.add('hidden');
+
+        document.getElementById(`tab-${tab}`).classList.add('tab-active');
+        document.getElementById(`${tab}-view`).classList.remove('hidden');
+
+        if(tab === 'history') loadHistory();
+    }
+
+    function handleTokenChange() {
+        const tokenVal = document.getElementById('tokenSelect').value;
+        const customBox = document.getElementById('customTokenBox');
+        
+        if (tokenVal === 'custom') {
+            customBox.classList.remove('hidden');
+        } else {
+            customBox.classList.add('hidden');
+        }
+        updateBalance();
+    }
+
+    function getTokenAddress() {
+        const val = document.getElementById('tokenSelect').value;
+        return val === 'custom' ? document.getElementById('customTokenAddress').value : val;
+    }
+
+    function renderDynamicInputs() {
+        const type = document.getElementById('ruleType').value;
+        const container = document.getElementById('dynamicConfig');
+        container.innerHTML = ''; // clear
+
+        if (type === 'none') {
+            container.classList.add('hidden');
+            return;
+        }
+
+        container.classList.remove('hidden');
+        const fields = RULE_CONFIGS[type];
+
+        fields.forEach(f => {
+            const wrapper = document.createElement('div');
+            let inputHtml = '';
+            
+            if (f.type === 'select') {
+                const options = f.options.map(o => `<option value="${o.val}">${o.label}</option>`).join('');
+                inputHtml = `<select id="${f.id}" class="w-full rounded-xl px-4 py-3 text-sm font-bold border-emerald-500/30 bg-[#0f172a]">${options}</select>`;
+            } else {
+                inputHtml = `<input type="${f.type}" id="${f.id}" placeholder="${f.placeholder}" class="w-full rounded-xl px-4 py-3 text-sm font-mono border-emerald-500/30">`;
+            }
+
+            wrapper.innerHTML = `
+                <label class="block text-xs font-bold text-gray-400 mb-2">${f.label}</label>
+                ${inputHtml}
+            `;
+            container.appendChild(wrapper);
+        });
+    }
+
+    // 3. Wallet & Blockchain Read
+    async function connectWallet() {
+        if (typeof window.ethereum !== 'undefined') {
+            try {
+                provider = new ethers.BrowserProvider(window.ethereum);
+                await provider.send("eth_requestAccounts", []);
+                signer = await provider.getSigner();
+                userAddress = await signer.getAddress();
+                proxyContract = new ethers.Contract(CONTRACT_ADDRESS, SPLITTER_ABI, signer);
+                
+                const shortAddr = userAddress.substring(0, 6) + "..." + userAddress.substring(userAddress.length - 4);
+                document.getElementById('connectText').innerHTML = `<span class="text-emerald-100">${shortAddr}</span>`;
+                
+                updateBalance();
+                loadHistory(); // Pre-load history
+            } catch (err) {
+                console.error(err);
+                alert("Connection failed.");
+            }
+        } else {
+            alert("MetaMask or Web3 wallet not found!");
+        }
+    }
+
+    async function updateBalance() {
+        if (!userAddress) return;
+        const tokenAddr = getTokenAddress();
+        const display = document.getElementById('balanceDisplay');
+        display.classList.remove('hidden');
+
+        try {
+            if (!ethers.isAddress(tokenAddr)) {
+                display.innerText = "0.00";
+                return;
+            }
+            
+            const tokenContract = new ethers.Contract(tokenAddr, ERC20_ABI, provider);
+            const balance = await tokenContract.balanceOf(userAddress);
+            const decimals = await tokenContract.decimals().catch(() => 18);
+            const symbol = await tokenContract.symbol().catch(() => "TOKEN");
+            
+            const formatted = parseFloat(ethers.formatUnits(balance, decimals)).toFixed(4);
+            display.innerText = `${formatted} ${symbol}`;
+            
+        } catch (e) {
+            console.log("Could not fetch balance", e);
+            display.innerText = "0.00";
+        }
+    }
+
+    // 4. ABI Encoding & Execution
+    async function registerSmartRule() {
+        if (!proxyContract) return alert("Please connect your wallet first!");
+
+        const token = getTokenAddress();
+        const recipient = document.getElementById('recipient').value;
+        const amountStr = document.getElementById('amount').value;
+        const ruleType = document.getElementById('ruleType').value;
+
+        if (!ethers.isAddress(token)) return alert("Invalid Token Address");
+        if (!ethers.isAddress(recipient)) return alert("Invalid Recipient Address");
+        if (!amountStr || amountStr <= 0) return alert("Invalid Amount");
+
+        let opcodes = [];
+        let evaluators = [];
+        let evaluatorsData = [];
+
+        const abiCoder = ethers.AbiCoder.defaultAbiCoder();
+
+        try {
+            // ENCODE DATA BASED ON EVALUATOR
+            if (ruleType !== 'none') {
+                opcodes = [3]; // OP_EVAL
+                evaluators = [EVALUATORS[ruleType]];
+
+                if (ruleType === 'timelock') {
+                    const days = parseFloat(document.getElementById('tl_days').value);
+                    const targetTimestamp = Math.floor(Date.now() / 1000) + (days * 86400);
+                    evaluatorsData = [abiCoder.encode(['uint256'], [targetTimestamp])];
+                } 
+                else if (ruleType === 'native_balance') {
+                    const wallet = document.getElementById('nb_wallet').value;
+                    const amt = ethers.parseEther(document.getElementById('nb_amount').value);
+                    evaluatorsData = [abiCoder.encode(['address', 'uint256'], [wallet, amt])];
+                }
+                else if (ruleType === 'erc20_balance') {
+                    const t = document.getElementById('eb_token').value;
+                    const w = document.getElementById('eb_wallet').value;
+                    // For simplicity, we assume 18 decimals on target token minimum balance
+                    const amt = ethers.parseUnits(document.getElementById('eb_amount').value, 18); 
+                    evaluatorsData = [abiCoder.encode(['address', 'address', 'uint256'], [t, w, amt])];
+                }
+                else if (ruleType === 'chainlink') {
+                    const feed = document.getElementById('cl_feed').value;
+                    const price = document.getElementById('cl_price').value;
+                    const isGreater = document.getElementById('cl_dir').value === "true";
+                    evaluatorsData = [abiCoder.encode(['address', 'int256', 'bool'], [feed, price, isGreater])];
+                }
+                else if (ruleType === 'erc721') {
+                    const nft = document.getElementById('nft_contract').value;
+                    const w = document.getElementById('nft_wallet').value;
+                    const amt = document.getElementById('nft_min').value;
+                    evaluatorsData = [abiCoder.encode(['address', 'address', 'uint256'], [nft, w, amt])];
+                }
+                else if (ruleType === 'gasprice') {
+                    const maxGas = ethers.parseUnits(document.getElementById('gp_max').value, "gwei");
+                    evaluatorsData = [abiCoder.encode(['uint256'], [maxGas])];
+                }
+                else if (ruleType === 'escrow') {
+                    const pid = document.getElementById('es_id').value;
+                    // convert string to bytes32
+                    const bytes32Id = ethers.encodeBytes32String(pid);
+                    evaluatorsData = [abiCoder.encode(['bytes32'], [bytes32Id])];
+                }
+                else if (ruleType === 'eoa') {
+                    const w = document.getElementById('eoa_wallet').value;
+                    evaluatorsData = [abiCoder.encode(['address'], [w])];
+                }
+            }
+
+            // Fetch decimals of the token being split to encode amount properly
+            let tokenDecimals = 18;
+            try {
+                const tContract = new ethers.Contract(token, ERC20_ABI, provider);
+                tokenDecimals = await tContract.decimals();
+            } catch(e) {}
+            
+            const parsedAmt = ethers.parseUnits(amountStr, tokenDecimals);
+            const nonce = Math.floor(Math.random() * 1000000000);
+            
+            const btn = document.getElementById('registerBtn');
+            btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Processing...`;
+            btn.disabled = true;
+
+            // Submit TX
+            const tx = await proxyContract.registerRule(
+                token, recipient, parsedAmt, 0, nonce, false, 0, 0,
+                opcodes, evaluators, evaluatorsData
+            );
+
+            await tx.wait();
+
+            // Handle Success
+            btn.innerHTML = "Register Split On-Chain";
+            btn.disabled = false;
+            
+            // Show Success Link
+            const successBox = document.getElementById('successBox');
+            const txLink = document.getElementById('txLink');
+            successBox.classList.remove('hidden');
+            const scanUrl = `https://testnet.arcscan.app/tx/${tx.hash}`;
+            txLink.href = scanUrl;
+            txLink.innerText = `View on ArcScan: ${tx.hash}`;
+
+            // Save to Mock DB (LocalStorage)
+            saveToDB(tx.hash, ruleType, amountStr, recipient);
+            updateBalance();
+
+        } catch (error) {
+            console.error(error);
+            alert("Transaction failed or rejected! Check console for details.");
+            const btn = document.getElementById('registerBtn');
+            btn.innerHTML = "Register Split On-Chain";
+            btn.disabled = false;
+        }
+    }
+
+    // 5. Local Storage (Simulating DB.js for frontend logic)
+    function saveToDB(hash, type, amount, recipient) {
+        if (!userAddress) return;
+        const key = `arcHistory_${userAddress.toLowerCase()}`;
+        let history = JSON.parse(localStorage.getItem(key) || '[]');
+        
+        history.unshift({
+            hash,
+            type: type === 'none' ? 'Instant' : type.toUpperCase(),
+            amount,
+            recipient,
+            date: new Date().toLocaleString()
+        });
+        
+        localStorage.setItem(key, JSON.stringify(history));
+    }
+
+    function loadHistory() {
+        const container = document.getElementById('historyContainer');
+        if (!userAddress) {
+            container.innerHTML = `<div class="text-center text-gray-500 mt-10">Connect wallet to view history.</div>`;
+            return;
+        }
+
+        const key = `arcHistory_${userAddress.toLowerCase()}`;
+        const history = JSON.parse(localStorage.getItem(key) || '[]');
+
+        if (history.length === 0) {
+            container.innerHTML = `<div class="text-center text-gray-500 mt-10">No smart splits found. Create one!</div>`;
+            return;
+        }
+
+        container.innerHTML = history.map(item => `
+            <div class="p-4 bg-white/[0.02] border border-white/10 rounded-xl flex flex-col md:flex-row justify-between items-center gap-4 hover:bg-white/[0.04] transition-all">
+                <div class="flex items-center gap-4 w-full md:w-auto">
+                    <div class="h-10 w-10 bg-emerald-500/20 rounded-full flex items-center justify-center text-emerald-400">
+                        <i class="fas fa-file-contract"></i>
+                    </div>
+                    <div>
+                        <div class="text-sm text-gray-400">Rule Type: <span class="text-white font-bold">${item.type}</span></div>
+                        <div class="text-xs text-gray-500">${item.date}</div>
+                    </div>
+                </div>
+                
+                <div class="text-left md:text-right w-full md:w-auto">
+                    <div class="text-sm font-bold text-white">${item.amount} Tokens</div>
+                    <div class="text-xs text-gray-500 font-mono">To: ${item.recipient.substring(0,6)}...${item.recipient.substring(38)}</div>
+                </div>
+                
+                <a href="https://testnet.arcscan.app/tx/${item.hash}" target="_blank" class="px-4 py-2 bg-emerald-500/10 text-emerald-400 rounded-lg text-xs font-bold hover:bg-emerald-500/20 whitespace-nowrap">
+                    View <i class="fas fa-external-link-alt ml-1"></i>
+                </a>
+            </div>
+        `).join('');
+    }
+
+</script>
+</body>
+</html>
