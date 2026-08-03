@@ -150,7 +150,7 @@
         <!-- Balances Hub -->
         <div class="glass rounded-3xl p-6 lg:col-span-2">
           <div class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4 flex justify-between items-center">
-            <span>2. Treasuries & Balances (with Automatic 3x Retry)</span>
+            <span>2. Treasuries & Balances</span>
             <span id="syncBadge" class="px-2 py-1 bg-rose-500/20 text-rose-400 rounded text-[10px] font-bold">Disconnected</span>
           </div>
           
@@ -164,12 +164,29 @@
                   <span class="text-xs text-gray-400 walletBalanceSymbol">USDC</span>
                 </div>
               </div>
+              <div>
+                <p class="text-xs text-gray-500 mb-1">Contract (Sponsor) Balance</p>
+                <div class="text-3xl font-extrabold text-purple-400 flex items-baseline gap-2">
+                  <span id="sponsorBalanceDisplay">0.00</span>
+                  <span class="text-sm text-gray-400 sponsorBalanceSymbol">USDC</span>
+                </div>
+              </div>
             </div>
             
-            <!-- Info Status -->
+            <!-- Actions -->
             <div class="space-y-3">
-              <div class="p-4 rounded-xl bg-purple-500/10 border border-purple-500/20 text-xs text-purple-300 leading-relaxed">
-                <i class="fas fa-info-circle mr-1"></i> دکمه‌های واریز (Deposit) و برداشت (Withdraw) از معماری قرارداد حذف شدند. توکن‌ها در زمان اجرای تراکنشِ اصلی اسپلیت به طور مستقیم از کیف پول شما ارسال می‌شوند تا در مصرف Gas صرفه‌جویی شود و زمان تراکنش به O(1) برسد.
+              <div class="flex gap-2">
+                <input type="number" id="hubAmount" placeholder="Amount..." class="w-full rounded-xl px-4 py-3 text-sm font-bold">
+                <select id="hubToken" class="rounded-xl px-2 py-3 text-sm font-bold w-32 text-center" onchange="handleTokenChange()">
+                  <option value="0x3600000000000000000000000000000000000000">USDC</option>
+                  <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
+                  <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
+                  <option value="custom">➕ Add Custom</option>
+                </select>
+              </div>
+              <div class="flex gap-2">
+                <button onclick="depositFunds()" class="flex-1 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border border-purple-500/30 py-2.5 rounded-xl text-sm font-bold transition-all"><i class="fas fa-arrow-down mr-1"></i> Deposit</button>
+                <button onclick="withdrawFunds()" class="flex-1 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 border border-blue-500/30 py-2.5 rounded-xl text-sm font-bold transition-all"><i class="fas fa-arrow-up mr-1"></i> Withdraw</button>
               </div>
             </div>
           </div>
@@ -311,6 +328,8 @@
     "function registerRule(address token, address recipient, uint256 amountToSplit, uint256 maxRelayerFee, uint256 ruleIdNonce, bool isRecurring, uint256 ruleCooldown, uint256 deadline, uint8[] opcodes, address[] evaluators, bytes[] evaluatorsData) returns (bytes32)",
     "function nativeBalances(address account) view returns (uint256)",
     "function tokenBalances(address account, address token) view returns (uint256)",
+    "function depositERC20(address token, uint256 amount)",
+    "function withdraw(address token, uint256 amount)",
     "function claimFailedPull(address token)"
   ];
 
@@ -318,8 +337,8 @@
 
   let provider, signer, userAddress = null;
   let contract;
-  let conditions = []; 
-  let activeDecimals = 18; 
+  let conditions = []; // Array of { type, inputs: [], generatedData, address }
+  let activeDecimals = 18; // Default, will sync on token change
 
   function showToast(msg, duration = 6000) {
     const t = document.getElementById("toast");
@@ -347,6 +366,66 @@
       document.getElementById('btn-dashboard').classList.add('text-gray-500');
       loadHistoryData();
     }
+  }
+
+  async function handleTokenChange() {
+    const select = document.getElementById('hubToken');
+    if (select.value === 'custom') {
+      const address = prompt("Enter Custom Token Contract Address (0x...):");
+      if (!address || !ethers.isAddress(address)) {
+        showToast("Invalid contract address!");
+        select.selectedIndex = 0; 
+        return updateTokenInfo();
+      }
+      
+      let symbol = "CUSTOM";
+      try {
+        if(provider) {
+           const tokenContract = new ethers.Contract(address, ERC20_ABI, provider);
+           symbol = await tokenContract.symbol();
+        } else {
+           symbol = prompt("Enter Token Symbol (e.g. USDT):") || "CUSTOM";
+        }
+      } catch(e) {
+        symbol = prompt("Could not auto-fetch symbol. Enter Token Symbol manually:") || "CUSTOM";
+      }
+
+      const newOption = document.createElement('option');
+      newOption.value = address;
+      newOption.textContent = symbol;
+      select.insertBefore(newOption, select.options[select.options.length - 1]);
+      select.value = address;
+    }
+    await updateTokenInfo();
+  }
+
+  async function updateTokenInfo() {
+    const select = document.getElementById('hubToken');
+    const tokenAddress = select.value;
+    
+    let tokenSymbol = select.options[select.selectedIndex].text.replace('➕ ', '');
+    if (tokenAddress.toLowerCase() === "0x3600000000000000000000000000000000000000") {
+        tokenSymbol = "USDC"; 
+    }
+    
+    document.querySelectorAll('.sponsorBalanceSymbol').forEach(el => el.textContent = tokenSymbol);
+    document.querySelectorAll('.walletBalanceSymbol').forEach(el => el.textContent = tokenSymbol);
+    document.getElementById('previewTokenSymbol').textContent = tokenSymbol;
+
+    if (provider && tokenAddress) {
+      if (tokenAddress.toLowerCase() === "0x3600000000000000000000000000000000000000") {
+          activeDecimals = 18; 
+      } else {
+          try {
+            const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+            activeDecimals = Number(await tokenContract.decimals());
+          } catch (e) {
+            console.warn("Decimals fetch failed, defaulting to 18.", e);
+            activeDecimals = 18; 
+          }
+      }
+    }
+    fetchBalances();
   }
 
   function toggleRecurring() {
@@ -388,7 +467,7 @@
         badge.textContent = "Synced";
         badge.className = "px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-[10px] font-bold";
         
-        await fetchBalancesWithRetry(); 
+        await updateTokenInfo(); 
         
         window.ethereum.on('chainChanged', () => window.location.reload());
         window.ethereum.on('accountsChanged', () => window.location.reload());
@@ -409,6 +488,7 @@
     document.getElementById('networkBadge').textContent = "Unknown Net";
     document.getElementById('networkBadge').className = "absolute top-6 right-6 px-2 py-1 bg-gray-500/20 text-gray-400 rounded text-[10px] font-bold border border-gray-500/30";
     
+    document.getElementById('sponsorBalanceDisplay').textContent = "0.00";
     document.getElementById('walletBalanceDisplay').textContent = "0.00";
     
     const badge = document.getElementById('syncBadge');
@@ -418,36 +498,118 @@
     showToast("Wallet disconnected.");
   }
 
-  /**
-   * تابع دریافت موجودی با مکانیزم ۳ بار تلاش خودکار (Automatic 3x Retry)
-   */
-  async function fetchBalancesWithRetry(retries = 3) {
-    if (!userAddress || !provider) return;
+  async function fetchBalances() {
+    if (!contract || !userAddress || !provider) return;
     const badge = document.getElementById('syncBadge');
+    badge.textContent = "Syncing...";
     
-    for (let attempt = 1; attempt <= retries; attempt++) {
-      try {
-        badge.textContent = attempt > 1 ? `Syncing (Retry ${attempt}/${retries})...` : "Syncing...";
-        
-        const walletBalRaw = await provider.getBalance(userAddress);
-        const displayWalletBal = ethers.formatUnits(walletBalRaw, activeDecimals);
-        
-        document.getElementById('walletBalanceDisplay').textContent = parseFloat(displayWalletBal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
-        
-        badge.textContent = "Synced";
-        badge.className = "px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-[10px] font-bold";
-        return; // خروج موفقیت‌آمیز
-      } catch (err) {
-        console.warn(`Attempt ${attempt} failed to fetch balance:`, err);
-        if (attempt === retries) {
-          badge.textContent = "Sync Error (3x Failed)";
-          badge.className = "px-2 py-1 bg-rose-500/20 text-rose-400 rounded text-[10px] font-bold";
-          showToast("دریافت موجودی پس از ۳ بار تلاش ناموفق بود.");
-        } else {
-          // مکث ۱.۵ ثانیه‌ای قبل از تلاش بعدی
-          await new Promise(resolve => setTimeout(resolve, 1500));
-        }
+    const select = document.getElementById('hubToken');
+    const tokenAddress = select.value;
+    const NATIVE_SYS = "0x3600000000000000000000000000000000000000";
+
+    try {
+      let walletBalRaw, balRaw;
+      if (tokenAddress.toLowerCase() === NATIVE_SYS.toLowerCase()) {
+          walletBalRaw = await provider.getBalance(userAddress);
+          balRaw = await contract.nativeBalances(userAddress);
+      } else {
+          const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+          walletBalRaw = await tokenContract.balanceOf(userAddress);
+          balRaw = await contract.tokenBalances(userAddress, tokenAddress);
       }
+
+      const displayWalletBal = ethers.formatUnits(walletBalRaw, activeDecimals);
+      document.getElementById('walletBalanceDisplay').textContent = parseFloat(displayWalletBal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+
+      const displayVal = ethers.formatUnits(balRaw, activeDecimals);
+      document.getElementById('sponsorBalanceDisplay').textContent = parseFloat(displayVal).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+      
+      badge.textContent = "Synced";
+      badge.className = "px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-[10px] font-bold";
+    } catch (err) {
+      console.error(`Balance fetch err:`, err);
+      badge.textContent = "Sync Error";
+      badge.className = "px-2 py-1 bg-rose-500/20 text-rose-400 rounded text-[10px] font-bold";
+    }
+  }
+
+  async function depositFunds() {
+    if (!signer || !userAddress) return showToast("Connect wallet first!");
+    const amt = document.getElementById('hubAmount').value;
+    if (!amt || amt <= 0) return showToast("Enter valid deposit amount");
+    
+    try {
+      const parsedAmt = ethers.parseUnits(amt.toString(), activeDecimals);
+      const tokenAddress = document.getElementById('hubToken').value;
+      const tokenSymbol = document.querySelector('.sponsorBalanceSymbol').textContent;
+      let tx;
+
+      if (tokenAddress.toLowerCase() === "0x3600000000000000000000000000000000000000") {
+          tx = await signer.sendTransaction({ to: CONTRACT_ADDRESS, value: parsedAmt });
+      } else {
+          showToast(`Approving ${amt} ${tokenSymbol}... Please sign.`);
+          const tokenContract = new ethers.Contract(tokenAddress, ERC20_ABI, signer);
+          const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, parsedAmt);
+          await approveTx.wait();
+          showToast(`Approve Successful! Depositing...`);
+          tx = await contract.depositERC20(tokenAddress, parsedAmt);
+      }
+      
+      showToast(`Tx Sent! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-blue-400 underline mt-2 inline-block font-normal'>View Explorer</a>`);
+      await tx.wait(); 
+      showToast(`Deposit of ${amt} ${tokenSymbol} Successful!`);
+      await fetchBalances(); 
+      document.getElementById('hubAmount').value = '';
+
+      if (typeof saveHistoryToCloud === 'function') {
+        await saveHistoryToCloud(userAddress, {
+          appName: APP_IDENTIFIER,
+          type: 'Deposit',
+          amount: amt,
+          token: tokenSymbol,
+          hash: tx.hash,
+          timestamp: new Date().toISOString(),
+          memo: `Deposited ${amt} ${tokenSymbol}`
+        });
+      }
+    } catch(e) {
+      console.error(e);
+      showToast("Deposit failed or rejected.");
+    }
+  }
+
+  async function withdrawFunds() {
+    if (!contract) return showToast("Connect wallet first!");
+    const amt = document.getElementById('hubAmount').value;
+    if (!amt || amt <= 0) return showToast("Enter valid withdraw amount");
+    
+    try {
+      const parsedAmt = ethers.parseUnits(amt.toString(), activeDecimals);
+      const tokenAddress = document.getElementById('hubToken').value;
+      const tokenSymbol = document.querySelector('.sponsorBalanceSymbol').textContent;
+      
+      const tx = await contract.withdraw(tokenAddress, parsedAmt);
+      showToast(`Withdraw Tx Sent! <br><a href='${EXPLORER_URL}${tx.hash}' target='_blank' class='text-blue-400 underline mt-2 inline-block font-normal'>View Explorer</a>`);
+      await tx.wait();
+      
+      showToast(`Withdrawal of ${amt} ${tokenSymbol} Successful!`);
+      await fetchBalances();
+      document.getElementById('hubAmount').value = '';
+
+      if (typeof saveHistoryToCloud === 'function') {
+        await saveHistoryToCloud(userAddress, {
+          appName: APP_IDENTIFIER,
+          type: 'Withdraw',
+          amount: amt,
+          token: tokenSymbol,
+          hash: tx.hash,
+          timestamp: new Date().toISOString(),
+          memo: `Withdrew ${amt} ${tokenSymbol}`
+        });
+      }
+    } catch(e) {
+      console.error(e);
+      showToast("Withdraw failed. Check balance.");
     }
   }
 
@@ -473,6 +635,7 @@
   function updateConditionParam(index, paramIndex, value) {
     conditions[index].inputs[paramIndex] = value;
     
+    // Auto Encode based on specific Evaluator ABIs
     const type = conditions[index].type;
     const inputs = conditions[index].inputs;
     let coder = ethers.AbiCoder.defaultAbiCoder();
@@ -486,10 +649,12 @@
             conditions[index].generatedData = coder.encode(['address', 'uint256'], [inputs[0], ethers.parseEther(inputs[1])]);
         }
         else if (type === 'ERC20_BAL' && inputs[0] && inputs[1] && inputs[2]) {
+            // using parseEther (18 dec) for simplicity in UI, realistically would fetch token decimals
             conditions[index].generatedData = coder.encode(['address', 'address', 'uint256'], [inputs[0], inputs[1], ethers.parseEther(inputs[2])]);
         }
         else if (type === 'PRICE' && inputs[0] && inputs[1] && inputs[2]) {
             const isGreaterThan = inputs[2] === 'true';
+            // Chainlink typically uses 8 decimals for USD pairs
             const target = BigInt(Math.floor(parseFloat(inputs[1]) * 10**8));
             conditions[index].generatedData = coder.encode(['address', 'int256', 'bool'], [inputs[0], target, isGreaterThan]);
         }
@@ -506,7 +671,7 @@
             conditions[index].generatedData = coder.encode(['address'], [inputs[0]]);
         }
     } catch(e) {
-        conditions[index].generatedData = '0x';
+        conditions[index].generatedData = '0x'; // Invalid encoding
     }
 
     updatePreview();
@@ -565,7 +730,7 @@
           <div class="grid grid-cols-3 gap-3">
             <div>
               <label class="text-[10px] text-gray-400 uppercase tracking-wide">Oracle Feed (Chainlink)</label>
-              <input type="text" placeholder="0x..." value="${c.inputs[0] || ''}" oninput="updateConditionParam(${i}, 0, this.value)" class="w-full rounded-lg px-3 py-2 text-xs font-mono mt-1 border-white/20">
+              <input type="text" placeholder="0x... (e.g. ETH/USD)" value="${c.inputs[0] || ''}" oninput="updateConditionParam(${i}, 0, this.value)" class="w-full rounded-lg px-3 py-2 text-xs font-mono mt-1 border-white/20">
             </div>
             <div>
               <label class="text-[10px] text-gray-400 uppercase tracking-wide">Target Price ($)</label>
@@ -614,12 +779,13 @@
       } else if (c.type === 'EOA') {
         inputsHtml = `
           <div>
-            <label class="text-[10px] text-gray-400 uppercase tracking-wide">Address to verify</label>
+            <label class="text-[10px] text-gray-400 uppercase tracking-wide">Address to verify (Ensure it's a real person, not a bot/contract)</label>
             <input type="text" placeholder="0x..." value="${c.inputs[0] || ''}" oninput="updateConditionParam(${i}, 0, this.value)" class="w-full rounded-lg px-3 py-2 text-xs font-mono mt-1 border-white/20">
           </div>
         `;
       }
 
+      // Generate Dropdown Options dynamically
       let optionsHtml = Object.keys(EVALUATORS).map(key => 
         `<option value="${key}" ${c.type === key ? 'selected' : ''}>${EVALUATORS[key].name}</option>`
       ).join('');
@@ -668,7 +834,7 @@
     const nonce = Math.floor(Math.random() * 1000000);
     const isRecurring = document.getElementById('ruleRecurring').checked;
     const cooldown = document.getElementById('ruleCooldown').value || "0";
-    const tokenAddress = "0x3600000000000000000000000000000000000000";
+    const tokenAddress = document.getElementById('hubToken').value;
 
     if (!recipient || !ethers.isAddress(recipient)) return showToast("Invalid Recipient Address");
     if (!amt || amt <= 0) return showToast("Invalid Amount");
@@ -677,6 +843,7 @@
     let evaluators = [];
     let evaluatorsData = [];
 
+    // Construct execution opcodes (Assuming OP_AND for all conditions to keep it user-friendly)
     for(let i=0; i<conditions.length; i++) {
       let c = conditions[i];
       if (c.generatedData === '0x') return showToast(`Condition ${i+1} is missing data or invalid.`);
@@ -684,13 +851,13 @@
       evaluators.push(EVALUATORS[c.type].address);
       evaluatorsData.push(c.generatedData);
       
-      opcodes.push(3); 
-      if (i > 0) opcodes.push(0); 
+      opcodes.push(3); // OP_EVAL
+      if (i > 0) opcodes.push(0); // OP_AND
     }
 
     try {
       const parsedAmt = ethers.parseUnits(amt.toString(), activeDecimals);
-      const fee = "0"; 
+      const fee = "0"; // Fee logic abstracted for UI simplicity
       
       const btn = document.getElementById('registerBtn');
       const ogHtml = btn.innerHTML;
@@ -715,7 +882,7 @@
           appName: APP_IDENTIFIER,
           type: 'Smart Condition Lock',
           amount: amt,
-          token: 'USDC',
+          token: document.querySelector('.sponsorBalanceSymbol').textContent,
           recipient: recipient,
           conditionsCount: conditions.length,
           hash: tx.hash,
@@ -759,6 +926,9 @@
         let icon = 'fa-lock';
         let color = 'text-purple-400';
         let bg = 'bg-purple-400/10';
+        
+        if(item.type === 'Deposit') { icon = 'fa-arrow-down'; color = 'text-blue-400'; bg = 'bg-blue-400/10'; }
+        if(item.type === 'Withdraw') { icon = 'fa-arrow-up'; color = 'text-rose-400'; bg = 'bg-rose-400/10'; }
 
         container.innerHTML += `
           <div class="bg-white/5 border border-white/10 p-5 rounded-2xl flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 hover:bg-white/10 transition shadow-lg">
