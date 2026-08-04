@@ -16,6 +16,13 @@
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
     
+    :root {
+      --accent: #0ea5e9;
+      --accent-light: #0ea5e9;
+      --glass-bg: rgba(18, 18, 28, 0.7);
+      --glass-border: rgba(255, 255, 255, 0.05);
+    }
+
     body { 
       font-family: 'Plus Jakarta Sans', system-ui, sans-serif; 
       background: #05050a;
@@ -28,16 +35,16 @@
     }
     
     .glass {
-      background: rgba(18, 18, 28, 0.7);
+      background: var(--glass-bg);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.05);
+      border: 1px solid var(--glass-border);
       box-shadow: 0 24px 40px -12px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.05);
     }
     
-    /* Light Mode Variables */
+    /* Light Mode Variables - exactly like ArcSplit */
     .light {
-      background: #f8fafc !important;
+      background: #f8fafc !important; 
       background-image: 
         radial-gradient(circle at 15% 25%, rgba(16, 185, 129, 0.06) 0%, transparent 45%),
         radial-gradient(circle at 85% 75%, rgba(34, 211, 238, 0.06) 0%, transparent 45%) !important;
@@ -45,14 +52,15 @@
     }
 
     .light .glass {
-      background: rgba(255, 255, 255, 0.7);
-      border-color: rgba(255, 255, 255, 1);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1);
+      background: rgba(255, 255, 255, 0.7) !important;
+      border-color: rgba(255, 255, 255, 1) !important;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
     }
 
-    .light body, .light h1, .light h3, .light label, .light .text-white { color: #0f172a; }
+    .light body, .light h1, .light h3, .light label, .light .text-white { color: #0f172a !important; }
     .light .text-gray-400 { color: #64748b !important; }
     .light .text-gray-300 { color: #475569 !important; }
+    .light .text-gray-200 { color: #64748b !important; }
 
     .always-white { color: #ffffff !important; }
 
@@ -77,10 +85,10 @@
     }
 
     .light select, .light input, .light textarea {
-      background-color: #ffffff;
-      color: #0f172a;
-      border: 1px solid #e2e8f0;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+      background-color: #ffffff !important;
+      color: #0f172a !important;
+      border: 1px solid #e2e8f0 !important;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02) !important;
       color-scheme: light;
     }
 
@@ -89,8 +97,8 @@
       color: white;
     }
     .light select option {
-      background-color: #ffffff;
-      color: #0f172a;
+      background-color: #ffffff !important;
+      color: #0f172a !important;
     }
 
     .error-msg {
@@ -124,6 +132,37 @@
       animation: spin 1s linear infinite;
     }
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* Copied + Light Mode tweaks (no layout change) */
+    .light .bg-white\/\[0\.02\], .light .bg-white\/\[0\.01\] { 
+      background-color: rgba(255, 255, 255, 0.6) !important; 
+      border-color: rgba(255, 255, 255, 0.8) !important;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+    }
+    .light .bg-white\/5 { 
+      background-color: rgba(0, 0, 0, 0.04) !important; 
+    }
+    .light .border-white\/5, .light .border-white\/10, .light .border-white\/15 { 
+      border-color: rgba(0, 0, 0, 0.06) !important; 
+    }
+
+    .light .app-button.bg-white\/5 {
+      background-color: rgba(255, 255, 255, 0.8) !important;
+      border: 1px solid rgba(0, 0, 0, 0.05) !important;
+      color: #475569 !important;
+    }
+    .light .app-button.bg-white\/5:hover {
+      background-color: #ffffff !important;
+      border-color: rgba(16, 185, 129, 0.3) !important;
+      color: #10b981 !important;
+    }
+
+    .light .preview-scroll {
+      scrollbar-color: rgba(0,0,0,0.2) transparent;
+    }
+    .light .preview-scroll::-webkit-scrollbar-thumb {
+      background-color: rgba(0,0,0,0.2);
+    }
   </style>
 </head>
 <body class="text-white min-h-screen selection:bg-emerald-500/30 selection:text-emerald-200">
@@ -149,7 +188,7 @@
           <button onclick="switchTab('history')" id="tabHistory" class="px-5 py-2.5 rounded-xl text-sm font-bold transition-all text-gray-400 hover:text-white light:hover:text-black whitespace-nowrap">History</button>
         </div>
 
-        <button onclick="toggleTheme()" id="themeBtn" class="flex-shrink-0 w-12 h-12 flex items-center justify-center bg-white/5 light:bg-white hover:bg-white/10 border border-white/5 light:border-slate-200 rounded-2xl transition-all shadow-sm">
+        <button onclick="toggleTheme()" id="themeBtn" class="flex-shrink-0 w-12 h-12 items-center justify-center bg-white/5 light:bg-white hover:bg-white/10 border border-white/5 light:border-slate-200 rounded-2xl transition-all shadow-sm">
           <i class="fas fa-moon text-lg text-emerald-500"></i>
         </button>
 
@@ -313,7 +352,7 @@
 
               <div class="pt-4 border-t border-white/5 light:border-slate-200">
                 <div class="w-32 h-32 bg-white/10 light:bg-slate-200 rounded-xl mx-auto flex items-center justify-center relative overflow-hidden">
-                  <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPgo8cmVjdCB3aWR0aD0iOCIgaGVpZ2h0PSI4IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPHBhdGggZD0iTTAgMGg0djRIMHoiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIi8+Cjwvc3ZnPg==')] opacity-50"></div>
+                  <div class="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPgo8cmVjdCB3aWR0aD0iOCIgaGVpZ2h0PSI4IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDUiLz4KPHBhdGggZD0iTTAgMGg0djRIMHoiIiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMSIvPgo8L3N2Zw==')] opacity-50"></div>
                   <i class="fas fa-qrcode text-3xl text-gray-500/50"></i>
                 </div>
               </div>
@@ -1223,7 +1262,7 @@
     if (currentLinks.length === 0) {
       linkContainer.innerHTML = `<div class="text-center py-6 text-gray-500 text-sm border border-dashed border-white/10 rounded-2xl">No links created yet.</div>`;
     } else {
-      let linksChanged = false; // 플گ برای تشخیص تغییر و ذخیره نهایی
+      let linksChanged = false; // 플그 برای تشخیص تغییر و ذخیره نهایی
       
       const linkPromises = currentLinks.map(async (link) => {
         let isExpired = link.expiration > 0 && (Date.now() / 1000) > link.expiration;
@@ -1280,7 +1319,7 @@
     if (currentInvoices.length === 0) {
       invContainer.innerHTML = `<div class="text-center py-6 text-gray-500 text-sm border border-dashed border-white/10 rounded-2xl">No invoices created yet.</div>`;
     } else {
-      let invoicesChanged = false; // 플گ برای تشخیص تغییر و ذخیره نهایی
+      let invoicesChanged = false; // 플그 برای تشخیص تغییر و ذخیره نهایی
       
       const invPromises = currentInvoices.map(async (inv) => {
         let isExpired = inv.expiration > 0 && (Date.now() / 1000) > inv.expiration;
@@ -1380,7 +1419,6 @@
       renderHistory();
     }
   }, 60000); // 
-  
 </script>
 </body>
 </html>
