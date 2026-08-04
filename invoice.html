@@ -310,8 +310,8 @@
           success = true;
 
         } catch (error) {
-          console.warn("RPC is slow, retrying fetching values silently in 5 seconds...");
-          await sleep(5000);
+          console.warn("RPC is slow, retrying fetching values silently...");
+          await sleep(3000);
         }
       }
     }
@@ -398,21 +398,12 @@
             let needsApproval = false;
             
             if (!invoiceData.isNative) {
-                let checkSuccess = false;
-                while (!checkSuccess) {
-                    try {
-                        btnText.innerHTML = '<div class="spinner border-black border-left-transparent mr-2"></div> Checking Allowance...';
-                        const tokenContract = new ethers.Contract(invoiceData.tokenAddress, ERC20ABI, signer);
-                        const currentAllowance = await tokenContract.allowance(userAddress, INVOICE_CONTRACT_ADDRESS);
-                        
-                        if (currentAllowance < invoiceData.amountRaw) {
-                            needsApproval = true;
-                        }
-                        checkSuccess = true;
-                    } catch (err) {
-                        console.warn("RPC error during allowance check, retrying in 5 seconds...");
-                        await sleep(5000);
-                    }
+                btnText.innerHTML = '<div class="spinner border-black border-left-transparent mr-2"></div> Checking Allowance...';
+                const tokenContract = new ethers.Contract(invoiceData.tokenAddress, ERC20ABI, signer);
+                const currentAllowance = await tokenContract.allowance(userAddress, INVOICE_CONTRACT_ADDRESS);
+                
+                if (currentAllowance < invoiceData.amountRaw) {
+                    needsApproval = true;
                 }
             }
 
@@ -422,22 +413,7 @@
                 const tx = await tokenContract.approve(INVOICE_CONTRACT_ADDRESS, invoiceData.amountRaw);
                 
                 btnText.innerHTML = '<div class="spinner border-black border-left-transparent mr-2"></div> Confirming Approval...';
-                
-                let approveSuccess = false;
-                while (!approveSuccess) {
-                    try {
-                        const receipt = await provider.waitForTransaction(tx.hash, 1, 35000);
-                        if (receipt && receipt.status === 1) {
-                            approveSuccess = true;
-                        } else if (receipt && receipt.status === 0) {
-                            throw new Error("Transaction reverted on chain.");
-                        }
-                    } catch (err) {
-                        if (err.message === "Transaction reverted on chain.") throw err;
-                        console.warn("RPC error while confirming approval, retrying in 5 seconds...");
-                        await sleep(5000);
-                    }
-                }
+                await tx.wait(1);
                 
                 showSuccess("Approval granted! You can now securely pay.");
                 updateActionButton();
@@ -453,24 +429,20 @@
             
             const tx = await contract.payInvoice(invoiceId, options);
             
+            let attempt = 0;
             let txSuccess = false;
             
-            while(!txSuccess) {
+            while(attempt < 3 && !txSuccess) {
                 try {
+                    attempt++;
                     btnText.innerHTML = '<div class="spinner border-black border-left-transparent mr-2"></div> Confirming...';
                     const receipt = await provider.waitForTransaction(tx.hash, 1, 35000);
                     
-                    if (receipt && receipt.status === 1) {
-                        txSuccess = true;
-                    } else if (receipt && receipt.status === 0) {
-                        throw new Error("Transaction reverted on chain.");
-                    } else {
-                        if (!receipt) throw new Error("Timeout");
-                    }
+                    if (receipt && receipt.status === 1) txSuccess = true;
+                    else throw new Error("Transaction reverted on chain.");
                 } catch (err) {
-                    if (err.message === "Transaction reverted on chain.") throw err;
-                    console.warn("RPC error while confirming payment, retrying in 5 seconds...");
-                    await sleep(5000);
+                    if (attempt >= 2) throw err;
+                    await sleep(2000);
                 }
             }
             
@@ -486,7 +458,7 @@
             if (error.code === "ACTION_REJECTED") {
                 showError("Transaction rejected by user.");
             } else {
-                showError(error.reason || error.message || "Transaction failed. Please try again.");
+                showError(error.reason || "Transaction failed. Please try again.");
             }
         } finally {
             btn.disabled = false;
