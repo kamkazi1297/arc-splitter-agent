@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-  <title>ArcSplit - Agentic Push-Based Splitter</title>
+  <title>ArcSplit - Agentic Push-Based Splitter (Fixed & Verified)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
@@ -41,9 +41,6 @@
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
     
-    /* =========================================
-       Light Mode - Professional Glassmorphism
-       ========================================= */
     .light {
       background: #f8fafc !important; 
       background-image: 
@@ -344,8 +341,8 @@
 
               <!-- BATCH INPUT CONTAINER -->
               <div id="batchInputContainer" class="hidden sm:col-span-2">
-                 <label class="block text-xs font-bold text-gray-400 light:text-slate-600 mb-2">Recipients & Amounts (Format: 0xAddress, Amount)</label>
-                 <textarea id="batchData" rows="4" placeholder="0x123..., 100&#10;0x456..., 250" class="w-full rounded-xl px-4 py-3 text-sm font-mono"></textarea>
+                 <label class="block text-xs font-bold text-gray-400 light:text-slate-600 mb-2">Recipients & Amounts (Format: 0xAddress, Amount - Note: Contract requires equal amounts per user)</label>
+                 <textarea id="batchData" rows="4" placeholder="0x123..., 100&#10;0x456..., 100" class="w-full rounded-xl px-4 py-3 text-sm font-mono"></textarea>
               </div>
 
               <div>
@@ -461,10 +458,10 @@
     "function approve(address spender, uint256 amount) returns (bool)"
   ];
 
-  // Updated Splitter ABI based on new UUPS Contract Architecture with Batch functionality
+  // BUG FIX 1: Exact alignment with Solidity ArcConditionalSplitter contract function names & signature types
   const SPLITTER_ABI = [
     "function registerRule(address token, address recipient, uint256 amountToSplit, uint256 maxRelayerFee, uint256 ruleIdNonce, bool isRecurring, uint256 ruleCooldown, uint256 deadline, uint8[] opcodes, address[] evaluators, bytes[] evaluatorsData) returns (bytes32)",
-    "function batchRegisterRule(address token, address[] recipients, uint256[] amountsToSplit, uint256 maxRelayerFee, uint256 ruleIdNonce, bool isRecurring, uint256 ruleCooldown, uint256 deadline, uint8[] opcodes, address[] evaluators, bytes[] evaluatorsData) returns (bytes32[])",
+    "function registerRuleBatch(address token, address[] recipients, uint256 amountToSplitPerUser, uint256 maxRelayerFee, uint256[] ruleIdNonces, bool isRecurring, uint256 ruleCooldown, uint256 deadline, uint8[] opcodes, address[] evaluators, bytes[] evaluatorsData) returns (bytes32[])",
     "function nativeBalances(address account) view returns (uint256)",
     "function tokenBalances(address account, address token) view returns (uint256)",
     "function depositERC20(address token, uint256 amount)",
@@ -739,6 +736,7 @@
             badge.textContent = "Sync Error";
             badge.className = "px-2 py-1 bg-rose-500/20 text-rose-400 rounded text-[10px] font-bold";
         } else {
+            // Programmatic delay to resolve RPC latency
             await new Promise(r => setTimeout(r, 1000));
         }
       }
@@ -849,6 +847,7 @@
     }
   }
 
+  // BUG FIX 2: Corrected parameter passing for Batch Registration (single amountToSplitPerUser & array of nonces)
   async function registerSmartRule() {
     if (!contract) return showToast("Connect wallet first!");
     
@@ -869,22 +868,30 @@
         for(let line of lines) {
             if(line.trim() === '') continue;
             const parts = line.split(',');
-            if(parts.length !== 2) return showToast("Invalid batch format. Use: Address, Amount");
+            if(parts.length !== 2) return showToast("فرمت نامعتبر Batch. از فرمت: Address, Amount استفاده کنید");
             const addr = parts[0].trim();
             const amt = parseFloat(parts[1].trim());
-            if(!ethers.isAddress(addr)) return showToast("Invalid Address in batch: " + addr);
-            if(isNaN(amt) || amt <= 0) return showToast("Invalid Amount in batch for: " + addr);
+            if(!ethers.isAddress(addr)) return showToast("آدرس نامعتبر در لیست: " + addr);
+            if(isNaN(amt) || amt <= 0) return showToast("مقدار نامعتبر برای آدرس: " + addr);
             
             recipients.push(addr);
             amounts.push(amt);
             totalAmount += amt;
         }
-        if(recipients.length === 0) return showToast("Batch data is empty");
+        if(recipients.length === 0) return showToast("لیست Batch خالی است");
+        
+        // Ensure all users have identical amounts as expected by amountToSplitPerUser in Solidity
+        const firstAmt = amounts[0];
+        for(let i = 1; i < amounts.length; i++) {
+            if(amounts[i] !== firstAmt) {
+                return showToast("خطا: طبق قرارداد هوشمند، مقدار تخصیص (Amount) برای تمام آدرس‌ها در یک تراکنش دسته‌جمعی باید یکسان باشد.");
+            }
+        }
     } else {
         const recipient = document.getElementById('ruleRecipient').value;
         const amt = document.getElementById('ruleAmount').value;
-        if (!recipient || !ethers.isAddress(recipient)) return showToast("Invalid Recipient Address");
-        if (!amt || amt <= 0) return showToast("Invalid Amount");
+        if (!recipient || !ethers.isAddress(recipient)) return showToast("آدرس گیرنده نامعتبر است");
+        if (!amt || amt <= 0) return showToast("مقدار نامعتبر است");
         recipients.push(recipient);
         amounts.push(parseFloat(amt));
         totalAmount = parseFloat(amt);
@@ -919,9 +926,12 @@
 
       let tx;
       if (isBatch) {
-          const parsedAmounts = amounts.map(a => ethers.parseUnits(a.toString(), activeDecimals));
-          tx = await contract.batchRegisterRule(
-            tokenAddress, recipients, parsedAmounts, parsedFee, nonce, isRecurring, cooldown, deadlineUnix,
+          // Solidity expects a single amountToSplitPerUser and uint256[] ruleIdNonces array
+          const parsedAmountPerUser = ethers.parseUnits(amounts[0].toString(), activeDecimals);
+          const noncesArray = recipients.map(() => Math.floor(Math.random() * 1000000000));
+          
+          tx = await contract.registerRuleBatch(
+            tokenAddress, recipients, parsedAmountPerUser, parsedFee, noncesArray, isRecurring, cooldown, deadlineUnix,
             opcodes, evaluators, evaluatorsData
           );
       } else {
@@ -1071,7 +1081,6 @@
     updatePreview();
   }
 
-  // Updated Event Listeners for Preview Calculation
   document.getElementById('ruleRecipient').addEventListener('input', updatePreview);
   document.getElementById('ruleAmount').addEventListener('input', updatePreview);
   document.getElementById('batchData').addEventListener('input', updatePreview);
