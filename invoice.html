@@ -13,24 +13,82 @@
     
     body { 
       font-family: 'Plus Jakarta Sans', system-ui, sans-serif; 
-      background: #05050a;
+      background: #070711;
       background-image: 
-        radial-gradient(circle at 15% 25%, rgba(245, 158, 11, 0.05) 0%, transparent 45%),
-        radial-gradient(circle at 85% 75%, rgba(239, 68, 68, 0.05) 0%, transparent 45%);
+        radial-gradient(circle at 10% 20%, rgba(234, 179, 8, 0.09) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(180, 140, 40, 0.05) 0%, transparent 50%);
       color: #f8fafc;
       min-height: 100vh;
+      overflow-x: hidden;
     }
     
     .glass {
-      background: rgba(18, 18, 28, 0.7);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      box-shadow: 0 24px 40px -12px rgba(0, 0, 0, 0.5);
+      background: rgba(18, 18, 38, 0.65);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
+
+    .light {
+      background: #f8fafc !important; 
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(234, 179, 8, 0.12) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.10) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(180, 140, 40, 0.06) 0%, transparent 50%) !important;
+      color: #0f172a !important;
+    }
+
+    .light .glass {
+      background: rgba(255, 255, 255, 0.55) !important;
+      backdrop-filter: blur(24px) !important;
+      -webkit-backdrop-filter: blur(24px) !important;
+      border: 1px solid rgba(0, 0, 0, 0.08) !important;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+      color: #0f172a !important;
+    }
+
+    .light h1, .light h3, .light label, .light .text-white:not(.always-white) {
+      color: #0f172a !important;
+    }
+    .light .text-gray-400 { color: #1e293b !important; }
+    .light .text-gray-300 { color: #0f172a !important; }
+    .light .text-gray-500 { color: #334155 !important; }
+
+    .always-white { color: #ffffff !important; }
+    .light .always-white { color: #ffffff !important; }
+
+    .brand-gradient,
+    .light .brand-gradient {
+      -webkit-text-fill-color: transparent !important;
+      color: transparent !important;
+      background-image: linear-gradient(to right, #facc15, #34d399) !important;
+      -webkit-background-clip: text !important;
+      background-clip: text !important;
+    }
+
+    .light .details-card {
+      background: #0a0a0f !important;
+      border-color: rgba(255, 255, 255, 0.08) !important;
+    }
+    .light .details-card .text-gray-400 { color: #94a3b8 !important; }
+    .light .details-card .text-gray-300,
+    .light .details-card .text-white,
+    .light .details-card .always-white { color: #ffffff !important; }
+    .light .details-card .text-gray-500 { color: #64748b !important; }
+
+    .app-button {
+      position: relative;
+      overflow: hidden;
+      transition: all 0.25s ease;
+    }
+    .app-button:active { transform: scale(0.98); }
+    .app-button:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
 
     .spinner {
       border: 3px solid rgba(255,255,255,0.1);
-      border-left-color: #fff;
+      border-left-color: #facc15;
       border-radius: 50%;
       width: 20px;
       height: 20px;
@@ -39,80 +97,81 @@
     @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
   </style>
 </head>
-<body class="flex flex-col items-center justify-center p-4">
+<body class="flex flex-col items-center justify-center p-4 min-h-screen selection:bg-yellow-500/40 selection:text-black">
 
-  <!-- هدر بالای صفحه برای مدیریت ولت -->
-  <div class="w-full max-w-md flex justify-between items-center mb-6 px-2">
-    <div class="text-2xl font-extrabold tracking-tighter text-white">Arc<span class="text-amber-500">Pay</span></div>
+  <div class="w-full max-w-md flex justify-between items-center mb-6 px-1">
+    <div class="text-2xl font-extrabold tracking-tight">
+      Arc<span class="brand-gradient text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-emerald-400">Pay</span>
+    </div>
     
-    <div id="walletState">
-      <!-- دکمه کانکت اصلی بالا -->
-      <button id="topConnectBtn" onclick="connectWallet(true)" class="text-sm bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-2 rounded-xl transition-colors font-semibold flex items-center gap-2">
-        <i class="fas fa-wallet"></i> Connect
+    <div class="flex items-center gap-2">
+      <button onclick="toggleTheme()" id="themeBtn" class="w-10 h-10 flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all">
+        <i class="fas fa-moon text-yellow-400"></i>
       </button>
-      
-      <!-- اطلاعات ولت بعد از اتصال + دکمه دیسکانکت -->
-      <div id="topWalletInfo" class="hidden flex items-center gap-2">
-        <span id="topAddressDisplay" class="text-sm font-mono text-amber-400 bg-amber-400/10 px-3 py-1.5 rounded-lg border border-amber-400/20"></span>
-        <button onclick="disconnectWallet()" class="text-rose-400 hover:text-white p-2 rounded-lg bg-rose-400/10 hover:bg-rose-500 transition-colors" title="Disconnect Wallet">
-          <i class="fas fa-power-off"></i>
+      <div id="walletState">
+        <button id="topConnectBtn" onclick="connectWallet(true)" class="app-button text-sm bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-2 rounded-xl transition-colors font-semibold flex items-center gap-2">
+          <i class="fas fa-wallet text-yellow-500"></i> Connect
         </button>
+        <div id="topWalletInfo" class="hidden flex items-center gap-2">
+          <span id="topAddressDisplay" class="text-sm font-mono text-yellow-400 bg-yellow-400/10 px-3 py-1.5 rounded-lg border border-yellow-400/20"></span>
+          <button onclick="disconnectWallet()" class="text-rose-400 hover:text-white p-2 rounded-lg bg-rose-400/10 hover:bg-rose-500 transition-colors" title="Disconnect Wallet">
+            <i class="fas fa-power-off"></i>
+          </button>
+        </div>
       </div>
     </div>
   </div>
 
   <div class="glass w-full max-w-md rounded-[2rem] p-8 text-center space-y-6">
-    <div class="w-16 h-16 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/20 mx-auto">
+    <div class="w-16 h-16 bg-gradient-to-br from-yellow-400 to-amber-600 rounded-2xl flex items-center justify-center shadow-lg shadow-yellow-500/25 mx-auto">
       <i class="fas fa-file-invoice-dollar text-white text-2xl"></i>
     </div>
     
     <div>
       <h1 class="text-2xl font-extrabold tracking-tight">Invoice Details</h1>
-      <p class="text-gray-400 text-sm mt-2">Review your invoice details below.</p>
+      <p class="text-gray-400 text-sm mt-2 font-medium">Review your invoice details below.</p>
     </div>
 
-    <div class="bg-black/20 rounded-2xl p-4 text-left border border-white/5 space-y-3">
+    <div class="details-card bg-black/25 rounded-2xl p-4 text-left border border-white/10 space-y-3">
       <div class="flex justify-between items-center text-sm">
-        <span class="text-gray-400">Invoice ID</span>
-        <span id="invoiceIdDisplay" class="font-mono text-amber-400">Loading...</span>
+        <span class="text-gray-400 font-medium">Invoice ID</span>
+        <span id="invoiceIdDisplay" class="font-mono text-yellow-400">Loading...</span>
       </div>
       <div class="flex justify-between items-center text-sm">
-        <span class="text-gray-400">Issuer</span>
-        <span id="issuerDisplay" class="font-mono text-gray-300">...</span>
+        <span class="text-gray-400 font-medium">Issuer</span>
+        <span id="issuerDisplay" class="font-mono text-gray-300 always-white">...</span>
       </div>
       <div class="flex justify-between items-center text-sm">
-        <span class="text-gray-400">Target Payer</span>
-        <span id="payerDisplay" class="font-mono text-gray-300">...</span>
+        <span class="text-gray-400 font-medium">Target Payer</span>
+        <span id="payerDisplay" class="font-mono text-gray-300 always-white">...</span>
       </div>
       <div class="flex justify-between items-center text-sm">
-        <span class="text-gray-400">Due Date</span>
-        <span id="dueDateDisplay" class="text-gray-300">...</span>
+        <span class="text-gray-400 font-medium">Due Date</span>
+        <span id="dueDateDisplay" class="text-gray-300 always-white">...</span>
       </div>
-      <div class="flex justify-between items-center text-sm border-t border-white/5 pt-2">
-        <span class="text-gray-400">Amount Due</span>
+      <div class="flex justify-between items-center text-sm border-t border-white/10 pt-3">
+        <span class="text-gray-400 font-medium">Amount Due</span>
         <span id="amountDisplay" class="font-bold text-gray-500 flex items-center gap-2">Fetching...</span>
       </div>
-      <div class="flex justify-between items-center text-sm border-t border-white/5 pt-2">
-        <span class="text-gray-400">Status</span>
+      <div class="flex justify-between items-center text-sm border-t border-white/10 pt-3">
+        <span class="text-gray-400 font-medium">Status</span>
         <span id="statusDisplay" class="font-bold text-gray-400 flex items-center gap-2">Loading...</span>
       </div>
     </div>
 
-    <!-- بخش دکمه اقدام (Action) -->
     <div id="actionSection" class="space-y-3 pt-2 hidden">
-      <button id="mainActionBtn" onclick="handleAction()" class="w-full bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-black py-4 rounded-xl font-extrabold transition-all relative shadow-lg shadow-amber-500/20 flex items-center justify-center">
+      <button id="mainActionBtn" onclick="handleAction()" class="app-button w-full bg-gradient-to-r from-yellow-500 to-amber-600 hover:from-yellow-400 hover:to-amber-500 text-black py-4 rounded-xl font-extrabold transition-all relative shadow-lg shadow-yellow-500/25 flex items-center justify-center">
         <span id="actionBtnText" class="flex items-center justify-center gap-2 w-full">
           <div class="spinner border-black border-left-transparent"></div> Processing...
         </span>
       </button>
     </div>
     
-    <p id="errorMsg" class="text-rose-400 text-sm hidden"></p>
-    <p id="successMsg" class="text-emerald-400 text-sm hidden"></p>
+    <p id="errorMsg" class="text-rose-400 text-sm hidden font-medium"></p>
+    <p id="successMsg" class="text-emerald-400 text-sm hidden font-medium"></p>
     
-    <!-- لینک تراکنش -->
     <div id="txHashContainer" class="hidden mt-4 text-center">
-      <a id="txHashLink" href="#" target="_blank" class="text-sm text-amber-400 hover:text-amber-300 font-medium bg-amber-500/10 px-4 py-2 rounded-lg inline-flex items-center gap-2 transition-colors">
+      <a id="txHashLink" href="#" target="_blank" class="text-sm text-yellow-400 hover:text-yellow-300 font-semibold bg-yellow-500/10 border border-yellow-500/20 px-4 py-2.5 rounded-xl inline-flex items-center gap-2 transition-colors">
         <i class="fas fa-external-link-alt"></i> View on Explorer
       </a>
     </div>
@@ -162,6 +221,18 @@
 
     const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+    function toggleTheme() {
+      document.documentElement.classList.toggle('light');
+      const icon = document.getElementById("themeBtn").querySelector("i");
+      if (document.documentElement.classList.contains('light')) {
+        icon.classList.remove("fa-moon", "text-yellow-400");
+        icon.classList.add("fa-sun", "text-yellow-500");
+      } else {
+        icon.classList.remove("fa-sun", "text-yellow-500");
+        icon.classList.add("fa-moon", "text-yellow-400");
+      }
+    }
+
     window.addEventListener('load', async () => {
       const urlParams = new URLSearchParams(window.location.search);
       invoiceId = urlParams.get('id');
@@ -171,7 +242,7 @@
         return;
       }
       
-      document.getElementById('invoiceIdDisplay').textContent = `#${invoiceId}`;
+      document.getElementById('invoiceIdDisplay').textContent = "#" + invoiceId;
       
       let fetchPromise = fetchInvoiceDetails();
       let walletPromise = Promise.resolve();
@@ -179,7 +250,7 @@
       if (window.ethereum && window.ethereum.selectedAddress) {
         walletPromise = connectWallet(false);
       } else {
-        updateWalletUI(); // تنظیم UI هدر
+        updateWalletUI();
       }
 
       await Promise.all([fetchPromise, walletPromise]);
@@ -188,7 +259,6 @@
     async function fetchInvoiceDetails() {
       hideMessages();
       
-      // اضافه کردن اسپینر به جای متن کندی شبکه
       document.getElementById('amountDisplay').innerHTML = '<div class="spinner border-gray-400 border-left-transparent w-4 h-4 inline-block"></div>';
       
       const statusEl = document.getElementById('statusDisplay');
@@ -197,7 +267,6 @@
 
       let success = false;
 
-      // حلقه بی‌نهایت برای فچ کردن مقادیر
       while (!success) {
         try {
           const contract = new ethers.Contract(INVOICE_CONTRACT_ADDRESS, ArcInvoiceABI, readProvider);
@@ -220,14 +289,14 @@
               isNative: tokenLower === "0x0000000000000000000000000000000000000000" || tokenLower === "0x3600000000000000000000000000000000000000"
           };
 
-          document.getElementById('issuerDisplay').textContent = `${issuer.slice(0,6)}...${issuer.slice(-4)}`;
-          document.getElementById('payerDisplay').textContent = payer === ethers.ZeroAddress ? 'Anyone' : `${payer.slice(0,6)}...${payer.slice(-4)}`;
+          document.getElementById('issuerDisplay').textContent = issuer.slice(0,6) + "..." + issuer.slice(-4);
+          document.getElementById('payerDisplay').textContent = payer === ethers.ZeroAddress ? 'Anyone' : payer.slice(0,6) + "..." + payer.slice(-4);
           document.getElementById('dueDateDisplay').textContent = dueDate > 0 ? new Date(Number(dueDate) * 1000).toLocaleString() : "No Due Date";
-          document.getElementById('amountDisplay').innerHTML = `<span class="text-white">${parseFloat(formattedAmount).toFixed(4)}</span> <span class="text-amber-400 font-bold">${tokenSymbol}</span>`;
+          document.getElementById('amountDisplay').innerHTML = '<span class="text-white always-white">' + parseFloat(formattedAmount).toFixed(4) + '</span> <span class="text-yellow-400 font-bold">' + tokenSymbol + '</span>';
 
           if (invoiceData.status === 1) { 
               statusEl.innerHTML = "Pending";
-              statusEl.className = 'font-bold text-amber-400';
+              statusEl.className = 'font-bold text-yellow-400';
               document.getElementById('actionSection').classList.remove('hidden');
           } else if (invoiceData.status === 2) { 
               statusEl.innerHTML = "Paid";
@@ -238,17 +307,17 @@
           }
           
           updateActionButton();
-          success = true; // در صورت دریافت بدون ارور، از حلقه خارج می‌شویم
+          success = true;
 
         } catch (error) {
           console.warn("RPC is slow, retrying fetching values silently...");
-          // وقفه کوتاه قبل از تلاش مجدد، بدون نمایش پیام خطا به کاربر
           await sleep(3000);
         }
       }
     }
 
-    async function connectWallet(showErr = true) {
+    async function connectWallet(showErr) {
+        if (showErr === undefined) showErr = true;
         if (!window.ethereum) return showErr ? showError("MetaMask not found!") : null;
         try {
             const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
@@ -289,7 +358,7 @@
         if (userAddress) {
             connectBtn.classList.add('hidden');
             walletInfo.classList.remove('hidden');
-            addressDisplay.textContent = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
+            addressDisplay.textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
         } else {
             connectBtn.classList.remove('hidden');
             walletInfo.classList.add('hidden');
@@ -308,7 +377,7 @@
         if (!userAddress) {
             btnText.innerHTML = '<i class="fas fa-wallet mr-2"></i> Connect to Proceed';
         } else {
-            btnText.innerHTML = `<i class="fas fa-bolt mr-2"></i> Process Invoice (${invoiceData.tokenSymbol})`;
+            btnText.innerHTML = '<i class="fas fa-bolt mr-2"></i> Process Invoice (' + invoiceData.tokenSymbol + ')';
         }
     }
 
@@ -366,7 +435,7 @@
             while(attempt < 3 && !txSuccess) {
                 try {
                     attempt++;
-                    btnText.innerHTML = `<div class="spinner border-black border-left-transparent mr-2"></div> Confirming...`;
+                    btnText.innerHTML = '<div class="spinner border-black border-left-transparent mr-2"></div> Confirming...';
                     const receipt = await provider.waitForTransaction(tx.hash, 1, 35000);
                     
                     if (receipt && receipt.status === 1) txSuccess = true;
@@ -381,7 +450,7 @@
             document.getElementById('statusDisplay').textContent = "Paid";
             document.getElementById('statusDisplay').className = 'font-bold text-emerald-400';
             document.getElementById('txHashContainer').classList.remove('hidden');
-            document.getElementById('txHashLink').href = `https://testnet.arcscan.app/tx/${tx.hash}`;
+            document.getElementById('txHashLink').href = "https://testnet.arcscan.app/tx/" + tx.hash;
             document.getElementById('actionSection').classList.add('hidden');
             
         } catch (error) {
