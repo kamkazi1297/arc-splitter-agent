@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en" dir="ltr">
 <head>
@@ -47,7 +48,7 @@
         radial-gradient(circle at 10% 20%, rgba(59, 130, 246, 0.12) 0%, transparent 40%),
         radial-gradient(circle at 90% 80%, rgba(37, 99, 235, 0.12) 0%, transparent 40%),
         radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 50%) !important;
-      color: #0f172a !important;
+      color: #020617 !important;
     }
 
     .light .glass {
@@ -59,12 +60,12 @@
     }
 
     .light body, .light h1, .light h2, .light h3, .light label, .light .text-white {
-      color: #0f172a !important;
+      color: #020617 !important;
     }
-    .light .text-gray-400 { color: #64748b !important; }
-    .light .text-gray-300 { color: #475569 !important; }
-    .light .text-gray-200 { color: #1e293b !important; }
-    .light .text-gray-500 { color: #64748b !important; }
+    .light .text-gray-400 { color: #1e293b !important; }
+    .light .text-gray-300 { color: #0f172a !important; }
+    .light .text-gray-200 { color: #020617 !important; }
+    .light .text-gray-500 { color: #1e293b !important; }
 
     select, input, textarea {
       background-color: rgba(255, 255, 255, 0.03);
@@ -83,7 +84,7 @@
 
     .light select, .light input, .light textarea {
       background-color: rgba(255, 255, 255, 0.6) !important;
-      color: #0f172a !important;
+      color: #020617 !important;
       border: 1px solid rgba(0, 0, 0, 0.06) !important;
       box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02) !important;
       font-weight: 600;
@@ -101,7 +102,7 @@
     }
     .light select option {
       background-color: #ffffff !important;
-      color: #0f172a !important;
+      color: #020617 !important;
     }
 
     .light .bg-white\/\[0\.02\], .light .bg-white\/\[0\.01\] { 
@@ -156,7 +157,7 @@
       color: #f8fafc;
     }
     .light .header-title-text {
-      color: #0f172a !important;
+      color: #020617 !important;
     }
 
     .smart-split-gradient {
@@ -181,10 +182,10 @@
     .light .wallet-connected-glass {
       background: rgba(59, 130, 246, 0.08) !important;
       border: 1px solid rgba(59, 130, 246, 0.25) !important;
-      color: #2563eb !important;
+      color: #1e3a8a !important;
     }
     .light .wallet-connected-glass span, .light .wallet-connected-glass i { 
-      color: #2563eb !important; 
+      color: #1e3a8a !important; 
     }
 
     #toast {
@@ -203,13 +204,13 @@
       border-bottom: 2px solid #3b82f6;
     }
     .light .tab-btn.active {
-      color: #2563eb;
-      border-bottom: 2px solid #2563eb;
+      color: #1e3a8a;
+      border-bottom: 2px solid #1e3a8a;
     }
 
-    .light .text-blue-400 { color: #2563eb !important; }
-    .light .text-sky-400 { color: #0284c7 !important; }
-    .light .text-cyan-400 { color: #0891b2 !important; }
+    .light .text-blue-400 { color: #1e3a8a !important; }
+    .light .text-sky-400 { color: #0c4a6e !important; }
+    .light .text-cyan-400 { color: #164e63 !important; }
 
     @media (max-width: 640px) {
       .max-w-7xl { max-width: 100% !important; padding-left: 12px; padding-right: 12px; }
@@ -868,30 +869,30 @@
         for(let line of lines) {
             if(line.trim() === '') continue;
             const parts = line.split(',');
-            if(parts.length !== 2) return showToast("فرمت نامعتبر Batch. از فرمت: Address, Amount استفاده کنید");
+            if(parts.length !== 2) return showToast("Invalid Batch format. Use format: Address, Amount");
             const addr = parts[0].trim();
             const amt = parseFloat(parts[1].trim());
-            if(!ethers.isAddress(addr)) return showToast("آدرس نامعتبر در لیست: " + addr);
-            if(isNaN(amt) || amt <= 0) return showToast("مقدار نامعتبر برای آدرس: " + addr);
+            if(!ethers.isAddress(addr)) return showToast("Invalid address in list: " + addr);
+            if(isNaN(amt) || amt <= 0) return showToast("Invalid amount for address: " + addr);
             
             recipients.push(addr);
             amounts.push(amt);
             totalAmount += amt;
         }
-        if(recipients.length === 0) return showToast("لیست Batch خالی است");
+        if(recipients.length === 0) return showToast("Batch list is empty");
         
         // Ensure all users have identical amounts as expected by amountToSplitPerUser in Solidity
         const firstAmt = amounts[0];
         for(let i = 1; i < amounts.length; i++) {
             if(amounts[i] !== firstAmt) {
-                return showToast("خطا: طبق قرارداد هوشمند، مقدار تخصیص (Amount) برای تمام آدرس‌ها در یک تراکنش دسته‌جمعی باید یکسان باشد.");
+                return showToast("Error: According to the smart contract, the Amount for all addresses in a batch transaction must be identical.");
             }
         }
     } else {
         const recipient = document.getElementById('ruleRecipient').value;
         const amt = document.getElementById('ruleAmount').value;
-        if (!recipient || !ethers.isAddress(recipient)) return showToast("آدرس گیرنده نامعتبر است");
-        if (!amt || amt <= 0) return showToast("مقدار نامعتبر است");
+        if (!recipient || !ethers.isAddress(recipient)) return showToast("Invalid recipient address");
+        if (!amt || amt <= 0) return showToast("Invalid amount");
         recipients.push(recipient);
         amounts.push(parseFloat(amt));
         totalAmount = parseFloat(amt);
@@ -1193,3 +1194,4 @@
 </script>
 </body>
 </html>
+```
