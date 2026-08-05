@@ -3,1220 +3,1668 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ArcSplit Analytics — Enterprise On-Chain Dashboard</title>
-  
-  <!-- Add Supabase before db.js to prevent race conditions -->
+  <title>ArcSplit · Workspace Dashboard</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
-  
   <script src="db.js"></script>
+
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-    body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:#06060f;background-image:radial-gradient(ellipse 80% 50% at 10% 10%,rgba(6,182,212,.07) 0%,transparent 50%),radial-gradient(ellipse 60% 40% at 90% 90%,rgba(244,63,94,.06) 0%,transparent 45%),radial-gradient(ellipse 50% 30% at 50% 50%,rgba(14,165,233,.04) 0%,transparent 60%);color:#f8fafc;min-height:100vh;overflow-x:hidden}
-    .glass{background:rgba(14,14,28,.72);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border:1px solid rgba(255,255,255,.06);box-shadow:0 25px 60px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.06)}
-    .light{background:#f1f5f9!important;background-image:radial-gradient(ellipse 80% 50% at 10% 10%,rgba(6,182,212,.1) 0%,transparent 50%),radial-gradient(ellipse 60% 40% at 90% 90%,rgba(244,63,94,.08) 0%,transparent 45%)!important;color:#0f172a!important}
-    .light .glass{background:rgba(255,255,255,.72)!important;border:1px solid rgba(255,255,255,.9)!important;box-shadow:0 12px 40px rgba(0,0,0,.06),inset 0 1px 0 #fff!important}
-    .light body,.light h1,.light h2,.light h3,.light label{color:#0f172a!important}
-    .light .text-gray-400{color:#334155!important}.light .text-gray-300{color:#1e293b!important}.light .text-gray-500{color:#475569!important}
-    .light .text-cyan-400{color:#0e7490!important}.light .text-sky-400{color:#0369a1!important}.light .text-lime-400{color:#3f6212!important}
-    .light .text-rose-400{color:#be123c!important}.light .text-amber-400{color:#b45309!important}.light .text-blue-400{color:#1d4ed8!important}
-    .light .text-emerald-400{color:#047857!important}.light .text-violet-400{color:#6d28d9!important}.light .text-yellow-400{color:#a16207!important}
-    .kpi-card{transition:all .35s cubic-bezier(.4,0,.2,1)}.kpi-card:hover{transform:translateY(-5px);box-shadow:0 30px 60px rgba(0,0,0,.4)}
-    .light .kpi-card:hover{box-shadow:0 20px 45px rgba(0,0,0,.1)}
-    .module-pill{transition:all .2s}.module-pill.active{background:linear-gradient(135deg,rgba(6,182,212,.22),rgba(14,165,233,.12));border-color:rgba(6,182,212,.45);color:#22d3ee}
-    .light .module-pill.active{background:linear-gradient(135deg,rgba(6,182,212,.18),rgba(14,165,233,.1));border-color:rgba(14,116,144,.4);color:#0e7490!important}
-    .chart-box{position:relative;height:260px}.chart-box-sm{position:relative;height:200px}
-    .activity-row:hover{background:rgba(255,255,255,.035)}.light .activity-row:hover{background:rgba(0,0,0,.025)}
-    .app-button{transition:all .25s}.app-button:active{transform:scale(.97)}
-    .gradient-text{background:linear-gradient(90deg,#06b6d4,#0ea5e9,#a3e635,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-    .light .gradient-text{background:linear-gradient(90deg,#0e7490,#0369a1,#3f6212,#b45309)!important;-webkit-background-clip:text!important;-webkit-text-fill-color:transparent!important}
-    .module-card{transition:all .3s;border-left-width:4px}.module-card:hover{transform:translateY(-3px)}
-    select,input{background:rgba(255,255,255,.03);color:#fff;border:1px solid rgba(255,255,255,.1);transition:all .25s}
-    select:focus,input:focus{border-color:#06b6d4;box-shadow:0 0 0 4px rgba(6,182,212,.15);outline:none}
-    .light select,.light input{background:#fff!important;color:#0f172a!important;border:1px solid rgba(0,0,0,.1)!important}
-    select option{background:#0f172a;color:#fff}.light select option{background:#fff!important;color:#0f172a!important}
-    .preview-scroll{max-height:480px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.15) transparent}
-    .light .preview-scroll{scrollbar-color:rgba(0,0,0,.15) transparent}
-    .preview-scroll::-webkit-scrollbar{width:5px}.preview-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:10px}
-    .light .preview-scroll::-webkit-scrollbar-thumb{background:rgba(0,0,0,.2)}
-    .light #toast,.light #toast *{color:#fff!important}
-    .stat-pill{font-size:10px;padding:2px 8px;border-radius:999px;font-weight:700}
-    .scan-badge{animation:pulse 2s infinite}
-    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
-    .progress-bar{height:4px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden}
-    .progress-fill{height:100%;background:linear-gradient(90deg,#06b6d4,#0ea5e9);border-radius:999px;transition:width .3s}
-    
-    /* Tailwind fix for light mode custom colors on buttons */
-    .light #connectBtn { background-color: #0f172a !important; color: #ffffff !important; }
-    .light #disconnectBtn { background-color: rgba(226, 29, 72, 0.1) !important; border-color: rgba(226, 29, 72, 0.3) !important; }
+
+    :root {
+      --bg-gradient: linear-gradient(135deg, #080816 0%, #12122c 50%, #0a0a18 100%);
+      --glass-bg: rgba(18, 18, 38, 0.65);
+      --glass-border: rgba(255, 255, 255, 0.07);
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      background: #070711;
+      background-image:
+        radial-gradient(circle at 10% 20%, rgba(6, 182, 212, 0.10) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(244, 63, 94, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.05) 0%, transparent 50%);
+      color: #f8fafc;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    .glass {
+      background: rgba(18, 18, 38, 0.65);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    /* ========== Light Mode ========== */
+    .light {
+      background: #f8fafc !important;
+      background-image:
+        radial-gradient(circle at 10% 20%, rgba(6, 182, 212, 0.12) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(244, 63, 94, 0.10) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 50%) !important;
+      color: #0f172a !important;
+    }
+
+    .light .glass {
+      background: rgba(255, 255, 255, 0.55) !important;
+      backdrop-filter: blur(24px) !important;
+      -webkit-backdrop-filter: blur(24px) !important;
+      border: 1px solid rgba(0, 0, 0, 0.08) !important;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+    }
+
+    .light body, .light h1, .light h2, .light h3, .light h4,
+    .light label, .light .text-white {
+      color: #0f172a !important;
+    }
+    .light .text-gray-400 { color: #334155 !important; }
+    .light .text-gray-300 { color: #1e293b !important; }
+    .light .text-gray-200 { color: #0f172a !important; }
+    .light .text-gray-500 { color: #475569 !important; }
+    .light .text-slate-400, .light .text-slate-500, .light .text-slate-600 { color: #334155 !important; }
+
+    .light .text-cyan-400 { color: #0e7490 !important; }
+    .light .text-sky-400 { color: #0369a1 !important; }
+    .light .text-lime-400 { color: #3f6212 !important; }
+    .light .text-rose-400 { color: #be123c !important; }
+    .light .text-amber-400 { color: #b45309 !important; }
+    .light .text-emerald-400 { color: #047857 !important; }
+    .light .text-violet-400 { color: #6d28d9 !important; }
+    .light .text-blue-400 { color: #1d4ed8 !important; }
+
+    .light .bg-white\/\[0\.02\], .light .bg-white\/\[0\.01\] {
+      background-color: rgba(255, 255, 255, 0.7) !important;
+      border-color: rgba(0, 0, 0, 0.06) !important;
+    }
+    .light .bg-white\/5 { background-color: rgba(0, 0, 0, 0.04) !important; }
+    .light .border-white\/5, .light .border-white\/10, .light .border-white\/15 {
+      border-color: rgba(0, 0, 0, 0.08) !important;
+    }
+    .light .bg-white\/10 { background-color: rgba(0, 0, 0, 0.06) !important; }
+
+    select, input {
+      background-color: rgba(255, 255, 255, 0.04);
+      color: #f8fafc;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 14px;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      font-weight: 600;
+    }
+    select:hover, input:hover { border-color: rgba(255, 255, 255, 0.22); }
+    select:focus, input:focus {
+      border-color: #06b6d4;
+      box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.15);
+      outline: none;
+    }
+
+    .light select, .light input {
+      background-color: #ffffff !important;
+      color: #0f172a !important;
+      border: 1px solid rgba(0, 0, 0, 0.12) !important;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.03) !important;
+    }
+    .light select:focus, .light input:focus {
+      border-color: #06b6d4 !important;
+      box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.15) !important;
+    }
+
+    select option {
+      background-color: #0f172a;
+      color: #f8fafc;
+      padding: 12px 16px;
+    }
+    .light select option {
+      background-color: #ffffff !important;
+      color: #0f172a !important;
+    }
+
+    .kpi {
+      transition: all 0.25s ease;
+      cursor: pointer;
+    }
+    .kpi:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 24px 48px rgba(0, 0, 0, 0.35);
+    }
+    .light .kpi:hover {
+      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.08);
+    }
+
+    .chart-h { height: 300px; }
+    .chart-sm { height: 220px; }
+
+    .scroll-y {
+      max-height: 440px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+    }
+    .light .scroll-y { scrollbar-color: rgba(0, 0, 0, 0.2) transparent; }
+    .scroll-y::-webkit-scrollbar { width: 5px; }
+    .scroll-y::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+    }
+    .light .scroll-y::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); }
+
+    .skeleton {
+      background: linear-gradient(90deg, rgba(255,255,255,.04) 25%, rgba(255,255,255,.09) 50%, rgba(255,255,255,.04) 75%);
+      background-size: 200% 100%;
+      animation: sk 1.4s infinite;
+    }
+    .light .skeleton {
+      background: linear-gradient(90deg, rgba(0,0,0,.04) 25%, rgba(0,0,0,.08) 50%, rgba(0,0,0,.04) 75%);
+      background-size: 200% 100%;
+    }
+    @keyframes sk {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+
+    .dot { width: 8px; height: 8px; border-radius: 999px; }
+    .row-hover:hover { background: rgba(255, 255, 255, 0.03); }
+    .light .row-hover:hover { background: rgba(0, 0, 0, 0.03); }
+
+    .badge {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 999px;
+    }
+
+    .insight-card { border-left: 3px solid #06b6d4; }
+    .light .insight-card { border-left-color: #0e7490; }
+
+    .app-button {
+      position: relative;
+      overflow: hidden;
+      transition: all 0.25s ease;
+    }
+    .app-button:active { transform: scale(0.98); }
+
+    .filter-pill {
+      transition: all 0.2s ease;
+    }
+
+    .light #toast, .light #toast span, .light #toast i {
+      color: #ffffff !important;
+    }
+
+    .pitch-black-text { color: inherit; }
+    .light .pitch-black-text { color: #000000 !important; }
+
+    @media (max-width: 640px) {
+      .max-w-\[1400px\] { max-width: 100% !important; padding-left: 12px; padding-right: 12px; }
+    }
   </style>
 </head>
-<body class="text-white min-h-screen selection:bg-cyan-500/40 selection:text-black">
-  <div class="max-w-[1400px] mx-auto px-4 py-6 sm:py-8">
-    <!-- HEADER -->
-    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 mb-8 glass rounded-3xl p-5 sm:p-7">
-      <div class="flex items-center gap-4">
-        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500 via-sky-500 to-lime-400 flex items-center justify-center shadow-lg shadow-cyan-500/25">
-          <i class="fas fa-chart-pie text-white text-2xl"></i>
-        </div>
-        <div>
-          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">ArcSplit <span class="gradient-text">Analytics</span></h1>
-          <p class="text-gray-400 text-xs sm:text-sm font-medium mt-0.5">On-chain enterprise insights · Rate-limit safe scanner</p>
-        </div>
-      </div>
-      <div class="flex items-center gap-3 flex-wrap">
-        <div id="scanStatus" class="hidden text-[10px] px-3 py-1.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 font-bold scan-badge">
-          <i class="fas fa-satellite-dish mr-1"></i> <span id="scanStatusText">Scanning…</span>
-        </div>
-        <button onclick="connectWallet()" id="connectBtn" class="app-button px-5 py-2.5 bg-white text-gray-950 font-bold rounded-2xl text-xs flex items-center gap-2 shadow-lg">
-          <i class="fas fa-wallet text-cyan-500"></i> <span id="connectText">Connect Wallet</span>
-        </button>
-        <button onclick="disconnectWallet()" id="disconnectBtn" class="hidden app-button px-3 py-2.5 bg-rose-500/10 border border-rose-500/30 text-rose-400 font-bold rounded-2xl text-xs"><i class="fas fa-power-off"></i></button>
-        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl transition-all">
-          <i class="fas fa-moon text-lg text-cyan-400"></i>
-        </button>
-      </div>
-    </div>
+<body class="text-white min-h-screen selection:bg-cyan-500 selection:text-black">
 
-    <!-- SCAN PROGRESS -->
-    <div id="scanProgressBox" class="hidden glass rounded-2xl p-4 mb-6">
-      <div class="flex items-center justify-between text-xs mb-2">
-        <span id="scanProgressLabel" class="text-gray-400 font-semibold">Preparing scan…</span>
-        <span id="scanProgressPct" class="text-cyan-400 font-bold">0%</span>
-      </div>
-      <div class="progress-bar"><div id="scanProgressFill" class="progress-fill" style="width:0%"></div></div>
+  <!-- LOADING SKELETON -->
+  <div id="skeleton" class="max-w-[1400px] mx-auto px-4 py-8 space-y-6">
+    <div class="glass rounded-3xl p-6 h-28 skeleton"></div>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="glass rounded-3xl h-36 skeleton"></div>
+      <div class="glass rounded-3xl h-36 skeleton"></div>
+      <div class="glass rounded-3xl h-36 skeleton"></div>
+      <div class="glass rounded-3xl h-36 skeleton"></div>
     </div>
-
-    <!-- FILTERS -->
-    <div class="glass rounded-2xl p-4 mb-7 flex flex-wrap items-center gap-3 justify-between">
-      <div class="flex flex-wrap items-center gap-2">
-        <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mr-1">Filter</span>
-        <button onclick="setModuleFilter('all')" class="module-pill active px-3.5 py-1.5 rounded-xl text-xs font-bold border border-white/10 bg-white/5" data-module="all">All Suite</button>
-        <button onclick="setModuleFilter('conditional')" class="module-pill px-3.5 py-1.5 rounded-xl text-xs font-bold border border-white/10 bg-white/5 text-gray-400" data-module="conditional">Conditional</button>
-        <button onclick="setModuleFilter('vesting')" class="module-pill px-3.5 py-1.5 rounded-xl text-xs font-bold border border-white/10 bg-white/5 text-gray-400" data-module="vesting">Vesting</button>
-        <button onclick="setModuleFilter('role')" class="module-pill px-3.5 py-1.5 rounded-xl text-xs font-bold border border-white/10 bg-white/5 text-gray-400" data-module="role">Role / Split / Giveaway</button>
-        <button onclick="setModuleFilter('agentic')" class="module-pill px-3.5 py-1.5 rounded-xl text-xs font-bold border border-white/10 bg-white/5 text-gray-400" data-module="agentic">Agentic</button>
-        <button onclick="setModuleFilter('pay')" class="module-pill px-3.5 py-1.5 rounded-xl text-xs font-bold border border-white/10 bg-white/5 text-gray-400" data-module="pay">ArcPay</button>
-      </div>
-      <div class="flex items-center gap-2 flex-wrap">
-        <select id="timeRange" class="rounded-xl px-3 py-2 text-xs font-bold">
-          <option value="1">Last 1 day</option>
-          <option value="3" selected>Last 3 days</option>
-          <option value="7">Last 7 days</option>
-          <option value="14">Last 14 days</option>
-        </select>
-        <label class="flex items-center gap-1.5 text-[10px] text-gray-400 font-semibold cursor-pointer select-none px-2">
-          <input type="checkbox" id="enableOnChain" checked class="rounded accent-cyan-500"> On-chain verify
-        </label>
-        <button onclick="refreshDashboard()" id="rescanBtn" class="app-button px-3.5 py-2 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-400 border border-cyan-500/30 rounded-xl text-xs font-bold"><i class="fas fa-sync-alt mr-1"></i> Rescan</button>
-      </div>
-    </div>
-
-    <!-- KPIs -->
-    <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
-      <div class="glass kpi-card rounded-3xl p-5"><div class="flex items-center justify-between mb-3"><span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Total Volume</span><div class="w-8 h-8 rounded-xl bg-cyan-500/15 flex items-center justify-center"><i class="fas fa-chart-line text-cyan-400 text-xs"></i></div></div><div id="kpiVolume" class="text-xl sm:text-2xl font-extrabold text-cyan-400">—</div><div class="text-[10px] text-gray-500 mt-1">USDC equiv.</div></div>
-      <div class="glass kpi-card rounded-3xl p-5"><div class="flex items-center justify-between mb-3"><span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Transactions</span><div class="w-8 h-8 rounded-xl bg-sky-500/15 flex items-center justify-center"><i class="fas fa-exchange-alt text-sky-400 text-xs"></i></div></div><div id="kpiTx" class="text-xl sm:text-2xl font-extrabold text-sky-400">—</div><div class="text-[10px] text-gray-500 mt-1">On-chain events</div></div>
-      <div class="glass kpi-card rounded-3xl p-5"><div class="flex items-center justify-between mb-3"><span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Active Rules</span><div class="w-8 h-8 rounded-xl bg-lime-500/15 flex items-center justify-center"><i class="fas fa-lock text-lime-400 text-xs"></i></div></div><div id="kpiActive" class="text-xl sm:text-2xl font-extrabold text-lime-400">—</div><div class="text-[10px] text-gray-500 mt-1">Live storage</div></div>
-      <div class="glass kpi-card rounded-3xl p-5"><div class="flex items-center justify-between mb-3"><span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Recipients</span><div class="w-8 h-8 rounded-xl bg-rose-500/15 flex items-center justify-center"><i class="fas fa-users text-rose-400 text-xs"></i></div></div><div id="kpiRecipients" class="text-xl sm:text-2xl font-extrabold text-rose-400">—</div><div class="text-[10px] text-gray-500 mt-1">Unique wallets</div></div>
-      <div class="glass kpi-card rounded-3xl p-5"><div class="flex items-center justify-between mb-3"><span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Pay Links</span><div class="w-8 h-8 rounded-xl bg-emerald-500/15 flex items-center justify-center"><i class="fas fa-link text-emerald-400 text-xs"></i></div></div><div id="kpiLinks" class="text-xl sm:text-2xl font-extrabold text-emerald-400">—</div><div class="text-[10px] text-gray-500 mt-1">+ Invoices</div></div>
-      <div class="glass kpi-card rounded-3xl p-5"><div class="flex items-center justify-between mb-3"><span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Batches</span><div class="w-8 h-8 rounded-xl bg-violet-500/15 flex items-center justify-center"><i class="fas fa-layer-group text-violet-400 text-xs"></i></div></div><div id="kpiBatches" class="text-xl sm:text-2xl font-extrabold text-violet-400">—</div><div class="text-[10px] text-gray-500 mt-1">Role family</div></div>
-    </div>
-
-    <!-- CHARTS -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
-      <div class="lg:col-span-8 glass rounded-3xl p-6">
-        <div class="flex items-center justify-between mb-5"><h3 class="font-bold text-sm flex items-center gap-2"><i class="fas fa-chart-area text-cyan-400"></i> Volume Timeline</h3><span id="chartRangeLabel" class="text-[10px] text-gray-500 font-semibold">3 days</span></div>
-        <div class="chart-box"><canvas id="volumeChart"></canvas></div>
-      </div>
-      <div class="lg:col-span-4 glass rounded-3xl p-6">
-        <h3 class="font-bold text-sm flex items-center gap-2 mb-5"><i class="fas fa-chart-pie text-sky-400"></i> Module Share</h3>
-        <div class="chart-box-sm"><canvas id="moduleChart"></canvas></div>
-        <div id="moduleLegend" class="mt-4 space-y-2 text-xs"></div>
-      </div>
-    </div>
-
-    <!-- MODULE CARDS -->
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 mb-8">
-      <div class="glass module-card rounded-3xl p-5 border-l-blue-500">
-        <div class="flex items-center gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center"><i class="fas fa-code-branch text-blue-400"></i></div><div><div class="font-bold text-sm">Conditional Split</div><div class="text-[10px] text-gray-500">ArcConditionalSplitter</div></div></div>
-        <div class="grid grid-cols-2 gap-3 text-xs"><div><div class="text-gray-500 mb-0.5">Volume</div><div id="mCondVol" class="font-bold text-blue-400">—</div></div><div><div class="text-gray-500 mb-0.5">Rules</div><div id="mCondRules" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Executions</div><div id="mCondExec" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Active</div><div id="mCondActive" class="font-bold text-lime-400">—</div></div></div>
-      </div>
-      <div class="glass module-card rounded-3xl p-5 border-l-lime-500">
-        <div class="flex items-center gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-lime-500/15 flex items-center justify-center"><i class="fas fa-calendar-check text-lime-400"></i></div><div><div class="font-bold text-sm">Vesting & Cliff</div><div class="text-[10px] text-gray-500">ArcVestingSplitter</div></div></div>
-        <div class="grid grid-cols-2 gap-3 text-xs"><div><div class="text-gray-500 mb-0.5">Volume</div><div id="mVestVol" class="font-bold text-lime-400">—</div></div><div><div class="text-gray-500 mb-0.5">Schedules</div><div id="mVestSched" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Pushes</div><div id="mVestPush" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Locked</div><div id="mVestLocked" class="font-bold text-amber-400">—</div></div></div>
-      </div>
-      <div class="glass module-card rounded-3xl p-5 border-l-cyan-500">
-        <div class="flex items-center gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-cyan-500/15 flex items-center justify-center"><i class="fas fa-users-gear text-cyan-400"></i></div><div><div class="font-bold text-sm">Role · Split · Giveaway</div><div class="text-[10px] text-gray-500">ArcRoleSplitter</div></div></div>
-        <div class="grid grid-cols-2 gap-3 text-xs"><div><div class="text-gray-500 mb-0.5">Volume</div><div id="mRoleVol" class="font-bold text-cyan-400">—</div></div><div><div class="text-gray-500 mb-0.5">Batches</div><div id="mRoleBatches" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Wallets Hit</div><div id="mRoleWallets" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Giveaways</div><div id="mRoleGive" class="font-bold text-amber-400">—</div></div></div>
-      </div>
-      <div class="glass module-card rounded-3xl p-5 border-l-amber-500">
-        <div class="flex items-center gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center"><i class="fas fa-robot text-amber-400"></i></div><div><div class="font-bold text-sm">Agentic Push</div><div class="text-[10px] text-gray-500">Shared Conditional contract</div></div></div>
-        <div class="grid grid-cols-2 gap-3 text-xs"><div><div class="text-gray-500 mb-0.5">Volume</div><div id="mAgentVol" class="font-bold text-amber-400">—</div></div><div><div class="text-gray-500 mb-0.5">Rules</div><div id="mAgentRules" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Executions</div><div id="mAgentExec" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Relayer Fees</div><div id="mAgentFees" class="font-bold text-rose-400">—</div></div></div>
-      </div>
-      <div class="glass module-card rounded-3xl p-5 border-l-emerald-500">
-        <div class="flex items-center gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center"><i class="fas fa-link text-emerald-400"></i></div><div><div class="font-bold text-sm">Payment Links</div><div class="text-[10px] text-gray-500">ArcPayLink · on-chain</div></div></div>
-        <div class="grid grid-cols-2 gap-3 text-xs"><div><div class="text-gray-500 mb-0.5">Volume</div><div id="mLinkVol" class="font-bold text-emerald-400">—</div></div><div><div class="text-gray-500 mb-0.5">Created</div><div id="mLinkCreated" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Claimed</div><div id="mLinkClaimed" class="font-bold text-cyan-400">—</div></div><div><div class="text-gray-500 mb-0.5">Cancelled</div><div id="mLinkCancel" class="font-bold text-rose-400">—</div></div></div>
-      </div>
-      <div class="glass module-card rounded-3xl p-5 border-l-yellow-500">
-        <div class="flex items-center gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-yellow-500/15 flex items-center justify-center"><i class="fas fa-file-invoice text-yellow-400"></i></div><div><div class="font-bold text-sm">Smart Invoices</div><div class="text-[10px] text-gray-500">ArcInvoice · on-chain</div></div></div>
-        <div class="grid grid-cols-2 gap-3 text-xs"><div><div class="text-gray-500 mb-0.5">Volume</div><div id="mInvVol" class="font-bold text-yellow-400">—</div></div><div><div class="text-gray-500 mb-0.5">Created</div><div id="mInvCreated" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Paid</div><div id="mInvPaid" class="font-bold text-emerald-400">—</div></div><div><div class="text-gray-500 mb-0.5">Cancelled</div><div id="mInvCancel" class="font-bold text-rose-400">—</div></div></div>
-      </div>
-    </div>
-
-    <!-- TOKEN + ACTIVITY -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
-      <div class="lg:col-span-4 glass rounded-3xl p-6">
-        <h3 class="font-bold text-sm flex items-center gap-2 mb-5"><i class="fas fa-coins text-amber-400"></i> Token Distribution</h3>
-        <div class="chart-box-sm"><canvas id="tokenChart"></canvas></div>
-        <div id="tokenLegend" class="mt-4 space-y-2 text-xs"></div>
-      </div>
-      <div class="lg:col-span-8 glass rounded-3xl p-6">
-        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
-          <h3 class="font-bold text-sm flex items-center gap-2"><i class="fas fa-stream text-cyan-400"></i> On-Chain Activity Feed</h3>
-          <span id="dataSourceBadge" class="text-[10px] text-gray-500">Source: —</span>
-        </div>
-        <div id="activityFeed" class="preview-scroll space-y-2"><div class="text-center py-16 text-gray-500 italic text-sm">Connect wallet &amp; Rescan to load events.</div></div>
-      </div>
-    </div>
-
-    <div class="text-center text-[11px] text-gray-500 pb-6">
-      ArcSplit Analytics · Cloud-first + optional on-chain verify<br>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div class="lg:col-span-2 glass rounded-3xl h-80 skeleton"></div>
+      <div class="glass rounded-3xl h-80 skeleton"></div>
     </div>
   </div>
 
-  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#0e0e1c] border border-white/10 text-white px-5 py-3 rounded-2xl shadow-2xl z-50 text-sm font-bold text-center min-w-[260px] backdrop-blur-xl"><span id="toastText"></span></div>
+  <!-- MAIN APP -->
+  <div id="app" class="hidden max-w-[1400px] mx-auto px-4 py-6 sm:py-8 space-y-6">
+
+    <!-- HEADER -->
+    <header class="glass rounded-3xl p-5 sm:p-7 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+      <div class="flex items-start gap-4">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500 via-sky-500 to-lime-400 flex items-center justify-center shadow-lg shadow-cyan-500/25 shrink-0">
+          <i class="fas fa-chart-pie text-white text-xl"></i>
+        </div>
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-sky-400">Dashboard</span></h1>
+          <p class="text-sm text-gray-400 light:text-slate-600 mt-1 font-medium">Welcome back 👋
+
+Here's what's happening in your workspace.</p>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2.5 sm:gap-3">
+        <div id="healthBadge" class="flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold">
+          <span class="dot bg-emerald-400 animate-pulse"></span> Healthy
+        </div>
+
+        <select id="timeRange" onchange="onRangeChange()" class="px-4 py-2.5 text-sm font-bold rounded-2xl cursor-pointer">
+          <option value="1">Today</option>
+          <option value="7" selected>Last 7 Days</option>
+          <option value="30">Last 30 Days</option>
+          <option value="365">Last Year</option>
+        </select>
+
+        <button onclick="toggleNotif()" class="relative w-11 h-11 rounded-2xl bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 flex items-center justify-center hover:bg-white/10 light:hover:bg-black/10 transition">
+          <i class="fas fa-bell text-base text-gray-300 light:text-slate-600"></i>
+          <span id="notifDot" class="hidden absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-rose-500"></span>
+        </button>
+
+        <button onclick="exportCSV()" class="app-button px-4 py-2.5 rounded-2xl bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 text-sm font-bold hover:bg-white/10 light:hover:bg-black/10 transition flex items-center gap-2">
+          <i class="fas fa-download text-cyan-400"></i> Export
+        </button>
+
+        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 rounded-2xl bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 flex items-center justify-center hover:bg-white/10 transition">
+          <i class="fas fa-moon text-lg text-cyan-400"></i>
+        </button>
+
+        <button onclick="connectWallet()" id="connectBtn" class="app-button px-5 py-2.5 rounded-2xl bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold text-sm flex items-center gap-2.5 shadow-lg">
+          <i class="fas fa-wallet text-cyan-600 light:text-cyan-400"></i>
+          <span id="connectText">Connect Wallet</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- NOTIFICATION PANEL -->
+    <div id="notifPanel" class="hidden glass rounded-2xl p-5 absolute right-6 top-32 z-50 w-84 max-w-[90vw] shadow-2xl border border-white/10">
+      <div class="text-xs font-bold text-gray-400 light:text-slate-600 uppercase tracking-wider mb-3">Notifications</div>
+      <div id="notifList" class="space-y-2 text-sm max-h-64 overflow-y-auto"></div>
+    </div>
+
+    <!-- DATA SOURCE + INSIGHTS -->
+    <section id="insightsBox" class="glass rounded-3xl p-5 sm:p-6 insight-card">
+      <div class="flex flex-wrap items-center gap-3 mb-4">
+        <div class="flex items-center gap-2">
+          <span class="text-xl">💡</span>
+          <h2 class="font-bold text-base">Insights</h2>
+        </div>
+        <div class="ml-auto flex items-center gap-2">
+          <span id="syncStatus" class="text-xs font-semibold text-gray-500">Syncing…</span>
+          <span id="dataSourceBadge" class="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-cyan-500/10 text-cyan-400 border border-cyan-500/20">Source: —</span>
+        </div>
+      </div>
+      <ul id="insightsList" class="space-y-2 text-sm text-gray-300 light:text-slate-700"></ul>
+    </section>
+
+    <!-- EMPTY / ERROR -->
+    <div id="emptyState" class="hidden glass rounded-3xl p-14 text-center">
+      <div class="text-5xl mb-5">✨</div>
+      <h2 class="text-2xl font-extrabold mb-2">Welcome to Arc</h2>
+      <p class="text-gray-400 light:text-slate-600 text-sm mb-7 max-w-md mx-auto">Connect your wallet and run your first Split to unlock workspace analytics.</p>
+      <button onclick="connectWallet()" class="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-cyan-500 hover:bg-cyan-400 text-white font-bold text-sm transition shadow-lg shadow-cyan-500/20">
+        <i class="fas fa-wallet"></i> Connect Wallet
+      </button>
+    </div>
+
+    <div id="errorState" class="hidden glass rounded-3xl p-12 text-center border border-rose-500/30">
+      <i class="fas fa-exclamation-triangle text-rose-400 text-3xl mb-4"></i>
+      <h2 class="font-bold text-lg mb-2">Unable to load analytics</h2>
+      <p class="text-gray-400 light:text-slate-600 text-sm mb-5">Something went wrong while loading workspace data.</p>
+      <button onclick="refreshDashboard()" class="px-5 py-2.5 rounded-2xl bg-rose-500/15 text-rose-400 border border-rose-500/30 text-sm font-bold hover:bg-rose-500/25 transition">Retry</button>
+    </div>
+
+    <div id="dashboardBody" class="space-y-6">
+
+      <!-- KPI CARDS -->
+      <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <button onclick="filterActivity('all')" class="kpi glass rounded-3xl p-5 sm:p-6 text-left">
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Total Distributed</span>
+            <div class="w-10 h-10 rounded-xl bg-cyan-500/15 flex items-center justify-center">
+              <i class="fas fa-coins text-cyan-400"></i>
+            </div>
+          </div>
+          <div id="kpiVolume" class="text-2xl sm:text-3xl font-extrabold text-cyan-400">—</div>
+          <div class="text-xs text-gray-500 mt-1.5">USDC equivalent</div>
+          <div id="kpiVolumeDelta" class="text-xs font-bold text-emerald-400 mt-2.5">—</div>
+        </button>
+
+        <button onclick="filterActivity('all')" class="kpi glass rounded-3xl p-5 sm:p-6 text-left">
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Transactions</span>
+            <div class="w-10 h-10 rounded-xl bg-sky-500/15 flex items-center justify-center">
+              <i class="fas fa-exchange-alt text-sky-400"></i>
+            </div>
+          </div>
+          <div id="kpiTx" class="text-2xl sm:text-3xl font-extrabold text-sky-400">—</div>
+          <div class="text-xs text-gray-500 mt-1.5">In selected range</div>
+        </button>
+
+        <button onclick="document.getElementById('automationCard')?.scrollIntoView({behavior:'smooth'})" class="kpi glass rounded-3xl p-5 sm:p-6 text-left">
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Active Automations</span>
+            <div class="w-10 h-10 rounded-xl bg-lime-500/15 flex items-center justify-center">
+              <i class="fas fa-robot text-lime-400"></i>
+            </div>
+          </div>
+          <div id="kpiAuto" class="text-2xl sm:text-3xl font-extrabold text-lime-400">—</div>
+          <div class="text-xs text-gray-500 mt-1.5">Rules & schedules</div>
+        </button>
+
+        <button onclick="document.getElementById('payLinksCard')?.scrollIntoView({behavior:'smooth'})" class="kpi glass rounded-3xl p-5 sm:p-6 text-left">
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Payment Links</span>
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center">
+              <i class="fas fa-link text-emerald-400"></i>
+            </div>
+          </div>
+          <div id="kpiLinks" class="text-2xl sm:text-3xl font-extrabold text-emerald-400">—</div>
+          <div class="text-xs text-gray-500 mt-1.5"><span id="kpiLinksSub">Active</span></div>
+        </button>
+      </section>
+
+      <!-- CHARTS -->
+      <section class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div class="lg:col-span-8 glass rounded-3xl p-5 sm:p-7">
+          <div class="flex items-center justify-between mb-5">
+            <h3 class="font-bold text-base flex items-center gap-2.5">
+              <i class="fas fa-chart-area text-cyan-400"></i> Distribution Volume
+            </h3>
+            <span id="chartRangeLabel" class="text-xs text-gray-500 font-semibold">Last 7 Days</span>
+          </div>
+          <div class="chart-h"><canvas id="volumeChart"></canvas></div>
+        </div>
+        <div class="lg:col-span-4 glass rounded-3xl p-5 sm:p-7">
+          <h3 class="font-bold text-base flex items-center gap-2.5 mb-5">
+            <i class="fas fa-chart-pie text-amber-400"></i> Token Mix
+          </h3>
+          <div class="chart-sm"><canvas id="tokenChart"></canvas></div>
+          <div id="tokenLegend" class="mt-5 space-y-2.5 text-sm"></div>
+        </div>
+      </section>
+
+      <!-- TOP RECIPIENTS + AUTOMATION + PAY LINKS -->
+      <section class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div class="lg:col-span-5 glass rounded-3xl p-5 sm:p-7">
+          <h3 class="font-bold text-base flex items-center gap-2.5 mb-5">
+            <i class="fas fa-users text-violet-400"></i> Top Recipients
+          </h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-gray-500 text-left border-b border-white/10 light:border-black/10">
+                  <th class="pb-3 font-semibold">Wallet / Role</th>
+                  <th class="pb-3 font-semibold text-right">Received</th>
+                  <th class="pb-3 font-semibold text-right">Txns</th>
+                </tr>
+              </thead>
+              <tbody id="topRecipients"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="automationCard" class="lg:col-span-4 glass rounded-3xl p-5 sm:p-7">
+          <h3 class="font-bold text-base flex items-center gap-2.5 mb-5">
+            <i class="fas fa-bolt text-amber-400"></i> Automation Status
+          </h3>
+          <div id="autoList" class="space-y-3"></div>
+        </div>
+
+        <div id="payLinksCard" class="lg:col-span-3 glass rounded-3xl p-5 sm:p-7">
+          <h3 class="font-bold text-base flex items-center gap-2.5 mb-5">
+            <i class="fas fa-link text-emerald-400"></i> Payment Links
+          </h3>
+          <div class="space-y-4 text-sm">
+            <div class="flex justify-between items-center">
+              <span class="text-gray-400 light:text-slate-600">Active</span>
+              <span id="plActive" class="font-bold text-emerald-400 text-base">—</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-gray-400 light:text-slate-600">Paid</span>
+              <span id="plPaid" class="font-bold text-cyan-400 text-base">—</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-gray-400 light:text-slate-600">Expired / Cancelled</span>
+              <span id="plExpired" class="font-bold text-rose-400 text-base">—</span>
+            </div>
+          </div>
+          <button onclick="filterActivity('pay')" class="mt-6 w-full py-2.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-sm font-bold hover:bg-emerald-500/20 transition">
+            View All
+          </button>
+        </div>
+      </section>
+
+      <!-- ACTIVITY + TX TABLE -->
+      <section class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        <div class="lg:col-span-5 glass rounded-3xl p-5 sm:p-7">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+            <h3 class="font-bold text-base flex items-center gap-2.5">
+              <i class="fas fa-stream text-sky-400"></i> Recent Activity
+            </h3>
+            <input id="searchBox" oninput="renderActivity()" type="text" placeholder="Search…" class="px-3.5 py-2 text-sm w-full sm:w-48 rounded-xl">
+          </div>
+          <div class="flex flex-wrap gap-2 mb-4">
+            <button onclick="filterActivity('all')" data-f="all" class="filter-pill active px-3 py-1.5 rounded-xl text-xs font-bold border border-cyan-500/40 bg-cyan-500/15 text-cyan-400">All</button>
+            <button onclick="filterActivity('role')" data-f="role" class="filter-pill px-3 py-1.5 rounded-xl text-xs font-bold border border-white/10 light:border-black/10 text-gray-400">Splits</button>
+            <button onclick="filterActivity('batch')" data-f="batch" class="filter-pill px-3 py-1.5 rounded-xl text-xs font-bold border border-white/10 light:border-black/10 text-gray-400">Batch</button>
+            <button onclick="filterActivity('pay')" data-f="pay" class="filter-pill px-3 py-1.5 rounded-xl text-xs font-bold border border-white/10 light:border-black/10 text-gray-400">Links</button>
+            <button onclick="filterActivity('conditional')" data-f="conditional" class="filter-pill px-3 py-1.5 rounded-xl text-xs font-bold border border-white/10 light:border-black/10 text-gray-400">Auto</button>
+            <button onclick="filterActivity('vesting')" data-f="vesting" class="filter-pill px-3 py-1.5 rounded-xl text-xs font-bold border border-white/10 light:border-black/10 text-gray-400">Vesting</button>
+          </div>
+          <div id="activityFeed" class="scroll-y space-y-1"></div>
+        </div>
+
+        <div class="lg:col-span-7 glass rounded-3xl p-5 sm:p-7">
+          <h3 class="font-bold text-base flex items-center gap-2.5 mb-5">
+            <i class="fas fa-table text-blue-400"></i> Recent Transactions
+          </h3>
+          <div class="overflow-x-auto scroll-y">
+            <table class="w-full text-sm">
+              <thead>
+                <tr class="text-gray-500 text-left border-b border-white/10 light:border-black/10">
+                  <th class="pb-3 font-semibold">Date</th>
+                  <th class="pb-3 font-semibold">Type</th>
+                  <th class="pb-3 font-semibold text-right">Amount</th>
+                  <th class="pb-3 font-semibold">Status</th>
+                  <th class="pb-3 font-semibold">Tx</th>
+                </tr>
+              </thead>
+              <tbody id="txTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- BALANCES + UPCOMING -->
+      <section class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <div class="glass rounded-3xl p-5 sm:p-7">
+          <h3 class="font-bold text-base flex items-center gap-2.5 mb-5">
+            <i class="fas fa-wallet text-cyan-400"></i> Wallet Balances
+          </h3>
+          <div id="balances" class="space-y-3"></div>
+        </div>
+        <div class="glass rounded-3xl p-5 sm:p-7">
+          <h3 class="font-bold text-base flex items-center gap-2.5 mb-5">
+            <i class="fas fa-calendar-alt text-violet-400"></i> Upcoming
+          </h3>
+          <div id="upcoming" class="space-y-3"></div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div id="toast" class="hidden fixed bottom-8 left-1/2 -translate-x-1/2 bg-gray-900/95 border border-white/10 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 text-sm font-medium backdrop-blur-xl flex items-center gap-3">
+    <span id="toastIcon"></span>
+    <span id="toastText"></span>
+  </div>
 
 <script>
-/* ===================== CONTRACTS ===================== */
+/* ===================== CONFIG ===================== */
 const EXPLORER = "https://testnet.arcscan.app/tx/";
-const NATIVE_USDC = "0x3600000000000000000000000000000000000000";
-const ZERO = "0x0000000000000000000000000000000000000000";
-
-const CONTRACTS = {
-  conditional: "0x08af7753FCE9e664fa5E2D5EB96a60b739E6BD51",
-  vesting: "0xd3640D303e2e7962aEeba09a8aDA73eb80e6606d",
-  role: "0xf2073671b726b96DC1c99D001BBF6e60EE1f187F",
-  payLink: "0x9B438F8Aa736Ed685e7aFF84eB173A9bb7c08320",
-  invoice: "0xD915573BCC42c5d4f859627435E975AEe316BCe0"
-};
-
-/* Official Arc Testnet RPCs */
 const ARC_RPCS = [
   "https://rpc.testnet.arc.network",
-  "https://rpc.testnet.arc.io",
-  "https://rpc.drpc.testnet.arc.network",
-  "https://rpc.quicknode.testnet.arc.network",
-  "https://rpc.blockdaemon.testnet.arc.network"
+  "https://rpc.ankr.com/arc_testnet"
 ];
-let readProvider = null; 
+const CHAIN_ID = 5042002;
 
-// Updated Requirements applied here (removing contract address display)
+const CONTRACTS = {
+  roleSplitter: "0xf2073671b726b96DC1c99D001BBF6e60EE1f187F",
+  conditional:  "0x08af7753FCE9e664fa5E2D5EB96a60b739E6BD51",
+  vesting:      "0xd3640D303e2e7962aEeba09a8aDA73eb80e6606d",
+  payLink:      "0x9B438F8Aa736Ed685e7aFF84eB173A9bb7c08320",
+  invoice:      "0xD915573BCC42c5d4f859627435E975AEe316BCe0"
+};
+
 const TOKEN_MAP = {
-  [NATIVE_USDC.toLowerCase()]: { symbol: "USDC", decimals: 6 },
-  [ZERO]: { symbol: "USDC", decimals: 18 },
-  "0x89b50855aa3be2f677cd6303cec089b5f319d72a": { symbol: "EURC", decimals: 6 },
-  "0xf0c4a4ce82a5746abaad9425360ab04fbba432bf": { symbol: "cirBTC", decimals: 8 }
+  "0x3600000000000000000000000000000000000000": "USDC",
+  "0x0000000000000000000000000000000000000000": "USDC",
+  "0x89b50855aa3be2f677cd6303cec089b5f319d72a": "EURC",
+  "0xf0c4a4ce82a5746abaad9425360ab04fbba432bf": "cirBTC"
 };
-
-const ABI = {
-  conditional: [
-    "function activeRuleCount() view returns (uint256)",
-    "event RuleRegistered(bytes32 indexed ruleHash, address indexed sponsor, address indexed token, bool isRecurring)",
-    "event SplitExecuted(bytes32 indexed ruleHash, address indexed sponsor, address indexed recipient, address token, address relayer, uint256 netAmountPushed, uint256 feeDeducted, uint256 nonce)",
-    "event FundsDeposited(address indexed sponsor, address indexed token, uint256 amount)"
-  ],
-  vesting: [
-    "event ScheduleCreated(uint256 indexed scheduleId, address indexed recipient, address indexed token, uint256 totalAmount, uint32 vestingDuration, uint32 cliffDuration, uint32 slicePeriodSeconds, bool revocable, bool allowRelayerPush)",
-    "event VestedAmountPushed(uint256 indexed scheduleId, address indexed recipient, address indexed token, address relayer, uint256 amountReceived, uint256 gasRefunded)"
-  ],
-  role: [
-    "event BatchPercentageExecuted(uint256 indexed batchId, address indexed sender, address indexed token, uint256 totalDistributed, uint256 gasRefunded, uint256 unspentRefunded)",
-    "event BatchAmountExecuted(uint256 indexed batchId, address indexed sender, address indexed token, uint256 totalDistributed, uint256 gasRefunded, uint256 unspentRefunded)"
-  ],
-  payLink: [
-    "event LinkCreated(address indexed linkId, address indexed creator, address indexed token, uint256 amount, uint40 expiration)",
-    "event LinkClaimed(address indexed linkId, address indexed destination, address indexed relayer, uint256 amount, uint256 feeAmount)",
-    "event LinkCancelled(address indexed linkId, address indexed creator, uint256 amount)"
-  ],
-  invoice: [
-    "event InvoiceCreated(uint256 indexed invoiceId, address indexed issuer, address indexed payer, address token, uint256 amount, uint40 dueDate, string metadataURI)",
-    "event InvoicePaid(uint256 indexed invoiceId, address indexed payer, uint256 amountPaid)",
-    "event InvoiceCancelled(uint256 indexed invoiceId)",
-    "function invoiceCounter() view returns (uint256)"
-  ]
-};
-
-const CHUNK_SIZE = 5000;
-const DELAY_MS = 250;
-const MAX_RETRIES = 4;
-const RETRY_WAIT = 2000;
 
 /* ===================== STATE ===================== */
-let provider = null, signer = null, userAddress = null, currentModule = "all";
-let volumeChart = null, moduleChart = null, tokenChart = null;
-let data = emptyData();
-let dataSource = "demo";
-let scanning = false;
-let blockTsCache = {};
+let userAddress = null;
+let provider = null;
+let signer = null;
+let readProvider = null;
+let rangeDays = 7;
+let currentFilter = "all";
+let dataSource = "—";
+let volumeChart = null;
+let tokenChart = null;
 
-let latestBlockNum = 0;
-let latestBlockTimestamp = 0;
-
-function emptyData() {
+function emptyState() {
   return {
-    volume: 0, tx: 0, active: 0, recipients: new Set(),
-    links: 0, invoices: 0, batches: 0,
-    modules: {
-      conditional: { vol: 0, rules: 0, exec: 0, active: 0 },
-      vesting: { vol: 0, schedules: 0, pushes: 0, locked: 0 },
-      role: { vol: 0, batches: 0, wallets: 0, giveaways: 0 },
-      agentic: { vol: 0, rules: 0, exec: 0, fees: 0 },
-      pay: {
-        links: { vol: 0, created: 0, claimed: 0, cancelled: 0 },
-        invoices: { vol: 0, created: 0, paid: 0, cancelled: 0 }
-      }
-    },
+    volume: 0, prevVolume: 0, tx: 0,
     tokens: { USDC: 0, EURC: 0, cirBTC: 0, Other: 0 },
-    timeline: [],
-    activity: []
+    recipients: {}, activity: [], timeline: [],
+    linksActive: 0, linksPaid: 0, linksExpired: 0,
+    activeRules: 0, automations: [], upcoming: [],
+    notifications: [], balances: { USDC: 0, EURC: 0, cirBTC: 0 },
+    claimable: [], // { contract, token, amount, symbol }
+    insights: [], _pendingBatchCount: 0
   };
 }
+let state = emptyState();
 
-async function initReadProvider() {
-  if (readProvider) {
-    try {
-      await readProvider.getBlockNumber();
-      return readProvider;
-    } catch { readProvider = null; }
-  }
-  for (const url of ARC_RPCS) {
-    try {
-      const p = new ethers.JsonRpcProvider(url, undefined, { staticNetwork: true });
-      const n = await Promise.race([
-        p.getBlockNumber(),
-        new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 8000))
-      ]);
-      console.log("Arc RPC OK:", url, "block", n);
-      readProvider = p;
-      return p;
-    } catch (e) {
-      console.warn("RPC fail", url, e.message);
-    }
-  }
-  if (provider) {
-    readProvider = provider;
-    return provider;
-  }
-  throw new Error("No working Arc RPC");
+/* ===================== UTILS ===================== */
+function shortAddr(a) {
+  if (!a || typeof a !== "string") return "—";
+  return a.slice(0, 6) + "…" + a.slice(-4);
 }
-
-/* ===================== HELPERS ===================== */
-function showToast(m, d = 4000) {
+function fmt(n, d = 2) {
+  const num = Number(n) || 0;
+  if (num >= 1e6) return (num / 1e6).toFixed(1) + "M";
+  if (num >= 1e3) return (num / 1e3).toFixed(1) + "K";
+  return num.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: d });
+}
+function showToast(msg, icon = "fa-check-circle") {
   const t = document.getElementById("toast");
-  document.getElementById("toastText").innerHTML = m;
+  document.getElementById("toastIcon").className = `fas ${icon} text-cyan-400`;
+  document.getElementById("toastText").textContent = msg;
   t.classList.remove("hidden");
-  setTimeout(() => t.classList.add("hidden"), d);
+  setTimeout(() => t.classList.add("hidden"), 3500);
 }
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 function toggleTheme() {
   document.documentElement.classList.toggle("light");
   const icon = document.getElementById("themeBtn").querySelector("i");
-  if (icon.classList.contains("fa-moon")) {
-    icon.classList.replace("fa-moon", "fa-sun");
-    icon.classList.replace("text-cyan-400", "text-amber-400");
+  if (document.documentElement.classList.contains("light")) {
+    icon.className = "fas fa-sun text-lg text-amber-500";
+    localStorage.setItem("theme", "light");
   } else {
-    icon.classList.replace("fa-sun", "fa-moon");
-    icon.classList.replace("text-amber-400", "text-cyan-400");
+    icon.className = "fas fa-moon text-lg text-cyan-400";
+    localStorage.setItem("theme", "dark");
   }
-  setTimeout(renderCharts, 80);
+  if (volumeChart || tokenChart) renderCharts();
 }
-function setModuleFilter(mod) {
-  currentModule = mod;
-  document.querySelectorAll(".module-pill").forEach(b => {
-    const on = b.dataset.module === mod;
-    b.classList.toggle("active", on);
-    b.classList.toggle("text-gray-400", !on);
-  });
-  updateUI();
-}
-function fmt(n, d = 2) {
-  if (n == null || isNaN(n)) return "—";
-  if (n >= 1e6) return (n / 1e6).toFixed(2) + "M";
-  if (n >= 1e3) return (n / 1e3).toFixed(1) + "K";
-  return Number(n).toLocaleString("en-US", { maximumFractionDigits: d });
-}
-function tokenInfo(addr) {
-  if (!addr) return { symbol: "USDC", decimals: 6 };
-  return TOKEN_MAP[addr.toLowerCase()] || { symbol: "Other", decimals: 18 };
-}
-function formatUnitsSafe(raw, decimals) {
-  try { return parseFloat(ethers.formatUnits(raw, decimals)); }
-  catch { return 0; }
-}
-
-function escapeHTML(str) {
-  if (!str) return "—";
-  return String(str).replace(/[&<>'"]/g, match => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
-  })[match] || match);
-}
-
-function addTokenVol(addr, amountHuman) {
-  const s = tokenInfo(addr).symbol;
-  if (s === "USDC") data.tokens.USDC += amountHuman;
-  else if (s === "EURC") data.tokens.EURC += amountHuman;
-  else if (s === "cirBTC") data.tokens.cirBTC += amountHuman;
-  else data.tokens.Other += amountHuman;
-}
-function pushActivity(obj) {
-  data.activity.push(obj);
-  data.tx++;
-  if (obj.recipient) data.recipients.add(String(obj.recipient).toLowerCase());
-}
-
-function dayKey(ts) {
-  const d = new Date(ts * 1000);
-  return d.getFullYear() + "-" + 
-         String(d.getMonth() + 1).padStart(2, '0') + "-" + 
-         String(d.getDate()).padStart(2, '0');
-}
-
-function setProgress(pct, label) {
-  document.getElementById("scanProgressBox").classList.remove("hidden");
-  document.getElementById("scanProgressFill").style.width = Math.min(100, pct) + "%";
-  document.getElementById("scanProgressPct").textContent = Math.round(pct) + "%";
-  if (label) document.getElementById("scanProgressLabel").textContent = label;
-  document.getElementById("scanStatusText").textContent = label || "Scanning…";
+function toggleNotif() {
+  document.getElementById("notifPanel").classList.toggle("hidden");
 }
 
 /* ===================== WALLET ===================== */
 async function connectWallet() {
-  if (!window.ethereum) return showToast("MetaMask not found");
+  if (!window.ethereum) return showToast("No wallet found", "fa-exclamation-triangle");
   try {
     provider = new ethers.BrowserProvider(window.ethereum);
     await provider.send("eth_requestAccounts", []);
     signer = await provider.getSigner();
     userAddress = await signer.getAddress();
-    const short = userAddress.slice(0, 6) + "…" + userAddress.slice(-4);
-    document.getElementById("connectText").innerHTML = `<i class="fas fa-check-circle text-cyan-400"></i> ${short}`;
-    document.getElementById("connectBtn").className = "app-button px-5 py-2.5 bg-cyan-500/15 border border-cyan-500/40 text-cyan-400 font-bold rounded-2xl text-xs flex items-center gap-2";
-    document.getElementById("disconnectBtn").classList.remove("hidden");
-    showToast("Connected · loading data…");
+    document.getElementById("connectText").textContent = shortAddr(userAddress);
+    document.getElementById("connectBtn").className =
+      "app-button px-5 py-2.5 rounded-2xl bg-cyan-500/15 border border-cyan-500/40 text-cyan-400 font-bold text-sm flex items-center gap-2.5";
+    showToast("Wallet connected");
     await refreshDashboard();
   } catch (e) {
-    showToast("Connection rejected");
+    showToast("Connection rejected", "fa-ban");
   }
 }
-function disconnectWallet() {
-  userAddress = null; signer = null; provider = null;
-  document.getElementById("connectText").textContent = "Connect Wallet";
-  document.getElementById("connectBtn").className = "app-button px-5 py-2.5 bg-white text-gray-950 font-bold rounded-2xl text-xs flex items-center gap-2 shadow-lg";
-  document.getElementById("disconnectBtn").classList.add("hidden");
-  data = emptyData();
-  dataSource = "—";
-  updateUI();
-  document.getElementById("activityFeed").innerHTML =
-    `<div class="text-center py-16 text-gray-500 italic text-sm">Connect wallet to load analytics</div>`;
-}
 
-/* ===================== SAFE getLogs ===================== */
-async function safeGetLogs(filter) {
-  const rp = readProvider || provider;
-  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+/* ===================== DATA PIPELINE ===================== */
+async function getReadProvider() {
+  if (readProvider) return readProvider;
+  for (const url of ARC_RPCS) {
     try {
-      return await rp.getLogs(filter);
-    } catch (e) {
-      const msg = (e.message || "") + (e.info?.error?.message || "") + (e.code || "");
-      const is429 = msg.includes("429") || msg.includes("rate limit") || msg.includes("-32005") || e.code === -32005;
-      const isRange = msg.includes("range") || msg.includes("exceed") || msg.includes("limit");
-      if ((is429 || isRange) && attempt < MAX_RETRIES - 1) {
-        await sleep(RETRY_WAIT * (attempt + 1));
-        continue;
-      }
-      console.warn("getLogs skip", filter.address, filter.fromBlock, e.message || e);
-      showToast("Warning: RPC limit reached. Some data may be missing.", 5000);
-      return [];
-    }
+      const p = new ethers.JsonRpcProvider(url, CHAIN_ID, { staticNetwork: true });
+      await p.getBlockNumber();
+      readProvider = p;
+      return p;
+    } catch {}
   }
-  return [];
+  if (provider) return provider;
+  return null;
 }
 
-async function getLogsChunked(address, topic0, fromBlock, toBlock, onChunk) {
-  const all = [];
-  let start = fromBlock;
-  while (start <= toBlock) {
-    const end = Math.min(start + CHUNK_SIZE - 1, toBlock);
-    const logs = await safeGetLogs({
-      address,
-      topics: [topic0],
-      fromBlock: start,
-      toBlock: end
-    });
-    all.push(...logs);
-    if (onChunk) onChunk(start, end);
-    start = end + 1;
-    if (start <= toBlock) await sleep(DELAY_MS);
-  }
-  return all;
+function resolveToken(addrOrSym) {
+  if (!addrOrSym) return "USDC";
+  const s = String(addrOrSym);
+  if (TOKEN_MAP[s.toLowerCase()]) return TOKEN_MAP[s.toLowerCase()];
+  if (/USDC|EURC|cirBTC|TOKEN/i.test(s)) return s.replace(/[^a-zA-Z0-9]/g, "").slice(0, 8) || "USDC";
+  return "USDC";
 }
 
-async function getBlockTs(bn) {
-  if (blockTsCache[bn]) return blockTsCache[bn];
-  
-  if (latestBlockNum > 0 && latestBlockTimestamp > 0) {
-    const diff = latestBlockNum - bn;
-    const estimatedTs = latestBlockTimestamp - Math.floor(diff * 2.16);
-    blockTsCache[bn] = estimatedTs;
-    return estimatedTs;
+function parseAmount(v) {
+  if (v == null) return 0;
+  if (typeof v === "number") {
+    // Guard: raw wei-scale numbers (e.g. 2e18) → human units
+    if (Math.abs(v) >= 1e15) return v / 1e18;
+    return v;
   }
+  const s = String(v).replace(/,/g, "").trim();
+  if (!s) return 0;
+  // Integer string longer than 15 digits → treat as 18-decimal wei
+  if (/^\d+$/.test(s) && s.length > 15) {
+    try { return parseFloat(ethers.formatUnits(s, 18)); } catch { return parseFloat(s) / 1e18; }
+  }
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
 
+/** Arc Network native USDC + listed tokens use 18 decimals */
+function tokenDecimals(/* tokenAddrOrSym */) {
+  return 18;
+}
+
+function fromWei(value) {
   try {
-    const rp = readProvider || provider;
-    const b = await rp.getBlock(bn);
-    const ts = b ? b.timestamp : Math.floor(Date.now() / 1000);
-    blockTsCache[bn] = ts;
-    return ts;
+    return parseFloat(ethers.formatUnits(value ?? 0, 18));
   } catch {
-    return Math.floor(Date.now() / 1000);
+    return 0;
   }
 }
 
-/* ===================== SCANNERS ===================== */
-async function scanContract(name, address, abi, eventHandlers, fromBlock, toBlock, progressBase, progressSpan) {
-  const iface = new ethers.Interface(abi);
-  const eventNames = Object.keys(eventHandlers);
-  const topics = eventNames.map(n => {
-    try { return iface.getEvent(n).topicHash; } catch { return null; }
-  }).filter(Boolean);
-
-  const totalChunks = Math.ceil((toBlock - fromBlock + 1) / CHUNK_SIZE) * topics.length;
-  let doneChunks = 0;
-  const daily = {};
-
-  for (let ti = 0; ti < topics.length; ti++) {
-    const topic = topics[ti];
-    const ename = eventNames[ti];
-    const logs = await getLogsChunked(address, topic, fromBlock, toBlock, () => {
-      doneChunks++;
-      const pct = progressBase + (doneChunks / Math.max(1, totalChunks)) * progressSpan;
-      setProgress(pct, `Scanning ${name} · ${ename}`);
-    });
-
-    for (const log of logs) {
-      try {
-        const parsed = iface.parseLog({ topics: log.topics, data: log.data });
-        if (!parsed) continue;
-        const ts = await getBlockTs(log.blockNumber);
-        const result = eventHandlers[parsed.name](parsed.args, log, ts);
-        if (result && result.dayVol) {
-          daily[dayKey(ts)] = (daily[dayKey(ts)] || 0) + result.dayVol;
-        }
-      } catch (e) { }
-    }
-    await sleep(DELAY_MS);
-  }
-  return daily;
+function detectModule(item) {
+  const app = (item.appName || "").toLowerCase();
+  const t = (item.type || item.intent || item.memo || item.title || item.status || "").toLowerCase();
+  const blob = app + " " + t;
+  if (/vest|cliff|unlock|arcsplitvesting/i.test(blob)) return "vesting";
+  if (/condition|agentic|rule|smart.?condition|registerrule|deposit|withdraw/i.test(blob)) return "conditional";
+  if (/batch|multi.?token|adhoc/i.test(blob)) return "batch";
+  if (/pay.?link|invoice|arcpay|link.?created|link.?claimed/i.test(blob)) return "pay";
+  if (/role|giveaway|equal.?split|splitby|token.?splitter/i.test(blob)) return "role";
+  return "other";
 }
 
-async function fetchOnChainAll() {
-  if (scanning) return false;
-  scanning = true;
-  document.getElementById("scanStatus").classList.remove("hidden");
-  data = emptyData();
-  blockTsCache = {};
-
-  try {
-    setProgress(1, "Connecting to Arc RPC…");
-    const rp = await initReadProvider();
-    
-    latestBlockNum = await rp.getBlockNumber();
-    try {
-      const b = await rp.getBlock(latestBlockNum);
-      latestBlockTimestamp = b ? b.timestamp : Math.floor(Date.now() / 1000);
-    } catch { latestBlockTimestamp = Math.floor(Date.now() / 1000); }
-
-    const days = parseInt(document.getElementById("timeRange").value, 10) || 3;
-    const blocksPerDay = 40000;
-    let lookback = days * blocksPerDay;
-    lookback = Math.min(lookback, days <= 1 ? 30000 : days <= 3 ? 60000 : days <= 7 ? 100000 : 120000);
-    const fromBlock = Math.max(0, latestBlockNum - lookback);
-    const toBlock = latestBlockNum;
-
-    setProgress(3, `Arc RPC · blocks ${fromBlock} → ${toBlock}`);
-
-    const jobs = [
-      {
-        name: "PayLink", address: CONTRACTS.payLink, abi: ABI.payLink,
-        handlers: {
-          LinkCreated: (args, log, ts) => {
-            const token = args.token;
-            const amount = formatUnitsSafe(args.amount, tokenInfo(token).decimals);
-            data.modules.pay.links.created++;
-            data.modules.pay.links.vol += amount;
-            data.volume += amount;
-            data.links++;
-            addTokenVol(token, amount);
-            pushActivity({ type: "Payment Link Created", amount, token: tokenInfo(token).symbol, memo: `link ${String(args.linkId).slice(0, 10)}…`, hash: log.transactionHash, timestamp: ts * 1000, module: "pay", recipient: args.creator });
-            return { dayVol: amount };
-          },
-          LinkClaimed: (args, log, ts) => {
-            const amount = formatUnitsSafe(args.amount, 6);
-            data.modules.pay.links.claimed++;
-            pushActivity({ type: "Payment Link Claimed", amount, token: "USDC", memo: `→ ${String(args.destination).slice(0, 8)}…`, hash: log.transactionHash, timestamp: ts * 1000, module: "pay", recipient: args.destination });
-            return null;
-          },
-          LinkCancelled: (args, log, ts) => {
-            const amount = formatUnitsSafe(args.amount, 6);
-            data.modules.pay.links.cancelled++;
-            pushActivity({ type: "Payment Link Cancelled", amount, token: "USDC", memo: "Refund", hash: log.transactionHash, timestamp: ts * 1000, module: "pay", recipient: args.creator });
-            return null;
-          }
-        }
-      },
-      {
-        name: "Invoice", address: CONTRACTS.invoice, abi: ABI.invoice,
-        handlers: {
-          InvoiceCreated: (args, log, ts) => {
-            const token = args.token;
-            const amount = formatUnitsSafe(args.amount, tokenInfo(token).decimals);
-            data.modules.pay.invoices.created++;
-            data.modules.pay.invoices.vol += amount;
-            data.volume += amount;
-            data.invoices++;
-            addTokenVol(token, amount);
-            pushActivity({ type: "Invoice Created", amount, token: tokenInfo(token).symbol, memo: `Invoice #${args.invoiceId}`, hash: log.transactionHash, timestamp: ts * 1000, module: "pay", recipient: args.issuer });
-            return { dayVol: amount };
-          },
-          InvoicePaid: (args, log, ts) => {
-            const amount = formatUnitsSafe(args.amountPaid, 6);
-            data.modules.pay.invoices.paid++;
-            pushActivity({ type: "Invoice Paid", amount, token: "USDC", memo: `Invoice #${args.invoiceId}`, hash: log.transactionHash, timestamp: ts * 1000, module: "pay", recipient: args.payer });
-            return null;
-          },
-          InvoiceCancelled: (args, log, ts) => {
-            data.modules.pay.invoices.cancelled++;
-            pushActivity({ type: "Invoice Cancelled", amount: 0, token: "—", memo: `Invoice #${args.invoiceId}`, hash: log.transactionHash, timestamp: ts * 1000, module: "pay" });
-            return null;
-          }
-        }
-      },
-      {
-        name: "Conditional", address: CONTRACTS.conditional, abi: ABI.conditional,
-        handlers: {
-          RuleRegistered: (args, log, ts) => {
-            data.modules.conditional.rules++;
-            pushActivity({ type: "Rule Registered", amount: 0, token: tokenInfo(args.token).symbol, memo: args.isRecurring ? "Recurring" : "One-time", hash: log.transactionHash, timestamp: ts * 1000, module: "conditional", recipient: args.sponsor });
-            return null;
-          },
-          SplitExecuted: (args, log, ts) => {
-            const token = args.token;
-            const amount = formatUnitsSafe(args.netAmountPushed, tokenInfo(token).decimals);
-            const fee = formatUnitsSafe(args.feeDeducted, tokenInfo(token).decimals);
-            data.modules.conditional.vol += amount;
-            data.modules.conditional.exec++;
-            data.modules.agentic.vol += amount * 0.25;
-            data.modules.agentic.exec++;
-            data.modules.agentic.fees += fee;
-            data.volume += amount;
-            addTokenVol(token, amount);
-            pushActivity({ type: "Conditional / Agentic Push", amount, token: tokenInfo(token).symbol, memo: fee > 0 ? `Fee ${fmt(fee)}` : "Executed", hash: log.transactionHash, timestamp: ts * 1000, module: "conditional", recipient: args.recipient });
-            return { dayVol: amount };
-          },
-          FundsDeposited: (args, log, ts) => {
-            const token = args.token;
-            const amount = formatUnitsSafe(args.amount, tokenInfo(token).decimals);
-            addTokenVol(token, amount);
-            pushActivity({ type: "Funds Deposited", amount, token: tokenInfo(token).symbol, memo: "Treasury", hash: log.transactionHash, timestamp: ts * 1000, module: "conditional", recipient: args.sponsor });
-            return null;
-          }
-        }
-      },
-      {
-        name: "Vesting", address: CONTRACTS.vesting, abi: ABI.vesting,
-        handlers: {
-          ScheduleCreated: (args, log, ts) => {
-            const token = args.token;
-            const amount = formatUnitsSafe(args.totalAmount, tokenInfo(token).decimals);
-            data.modules.vesting.vol += amount;
-            data.modules.vesting.schedules++;
-            data.modules.vesting.locked += amount;
-            data.volume += amount;
-            addTokenVol(token, amount);
-            pushActivity({ type: "Vesting Schedule", amount, token: tokenInfo(token).symbol, memo: `${args.vestingDuration}s duration`, hash: log.transactionHash, timestamp: ts * 1000, module: "vesting", recipient: args.recipient });
-            return { dayVol: amount };
-          },
-          VestedAmountPushed: (args, log, ts) => {
-            const token = args.token;
-            const amount = formatUnitsSafe(args.amountReceived, tokenInfo(token).decimals);
-            data.modules.vesting.pushes++;
-            data.modules.vesting.locked = Math.max(0, data.modules.vesting.locked - amount);
-            pushActivity({ type: "Vested Push", amount, token: tokenInfo(token).symbol, memo: "Release", hash: log.transactionHash, timestamp: ts * 1000, module: "vesting", recipient: args.recipient });
-            return null;
-          }
-        }
-      },
-      {
-        name: "Role", address: CONTRACTS.role, abi: ABI.role,
-        handlers: {
-          BatchPercentageExecuted: (args, log, ts) => {
-            const token = args.token;
-            const amount = formatUnitsSafe(args.totalDistributed, tokenInfo(token).decimals);
-            data.modules.role.vol += amount;
-            data.modules.role.batches++;
-            data.batches++;
-            data.volume += amount;
-            addTokenVol(token, amount);
-            pushActivity({ type: "Role % Batch", amount, token: tokenInfo(token).symbol, memo: `Batch #${args.batchId}`, hash: log.transactionHash, timestamp: ts * 1000, module: "role", recipient: args.sender });
-            return { dayVol: amount };
-          },
-          BatchAmountExecuted: (args, log, ts) => {
-            const token = args.token;
-            const amount = formatUnitsSafe(args.totalDistributed, tokenInfo(token).decimals);
-            data.modules.role.vol += amount;
-            data.modules.role.batches++;
-            data.batches++;
-            data.volume += amount;
-            addTokenVol(token, amount);
-            pushActivity({ type: "Role Amount Batch", amount, token: tokenInfo(token).symbol, memo: `Batch #${args.batchId}`, hash: log.transactionHash, timestamp: ts * 1000, module: "role", recipient: args.sender });
-            return { dayVol: amount };
-          }
-        }
-      }
-    ];
-
-    const dailyAll = {};
-    for (let i = 0; i < jobs.length; i++) {
-      const job = jobs[i];
-      const base = 5 + i * 17;
-      const d = await scanContract(job.name, job.address, job.abi, job.handlers, fromBlock, toBlock, base, 17);
-      for (const [k, v] of Object.entries(d)) dailyAll[k] = (dailyAll[k] || 0) + v;
-    }
-
-    data.timeline = Object.entries(dailyAll).map(([date, volume]) => ({ date, volume })).sort((a, b) => a.date.localeCompare(b.date));
-
-    setProgress(92, "Reading live counters…");
-    try {
-      const cond = new ethers.Contract(CONTRACTS.conditional, ABI.conditional, readProvider || provider);
-      const active = await cond.activeRuleCount();
-      data.modules.conditional.active = Number(active);
-      data.active = Number(active);
-    } catch {}
-    await sleep(200);
-    try {
-      const inv = new ethers.Contract(CONTRACTS.invoice, ABI.invoice, readProvider || provider);
-      const counter = await inv.invoiceCounter();
-      if (Number(counter) > data.modules.pay.invoices.created) {
-        data.modules.pay.invoices.created = Number(counter);
-        data.invoices = Math.max(data.invoices, Number(counter));
-      }
-    } catch {}
-
-    setProgress(100, "Done");
-    dataSource = "on-chain";
-    await sleep(400);
-    document.getElementById("scanProgressBox").classList.add("hidden");
-    document.getElementById("scanStatus").classList.add("hidden");
-    scanning = false;
-    return true;
-  } catch (e) {
-    console.error(e);
-    document.getElementById("scanProgressBox").classList.add("hidden");
-    document.getElementById("scanStatus").classList.add("hidden");
-    scanning = false;
-    showToast("Scan error: " + (e.shortMessage || e.message || "RPC"), 6000);
-    return false;
+function extractTimestamp(item) {
+  let ts = item.timestamp || item.time || item.createdAt || item.date || item.ts;
+  if (typeof ts === "string") {
+    const d = new Date(ts);
+    if (!isNaN(d.getTime())) return d.getTime();
   }
+  if (typeof ts === "number") return ts < 1e12 ? ts * 1000 : ts;
+  return Date.now();
+}
+
+function extractAmount(item) {
+  return parseAmount(
+    item.amount ?? item.totalAmount ?? item.allocated ?? item.rawAmount ??
+    item.netAmountPushed ?? item.totalDistributed ?? 0
+  );
+}
+
+function extractHash(item) {
+  if (item.hash) return item.hash;
+  if (item.txHash) return item.txHash;
+  if (Array.isArray(item.txHashes) && item.txHashes.length) return item.txHashes[0];
+  return "";
+}
+
+function extractToken(item) {
+  return resolveToken(item.token || item.tokenSymbol || item.symbol || item.tokenAddress || "USDC");
+}
+
+function extractTypeLabel(item) {
+  return String(
+    item.type || item.intent || item.memo || item.title || item.appName || "Transaction"
+  ).slice(0, 80);
 }
 
 async function processCloudHistory(hist) {
-  if (!hist || !hist.length) return 0;
+  if (!Array.isArray(hist) || !hist.length) return 0;
+  const now = Date.now();
+  const rangeMs = rangeDays * 86400000;
+  const prevStart = now - 2 * rangeMs;
+  const rangeStart = now - rangeMs;
   let added = 0;
   const daily = {};
+  const seen = new Set(state.activity.map(a => a.hash).filter(Boolean));
 
-  hist.forEach((item, idx) => {
+  hist.forEach(raw => {
+    // history_data may be nested or the row itself
+    const item = raw?.history_data || raw;
     if (!item || typeof item !== "object") return;
 
-    // ---- amount: many shapes from your apps ----
-    let amount = 0;
-    const amountCandidates = [
-      item.amount, item.totalAmount, item.netAmount, item.rawAmount,
-      item.value, item.total, item.distributed
-    ];
-    for (const c of amountCandidates) {
-      if (c == null || c === "") continue;
-      const n = parseFloat(String(c).replace(/,/g, ""));
-      if (!isNaN(n) && n > 0) { amount = n; break; }
-    }
-    // BatchSplit sometimes stores tokens: [{amount}]
-    if (!amount && Array.isArray(item.tokens) && item.tokens[0]) {
-      const n = parseFloat(item.tokens[0].amount);
-      if (!isNaN(n)) amount = n;
-    }
+    const tsMs = extractTimestamp(item);
+    const hash = extractHash(item);
+    if (hash && seen.has(hash)) return;
+    if (hash) seen.add(hash);
 
-    // ---- token symbol ----
-    let tokenSym = "USDC";
-    const tokRaw = (item.tokenSymbol || item.token || item.symbol || "").toString();
-    const tok = tokRaw.toUpperCase();
-    if (tok.includes("EURC")) tokenSym = "EURC";
-    else if (tok.includes("BTC") || tok.includes("CIRBTC")) tokenSym = "cirBTC";
-    else if (tok.includes("USDC") || tok.startsWith("0X3600") || tok === "0X0000000000000000000000000000000000000000" || tok === "") tokenSym = "USDC";
-    else if (tok.startsWith("0X") && tok.length >= 10) tokenSym = "Other";
-    else if (tok.length >= 2) tokenSym = tok.slice(0, 10);
+    const amount = extractAmount(item);
+    const tokenSym = extractToken(item);
+    const mod = detectModule(item);
+    const status = (item.status || "Success").toString();
 
-    // ---- type / module from memo, intent, status ----
-    const typeStr = [
-      item.type, item.memo, item.intent, item.action, item.status, item.title
-    ].filter(Boolean).join(" ").toLowerCase();
+    if (tsMs >= rangeStart) {
+      state.volume += amount;
+      state.tx++;
+      if (state.tokens[tokenSym] !== undefined) state.tokens[tokenSym] += amount;
+      else state.tokens.Other += amount;
 
-    let mod = "other";
-    if (/link|invoice|pay|claim|arcpay/.test(typeStr)) mod = "pay";
-    else if (/vest|cliff|schedule/.test(typeStr)) mod = "vesting";
-    else if (/agentic|condition|rule|evaluator/.test(typeStr)) mod = "conditional";
-    else if (/role|batch|giveaway|split|payroll|winner|equal split/.test(typeStr)) mod = "role";
-    else if (item.winnersCount || item.winners) mod = "role";
-    else if (item.batchId != null) mod = "role";
+      const day = new Date(tsMs).toISOString().slice(0, 10);
+      daily[day] = (daily[day] || 0) + amount;
 
-    // ---- module stats ----
-    if (mod === "pay") {
-      if (/invoice/.test(typeStr)) {
-        data.modules.pay.invoices.created++;
-        data.modules.pay.invoices.vol += amount;
-        if (/paid/.test(typeStr)) data.modules.pay.invoices.paid++;
-        if (/cancel/.test(typeStr)) data.modules.pay.invoices.cancelled++;
-        data.invoices++;
-      } else {
-        data.modules.pay.links.created++;
-        data.modules.pay.links.vol += amount;
-        if (/claim/.test(typeStr)) data.modules.pay.links.claimed++;
-        if (/cancel/.test(typeStr)) data.modules.pay.links.cancelled++;
-        data.links++;
+      if (mod === "pay") {
+        const st = status.toLowerCase();
+        if (/paid|claimed|complete/i.test(st)) state.linksPaid++;
+        else if (/expir|cancel/i.test(st)) state.linksExpired++;
+        else state.linksActive++;
       }
-    } else if (mod === "vesting") {
-      data.modules.vesting.vol += amount;
-      data.modules.vesting.schedules++;
-      if (/push|release/.test(typeStr)) data.modules.vesting.pushes++;
-    } else if (mod === "conditional") {
-      data.modules.conditional.vol += amount;
-      if (/rule|register/.test(typeStr)) data.modules.conditional.rules++;
-      else data.modules.conditional.exec++;
-    } else if (mod === "role") {
-      data.modules.role.vol += amount;
-      data.modules.role.batches++;
-      data.batches++;
-      if (/giveaway|winner/.test(typeStr)) data.modules.role.giveaways++;
-      if (item.winnersCount) data.modules.role.wallets += Number(item.winnersCount) || 0;
-    } else {
-      // unknown → still count volume under role family as generic split
-      if (amount > 0) {
-        data.modules.role.vol += amount;
-        data.modules.role.batches++;
-        data.batches++;
-        mod = "role";
+      if (mod === "conditional" || mod === "vesting") state.activeRules++;
+    } else if (tsMs >= prevStart) {
+      state.prevVolume += amount;
+    }
+
+    // Recipients (real only)
+    const recips = [];
+    if (item.recipient && typeof item.recipient === "string") recips.push(item.recipient);
+    if (Array.isArray(item.winners)) recips.push(...item.winners.filter(Boolean));
+    if (Array.isArray(item.recipients)) {
+      item.recipients.forEach(r => {
+        if (typeof r === "string") recips.push(r);
+        else if (r?.wallet) recips.push(r.wallet);
+        else if (r?.address) recips.push(r.address);
+      });
+    }
+    if (item.role || item.roleName) recips.push(item.role || item.roleName);
+    if (Array.isArray(item.allocations)) {
+      item.allocations.forEach(a => {
+        if (a?.roleName) recips.push(a.roleName);
+      });
+    }
+    recips.forEach(r => {
+      const key = String(r);
+      if (!key) return;
+      if (!state.recipients[key]) {
+        state.recipients[key] = {
+          amount: 0, count: 0,
+          label: key.startsWith("0x") ? shortAddr(key) : key.slice(0, 24)
+        };
       }
-    }
+      state.recipients[key].amount += amount / Math.max(1, recips.length);
+      state.recipients[key].count++;
+    });
 
-    data.volume += amount;
-    if (tokenSym === "USDC") data.tokens.USDC += amount;
-    else if (tokenSym === "EURC") data.tokens.EURC += amount;
-    else if (tokenSym === "cirBTC") data.tokens.cirBTC += amount;
-    else data.tokens.Other += amount;
-
-    // ---- timestamp: number ms, number s, ISO, or locale string ----
-    let tsMs = Date.now() - idx * 60000; // fallback spread so chart has points
-    const rawTs = item.timestamp || item.createdAt || item.time || item.date;
-    if (typeof rawTs === "number") {
-      tsMs = rawTs < 1e12 ? rawTs * 1000 : rawTs;
-    } else if (typeof rawTs === "string" && rawTs.trim()) {
-      const parsed = Date.parse(rawTs);
-      if (!isNaN(parsed)) tsMs = parsed;
-      // locale like "Aug 5, 2026" without year sometimes fails — keep fallback
-    }
-
-    const day = new Date(tsMs).toISOString().slice(0, 10);
-    daily[day] = (daily[day] || 0) + amount;
-
-    const label = item.type || item.intent || item.memo || item.title || "History";
-    pushActivity({
-      type: String(label).slice(0, 80),
+    state.activity.push({
+      type: extractTypeLabel(item),
       amount,
       token: tokenSym,
-      memo: item.memo || item.intent || item.note || "",
-      hash: item.hash || item.txHash || "",
+      memo: item.memo || item.intent || item.title || "",
+      hash,
       timestamp: tsMs,
       module: mod,
-      recipient: item.recipient || item.to || item.user || (Array.isArray(item.winners) ? item.winners[0] : null)
+      status,
+      recipient: item.recipient || null,
+      source: "cloud"
     });
     added++;
   });
 
-  // Build timeline; if all volume on one day still show it
-  data.timeline = Object.entries(daily)
+  // Also load real pending batches from localStorage (BatchSplit / RoleSplitter)
+  try {
+    const pendingKeys = ["arcPendingBatchesMain", "arcPendingBatches"];
+    pendingKeys.forEach(key => {
+      const raw = localStorage.getItem(key);
+      if (!raw) return;
+      const list = JSON.parse(raw);
+      if (!Array.isArray(list)) return;
+      list.forEach(b => {
+        if (!b) return;
+        const amount = parseAmount(b.rawAmount || b.amount || 0);
+        const tokenSym = resolveToken(b.tokenSymbol || b.token || "USDC");
+        state.activity.push({
+          type: "Pending Batch",
+          amount,
+          token: tokenSym,
+          memo: b.memo || `Pending ${b.currentIndex || 0}/${(b.chunks || []).length} chunks`,
+          hash: (b.txHashes && b.txHashes[0]) || "",
+          timestamp: b.id || Date.now(),
+          module: "batch",
+          status: "Pending",
+          recipient: null,
+          source: "local"
+        });
+        state.notifications = state.notifications || [];
+      });
+      if (list.length > 0) {
+        // will be added in buildAutomations after
+        state._pendingBatchCount = (state._pendingBatchCount || 0) + list.length;
+      }
+    });
+  } catch {}
+
+  state.timeline = Object.entries(daily)
     .map(([date, volume]) => ({ date, volume }))
     .sort((a, b) => a.date.localeCompare(b.date));
-
-  // If timeline empty but we have volume, force one point so chart is not blank
-  if (!data.timeline.length && data.volume > 0) {
-    data.timeline = [{ date: new Date().toISOString().slice(0, 10), volume: data.volume }];
-  }
 
   return added;
 }
 
+/* On-chain enrichment – recent events from main contracts */
+async function scanOnChain() {
+  const rp = await getReadProvider();
+  if (!rp || !userAddress) return 0;
+
+  let added = 0;
+  const seen = new Set(state.activity.map(a => a.hash).filter(Boolean));
+  const fromBlock = Math.max(0, (await rp.getBlockNumber()) - 8000);
+
+  const roleIface = new ethers.Interface([
+    "event BatchPercentageExecuted(uint256 indexed batchId, address indexed sender, address indexed token, uint256 totalDistributed, uint256 gasRefunded, uint256 unspentRefunded)",
+    "event BatchAmountExecuted(uint256 indexed batchId, address indexed sender, address indexed token, uint256 totalDistributed, uint256 gasRefunded, uint256 unspentRefunded)"
+  ]);
+  const condIface = new ethers.Interface([
+    "event SplitExecuted(bytes32 indexed ruleHash, address indexed sponsor, address indexed recipient, address token, address relayer, uint256 netAmountPushed, uint256 feeDeducted, uint256 nonce)",
+    "event RuleRegistered(bytes32 indexed ruleHash, address indexed sponsor, address indexed token, bool isRecurring)"
+  ]);
+  const vestIface = new ethers.Interface([
+    "event ScheduleCreated(uint256 indexed scheduleId, address indexed recipient, address indexed token, uint256 totalAmount, uint32 vestingDuration, uint32 cliffDuration, uint32 slicePeriodSeconds, bool revocable, bool allowRelayerPush)",
+    "event VestedAmountPushed(uint256 indexed scheduleId, address indexed recipient, address indexed token, address relayer, uint256 amountReceived, uint256 gasRefunded)"
+  ]);
+  const payIface = new ethers.Interface([
+    "event LinkCreated(address indexed linkId, address indexed creator, address indexed token, uint256 amount, uint40 expiration)",
+    "event LinkClaimed(address indexed linkId, address indexed destination, address indexed relayer, uint256 amount, uint256 feeAmount)"
+  ]);
+
+  async function pullLogs(addr, iface, eventNames) {
+    try {
+      const topics = eventNames.map(n => iface.getEvent(n).topicHash);
+      const logs = await rp.getLogs({
+        address: addr,
+        fromBlock,
+        toBlock: "latest",
+        topics: [topics]
+      });
+      return logs;
+    } catch (e) {
+      console.warn("log pull", addr, e.message);
+      return [];
+    }
+  }
+
+  // Role Splitter
+  try {
+    const logs = await pullLogs(CONTRACTS.roleSplitter, roleIface, ["BatchPercentageExecuted", "BatchAmountExecuted"]);
+    for (const log of logs) {
+      try {
+        const parsed = roleIface.parseLog(log);
+        if (parsed.args.sender?.toLowerCase() !== userAddress.toLowerCase()) continue;
+        const hash = log.transactionHash;
+        if (seen.has(hash)) continue;
+        seen.add(hash);
+        const amount = fromWei(parsed.args.totalDistributed);
+        const tokenSym = resolveToken(parsed.args.token);
+        const block = await rp.getBlock(log.blockNumber);
+        const ts = (block?.timestamp || 0) * 1000;
+        state.activity.push({
+          type: "On-chain Batch Split",
+          amount, token: tokenSym, memo: "Verified on-chain",
+          hash, timestamp: ts, module: "batch", status: "Success", source: "onchain"
+        });
+        if (ts >= Date.now() - rangeDays * 86400000) {
+          state.volume += amount;
+          state.tx++;
+          if (state.tokens[tokenSym] !== undefined) state.tokens[tokenSym] += amount;
+          else state.tokens.Other += amount;
+        }
+        added++;
+      } catch {}
+    }
+  } catch {}
+
+  // Conditional
+  try {
+    const logs = await pullLogs(CONTRACTS.conditional, condIface, ["SplitExecuted", "RuleRegistered"]);
+    for (const log of logs) {
+      try {
+        const parsed = condIface.parseLog(log);
+        const sponsor = (parsed.args.sponsor || "").toLowerCase();
+        if (sponsor !== userAddress.toLowerCase()) continue;
+        const hash = log.transactionHash;
+        if (seen.has(hash)) continue;
+        seen.add(hash);
+        const amount = parsed.args.netAmountPushed
+          ? fromWei(parsed.args.netAmountPushed)
+          : 0;
+        const tokenSym = resolveToken(parsed.args.token);
+        const block = await rp.getBlock(log.blockNumber);
+        const ts = (block?.timestamp || 0) * 1000;
+        state.activity.push({
+          type: parsed.name === "RuleRegistered" ? "Rule Registered" : "Conditional Push",
+          amount, token: tokenSym, memo: "On-chain verified",
+          hash, timestamp: ts, module: "conditional", status: "Success", source: "onchain"
+        });
+        if (ts >= Date.now() - rangeDays * 86400000) {
+          state.volume += amount;
+          state.tx++;
+          state.activeRules++;
+        }
+        added++;
+      } catch {}
+    }
+  } catch {}
+
+  // Vesting
+  try {
+    const logs = await pullLogs(CONTRACTS.vesting, vestIface, ["ScheduleCreated", "VestedAmountPushed"]);
+    for (const log of logs) {
+      try {
+        const parsed = vestIface.parseLog(log);
+        const hash = log.transactionHash;
+        if (seen.has(hash)) continue;
+        // We can't easily filter by creator without more events; accept recent and mark
+        seen.add(hash);
+        const amount = parsed.args.totalAmount
+          ? fromWei(parsed.args.totalAmount)
+          : (parsed.args.amountReceived ? fromWei(parsed.args.amountReceived) : 0);
+        const tokenSym = resolveToken(parsed.args.token);
+        const block = await rp.getBlock(log.blockNumber);
+        const ts = (block?.timestamp || 0) * 1000;
+        state.activity.push({
+          type: parsed.name === "ScheduleCreated" ? "Vesting Created" : "Vesting Unlock",
+          amount, token: tokenSym, memo: "On-chain verified",
+          hash, timestamp: ts, module: "vesting", status: "Success", source: "onchain"
+        });
+        if (ts >= Date.now() - rangeDays * 86400000) {
+          state.volume += amount;
+          state.tx++;
+        }
+        added++;
+      } catch {}
+    }
+  } catch {}
+
+  // Pay Links (creator filter)
+  try {
+    const logs = await pullLogs(CONTRACTS.payLink, payIface, ["LinkCreated", "LinkClaimed"]);
+    for (const log of logs) {
+      try {
+        const parsed = payIface.parseLog(log);
+        const hash = log.transactionHash;
+        if (seen.has(hash)) continue;
+        const creator = (parsed.args.creator || "").toLowerCase();
+        if (parsed.name === "LinkCreated" && creator !== userAddress.toLowerCase()) continue;
+        seen.add(hash);
+        const amount = fromWei(parsed.args.amount || 0);
+        const tokenSym = resolveToken(parsed.args.token);
+        const block = await rp.getBlock(log.blockNumber);
+        const ts = (block?.timestamp || 0) * 1000;
+        state.activity.push({
+          type: parsed.name === "LinkCreated" ? "Payment Link Created" : "Payment Link Claimed",
+          amount, token: tokenSym, memo: "On-chain verified",
+          hash, timestamp: ts, module: "pay",
+          status: parsed.name === "LinkClaimed" ? "Paid" : "Active",
+          source: "onchain"
+        });
+        if (ts >= Date.now() - rangeDays * 86400000) {
+          state.volume += amount;
+          state.tx++;
+          if (parsed.name === "LinkClaimed") state.linksPaid++;
+          else state.linksActive++;
+        }
+        added++;
+      } catch {}
+    }
+  } catch {}
+
+  return added;
+}
+
+async function fetchBalances() {
+  if (!userAddress) return;
+  try {
+    const rp = await getReadProvider();
+    if (!rp) return;
+    try {
+      const bal = await rp.getBalance(userAddress);
+      state.balances.USDC = parseFloat(ethers.formatUnits(bal, 18));
+    } catch {}
+    const erc20 = ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"];
+    try {
+      const c = new ethers.Contract("0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a", erc20, rp);
+      const [b, d] = await Promise.all([c.balanceOf(userAddress), c.decimals()]);
+      state.balances.EURC = parseFloat(ethers.formatUnits(b, d));
+    } catch {}
+    try {
+      const c = new ethers.Contract("0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF", erc20, rp);
+      const [b, d] = await Promise.all([c.balanceOf(userAddress), c.decimals()]);
+      state.balances.cirBTC = parseFloat(ethers.formatUnits(b, d));
+    } catch {}
+  } catch (e) { console.warn("balances", e); }
+}
+
+/* Failed Pull / Claimable balances from contracts (real on-chain) */
+const NATIVE_USDC = "0x3600000000000000000000000000000000000000";
+const TOKEN_ADDR = {
+  USDC: NATIVE_USDC,
+  EURC: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a",
+  cirBTC: "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF"
+};
+
+async function fetchClaimables() {
+  state.claimable = [];
+  if (!userAddress) return;
+  try {
+    const rp = await getReadProvider();
+    if (!rp) return;
+
+    // RoleSplitter: getClaimableNative + getClaimableERC20
+    try {
+      const role = new ethers.Contract(CONTRACTS.roleSplitter, [
+        "function getClaimableNative(address user) view returns (uint256)",
+        "function getClaimableERC20(address user, address token) view returns (uint256)"
+      ], rp);
+      const nativeAmt = await role.getClaimableNative(userAddress);
+      if (nativeAmt > 0n) {
+        state.claimable.push({
+          contract: "RoleSplitter",
+          contractAddr: CONTRACTS.roleSplitter,
+          token: NATIVE_USDC,
+          symbol: "USDC",
+          amount: parseFloat(ethers.formatUnits(nativeAmt, 18)),
+          claimFn: "claimNative"
+        });
+      }
+      for (const [sym, addr] of Object.entries(TOKEN_ADDR)) {
+        if (sym === "USDC") continue;
+        try {
+          const amt = await role.getClaimableERC20(userAddress, addr);
+          if (amt > 0n) {
+            state.claimable.push({
+              contract: "RoleSplitter",
+              contractAddr: CONTRACTS.roleSplitter,
+              token: addr,
+              symbol: sym,
+              amount: parseFloat(ethers.formatUnits(amt, 18)),
+              claimFn: "claimERC20"
+            });
+          }
+        } catch {}
+      }
+    } catch (e) { console.warn("role claimable", e); }
+
+    // Vesting: getFailedPullBalance
+    try {
+      const vest = new ethers.Contract(CONTRACTS.vesting, [
+        "function getFailedPullBalance(address wallet, address tokenKey) view returns (uint256)"
+      ], rp);
+      for (const [sym, addr] of Object.entries(TOKEN_ADDR)) {
+        try {
+          const amt = await vest.getFailedPullBalance(userAddress, addr);
+          if (amt > 0n) {
+            state.claimable.push({
+              contract: "Vesting",
+              contractAddr: CONTRACTS.vesting,
+              token: addr,
+              symbol: sym,
+              amount: parseFloat(ethers.formatUnits(amt, 18)),
+              claimFn: "claimFailedPull"
+            });
+          }
+        } catch {}
+      }
+    } catch (e) { console.warn("vest claimable", e); }
+
+  } catch (e) { console.warn("fetchClaimables", e); }
+}
+
+async function claimFailedPull(item) {
+  if (!window.ethereum || !userAddress) return showToast("Connect wallet first", "fa-wallet");
+  try {
+    const bp = new ethers.BrowserProvider(window.ethereum);
+    const s = await bp.getSigner();
+    let tx;
+    if (item.claimFn === "claimNative") {
+      const c = new ethers.Contract(item.contractAddr, ["function claimNative()"], s);
+      tx = await c.claimNative();
+    } else if (item.claimFn === "claimERC20") {
+      const c = new ethers.Contract(item.contractAddr, ["function claimERC20(address token)"], s);
+      tx = await c.claimERC20(item.token);
+    } else {
+      const c = new ethers.Contract(item.contractAddr, ["function claimFailedPull(address tokenKey)"], s);
+      tx = await c.claimFailedPull(item.token);
+    }
+    showToast("Claim submitted…", "fa-spinner");
+    await tx.wait();
+    showToast("Claimed successfully", "fa-check");
+    await refreshDashboard();
+  } catch (e) {
+    console.error(e);
+    showToast(e.shortMessage || e.message || "Claim failed", "fa-ban");
+  }
+}
+
+function buildAutomationsAndUpcoming() {
+  // Only real data from cloud + on-chain + local pending batches
+  const autos = [];
+  const upcoming = [];
+  const notifs = [];
+
+  const condCount = state.activity.filter(a => a.module === "conditional" && a.status !== "Pending").length;
+  const vestCount = state.activity.filter(a => a.module === "vesting").length;
+  const batchCount = state.activity.filter(a => (a.module === "batch" || a.module === "role") && a.status !== "Pending").length;
+  const pendingCount = state._pendingBatchCount || state.activity.filter(a => a.status === "Pending").length;
+  const onchainCount = state.activity.filter(a => a.source === "onchain").length;
+
+  if (condCount > 0) {
+    autos.push({ name: "Conditional Rules", status: "running", next: `${condCount} event(s) in range` });
+  }
+  if (vestCount > 0) {
+    autos.push({ name: "Vesting Schedules", status: "running", next: `${vestCount} event(s) in range` });
+  }
+  if (batchCount > 0) {
+    autos.push({ name: "Batch / Role Splits", status: "running", next: `${batchCount} split(s) in range` });
+  }
+  if (pendingCount > 0) {
+    autos.push({ name: "Pending Batches", status: "attention", next: `${pendingCount} incomplete batch(es)` });
+  }
+  if (!autos.length) {
+    autos.push({ name: "No automations detected", status: "idle", next: "—" });
+  }
+
+  if (pendingCount > 0) {
+    upcoming.push({ when: "Action needed", title: `${pendingCount} pending batch(es) to resume`, icon: "fa-hourglass-half" });
+  }
+  if (state.linksActive > 0) {
+    upcoming.push({ when: "Active", title: `${state.linksActive} Payment Link(s) open`, icon: "fa-link" });
+  }
+  if (state.activeRules > 0) {
+    upcoming.push({ when: "On-chain", title: `${state.activeRules} rule / schedule event(s)`, icon: "fa-robot" });
+  }
+  if (!upcoming.length) {
+    upcoming.push({ when: "—", title: "Nothing pending", icon: "fa-calendar" });
+  }
+
+  // Real notifications only
+  if (pendingCount > 0) {
+    notifs.push({ text: `${pendingCount} incomplete batch(es) waiting to be resumed` });
+  }
+  if (state.claimable.length > 0) {
+    const total = state.claimable.reduce((s, c) => s + c.amount, 0);
+    notifs.push({ text: `${state.claimable.length} failed pull(s) claimable (~${fmt(total)} total)` });
+    upcoming.unshift({
+      when: "Claimable",
+      title: `${state.claimable.length} failed push(es) ready to claim`,
+      icon: "fa-hand-holding-dollar"
+    });
+    autos.unshift({
+      name: "Failed Pulls",
+      status: "attention",
+      next: `${state.claimable.length} claimable`
+    });
+  }
+  if (state.linksActive > 0) {
+    notifs.push({ text: `${state.linksActive} payment link(s) currently active` });
+  }
+  if (state.linksExpired > 0) {
+    notifs.push({ text: `${state.linksExpired} payment link(s) expired or cancelled` });
+  }
+  if (state.linksPaid > 0) {
+    notifs.push({ text: `${state.linksPaid} payment link(s) claimed / paid` });
+  }
+  if (condCount > 0) {
+    notifs.push({ text: `${condCount} conditional rule event(s) in selected range` });
+  }
+  if (vestCount > 0) {
+    notifs.push({ text: `${vestCount} vesting event(s) in selected range` });
+  }
+  if (onchainCount > 0) {
+    notifs.push({ text: `${onchainCount} transaction(s) verified on-chain` });
+  }
+
+  state.automations = autos;
+  state.upcoming = upcoming;
+  state.notifications = notifs;
+}
+
+function buildInsights() {
+  const list = [];
+  const delta = state.prevVolume > 0
+    ? ((state.volume - state.prevVolume) / state.prevVolume * 100)
+    : 0;
+
+  if (state.volume > 0) {
+    const dir = delta >= 0 ? "up" : "down";
+    list.push(`Volume ${dir} ${Math.abs(delta).toFixed(0)}% vs previous period (${fmt(state.volume)} in range).`);
+  }
+  if (state.tx > 0) {
+    list.push(`${state.tx} transaction(s) recorded in the selected range.`);
+  }
+  if (state.linksActive > 0) {
+    list.push(`${state.linksActive} Payment Link(s) are currently active.`);
+  }
+  if (state.linksExpired > 0) {
+    list.push(`${state.linksExpired} Payment Link(s) expired or were cancelled.`);
+  }
+  if (state.linksPaid > 0) {
+    list.push(`${state.linksPaid} Payment Link(s) have been claimed.`);
+  }
+  if (state.claimable.length > 0) {
+    const total = state.claimable.reduce((s, c) => s + c.amount, 0);
+    list.push(`${state.claimable.length} failed pull(s) are claimable (~${fmt(total)}).`);
+  }
+  const topTok = Object.entries(state.tokens).sort((a, b) => b[1] - a[1])[0];
+  if (topTok && topTok[1] > 0) {
+    list.push(`${topTok[0]} is the most used asset (${fmt(topTok[1])} volume).`);
+  }
+  const onchainCount = state.activity.filter(a => a.source === "onchain").length;
+  if (onchainCount > 0) {
+    list.push(`${onchainCount} event(s) cross-checked on-chain.`);
+  }
+  if (!list.length) {
+    list.push("No activity in this range yet. Run a split or create a payment link to see live data.");
+  }
+  state.insights = list;
+
+  // Health badge — only real signals
+  const pendingCount = state._pendingBatchCount || state.activity.filter(a => a.status === "Pending").length;
+  const badge = document.getElementById("healthBadge");
+  if (state.claimable.length > 0) {
+    badge.className = "flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold";
+    badge.innerHTML = `<span class="dot bg-amber-400"></span> ${state.claimable.length} Claimable`;
+  } else if (pendingCount > 0) {
+    badge.className = "flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold";
+    badge.innerHTML = `<span class="dot bg-amber-400"></span> ${pendingCount} Pending Batch(es)`;
+  } else if (state.linksExpired > 0) {
+    badge.className = "flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold";
+    badge.innerHTML = `<span class="dot bg-amber-400"></span> ${state.linksExpired} Expired Link(s)`;
+  } else if (userAddress && state.tx === 0 && state.activity.length === 0) {
+    badge.className = "flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-gray-500/10 border border-gray-500/30 text-gray-400 text-xs font-bold";
+    badge.innerHTML = `<span class="dot bg-gray-400"></span> No Activity`;
+  } else {
+    badge.className = "flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold";
+    badge.innerHTML = `<span class="dot bg-emerald-400 animate-pulse"></span> Healthy`;
+  }
+}
 
 async function refreshDashboard() {
-  if (scanning) return showToast("Scan already running…");
+  document.getElementById("errorState").classList.add("hidden");
+  document.getElementById("syncStatus").textContent = "Syncing…";
+  Object.assign(state, emptyState());
 
-  if (!provider && window.ethereum) {
+  if (!userAddress && window.ethereum) {
     try {
       provider = new ethers.BrowserProvider(window.ethereum);
       const accs = await provider.send("eth_accounts", []);
       if (accs?.length) {
         signer = await provider.getSigner();
         userAddress = await signer.getAddress();
+        document.getElementById("connectText").textContent = shortAddr(userAddress);
+        document.getElementById("connectBtn").className =
+          "app-button px-5 py-2.5 rounded-2xl bg-cyan-500/15 border border-cyan-500/40 text-cyan-400 font-bold text-sm flex items-center gap-2.5";
       }
     } catch {}
   }
 
-  // =================== PHASE 1: INSTANT CLOUD UI ===================
-  data = emptyData();
   let cloudCount = 0;
-  
+  let chainCount = 0;
+
+  // 1) Cloud first
   if (userAddress && typeof fetchHistoryFromCloud === "function") {
-    document.getElementById("scanStatus").classList.remove("hidden");
-    document.getElementById("scanStatusText").textContent = "Loading cloud…";
-    
     try {
       const hist = await fetchHistoryFromCloud(userAddress);
-      console.log("[Analytics] cloud records:", Array.isArray(hist) ? hist.length : hist, hist?.[0]);
       cloudCount = await processCloudHistory(hist || []);
-      if (cloudCount > 0) {
-        dataSource = "cloud";
-      } else {
-        dataSource = "empty";
-        console.warn("[Analytics] cloud empty or unparsed — check history_data shape");
-      }
     } catch (e) {
-      console.warn("cloud load error", e);
-      dataSource = "empty";
+      console.error("cloud", e);
+      document.getElementById("errorState").classList.remove("hidden");
     }
-  } else {
-    dataSource = userAddress ? "empty" : "—";
   }
 
-  updateUI();
-  if (cloudCount > 0) showToast(`Cloud loaded · ${cloudCount} records`, 2000);
-
-  if (!userAddress) {
-    document.getElementById("activityFeed").innerHTML =
-      `<div class="text-center py-16 text-gray-500 italic text-sm">
-        <i class="fas fa-wallet text-2xl mb-3 block text-cyan-400/50"></i>
-        Connect wallet to load your analytics
-      </div>`;
-    document.getElementById("scanStatus").classList.add("hidden");
-    return;
-  }
-
-  // =================== PHASE 2: BACKGROUND ON-CHAIN ===================
-  const doOnChain = document.getElementById("enableOnChain") ? document.getElementById("enableOnChain").checked : true;
-  if (!doOnChain) {
-    document.getElementById("scanStatus").classList.add("hidden");
-    return;
-  }
-
-  const cloudSnapshot = {
-    volume: data.volume, tx: data.tx, activity: [...data.activity], tokens: { ...data.tokens },
-    modules: JSON.parse(JSON.stringify(data.modules)), links: data.links, invoices: data.invoices,
-    batches: data.batches, recipients: new Set(data.recipients), timeline: [...data.timeline], active: data.active
-  };
-  const seenHashes = new Set(cloudSnapshot.activity.map(a => a.hash).filter(Boolean));
-
-  document.getElementById("scanStatus").classList.remove("hidden");
-  document.getElementById("scanStatusText").textContent = "Background scanning…";
-  setProgress(5, "Verifying on-chain logs…");
-  document.getElementById("rescanBtn").disabled = true;
-
-  setTimeout(async () => {
+  // 2) On-chain verification / enrichment
+  if (userAddress) {
     try {
-      scanning = false; 
-      const ok = await fetchOnChainAll();
-      if (!ok) {
-        restoreCloudData();
-        return;
-      }
-
-      const chainActivity = data.activity;
-      const chainModules = data.modules;
-      const chainActive = data.active;
-
-      restoreCloudData();
-      if (chainModules?.conditional?.active) {
-        data.modules.conditional.active = Math.max(data.modules.conditional.active || 0, chainModules.conditional.active || 0);
-      }
-
-      let merged = 0;
-      chainActivity.forEach(ev => {
-        if (ev.hash && seenHashes.has(ev.hash)) return;
-        if (ev.hash) seenHashes.add(ev.hash);
-        data.activity.push(ev);
-        data.tx++;
-        data.volume += ev.amount || 0;
-        if (ev.token === "USDC") data.tokens.USDC += ev.amount || 0;
-        else if (ev.token === "EURC") data.tokens.EURC += ev.amount || 0;
-        else if (ev.token === "cirBTC") data.tokens.cirBTC += ev.amount || 0;
-        else data.tokens.Other += ev.amount || 0;
-        if (ev.recipient) data.recipients.add(String(ev.recipient).toLowerCase());
-        
-        if (ev.module === "pay") data.modules.pay.links.vol += ev.amount || 0;
-        else if (ev.module === "role") data.modules.role.vol += ev.amount || 0;
-        else if (ev.module === "vesting") data.modules.vesting.vol += ev.amount || 0;
-        else if (ev.module === "conditional") data.modules.conditional.vol += ev.amount || 0;
-        merged++;
-      });
-
-      dataSource = cloudCount > 0 ? (merged > 0 ? "cloud + on-chain" : "cloud") : (merged > 0 ? "on-chain" : "empty");
-      updateUI();
-      
-      if (merged > 0) showToast(`Sync complete · +${merged} on-chain events`, 3500);
-      else if (cloudCount > 0) showToast("On-chain verified · Sync complete", 2500);
-
+      chainCount = await scanOnChain();
     } catch (e) {
-      restoreCloudData();
-    } finally {
-      scanning = false;
-      document.getElementById("rescanBtn").disabled = false;
-      document.getElementById("scanStatus").classList.add("hidden");
-      document.getElementById("scanProgressBox").classList.add("hidden");
+      console.warn("on-chain scan", e);
     }
-
-    function restoreCloudData() {
-      data.volume = cloudSnapshot.volume; data.tx = cloudSnapshot.tx; data.activity = cloudSnapshot.activity;
-      data.tokens = cloudSnapshot.tokens; data.modules = cloudSnapshot.modules; data.links = cloudSnapshot.links;
-      data.invoices = cloudSnapshot.invoices; data.batches = cloudSnapshot.batches;
-      data.recipients = cloudSnapshot.recipients; data.timeline = cloudSnapshot.timeline; data.active = cloudSnapshot.active;
-      dataSource = cloudCount > 0 ? "cloud" : "empty";
-      updateUI();
-    }
-  }, 50);
-}
-
-function updateUI() {
-  let vol = data.volume, tx = data.tx;
-  if (currentModule === "conditional") { vol = data.modules.conditional.vol; tx = data.modules.conditional.exec; }
-  else if (currentModule === "vesting") { vol = data.modules.vesting.vol; tx = data.modules.vesting.pushes; }
-  else if (currentModule === "role") { vol = data.modules.role.vol; tx = data.modules.role.batches; }
-  else if (currentModule === "agentic") { vol = data.modules.agentic.vol; tx = data.modules.agentic.exec; }
-  else if (currentModule === "pay") {
-    vol = data.modules.pay.links.vol + data.modules.pay.invoices.vol;
-    tx = data.modules.pay.links.created + data.modules.pay.invoices.created;
   }
 
-  document.getElementById("kpiVolume").textContent = fmt(vol);
-  document.getElementById("kpiTx").textContent = fmt(tx, 0);
-  document.getElementById("kpiActive").textContent = fmt(data.active, 0);
-  document.getElementById("kpiRecipients").textContent = fmt(data.recipients.size, 0);
-  document.getElementById("kpiLinks").textContent = fmt(data.links + data.invoices, 0);
-  document.getElementById("kpiBatches").textContent = fmt(data.batches, 0);
+  await fetchBalances();
+  await fetchClaimables();
+
+  // Optional: enrich link counts from payment_links table if available
+  if (userAddress && typeof fetchPaymentRecords === "function") {
+    try {
+      const rows = await fetchPaymentRecords(userAddress, { limit: 100 });
+      if (rows && rows.length) {
+        let a = 0, p = 0, e = 0;
+        rows.forEach(r => {
+          const st = (r.status || "").toLowerCase();
+          if (/paid|claimed/i.test(st)) p++;
+          else if (/expir|cancel/i.test(st)) e++;
+          else a++;
+        });
+        // Prefer dedicated table counts when present
+        state.linksActive = a;
+        state.linksPaid = p;
+        state.linksExpired = e;
+      }
+    } catch {}
+  }
+
+  buildAutomationsAndUpcoming();
+  buildInsights();
+
+  if (cloudCount > 0 && chainCount > 0) dataSource = "cloud + on-chain";
+  else if (cloudCount > 0) dataSource = "cloud";
+  else if (chainCount > 0) dataSource = "on-chain";
+  else dataSource = userAddress ? "empty" : "—";
+
+  document.getElementById("syncStatus").textContent = "Synced";
   document.getElementById("dataSourceBadge").textContent = "Source: " + dataSource;
 
-  const c = data.modules.conditional;
-  document.getElementById("mCondVol").textContent = fmt(c.vol);
-  document.getElementById("mCondRules").textContent = fmt(c.rules, 0);
-  document.getElementById("mCondExec").textContent = fmt(c.exec, 0);
-  document.getElementById("mCondActive").textContent = fmt(c.active, 0);
+  showApp();
+  renderAll();
 
-  const v = data.modules.vesting;
-  document.getElementById("mVestVol").textContent = fmt(v.vol);
-  document.getElementById("mVestSched").textContent = fmt(v.schedules, 0);
-  document.getElementById("mVestPush").textContent = fmt(v.pushes, 0);
-  document.getElementById("mVestLocked").textContent = fmt(v.locked);
+  if (!userAddress) {
+    document.getElementById("emptyState").classList.add("hidden");
+    return;
+  }
+  if (state.tx === 0 && state.activity.length === 0) {
+    document.getElementById("emptyState").classList.remove("hidden");
+    document.getElementById("dashboardBody").classList.add("opacity-40");
+  } else {
+    document.getElementById("emptyState").classList.add("hidden");
+    document.getElementById("dashboardBody").classList.remove("opacity-40");
+  }
+}
 
-  const r = data.modules.role;
-  document.getElementById("mRoleVol").textContent = fmt(r.vol);
-  document.getElementById("mRoleBatches").textContent = fmt(r.batches, 0);
-  document.getElementById("mRoleWallets").textContent = fmt(r.wallets, 0);
-  document.getElementById("mRoleGive").textContent = fmt(r.giveaways, 0);
+function onRangeChange() {
+  rangeDays = parseInt(document.getElementById("timeRange").value, 10) || 7;
+  const labels = { 1: "Today", 7: "Last 7 Days", 30: "Last 30 Days", 365: "Last Year" };
+  document.getElementById("chartRangeLabel").textContent = labels[rangeDays] || "";
+  refreshDashboard();
+}
 
-  const a = data.modules.agentic;
-  document.getElementById("mAgentVol").textContent = fmt(a.vol);
-  document.getElementById("mAgentRules").textContent = fmt(a.rules, 0);
-  document.getElementById("mAgentExec").textContent = fmt(a.exec, 0);
-  document.getElementById("mAgentFees").textContent = fmt(a.fees);
+/* ===================== RENDER ===================== */
+function showApp() {
+  document.getElementById("skeleton").classList.add("hidden");
+  document.getElementById("app").classList.remove("hidden");
+}
 
-  const pl = data.modules.pay.links;
-  document.getElementById("mLinkVol").textContent = fmt(pl.vol);
-  document.getElementById("mLinkCreated").textContent = fmt(pl.created, 0);
-  document.getElementById("mLinkClaimed").textContent = fmt(pl.claimed, 0);
-  document.getElementById("mLinkCancel").textContent = fmt(pl.cancelled, 0);
+function renderAll() {
+  document.getElementById("kpiVolume").textContent = fmt(state.volume);
+  const delta = state.prevVolume > 0 ? ((state.volume - state.prevVolume) / state.prevVolume * 100) : 0;
+  const deltaEl = document.getElementById("kpiVolumeDelta");
+  if (state.prevVolume > 0) {
+    deltaEl.textContent = `${delta >= 0 ? "↑" : "↓"} ${Math.abs(delta).toFixed(0)}% vs previous period`;
+    deltaEl.className = `text-xs font-bold mt-2.5 ${delta >= 0 ? "text-emerald-400" : "text-rose-400"}`;
+  } else {
+    deltaEl.textContent = state.volume > 0 ? "New activity in range" : "No prior period data";
+    deltaEl.className = "text-xs font-bold mt-2.5 text-gray-500";
+  }
+  document.getElementById("kpiTx").textContent = fmt(state.tx, 0);
+  document.getElementById("kpiAuto").textContent = fmt(state.activeRules || state.automations.filter(a => a.status !== "idle").length, 0);
+  document.getElementById("kpiLinks").textContent = fmt(state.linksActive + state.linksPaid, 0);
+  document.getElementById("kpiLinksSub").textContent = `${state.linksActive} active · ${state.linksPaid} paid`;
 
-  const inv = data.modules.pay.invoices;
-  document.getElementById("mInvVol").textContent = fmt(inv.vol);
-  document.getElementById("mInvCreated").textContent = fmt(inv.created, 0);
-  document.getElementById("mInvPaid").textContent = fmt(inv.paid, 0);
-  document.getElementById("mInvCancel").textContent = fmt(inv.cancelled, 0);
+  document.getElementById("insightsList").innerHTML = (state.insights || []).map(i =>
+    `<li class="flex gap-2"><span class="text-cyan-400">•</span><span>${i}</span></li>`
+  ).join("");
 
-  const range = document.getElementById("timeRange").value;
-  document.getElementById("chartRangeLabel").textContent = `Last ${range} day(s)`;
+  document.getElementById("plActive").textContent = fmt(state.linksActive, 0);
+  document.getElementById("plPaid").textContent = fmt(state.linksPaid, 0);
+  document.getElementById("plExpired").textContent = fmt(state.linksExpired, 0);
+
+  const tops = Object.values(state.recipients).sort((a, b) => b.amount - a.amount).slice(0, 8);
+  document.getElementById("topRecipients").innerHTML = tops.length
+    ? tops.map(r => `
+      <tr class="row-hover border-b border-white/5 light:border-black/5">
+        <td class="py-3 font-mono text-gray-300 light:text-slate-700">${r.label}</td>
+        <td class="py-3 text-right font-bold">${fmt(r.amount)}</td>
+        <td class="py-3 text-right text-gray-400">${r.count}</td>
+      </tr>`).join("")
+    : `<tr><td colspan="3" class="py-10 text-center text-gray-500 italic">No recipients yet</td></tr>`;
+
+  document.getElementById("autoList").innerHTML = state.automations.map(a => {
+    const colors = { running: "lime", scheduled: "cyan", paused: "amber", attention: "rose", idle: "gray", failed: "rose" };
+    const c = colors[a.status] || "gray";
+    return `<div class="flex items-center justify-between p-3.5 rounded-2xl bg-white/5 light:bg-black/5 border border-white/5 light:border-black/5">
+      <div>
+        <div class="font-bold text-sm">${a.name}</div>
+        <div class="text-xs text-gray-500 mt-0.5">${a.next}</div>
+      </div>
+      <span class="badge bg-${c}-500/15 text-${c}-400 capitalize">${a.status}</span>
+    </div>`;
+  }).join("");
+
+  let balHtml = ["USDC", "EURC", "cirBTC"].map(t => `
+    <div class="flex items-center justify-between p-3.5 rounded-2xl bg-white/5 light:bg-black/5 border border-white/5 light:border-black/5">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-cyan-500/15 flex items-center justify-center text-sm font-bold text-cyan-400">${t[0]}</div>
+        <span class="font-semibold text-sm">${t}</span>
+      </div>
+      <span class="font-bold text-base">${fmt(state.balances[t] || 0, t === "cirBTC" ? 4 : 2)}</span>
+    </div>`).join("");
+
+  if (state.claimable.length) {
+    balHtml += `<div class="pt-2 mt-1 border-t border-white/10 light:border-black/10">
+      <div class="text-xs font-bold text-amber-400 uppercase tracking-wide mb-2">Claimable (Failed Pulls)</div>
+      ${state.claimable.map((c, i) => `
+        <div class="flex items-center justify-between p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 mb-2">
+          <div>
+            <div class="font-bold text-sm text-amber-300">${fmt(c.amount)} ${c.symbol}</div>
+            <div class="text-xs text-gray-500">${c.contract}</div>
+          </div>
+          <button onclick="claimFailedPull(state.claimable[${i}])"
+            class="px-3 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 text-xs font-bold border border-amber-500/30 hover:bg-amber-500/30 transition">
+            Claim
+          </button>
+        </div>`).join("")}
+    </div>`;
+  }
+  document.getElementById("balances").innerHTML = balHtml;
+
+  document.getElementById("upcoming").innerHTML = state.upcoming.map(u => `
+    <div class="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white/5 light:bg-black/5 border border-white/5 light:border-black/5">
+      <div class="w-10 h-10 rounded-xl bg-violet-500/15 flex items-center justify-center">
+        <i class="fas ${u.icon} text-violet-400"></i>
+      </div>
+      <div>
+        <div class="text-xs text-gray-500 font-bold uppercase">${u.when}</div>
+        <div class="font-bold text-sm">${u.title}</div>
+      </div>
+    </div>`).join("");
+
+  const nl = document.getElementById("notifList");
+  nl.innerHTML = state.notifications.length
+    ? state.notifications.map(n => `<div class="p-3 rounded-xl bg-white/5 light:bg-black/5 text-sm border border-white/5">${n.text}</div>`).join("")
+    : `<div class="text-gray-500 text-sm italic">No notifications</div>`;
+  document.getElementById("notifDot").classList.toggle("hidden", !state.notifications.length);
 
   renderCharts();
   renderActivity();
+  renderTxTable();
 }
 
 function getColors() {
   const light = document.documentElement.classList.contains("light");
   return {
-    text: light ? "#334155" : "#94a3b8", grid: light ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.05)",
-    cyan: light ? "#0e7490" : "#22d3ee", sky: light ? "#0369a1" : "#38bdf8",
-    lime: light ? "#3f6212" : "#a3e635", rose: light ? "#be123c" : "#fb7185",
-    amber: light ? "#b45309" : "#fbbf24", blue: light ? "#1d4ed8" : "#60a5fa",
-    emerald: light ? "#047857" : "#34d399", violet: light ? "#6d28d9" : "#a78bfa",
-    yellow: light ? "#a16207" : "#facc15"
+    text: light ? "#64748b" : "#94a3b8",
+    grid: light ? "rgba(0,0,0,.06)" : "rgba(255,255,255,.06)",
+    cyan: light ? "#0e7490" : "#22d3ee",
+    sky: light ? "#0369a1" : "#38bdf8",
+    amber: light ? "#b45309" : "#fbbf24",
+    rose: light ? "#be123c" : "#fb7185"
   };
 }
 
 function renderCharts() {
   const col = getColors();
+  let labels = [], vols = [];
+  if (state.timeline.length) {
+    labels = state.timeline.map(t => {
+      const p = String(t.date).split("-");
+      if (p.length === 3) return new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      return t.date;
+    });
+    vols = state.timeline.map(t => t.volume);
+  } else {
+    labels = ["—"]; vols = [0];
+  }
   const vCtx = document.getElementById("volumeChart").getContext("2d");
   if (volumeChart) volumeChart.destroy();
-  let labels = [];
-  let vols = [];
-  if (data.timeline.length) {
-    labels = data.timeline.map(t => {
-      try {
-        const parts = String(t.date).split("-");
-        if (parts.length === 3) return new Date(+parts[0], +parts[1]-1, +parts[2]).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-        return String(t.date);
-      } catch { return String(t.date); }
-    });
-    vols = data.timeline.map(t => Number(t.volume) || 0);
-  } else if (data.volume > 0) {
-    labels = ["Total"];
-    vols = [data.volume];
-  } else {
-    labels = ["—"];
-    vols = [0];
-  }
   volumeChart = new Chart(vCtx, {
     type: "line",
-    data: { labels, datasets: [{ data: vols, borderColor: col.cyan, backgroundColor: ctx => { const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 260); g.addColorStop(0, col.cyan + "35"); g.addColorStop(1, col.cyan + "00"); return g; }, fill: true, tension: 0.4, pointRadius: 0, pointHoverRadius: 5, borderWidth: 2.5 }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { backgroundColor: "rgba(10,10,22,0.95)", padding: 12, cornerRadius: 10 } }, scales: { x: { grid: { color: col.grid, drawBorder: false }, ticks: { color: col.text, font: { size: 10 }, maxTicksLimit: 8 } }, y: { grid: { color: col.grid, drawBorder: false }, ticks: { color: col.text, font: { size: 10 }, callback: v => fmt(v, 0) } } } }
+    data: {
+      labels,
+      datasets: [{
+        data: vols,
+        borderColor: col.cyan,
+        backgroundColor: (ctx) => {
+          const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 300);
+          g.addColorStop(0, col.cyan + "40");
+          g.addColorStop(1, col.cyan + "00");
+          return g;
+        },
+        fill: true, tension: 0.4,
+        pointRadius: vols.length < 14 ? 3 : 0,
+        borderWidth: 2.5
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: col.grid }, ticks: { color: col.text, font: { size: 11 }, maxTicksLimit: 8 } },
+        y: { grid: { color: col.grid }, ticks: { color: col.text, font: { size: 11 }, callback: v => fmt(v, 0) } }
+      }
+    }
   });
-
-  const modData = [data.modules.conditional.vol, data.modules.vesting.vol, data.modules.role.vol, data.modules.agentic.vol, data.modules.pay.links.vol + data.modules.pay.invoices.vol];
-  const modLabels = ["Conditional", "Vesting", "Role Family", "Agentic", "ArcPay"];
-  const modCols = [col.blue, col.lime, col.cyan, col.amber, col.emerald];
-  const mCtx = document.getElementById("moduleChart").getContext("2d");
-  if (moduleChart) moduleChart.destroy();
-  moduleChart = new Chart(mCtx, {
-    type: "doughnut",
-    data: { labels: modLabels, datasets: [{ data: modData, backgroundColor: modCols, borderWidth: 0, hoverOffset: 8 }] },
-    options: { responsive: true, maintainAspectRatio: false, cutout: "68%", plugins: { legend: { display: false }, tooltip: { backgroundColor: "rgba(10,10,22,0.95)", padding: 12, cornerRadius: 10 } } }
-  });
-  const totalM = modData.reduce((a, b) => a + b, 0) || 1;
-  document.getElementById("moduleLegend").innerHTML = modLabels.map((l, i) => `
-    <div class="flex items-center justify-between"><div class="flex items-center gap-2"><div class="w-2.5 h-2.5 rounded-full" style="background:${modCols[i]}"></div><span class="text-gray-400">${l}</span></div><span class="font-bold">${((modData[i] / totalM) * 100).toFixed(1)}%</span></div>`).join("");
 
   const tokLabels = ["USDC", "EURC", "cirBTC", "Other"];
-  const tokData = [data.tokens.USDC, data.tokens.EURC, data.tokens.cirBTC, data.tokens.Other];
+  const tokData = [state.tokens.USDC, state.tokens.EURC, state.tokens.cirBTC, state.tokens.Other];
   const tokCols = [col.cyan, col.sky, col.amber, col.rose];
   const tCtx = document.getElementById("tokenChart").getContext("2d");
   if (tokenChart) tokenChart.destroy();
   tokenChart = new Chart(tCtx, {
     type: "doughnut",
     data: { labels: tokLabels, datasets: [{ data: tokData, backgroundColor: tokCols, borderWidth: 0, hoverOffset: 6 }] },
-    options: { responsive: true, maintainAspectRatio: false, cutout: "65%", plugins: { legend: { display: false }, tooltip: { backgroundColor: "rgba(10,10,22,0.95)", padding: 10, cornerRadius: 10 } } }
+    options: { responsive: true, maintainAspectRatio: false, cutout: "68%", plugins: { legend: { display: false } } }
   });
+  const total = tokData.reduce((a, b) => a + b, 0) || 1;
   document.getElementById("tokenLegend").innerHTML = tokLabels.map((l, i) => `
-    <div class="flex items-center justify-between"><div class="flex items-center gap-2"><div class="w-2.5 h-2.5 rounded-full" style="background:${tokCols[i]}"></div><span class="text-gray-400">${l}</span></div><span class="font-bold">${fmt(tokData[i])}</span></div>`).join("");
+    <div class="flex justify-between items-center">
+      <div class="flex items-center gap-2.5">
+        <span class="w-2.5 h-2.5 rounded-full" style="background:${tokCols[i]}"></span>
+        <span class="text-gray-400 light:text-slate-600">${l}</span>
+      </div>
+      <span class="font-bold">${((tokData[i] / total) * 100).toFixed(0)}% · ${fmt(tokData[i])}</span>
+    </div>`).join("");
+}
+
+function filterActivity(f) {
+  currentFilter = f;
+  document.querySelectorAll(".filter-pill").forEach(b => {
+    const on = b.dataset.f === f;
+    b.classList.toggle("active", on);
+    b.classList.toggle("bg-cyan-500/15", on);
+    b.classList.toggle("border-cyan-500/40", on);
+    b.classList.toggle("text-cyan-400", on);
+    b.classList.toggle("text-gray-400", !on);
+  });
+  renderActivity();
 }
 
 function renderActivity() {
-  const box = document.getElementById("activityFeed");
-  let items = data.activity;
-  if (currentModule !== "all") {
-    if (currentModule === "pay") items = items.filter(i => i.module === "pay");
-    else items = items.filter(i => i.module === currentModule);
+  const q = (document.getElementById("searchBox").value || "").toLowerCase();
+  let items = [...state.activity];
+  if (currentFilter === "batch") items = items.filter(i => i.module === "batch" || /batch/i.test(i.type));
+  else if (currentFilter !== "all") items = items.filter(i => i.module === currentFilter);
+  if (q) {
+    items = items.filter(i =>
+      (i.type || "").toLowerCase().includes(q) ||
+      (i.memo || "").toLowerCase().includes(q) ||
+      (i.hash || "").toLowerCase().includes(q) ||
+      (i.recipient || "").toLowerCase().includes(q) ||
+      (i.token || "").toLowerCase().includes(q)
+    );
   }
-  items = items.sort((a, b) => b.timestamp - a.timestamp).slice(0, 40);
+  items.sort((a, b) => b.timestamp - a.timestamp);
+  const box = document.getElementById("activityFeed");
   if (!items.length) {
-    box.innerHTML = `<div class="text-center py-16 text-gray-500 italic text-sm">No events in this range. Try wider range or wait if rate-limited.</div>`;
+    box.innerHTML = `<div class="text-center py-14 text-gray-500 text-sm italic">No activity in this filter</div>`;
     return;
   }
   const icons = {
-    conditional: { i: "fa-code-branch", c: "text-blue-400", b: "bg-blue-500/15" },
-    vesting: { i: "fa-calendar-check", c: "text-lime-400", b: "bg-lime-500/15" },
-    role: { i: "fa-users-gear", c: "text-cyan-400", b: "bg-cyan-500/15" },
-    agentic: { i: "fa-robot", c: "text-amber-400", b: "bg-amber-500/15" },
-    pay: { i: "fa-link", c: "text-emerald-400", b: "bg-emerald-500/15" },
-    other: { i: "fa-exchange-alt", c: "text-sky-400", b: "bg-sky-500/15" }
+    role: "fa-users", batch: "fa-layer-group", pay: "fa-link",
+    conditional: "fa-robot", vesting: "fa-calendar-check", other: "fa-circle"
   };
-  
-  box.innerHTML = items.map(item => {
-    const m = icons[item.module] || icons.other;
-    const time = new Date(item.timestamp).toLocaleString();
-    const link = item.hash && String(item.hash).startsWith("0x") && !String(item.hash).startsWith("0xdemo")
-      ? `<a href="${EXPLORER}${item.hash}" target="_blank" class="text-[10px] text-cyan-400 hover:underline font-mono">${String(item.hash).slice(0, 10)}…</a>` : "";
-    return `<div class="activity-row flex items-center gap-3.5 p-3.5 rounded-2xl border border-white/5 light:border-black/5 transition-all">
-      <div class="w-10 h-10 rounded-xl ${m.b} flex items-center justify-center shrink-0"><i class="fas ${m.i} ${m.c}"></i></div>
-      <div class="flex-1 min-w-0"><div class="flex items-center gap-2 flex-wrap"><span class="font-bold text-sm">${item.type}</span><span class="stat-pill bg-white/5 light:bg-black/5 text-gray-400 capitalize">${item.module}</span></div>
-      <div class="text-xs text-gray-500 mt-0.5 truncate">${escapeHTML(item.memo)}</div></div>
-      <div class="text-right shrink-0"><div class="font-bold text-sm">${fmt(item.amount)} <span class="text-[10px] text-gray-500">${item.token}</span></div>
-      <div class="text-[10px] text-gray-500 mt-0.5">${time}</div>${link}</div></div>`;
+  box.innerHTML = items.slice(0, 40).map(i => {
+    const time = new Date(i.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const date = new Date(i.timestamp).toLocaleDateString([], { month: "short", day: "numeric" });
+    const ic = icons[i.module] || icons.other;
+    const srcBadge = i.source === "onchain"
+      ? `<span class="text-[10px] text-lime-400 ml-1">⛓</span>`
+      : "";
+    return `<div class="flex gap-3 p-3 rounded-xl row-hover">
+      <div class="text-[11px] text-gray-500 font-mono w-14 shrink-0 pt-1 leading-tight">${time}<br><span class="opacity-60">${date}</span></div>
+      <div class="w-9 h-9 rounded-xl bg-white/5 light:bg-black/5 flex items-center justify-center shrink-0">
+        <i class="fas ${ic} text-cyan-400 text-sm"></i>
+      </div>
+      <div class="min-w-0 flex-1">
+        <div class="font-semibold text-sm truncate">${i.type}${srcBadge}</div>
+        <div class="text-xs text-gray-500 truncate">${i.memo || i.module}</div>
+      </div>
+      <div class="text-right shrink-0">
+        <div class="font-bold text-sm">${fmt(i.amount)}</div>
+        <div class="text-xs text-gray-500">${i.token}</div>
+      </div>
+    </div>`;
   }).join("");
 }
 
-window.addEventListener("load", async () => {
-  data = emptyData();
-  dataSource = "—";
-  updateUI();
-  document.getElementById("activityFeed").innerHTML =
-    `<div class="text-center py-16 text-gray-500 italic text-sm">Connecting… loading your data</div>`;
-
-  if (window.ethereum) {
-    try {
-      const accs = await window.ethereum.request({ method: "eth_accounts" });
-      if (accs?.length) {
-        provider = new ethers.BrowserProvider(window.ethereum);
-        signer = await provider.getSigner();
-        userAddress = await signer.getAddress();
-        const short = userAddress.slice(0, 6) + "…" + userAddress.slice(-4);
-        document.getElementById("connectText").innerHTML = `<i class="fas fa-check-circle text-cyan-400"></i> ${short}`;
-        document.getElementById("connectBtn").className = "app-button px-5 py-2.5 bg-cyan-500/15 border border-cyan-500/40 text-cyan-400 font-bold rounded-2xl text-xs flex items-center gap-2";
-        document.getElementById("disconnectBtn").classList.remove("hidden");
-        await refreshDashboard();
-        return;
-      }
-    } catch (e) {
-      console.warn("auto connect error", e);
-    }
+function renderTxTable() {
+  const items = [...state.activity].sort((a, b) => b.timestamp - a.timestamp).slice(0, 30);
+  const tb = document.getElementById("txTable");
+  if (!items.length) {
+    tb.innerHTML = `<tr><td colspan="5" class="py-12 text-center text-gray-500 italic">No transactions yet</td></tr>`;
+    return;
   }
+  tb.innerHTML = items.map(i => {
+    const d = new Date(i.timestamp);
+    const dateStr = d.toLocaleDateString([], { month: "short", day: "numeric" });
+    const hash = i.hash && i.hash.startsWith("0x")
+      ? `<a class="text-cyan-400 font-mono hover:underline" href="${EXPLORER}${i.hash}" target="_blank" rel="noopener">${i.hash.slice(0, 8)}…</a>`
+      : "—";
+    const st = (i.status || "Success").toString();
+    const ok = /success|paid|complete|ok|active/i.test(st);
+    return `<tr class="row-hover border-b border-white/5 light:border-black/5">
+      <td class="py-3 text-gray-400">${dateStr}</td>
+      <td class="py-3 font-semibold">${i.type.slice(0, 32)}</td>
+      <td class="py-3 text-right font-bold">${fmt(i.amount)} <span class="text-gray-500 font-normal">${i.token}</span></td>
+      <td class="py-3"><span class="badge ${ok ? "bg-emerald-500/15 text-emerald-400" : "bg-amber-500/15 text-amber-400"}">${st}</span></td>
+      <td class="py-3">${hash}</td>
+    </tr>`;
+  }).join("");
+}
 
-  document.getElementById("activityFeed").innerHTML =
-    `<div class="text-center py-16 text-gray-500 italic text-sm">
-      <i class="fas fa-wallet text-2xl mb-3 block text-cyan-400/50"></i>
-      Connect wallet to load your analytics from cloud &amp; chain
-    </div>`;
-  document.getElementById("dataSourceBadge").textContent = "Source: connect wallet";
+function exportCSV() {
+  const rows = [["Date", "Type", "Amount", "Token", "Module", "Status", "Tx", "Source", "Memo"]];
+  state.activity.forEach(i => {
+    rows.push([
+      new Date(i.timestamp).toISOString(),
+      i.type, i.amount, i.token, i.module, i.status || "", i.hash || "", i.source || "",
+      (i.memo || "").replace(/,/g, ";")
+    ]);
+  });
+  const csv = rows.map(r => r.join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `arcsplit-report-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  showToast("CSV exported");
+}
+
+/* ===================== BOOT ===================== */
+window.addEventListener("load", async () => {
+  if (localStorage.getItem("theme") === "light") {
+    document.documentElement.classList.add("light");
+    document.getElementById("themeBtn").querySelector("i").className = "fas fa-sun text-lg text-amber-500";
+  }
+  setTimeout(async () => {
+    showApp();
+    await refreshDashboard();
+  }, 350);
 });
 
 if (window.ethereum) {
   window.ethereum.on?.("accountsChanged", async (accs) => {
     if (accs?.length) {
-      try {
-        provider = new ethers.BrowserProvider(window.ethereum);
-        signer = await provider.getSigner();
-        userAddress = await signer.getAddress();
-        const short = userAddress.slice(0, 6) + "…" + userAddress.slice(-4);
-        document.getElementById("connectText").innerHTML = `<i class="fas fa-check-circle text-cyan-400"></i> ${short}`;
-        document.getElementById("connectBtn").className = "app-button px-5 py-2.5 bg-cyan-500/15 border border-cyan-500/40 text-cyan-400 font-bold rounded-2xl text-xs flex items-center gap-2";
-        document.getElementById("disconnectBtn").classList.remove("hidden");
-        await refreshDashboard();
-      } catch {}
+      userAddress = accs[0];
+      document.getElementById("connectText").textContent = shortAddr(userAddress);
+      await refreshDashboard();
     } else {
-      disconnectWallet();
+      userAddress = null;
+      Object.assign(state, emptyState());
+      document.getElementById("connectText").textContent = "Connect Wallet";
+      document.getElementById("connectBtn").className =
+        "app-button px-5 py-2.5 rounded-2xl bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold text-sm flex items-center gap-2.5 shadow-lg";
+      renderAll();
     }
   });
 }
