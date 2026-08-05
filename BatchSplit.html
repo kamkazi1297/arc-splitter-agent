@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-  <title>ArcRoleSplitter - Multi-Token Batch Split</title>
+  <title> Multi-Token Batch Split</title>
   <!-- کتابخانه Supabase به درستی به هدر اضافه شد -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="db.js"></script>
@@ -524,10 +524,12 @@ function showConnectModal() {
   if (window.ethereum) {
     window.ethereum.request({ method: 'eth_requestAccounts' }).then(accounts => {
       userAddress = accounts[0];
+      window.userAddress = userAddress;
       const provider = new ethers.BrowserProvider(window.ethereum);
       provider.getSigner().then(s => { 
         signer = s; updateConnectButton(); 
         localStorage.setItem("arcWalletConnected", "true");
+        if (typeof refreshWorkspaceGuard === "function") refreshWorkspaceGuard();
         fetchAndRenderBalancesWithRetry();
         showToast("Wallet connected"); 
       });
@@ -539,7 +541,7 @@ function showConnectModal() {
 
 function disconnectWallet(event) {
   if(event) event.stopPropagation();
-  userAddress = null; signer = null;
+  userAddress = null; window.userAddress = null; signer = null;
   localStorage.removeItem("arcWalletConnected");
   updateConnectButton();
   document.getElementById("walletBalancesBox").classList.add("hidden");
@@ -563,13 +565,30 @@ async function autoConnectWallet() {
       const accounts = await window.ethereum.request({ method: 'eth_accounts' });
       if (accounts.length > 0) {
         userAddress = accounts[0];
+        window.userAddress = userAddress;
         const provider = new ethers.BrowserProvider(window.ethereum);
         signer = await provider.getSigner();
         updateConnectButton();
+        if (typeof refreshWorkspaceGuard === "function") refreshWorkspaceGuard();
         fetchAndRenderBalancesWithRetry();
       }
     } catch (e) { localStorage.removeItem("arcWalletConnected"); }
   }
+}
+
+if (window.ethereum && window.ethereum.on) {
+  window.ethereum.on("accountsChanged", (accs) => {
+    if (!accs || !accs.length) {
+      disconnectWallet();
+      return;
+    }
+    userAddress = accs[0];
+    window.userAddress = userAddress;
+    localStorage.setItem("arcWalletConnected", "true");
+    updateConnectButton();
+    if (typeof refreshWorkspaceGuard === "function") refreshWorkspaceGuard();
+    fetchAndRenderBalancesWithRetry();
+  });
 }
 
 async function fetchAndRenderBalancesWithRetry(maxRetries = 3) {
@@ -1093,11 +1112,21 @@ async function resumeBatchTx(batchId) {
 }
 
 async function saveToHistory(record) {
+  const enriched = {
+    ...record,
+    type: record.type || "Batch",
+    appName: record.appName || "Batch",
+    status: record.status || "Success",
+    timestamp: record.timestamp || new Date().toISOString(),
+    hash: record.hash || (record.txHashes && record.txHashes[0]) || null,
+    amount: record.amount != null ? record.amount : (record.tokens && record.tokens[0] && record.tokens[0].amount),
+    token: record.token || (record.tokens && record.tokens[0] && record.tokens[0].token)
+  };
   if (userAddress && typeof saveHistoryToCloud === 'function') {
-    await saveHistoryToCloud(userAddress, record);
+    await saveHistoryToCloud(userAddress, enriched);
   }
   const history = JSON.parse(localStorage.getItem("arcSplitHistoryMain") || "[]");
-  history.unshift(record);
+  history.unshift(enriched);
   localStorage.setItem("arcSplitHistoryMain", JSON.stringify(history));
 }
 
