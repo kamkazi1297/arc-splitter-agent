@@ -127,6 +127,7 @@
           <button onclick="switchPanel('treasury')" data-p="treasury" class="nav-item w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold text-gray-400 border border-transparent flex items-center gap-2.5 hover:bg-white/5"><i class="fas fa-vault w-5 text-center"></i> Treasury</button>
           <button onclick="switchPanel('permissions')" data-p="permissions" class="nav-item w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold text-gray-400 border border-transparent flex items-center gap-2.5 hover:bg-white/5"><i class="fas fa-shield-alt w-5 text-center"></i> Permissions</button>
           <button onclick="switchPanel('billing')" data-p="billing" class="nav-item w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold text-gray-400 border border-transparent flex items-center gap-2.5 hover:bg-white/5"><i class="fas fa-credit-card w-5 text-center"></i> Billing</button>
+          <button onclick="switchPanel('history')" data-p="history" class="nav-item w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold text-gray-400 border border-transparent flex items-center gap-2.5 hover:bg-white/5"><i class="fas fa-clock-rotate-left w-5 text-center"></i> History</button>
           <button onclick="switchPanel('settings')" data-p="settings" class="nav-item w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold text-gray-400 border border-transparent flex items-center gap-2.5 hover:bg-white/5"><i class="fas fa-cog w-5 text-center"></i> Settings</button>
         </nav>
       </aside>
@@ -278,6 +279,20 @@
               </div>
             </div>
             <button onclick="savePlan()" id="savePlanBtn" class="px-5 py-3 rounded-2xl bg-indigo-500 text-white font-bold text-sm">Save Plan</button>
+          </div>
+        </div>
+
+        <!-- HISTORY -->
+        <div id="panel-history" class="space-y-5 hidden">
+          <div class="glass rounded-3xl p-6">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
+              <h3 class="font-bold text-base flex items-center gap-2"><i class="fas fa-clock-rotate-left text-indigo-400"></i> Workspace History</h3>
+              <button onclick="loadHistory()" class="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-bold text-gray-400 hover:text-white">
+                <i class="fas fa-sync-alt mr-1"></i> Refresh
+              </button>
+            </div>
+            <p class="text-xs text-gray-500 mb-4">Cloud history for this workspace (treasury actions + records tagged with this workspace id).</p>
+            <div id="historyList" class="space-y-2 max-h-[28rem] overflow-y-auto"></div>
           </div>
         </div>
 
@@ -495,7 +510,7 @@
       currentWs = null;
       document.getElementById("emptyWs").classList.remove("hidden");
       document.getElementById("sideNav").classList.add("hidden");
-      ["overview","modules","members","treasury","permissions","billing","settings"].forEach(p => document.getElementById("panel-"+p).classList.add("hidden"));
+      ["overview","modules","members","treasury","permissions","billing","history","settings"].forEach(p => document.getElementById("panel-"+p).classList.add("hidden"));
     }
   }
 
@@ -525,7 +540,7 @@
   }
 
   function switchPanel(name) {
-    ["overview","modules","members","treasury","permissions","billing","settings"].forEach(p => {
+    ["overview","modules","members","treasury","permissions","billing","history","settings"].forEach(p => {
       document.getElementById("panel-"+p).classList.toggle("hidden", p !== name);
     });
     document.querySelectorAll(".nav-item").forEach(b => {
@@ -533,10 +548,11 @@
       b.classList.toggle("active", on);
       b.classList.toggle("text-gray-400", !on);
     });
+    if (name === "history") loadHistory();
   }
 
   function renderAllPanels() {
-    renderOverview(); renderModules(); renderMembers(); renderTreasury(); renderPermissions(); renderBilling(); renderSettings();
+    renderOverview(); renderModules(); renderMembers(); renderTreasury(); renderPermissions(); renderBilling(); renderSettings(); loadHistory();
   }
 
   function renderOverview() {
@@ -668,7 +684,8 @@
         await (await tc.depositERC20(token, wei)).wait();
       }
       showToast("Deposit OK");
-      renderTreasury(); renderOverview();
+      await logWsHistory({ type: "Treasury Deposit", amount: amountStr, token, memo: "Deposit to TeamTreasury" });
+      renderTreasury(); renderOverview(); loadHistory();
     } catch (e) {
       console.error(e);
       showToast(e.reason || e.shortMessage || "Deposit failed");
@@ -693,7 +710,8 @@
         await (await tc.withdrawERC20(token, userAddress, wei)).wait();
       }
       showToast("Withdraw OK — now open a main module to split");
-      renderTreasury(); renderOverview();
+      await logWsHistory({ type: "Treasury Withdraw", amount: amountStr, token, memo: "Withdraw to " + shortAddr(userAddress) });
+      renderTreasury(); renderOverview(); loadHistory();
     } catch (e) {
       console.error(e);
       showToast(e.reason || e.shortMessage || "Withdraw failed");
@@ -713,6 +731,7 @@
       showToast("Approving splitter…");
       await (await tc.approveSplitter(token, wei)).wait();
       showToast("Splitter approved");
+      await logWsHistory({ type: "Approve Splitter", amount: amountStr, token });
     } catch (e) {
       console.error(e);
       showToast(e.reason || e.shortMessage || "Approve failed — is splitter set?");
@@ -728,6 +747,7 @@
       showToast("Approve max…");
       await (await tc.approveSplitterMax(token)).wait();
       showToast("Max approval set");
+      await logWsHistory({ type: "Approve Splitter Max", token });
     } catch (e) {
       console.error(e);
       showToast(e.reason || e.shortMessage || "Approve max failed");
@@ -743,6 +763,7 @@
       const tc = new ethers.Contract(cAddr, TREASURY_ABI, signer);
       await (await tc.revokeSplitterApproval(token)).wait();
       showToast("Approval revoked");
+      await logWsHistory({ type: "Revoke Splitter Approval", token });
     } catch (e) {
       console.error(e);
       showToast(e.reason || e.shortMessage || "Revoke failed");
@@ -757,6 +778,7 @@
       showToast("Setting splitter…");
       await (await tc.setSplitter(DEFAULT_SPLITTER)).wait();
       showToast("Splitter set to " + shortAddr(DEFAULT_SPLITTER));
+      await logWsHistory({ type: "Set Splitter", memo: DEFAULT_SPLITTER });
     } catch (e) {
       console.error(e);
       showToast(e.reason || e.shortMessage || "setSplitter failed (owner only)");
@@ -881,6 +903,70 @@
     if (!ok) return showToast("Save failed");
     showToast("Settings saved");
     await loadWorkspaces(); selectWorkspace(currentWs.id);
+  }
+
+
+  async function logWsHistory(record) {
+    if (!userAddress || typeof saveHistoryToCloud !== "function") return;
+    try {
+      await saveHistoryToCloud(userAddress, {
+        appName: "Workspace",
+        workspaceId: currentWs?.id || null,
+        workspaceName: currentWs?.name || "",
+        timestamp: new Date().toISOString(),
+        ...record
+      });
+    } catch (e) { console.warn("logWsHistory", e); }
+  }
+
+  async function loadHistory() {
+    const box = document.getElementById("historyList");
+    if (!box) return;
+    if (!userAddress || !currentWs) {
+      box.innerHTML = `<p class="text-sm text-gray-500 text-center py-8">Connect and select a workspace</p>`;
+      return;
+    }
+    box.innerHTML = `<p class="text-sm text-gray-500 text-center py-6">Loading…</p>`;
+    try {
+      let rows = [];
+      if (typeof fetchHistoryFromCloud === "function") {
+        rows = await fetchHistoryFromCloud(userAddress);
+      }
+      const wid = currentWs.id;
+      const filtered = (rows || []).filter(r => {
+        if (!r) return false;
+        if (r.workspaceId && r.workspaceId === wid) return true;
+        if (r.appName === "Workspace" && r.workspaceId === wid) return true;
+        // also show generic workspace-tagged
+        return false;
+      });
+      // newest first already from API; keep order
+      if (!filtered.length) {
+        box.innerHTML = `<p class="text-sm text-gray-500 text-center py-8">No history for this workspace yet</p>`;
+        return;
+      }
+      box.innerHTML = filtered.slice(0, 50).map(r => {
+        const type = r.type || r.memo || r.appName || "Activity";
+        const amount = r.amount != null ? r.amount : "";
+        const token = r.token || "";
+        const time = r.timestamp ? new Date(r.timestamp).toLocaleString() : "";
+        const hash = r.hash || r.txHash || "";
+        const extra = r.memo && r.memo !== type ? r.memo : "";
+        return `<div class="p-3.5 rounded-2xl bg-white/5 border border-white/5">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <div class="font-bold text-sm">${type}</div>
+              <div class="text-[11px] text-gray-500 mt-0.5">${extra || (amount !== "" ? amount + " " + token : "")}</div>
+              ${hash ? `<div class="text-[10px] font-mono text-gray-600 mt-1 truncate">${hash}</div>` : ""}
+            </div>
+            <div class="text-[10px] text-gray-500 shrink-0 text-right">${time}</div>
+          </div>
+        </div>`;
+      }).join("");
+    } catch (e) {
+      console.error(e);
+      box.innerHTML = `<p class="text-sm text-rose-400 text-center py-6">Failed to load history</p>`;
+    }
   }
 
   function toggleTheme() {
