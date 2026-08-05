@@ -405,6 +405,40 @@
   ];
   const DEFAULT_TREASURY_PROXY = "0x63b9DC34D18128B71E8AC54fb0DDa25aE3bAA0F2";
   const DEFAULT_SPLITTER = "0xf2073671b726b96DC1c99D001BBF6e60EE1f187F";
+
+  /* Arc Network Testnet */
+  const ARC_CHAIN_ID = 5042002;
+  const ARC_CHAIN_ID_HEX = "0x4CEF52"; // 5042002
+  const ARC_NETWORK = {
+    chainId: ARC_CHAIN_ID_HEX,
+    chainName: "Arc Network Testnet",
+    nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
+    rpcUrls: ["https://rpc.testnet.arc.network"],
+    blockExplorerUrls: ["https://testnet.arcscan.app"]
+  };
+
+  async function ensureArcNetwork() {
+    if (!window.ethereum) throw new Error("No wallet");
+    const current = await window.ethereum.request({ method: "eth_chainId" });
+    if (current === ARC_CHAIN_ID_HEX || parseInt(current, 16) === ARC_CHAIN_ID) return true;
+    try {
+      await window.ethereum.request({
+        method: "wallet_switchEthereumChain",
+        params: [{ chainId: ARC_CHAIN_ID_HEX }]
+      });
+      return true;
+    } catch (e) {
+      // 4902 = chain not added
+      if (e.code === 4902 || e.code === -32603 || /Unrecognized chain|not been added/i.test(String(e.message || e))) {
+        await window.ethereum.request({
+          method: "wallet_addEthereumChain",
+          params: [ARC_NETWORK]
+        });
+        return true;
+      }
+      throw e;
+    }
+  }
   const TREASURY_ABI = [
     "function depositERC20(address token, uint256 amount)",
     "function depositNative() payable",
@@ -486,15 +520,21 @@
   async function connectWallet() {
     if (!window.ethereum) return showToast("No wallet found");
     try {
+      await ensureArcNetwork();
       provider = new ethers.BrowserProvider(window.ethereum);
       await provider.send("eth_requestAccounts", []);
+      // re-bind after possible chain switch
+      provider = new ethers.BrowserProvider(window.ethereum);
       signer = await provider.getSigner();
       userAddress = await signer.getAddress();
       forceDisconnected = false;
       setWalletUI(true);
-      showToast("Wallet connected");
+      showToast("Connected on Arc Testnet");
       await loadWorkspaces();
-    } catch { showToast("Connection rejected"); }
+    } catch (e) {
+      console.error(e);
+      showToast(e.message || "Connection rejected");
+    }
   }
   function disconnectWallet() {
     forceDisconnected = true;
@@ -666,6 +706,8 @@
     const cAddr = contractAddr();
     if (!cAddr || !signer) return showToast("Contract + wallet required");
     if (!ethers.isAddress(cAddr)) return showToast("Invalid contract address");
+    try { await ensureArcNetwork(); provider = new ethers.BrowserProvider(window.ethereum); signer = await provider.getSigner(); }
+    catch (e) { return showToast(e.message || "Switch to Arc Testnet"); }
 
     const token = document.getElementById("trToken").value;
     const amountStr = document.getElementById("trAmount").value;
@@ -727,6 +769,8 @@
     const cAddr = contractAddr();
     if (!cAddr || !signer) return showToast("Contract + wallet required");
     if (!isAdmin()) return showToast("Owner/Admin only");
+    try { await ensureArcNetwork(); provider = new ethers.BrowserProvider(window.ethereum); signer = await provider.getSigner(); }
+    catch (e) { return showToast(e.message || "Switch to Arc Testnet"); }
     const token = document.getElementById("trToken").value;
     const amountStr = document.getElementById("trAmount").value;
     if (!amountStr || Number(amountStr) <= 0) return showToast("Enter amount");
@@ -755,6 +799,8 @@
   async function treasuryApproveSplitter() {
     const cAddr = contractAddr();
     if (!cAddr || !signer) return showToast("Contract + wallet required");
+    try { await ensureArcNetwork(); provider = new ethers.BrowserProvider(window.ethereum); signer = await provider.getSigner(); }
+    catch (e) { return showToast(e.message || "Switch to Arc Testnet"); }
     const token = document.getElementById("trToken").value;
     if (token === "native") return showToast("Approve is for ERC20 only — pick EURC/cirBTC/USDC token");
     const amountStr = document.getElementById("trAmount").value;
@@ -779,6 +825,8 @@
   async function treasuryApproveMax() {
     const cAddr = contractAddr();
     if (!cAddr || !signer) return showToast("Contract + wallet required");
+    try { await ensureArcNetwork(); provider = new ethers.BrowserProvider(window.ethereum); signer = await provider.getSigner(); }
+    catch (e) { return showToast(e.message || "Switch to Arc Testnet"); }
     const token = document.getElementById("trToken").value;
     if (token === "native") return showToast("Approve is for ERC20 only");
     try {
@@ -815,6 +863,9 @@
     const cAddr = contractAddr();
     if (!cAddr || !signer) return showToast("Contract + wallet required");
     try {
+      await ensureArcNetwork();
+      provider = new ethers.BrowserProvider(window.ethereum);
+      signer = await provider.getSigner();
       const tc = new ethers.Contract(cAddr, TREASURY_ABI, signer);
       showToast("Setting splitter…");
       await (await tc.setSplitter(DEFAULT_SPLITTER)).wait();
@@ -1036,6 +1087,10 @@
     window.ethereum.on?.("accountsChanged", async (accs) => {
       if (accs?.length) { forceDisconnected = false; userAddress = accs[0]; setWalletUI(true); await loadWorkspaces(); }
       else disconnectWallet();
+    });
+    window.ethereum.on?.("chainChanged", () => {
+      // reload provider binding after network switch
+      window.location.reload();
     });
   }
 </script>
