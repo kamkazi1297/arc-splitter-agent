@@ -617,9 +617,32 @@ function resolveToken(addrOrSym) {
 
 function parseAmount(v) {
   if (v == null) return 0;
-  if (typeof v === "number") return v;
-  const n = parseFloat(String(v).replace(/,/g, ""));
+  if (typeof v === "number") {
+    // Guard: raw wei-scale numbers (e.g. 2e18) → human units
+    if (Math.abs(v) >= 1e15) return v / 1e18;
+    return v;
+  }
+  const s = String(v).replace(/,/g, "").trim();
+  if (!s) return 0;
+  // Integer string longer than 15 digits → treat as 18-decimal wei
+  if (/^\d+$/.test(s) && s.length > 15) {
+    try { return parseFloat(ethers.formatUnits(s, 18)); } catch { return parseFloat(s) / 1e18; }
+  }
+  const n = parseFloat(s);
   return isNaN(n) ? 0 : n;
+}
+
+/** Arc Network native USDC + listed tokens use 18 decimals */
+function tokenDecimals(/* tokenAddrOrSym */) {
+  return 18;
+}
+
+function fromWei(value) {
+  try {
+    return parseFloat(ethers.formatUnits(value ?? 0, 18));
+  } catch {
+    return 0;
+  }
 }
 
 function detectModule(item) {
@@ -850,7 +873,7 @@ async function scanOnChain() {
         const hash = log.transactionHash;
         if (seen.has(hash)) continue;
         seen.add(hash);
-        const amount = Number(ethers.formatUnits(parsed.args.totalDistributed, 6));
+        const amount = fromWei(parsed.args.totalDistributed);
         const tokenSym = resolveToken(parsed.args.token);
         const block = await rp.getBlock(log.blockNumber);
         const ts = (block?.timestamp || 0) * 1000;
@@ -882,7 +905,7 @@ async function scanOnChain() {
         if (seen.has(hash)) continue;
         seen.add(hash);
         const amount = parsed.args.netAmountPushed
-          ? Number(ethers.formatUnits(parsed.args.netAmountPushed, 6))
+          ? fromWei(parsed.args.netAmountPushed)
           : 0;
         const tokenSym = resolveToken(parsed.args.token);
         const block = await rp.getBlock(log.blockNumber);
@@ -913,8 +936,8 @@ async function scanOnChain() {
         // We can't easily filter by creator without more events; accept recent and mark
         seen.add(hash);
         const amount = parsed.args.totalAmount
-          ? Number(ethers.formatUnits(parsed.args.totalAmount, 6))
-          : (parsed.args.amountReceived ? Number(ethers.formatUnits(parsed.args.amountReceived, 6)) : 0);
+          ? fromWei(parsed.args.totalAmount)
+          : (parsed.args.amountReceived ? fromWei(parsed.args.amountReceived) : 0);
         const tokenSym = resolveToken(parsed.args.token);
         const block = await rp.getBlock(log.blockNumber);
         const ts = (block?.timestamp || 0) * 1000;
@@ -943,7 +966,7 @@ async function scanOnChain() {
         const creator = (parsed.args.creator || "").toLowerCase();
         if (parsed.name === "LinkCreated" && creator !== userAddress.toLowerCase()) continue;
         seen.add(hash);
-        const amount = Number(ethers.formatUnits(parsed.args.amount || 0, 6));
+        const amount = fromWei(parsed.args.amount || 0);
         const tokenSym = resolveToken(parsed.args.token);
         const block = await rp.getBlock(log.blockNumber);
         const ts = (block?.timestamp || 0) * 1000;
