@@ -736,51 +736,87 @@ async function processCloudHistory(hist) {
   if (!hist || !hist.length) return 0;
   let added = 0;
   const daily = {};
-  hist.forEach(item => {
+
+  hist.forEach((item, idx) => {
     if (!item || typeof item !== "object") return;
-    const amount = parseFloat(item.amount || item.totalAmount || item.netAmount || 0) || 0;
-    const tokRaw = (item.tokenSymbol || item.token || item.symbol || "USDC").toString();
+
+    // ---- amount: many shapes from your apps ----
+    let amount = 0;
+    const amountCandidates = [
+      item.amount, item.totalAmount, item.netAmount, item.rawAmount,
+      item.value, item.total, item.distributed
+    ];
+    for (const c of amountCandidates) {
+      if (c == null || c === "") continue;
+      const n = parseFloat(String(c).replace(/,/g, ""));
+      if (!isNaN(n) && n > 0) { amount = n; break; }
+    }
+    // BatchSplit sometimes stores tokens: [{amount}]
+    if (!amount && Array.isArray(item.tokens) && item.tokens[0]) {
+      const n = parseFloat(item.tokens[0].amount);
+      if (!isNaN(n)) amount = n;
+    }
+
+    // ---- token symbol ----
+    let tokenSym = "USDC";
+    const tokRaw = (item.tokenSymbol || item.token || item.symbol || "").toString();
     const tok = tokRaw.toUpperCase();
-    let tokenSym = "Other";
-    if (tok.includes("USDC") || tok === "0X3600" || tok.startsWith("0X3600")) tokenSym = "USDC";
-    else if (tok.includes("EURC")) tokenSym = "EURC";
+    if (tok.includes("EURC")) tokenSym = "EURC";
     else if (tok.includes("BTC") || tok.includes("CIRBTC")) tokenSym = "cirBTC";
-    else if (tok.length > 2) tokenSym = tok.slice(0, 8);
+    else if (tok.includes("USDC") || tok.startsWith("0X3600") || tok === "0X0000000000000000000000000000000000000000" || tok === "") tokenSym = "USDC";
+    else if (tok.startsWith("0X") && tok.length >= 10) tokenSym = "Other";
+    else if (tok.length >= 2) tokenSym = tok.slice(0, 10);
 
-    const type = (item.type || item.memo || item.action || "").toString().toLowerCase();
+    // ---- type / module from memo, intent, status ----
+    const typeStr = [
+      item.type, item.memo, item.intent, item.action, item.status, item.title
+    ].filter(Boolean).join(" ").toLowerCase();
+
     let mod = "other";
-    if (type.includes("link") || type.includes("invoice") || type.includes("pay") || type.includes("claim")) mod = "pay";
-    else if (type.includes("vest") || type.includes("cliff") || type.includes("schedule")) mod = "vesting";
-    else if (type.includes("agentic") || type.includes("condition") || type.includes("rule") || type.includes("evaluator")) mod = "conditional";
-    else if (type.includes("role") || type.includes("batch") || type.includes("giveaway") || type.includes("split") || type.includes("payroll")) mod = "role";
+    if (/link|invoice|pay|claim|arcpay/.test(typeStr)) mod = "pay";
+    else if (/vest|cliff|schedule/.test(typeStr)) mod = "vesting";
+    else if (/agentic|condition|rule|evaluator/.test(typeStr)) mod = "conditional";
+    else if (/role|batch|giveaway|split|payroll|winner|equal split/.test(typeStr)) mod = "role";
+    else if (item.winnersCount || item.winners) mod = "role";
+    else if (item.batchId != null) mod = "role";
 
+    // ---- module stats ----
     if (mod === "pay") {
-      if (type.includes("invoice")) {
+      if (/invoice/.test(typeStr)) {
         data.modules.pay.invoices.created++;
         data.modules.pay.invoices.vol += amount;
-        if (type.includes("paid") || type.includes("pay")) data.modules.pay.invoices.paid++;
-        if (type.includes("cancel")) data.modules.pay.invoices.cancelled++;
+        if (/paid/.test(typeStr)) data.modules.pay.invoices.paid++;
+        if (/cancel/.test(typeStr)) data.modules.pay.invoices.cancelled++;
         data.invoices++;
       } else {
         data.modules.pay.links.created++;
         data.modules.pay.links.vol += amount;
-        if (type.includes("claim")) data.modules.pay.links.claimed++;
-        if (type.includes("cancel")) data.modules.pay.links.cancelled++;
+        if (/claim/.test(typeStr)) data.modules.pay.links.claimed++;
+        if (/cancel/.test(typeStr)) data.modules.pay.links.cancelled++;
         data.links++;
       }
     } else if (mod === "vesting") {
       data.modules.vesting.vol += amount;
       data.modules.vesting.schedules++;
-      if (type.includes("push") || type.includes("release")) data.modules.vesting.pushes++;
+      if (/push|release/.test(typeStr)) data.modules.vesting.pushes++;
     } else if (mod === "conditional") {
       data.modules.conditional.vol += amount;
-      if (type.includes("rule") || type.includes("register")) data.modules.conditional.rules++;
+      if (/rule|register/.test(typeStr)) data.modules.conditional.rules++;
       else data.modules.conditional.exec++;
     } else if (mod === "role") {
       data.modules.role.vol += amount;
       data.modules.role.batches++;
       data.batches++;
-      if (type.includes("giveaway")) data.modules.role.giveaways++;
+      if (/giveaway|winner/.test(typeStr)) data.modules.role.giveaways++;
+      if (item.winnersCount) data.modules.role.wallets += Number(item.winnersCount) || 0;
+    } else {
+      // unknown → still count volume under role family as generic split
+      if (amount > 0) {
+        data.modules.role.vol += amount;
+        data.modules.role.batches++;
+        data.batches++;
+        mod = "role";
+      }
     }
 
     data.volume += amount;
@@ -789,21 +825,47 @@ async function processCloudHistory(hist) {
     else if (tokenSym === "cirBTC") data.tokens.cirBTC += amount;
     else data.tokens.Other += amount;
 
-    const ts = item.timestamp || item.createdAt || item.time || Date.now();
-    const tsMs = typeof ts === "number" ? (ts < 1e12 ? ts * 1000 : ts) : Date.now();
-    const day = dayKey(tsMs / 1000); 
+    // ---- timestamp: number ms, number s, ISO, or locale string ----
+    let tsMs = Date.now() - idx * 60000; // fallback spread so chart has points
+    const rawTs = item.timestamp || item.createdAt || item.time || item.date;
+    if (typeof rawTs === "number") {
+      tsMs = rawTs < 1e12 ? rawTs * 1000 : rawTs;
+    } else if (typeof rawTs === "string" && rawTs.trim()) {
+      const parsed = Date.parse(rawTs);
+      if (!isNaN(parsed)) tsMs = parsed;
+      // locale like "Aug 5, 2026" without year sometimes fails — keep fallback
+    }
+
+    const day = new Date(tsMs).toISOString().slice(0, 10);
     daily[day] = (daily[day] || 0) + amount;
 
+    const label = item.type || item.intent || item.memo || item.title || "History";
     pushActivity({
-      type: item.type || item.memo || "History",
-      amount, token: tokenSym, memo: item.memo || item.note || "", hash: item.hash || item.txHash || "",
-      timestamp: tsMs, module: mod, recipient: item.recipient || item.to || item.user || null
+      type: String(label).slice(0, 80),
+      amount,
+      token: tokenSym,
+      memo: item.memo || item.intent || item.note || "",
+      hash: item.hash || item.txHash || "",
+      timestamp: tsMs,
+      module: mod,
+      recipient: item.recipient || item.to || item.user || (Array.isArray(item.winners) ? item.winners[0] : null)
     });
     added++;
   });
-  data.timeline = Object.entries(daily).map(([date, volume]) => ({ date, volume })).sort((a, b) => a.date.localeCompare(b.date));
+
+  // Build timeline; if all volume on one day still show it
+  data.timeline = Object.entries(daily)
+    .map(([date, volume]) => ({ date, volume }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  // If timeline empty but we have volume, force one point so chart is not blank
+  if (!data.timeline.length && data.volume > 0) {
+    data.timeline = [{ date: new Date().toISOString().slice(0, 10), volume: data.volume }];
+  }
+
   return added;
 }
+
 
 async function refreshDashboard() {
   if (scanning) return showToast("Scan already running…");
@@ -829,11 +891,13 @@ async function refreshDashboard() {
     
     try {
       const hist = await fetchHistoryFromCloud(userAddress);
-      cloudCount = await processCloudHistory(hist);
+      console.log("[Analytics] cloud records:", Array.isArray(hist) ? hist.length : hist, hist?.[0]);
+      cloudCount = await processCloudHistory(hist || []);
       if (cloudCount > 0) {
         dataSource = "cloud";
       } else {
         dataSource = "empty";
+        console.warn("[Analytics] cloud empty or unparsed — check history_data shape");
       }
     } catch (e) {
       console.warn("cloud load error", e);
@@ -1017,11 +1081,24 @@ function renderCharts() {
   const col = getColors();
   const vCtx = document.getElementById("volumeChart").getContext("2d");
   if (volumeChart) volumeChart.destroy();
-  const labels = data.timeline.length ? data.timeline.map(t => {
-    const parts = t.date.split('-'); 
-    return new Date(parts[0], parts[1]-1, parts[2]).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  }) : ["—"];
-  const vols = data.timeline.length ? data.timeline.map(t => t.volume) : [0];
+  let labels = [];
+  let vols = [];
+  if (data.timeline.length) {
+    labels = data.timeline.map(t => {
+      try {
+        const parts = String(t.date).split("-");
+        if (parts.length === 3) return new Date(+parts[0], +parts[1]-1, +parts[2]).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        return String(t.date);
+      } catch { return String(t.date); }
+    });
+    vols = data.timeline.map(t => Number(t.volume) || 0);
+  } else if (data.volume > 0) {
+    labels = ["Total"];
+    vols = [data.volume];
+  } else {
+    labels = ["—"];
+    vols = [0];
+  }
   volumeChart = new Chart(vCtx, {
     type: "line",
     data: { labels, datasets: [{ data: vols, borderColor: col.cyan, backgroundColor: ctx => { const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 260); g.addColorStop(0, col.cyan + "35"); g.addColorStop(1, col.cyan + "00"); return g; }, fill: true, tension: 0.4, pointRadius: 0, pointHoverRadius: 5, borderWidth: 2.5 }] },
