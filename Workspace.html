@@ -178,7 +178,7 @@
         <div id="panel-modules" class="space-y-5 hidden">
           <div class="glass rounded-3xl p-6">
             <h3 class="font-bold text-base flex items-center gap-2 mb-2"><i class="fas fa-th-large text-indigo-400"></i> Open Main Modules</h3>
-            <p class="text-xs text-gray-500 mb-5">Execution happens in the original ArcSplit pages. Locked cards mean your role has no permission.</p>
+            <p class="text-xs text-gray-500 mb-5">Each module opens the main ArcSplit page. <b>Transactions always use the wallet you connect there</b> (your own balance) — not the TeamTreasury contract. Treasury is only for optional team pool (Deposit / Withdraw).</p>
             <div id="modulesGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
           </div>
         </div>
@@ -204,11 +204,14 @@
               <div class="text-xs text-gray-500 font-bold mb-1">Address</div>
               <div id="trAddr" class="font-mono text-sm break-all mb-3">—</div>
               <div id="trMode" class="text-[11px] text-gray-500 mb-3">Mode: —</div>
-              <div class="grid grid-cols-3 gap-3">
+              <div class="grid grid-cols-3 gap-3 mb-3">
                 <div><div class="text-[10px] text-gray-500 uppercase">USDC</div><div id="trUsdc" class="font-bold text-emerald-400 text-lg">—</div></div>
                 <div><div class="text-[10px] text-gray-500 uppercase">EURC</div><div id="trEurc" class="font-bold text-emerald-400 text-lg">—</div></div>
                 <div><div class="text-[10px] text-gray-500 uppercase">cirBTC</div><div id="trBtc" class="font-bold text-emerald-400 text-lg">—</div></div>
               </div>
+              <button type="button" onclick="manualRefreshBalances()" class="text-xs font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1.5">
+                <i class="fas fa-sync-alt" id="balRefreshIcon"></i> <span id="balRefreshLabel">Refresh balances</span>
+              </button>
             </div>
 
             <div id="trContractActions" class="hidden space-y-3 mb-4">
@@ -236,8 +239,9 @@
                 <button onclick="treasurySetSplitter()" class="px-4 py-2.5 rounded-xl bg-white/5 text-gray-300 border border-white/10 text-xs font-bold">Set Splitter</button>
               </div>
               <p class="text-[11px] text-gray-500 leading-relaxed">
-                <b>Recommended flow:</b> Deposit → Approve Splitter → open main Split page and execute with your wallet
-                <i>or</i> Withdraw to your wallet → open main module and split as usual.
+                <b>Modules never spend from this contract directly.</b> To use team funds in Split/Batch/…:
+                use <b>Withdraw to me</b>, then open the module and pay from your own wallet.
+                Deposit / Approve are only for holding or future splitter integration.
               </p>
             </div>
 
@@ -483,18 +487,21 @@
     return currentWs?.treasury_address || currentWs?.owner_address;
   }
 
-  /** Open a main module page with workspace context in query string */
+  /**
+   * Open a main module page.
+   * IMPORTANT: Execution always uses the wallet connected in that page (the member's own wallet).
+   * TeamTreasury is NOT used as the funding source here — only optional workspace id for context.
+   */
   function openModule(moduleId) {
     if (!hasPerm(moduleId)) return showToast("No permission for this module");
     const mod = MODULE_PAGES[moduleId];
     if (!mod) return;
     const params = new URLSearchParams();
     if (currentWs?.id) params.set("workspace", currentWs.id);
-    if (userAddress) params.set("from", userAddress);
-    const t = treasuryAddress();
-    if (t) params.set("treasury", t);
+    // do NOT pass treasury as pay-from address — splits must come from the user's own wallet
     const q = params.toString();
     const url = mod.file + (q ? "?" + q : "");
+    showToast("Opening " + mod.label + " — use YOUR connected wallet to pay");
     window.open(url, "_blank");
   }
 
@@ -578,6 +585,7 @@
     renderWsList();
     switchPanel("overview");
     renderAllPanels();
+    startBalanceAutoRefresh();
   }
 
   function switchPanel(name) {
@@ -590,6 +598,9 @@
       b.classList.toggle("text-gray-400", !on);
     });
     if (name === "history") loadHistory();
+    if (name === "treasury" || name === "overview") {
+      loadBalances(treasuryAddress(), 3).then(applyBalancesToUI).catch(() => {});
+    }
   }
 
   function renderAllPanels() {
@@ -652,25 +663,96 @@
     }).join("");
   }
 
-  async function loadBalances(addr) {
-    const out = { USDC: 0, EURC: 0, cirBTC: 0 };
-    if (!addr || !window.ethereum) return out;
+  let balRefreshTimer = null;
+  let balRefreshing = false;
+
+  function getReadProvider() {
     try {
-      const p = provider || new ethers.BrowserProvider(window.ethereum);
-      for (const [sym, tokenAddr] of Object.entries(TOKENS)) {
-        try {
-          if (sym === "USDC") {
-            const bal = await p.getBalance(addr);
-            out.USDC = parseFloat(ethers.formatUnits(bal, 18));
-          } else {
-            const c = new ethers.Contract(tokenAddr, ERC20_ABI, p);
-            const [bal, dec] = await Promise.all([c.balanceOf(addr), c.decimals()]);
-            out[sym] = parseFloat(ethers.formatUnits(bal, dec));
-          }
-        } catch {}
-      }
+      if (provider) return provider;
+      if (window.ethereum) return new ethers.BrowserProvider(window.ethereum);
     } catch {}
+    return new ethers.JsonRpcProvider(ARC_NETWORK.rpcUrls[0]);
+  }
+
+  async function loadBalances(addr, retries = 3) {
+    const out = { USDC: 0, EURC: 0, cirBTC: 0 };
+    if (!addr || !ethers.isAddress(addr)) return out;
+    const cAddr = contractAddr();
+    const useContract = cAddr && addr.toLowerCase() === cAddr.toLowerCase();
+
+    for (let attempt = 0; attempt < retries; attempt++) {
+      try {
+        const p = getReadProvider();
+        if (useContract) {
+          const tc = new ethers.Contract(cAddr, TREASURY_ABI, p);
+          // Native (on Arc Testnet native = USDC)
+          try {
+            let nBal;
+            try { nBal = await tc.nativeBalance(); } catch { nBal = await p.getBalance(cAddr); }
+            out.USDC = parseFloat(ethers.formatUnits(nBal, 18));
+          } catch {}
+          // ERC20s via tokenBalance or balanceOf
+          for (const [sym, tokenAddr] of Object.entries(TOKENS)) {
+            if (sym === "USDC") continue;
+            try {
+              let bal, dec = 6;
+              try {
+                bal = await tc.tokenBalance(tokenAddr);
+              } catch {
+                const erc = new ethers.Contract(tokenAddr, ERC20_ABI, p);
+                bal = await erc.balanceOf(cAddr);
+              }
+              try {
+                const erc = new ethers.Contract(tokenAddr, ERC20_ABI, p);
+                dec = Number(await erc.decimals());
+              } catch {}
+              out[sym] = parseFloat(ethers.formatUnits(bal, dec));
+            } catch {}
+          }
+          // Also try USDC as ERC20 at 0x3600… if native was 0 but token has balance
+          try {
+            const usdcTok = TOKENS.USDC;
+            let uBal;
+            try { uBal = await tc.tokenBalance(usdcTok); } catch {
+              const erc = new ethers.Contract(usdcTok, ERC20_ABI, p);
+              uBal = await erc.balanceOf(cAddr);
+            }
+            const uNum = parseFloat(ethers.formatUnits(uBal, 18));
+            if (uNum > out.USDC) out.USDC = uNum;
+          } catch {}
+        } else {
+          // Wallet / EOA mode
+          try {
+            const nBal = await p.getBalance(addr);
+            out.USDC = parseFloat(ethers.formatUnits(nBal, 18));
+          } catch {}
+          for (const [sym, tokenAddr] of Object.entries(TOKENS)) {
+            if (sym === "USDC") continue;
+            try {
+              const c = new ethers.Contract(tokenAddr, ERC20_ABI, p);
+              const [bal, dec] = await Promise.all([c.balanceOf(addr), c.decimals()]);
+              out[sym] = parseFloat(ethers.formatUnits(bal, dec));
+            } catch {}
+          }
+        }
+        return out;
+      } catch (e) {
+        console.warn("loadBalances attempt", attempt + 1, e);
+        if (attempt < retries - 1) await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
+      }
+    }
     return out;
+  }
+
+  function applyBalancesToUI(b) {
+    const usdc = document.getElementById("trUsdc");
+    const eurc = document.getElementById("trEurc");
+    const btc = document.getElementById("trBtc");
+    const ov = document.getElementById("ovTreasuryBal");
+    if (usdc) usdc.textContent = (b.USDC || 0).toFixed(4);
+    if (eurc) eurc.textContent = (b.EURC || 0).toFixed(4);
+    if (btc) btc.textContent = (b.cirBTC || 0).toFixed(6);
+    if (ov) ov.textContent = (b.USDC || 0).toFixed(2);
   }
 
   function contractAddr() {
@@ -687,10 +769,62 @@
     document.getElementById("trMode").textContent = cAddr ? "Mode: TeamTreasury Contract" : "Mode: Wallet (display only)";
     document.getElementById("trContractActions").classList.toggle("hidden", !cAddr);
     document.getElementById("trNoContractHint").classList.toggle("hidden", !!cAddr);
-    const b = await loadBalances(addr);
-    document.getElementById("trUsdc").textContent = b.USDC.toFixed(4);
-    document.getElementById("trEurc").textContent = b.EURC.toFixed(4);
-    document.getElementById("trBtc").textContent = b.cirBTC.toFixed(6);
+    const b = await loadBalances(addr, 3);
+    applyBalancesToUI(b);
+  }
+
+  /** After a TX: poll until balance changes or max tries */
+  async function refreshBalancesWithRetry(prev = null, maxTries = 8) {
+    if (balRefreshing) return;
+    balRefreshing = true;
+    const addr = treasuryAddress();
+    try {
+      for (let i = 0; i < maxTries; i++) {
+        const b = await loadBalances(addr, 2);
+        applyBalancesToUI(b);
+        if (!prev) break;
+        const changed =
+          Math.abs((b.USDC || 0) - (prev.USDC || 0)) > 1e-8 ||
+          Math.abs((b.EURC || 0) - (prev.EURC || 0)) > 1e-8 ||
+          Math.abs((b.cirBTC || 0) - (prev.cirBTC || 0)) > 1e-8;
+        if (changed) break;
+        await new Promise(r => setTimeout(r, 1200));
+      }
+    } finally {
+      balRefreshing = false;
+    }
+  }
+
+  function startBalanceAutoRefresh() {
+    stopBalanceAutoRefresh();
+    balRefreshTimer = setInterval(() => {
+      if (!currentWs) return;
+      const panel = document.getElementById("panel-treasury");
+      const ov = document.getElementById("panel-overview");
+      if ((panel && !panel.classList.contains("hidden")) || (ov && !ov.classList.contains("hidden"))) {
+        loadBalances(treasuryAddress(), 2).then(applyBalancesToUI).catch(() => {});
+      }
+    }, 10000);
+  }
+
+  function stopBalanceAutoRefresh() {
+    if (balRefreshTimer) { clearInterval(balRefreshTimer); balRefreshTimer = null; }
+  }
+
+  async function manualRefreshBalances() {
+    const icon = document.getElementById("balRefreshIcon");
+    const label = document.getElementById("balRefreshLabel");
+    if (icon) icon.classList.add("fa-spin");
+    if (label) label.textContent = "Updating…";
+    try {
+      await refreshBalancesWithRetry(null, 5);
+      if (label) label.textContent = "Updated";
+      setTimeout(() => { if (label) label.textContent = "Refresh balances"; }, 1500);
+    } catch {
+      if (label) label.textContent = "Refresh balances";
+    } finally {
+      if (icon) icon.classList.remove("fa-spin");
+    }
   }
 
   async function tokenDecimals(token) {
@@ -728,6 +862,7 @@
         return showToast("Proxy not initialized or wrong ABI — call initialize(owner) on proxy");
       }
 
+      const prevBal = await loadBalances(treasuryAddress(), 1);
       if (token === "native") {
         const wei = ethers.parseEther(amountStr);
         if (wei === 0n) return showToast("Amount too small");
@@ -740,7 +875,6 @@
         const wei = ethers.parseUnits(amountStr, dec);
         if (wei === 0n) return showToast("Amount too small");
         const erc = new ethers.Contract(token, ERC20_ABI, signer);
-        // check wallet balance optional
         try {
           const bal = await erc.balanceOf(userAddress);
           if (bal < wei) return showToast("Insufficient token balance");
@@ -753,8 +887,9 @@
         await tx.wait();
         await logWsHistory({ type: "Treasury Deposit", amount: amountStr, token, hash: tx.hash });
       }
-      showToast("Deposit OK");
-      renderTreasury(); renderOverview(); loadHistory();
+      showToast("Deposit OK — updating balances…");
+      await refreshBalancesWithRetry(prevBal, 10);
+      renderOverview(); loadHistory();
     } catch (e) {
       console.error(e);
       let msg = e.reason || e.shortMessage || e.message || "Deposit failed";
@@ -775,6 +910,7 @@
     const amountStr = document.getElementById("trAmount").value;
     if (!amountStr || Number(amountStr) <= 0) return showToast("Enter amount");
     try {
+      const prev = await loadBalances(treasuryAddress(), 1);
       const tc = new ethers.Contract(cAddr, TREASURY_ABI, signer);
       showToast("Withdrawing…");
       let tx;
@@ -788,8 +924,9 @@
       }
       await tx.wait();
       await logWsHistory({ type: "Treasury Withdraw", amount: amountStr, token: token === "native" ? "NATIVE" : token, memo: "Withdraw to " + shortAddr(userAddress), hash: tx.hash });
-      showToast("Withdraw OK — now open a main module to split");
-      renderTreasury(); renderOverview(); loadHistory();
+      showToast("Withdraw OK — updating balances…");
+      await refreshBalancesWithRetry(prev, 10);
+      renderOverview(); loadHistory();
     } catch (e) {
       console.error(e);
       showToast(e.reason || e.shortMessage || "Withdraw failed");
