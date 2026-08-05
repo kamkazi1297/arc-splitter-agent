@@ -16,23 +16,18 @@
       background: #070711;
       background-image:
         radial-gradient(circle at 10% 20%, rgba(99,102,241,0.10) 0%, transparent 40%),
-        radial-gradient(circle at 90% 80%, rgba(16,185,129,0.08) 0%, transparent 40%),
-        radial-gradient(circle at 50% 50%, rgba(99,102,241,0.05) 0%, transparent 50%);
-      color: #f8fafc;
-      min-height: 100vh;
+        radial-gradient(circle at 90% 80%, rgba(16,185,129,0.08) 0%, transparent 40%);
+      color: #f8fafc; min-height: 100vh;
     }
     .glass {
       background: rgba(18,18,38,0.65);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
+      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
       border: 1px solid rgba(255,255,255,0.07);
       box-shadow: 0 20px 50px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08);
     }
     .light {
       background: #f8fafc !important;
-      background-image:
-        radial-gradient(circle at 10% 20%, rgba(99,102,241,0.12) 0%, transparent 40%),
-        radial-gradient(circle at 90% 80%, rgba(16,185,129,0.10) 0%, transparent 40%) !important;
+      background-image: radial-gradient(circle at 10% 20%, rgba(99,102,241,0.12) 0%, transparent 40%) !important;
       color: #0f172a !important;
     }
     .light .glass {
@@ -48,39 +43,41 @@
     .light .text-emerald-400 { color: #047857 !important; }
     .light .text-rose-400 { color: #be123c !important; }
     .light .text-amber-400 { color: #b45309 !important; }
+    .light .text-sky-400 { color: #0369a1 !important; }
+    .light .text-cyan-400 { color: #0e7490 !important; }
+    .light .text-violet-400 { color: #6d28d9 !important; }
+    .light .text-lime-400 { color: #3f6212 !important; }
+    .light .text-orange-400 { color: #c2410c !important; }
     .light .bg-white\/5 { background-color: rgba(0,0,0,0.04) !important; }
     .light .border-white\/5, .light .border-white\/10 { border-color: rgba(0,0,0,0.08) !important; }
     select, input, textarea {
-      background-color: rgba(255,255,255,0.04);
-      color: #f8fafc;
-      border: 1px solid rgba(255,255,255,0.12);
-      border-radius: 14px;
-      font-weight: 600;
-      transition: all 0.2s;
+      background-color: rgba(255,255,255,0.04); color: #f8fafc;
+      border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; font-weight: 600;
     }
     select:focus, input:focus, textarea:focus {
-      border-color: #6366f1;
-      box-shadow: 0 0 0 4px rgba(99,102,241,0.15);
-      outline: none;
+      border-color: #6366f1; box-shadow: 0 0 0 4px rgba(99,102,241,0.15); outline: none;
     }
     .light select, .light input, .light textarea {
-      background: #fff !important;
-      color: #0f172a !important;
-      border: 1px solid rgba(0,0,0,0.12) !important;
+      background: #fff !important; color: #0f172a !important; border: 1px solid rgba(0,0,0,0.12) !important;
     }
+    select option { background-color: #0f172a; color: #f8fafc; padding: 10px 14px; }
+    .light select option { background-color: #ffffff !important; color: #0f172a !important; }
     .light #toast, .light #toast span, .light #toast i { color: #fff !important; }
     .nav-item.active { background: rgba(99,102,241,0.15); color: #a5b4fc; border-color: rgba(99,102,241,0.35); }
     .light .nav-item.active { background: rgba(99,102,241,0.12); color: #4338ca; }
     .app-button { transition: all 0.2s; }
     .app-button:active { transform: scale(0.98); }
     .role-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px; text-transform: uppercase; }
+    .perm-check { width: 18px; height: 18px; accent-color: #6366f1; }
+    .module-card { transition: all 0.2s; }
+    .module-card:hover { transform: translateY(-2px); }
+    .module-card.locked { opacity: 0.45; pointer-events: none; }
   </style>
 </head>
 <body class="text-white min-h-screen selection:bg-indigo-500 selection:text-white">
 
   <div class="max-w-[1280px] mx-auto px-4 py-6 sm:py-8 space-y-6">
 
-    <!-- HEADER -->
     <header class="glass rounded-3xl p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
       <div class="flex items-center gap-4">
         <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-indigo-500 to-emerald-400 flex items-center justify-center shadow-lg shadow-indigo-500/25">
@@ -88,7 +85,7 @@
         </div>
         <div>
           <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-emerald-400">Workspace</span></h1>
-          <p class="text-sm text-gray-400 mt-0.5 font-medium">Team treasury, members & roles</p>
+          <p class="text-sm text-gray-400 mt-0.5 font-medium">Team · permissions · treasury · open main modules</p>
         </div>
       </div>
       <div class="flex flex-wrap items-center gap-2.5">
@@ -105,53 +102,40 @@
       </div>
     </header>
 
-    <!-- NO WALLET -->
     <div id="noWallet" class="glass rounded-3xl p-14 text-center">
       <div class="text-5xl mb-4">🏢</div>
       <h2 class="text-2xl font-extrabold mb-2">Connect to manage workspaces</h2>
-      <p class="text-gray-400 text-sm mb-6 max-w-md mx-auto">Create a team workspace, invite members by wallet address, and manage a shared treasury.</p>
+      <p class="text-gray-400 text-sm mb-6 max-w-md mx-auto">Organize your team, set permissions, then open the main ArcSplit modules to execute.</p>
       <button onclick="connectWallet()" class="px-6 py-3 rounded-2xl bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-sm shadow-lg shadow-indigo-500/20">
         <i class="fas fa-wallet mr-2"></i> Connect Wallet
       </button>
     </div>
 
-    <!-- MAIN -->
     <div id="app" class="hidden grid grid-cols-1 lg:grid-cols-12 gap-6">
-
-      <!-- SIDEBAR -->
       <aside class="lg:col-span-3 space-y-4">
         <div class="glass rounded-3xl p-4 space-y-1">
           <div class="text-[11px] font-bold text-gray-500 uppercase tracking-wider px-3 mb-2">Workspaces</div>
-          <div id="wsList" class="space-y-1 max-h-64 overflow-y-auto"></div>
-          <button onclick="showCreateModal()" class="w-full mt-2 px-3 py-2.5 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-400 border border-indigo-500/30 text-xs font-bold transition flex items-center justify-center gap-2">
+          <div id="wsList" class="space-y-1 max-h-56 overflow-y-auto"></div>
+          <button onclick="showCreateModal()" class="w-full mt-2 px-3 py-2.5 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-400 border border-indigo-500/30 text-xs font-bold flex items-center justify-center gap-2">
             <i class="fas fa-plus"></i> New Workspace
           </button>
         </div>
-
         <nav id="sideNav" class="glass rounded-3xl p-3 space-y-1 hidden">
-          <button onclick="switchPanel('overview')" data-p="overview" class="nav-item active w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold border border-transparent flex items-center gap-2.5">
-            <i class="fas fa-chart-pie w-5 text-center"></i> Overview
-          </button>
-          <button onclick="switchPanel('members')" data-p="members" class="nav-item w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold text-gray-400 border border-transparent flex items-center gap-2.5 hover:bg-white/5">
-            <i class="fas fa-users w-5 text-center"></i> Members
-          </button>
-          <button onclick="switchPanel('treasury')" data-p="treasury" class="nav-item w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold text-gray-400 border border-transparent flex items-center gap-2.5 hover:bg-white/5">
-            <i class="fas fa-vault w-5 text-center"></i> Treasury
-          </button>
-          <button onclick="switchPanel('settings')" data-p="settings" class="nav-item w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold text-gray-400 border border-transparent flex items-center gap-2.5 hover:bg-white/5">
-            <i class="fas fa-cog w-5 text-center"></i> Settings
-          </button>
+          <button onclick="switchPanel('overview')" data-p="overview" class="nav-item active w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold border border-transparent flex items-center gap-2.5"><i class="fas fa-chart-pie w-5 text-center"></i> Overview</button>
+          <button onclick="switchPanel('modules')" data-p="modules" class="nav-item w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold text-gray-400 border border-transparent flex items-center gap-2.5 hover:bg-white/5"><i class="fas fa-th-large w-5 text-center"></i> Modules</button>
+          <button onclick="switchPanel('members')" data-p="members" class="nav-item w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold text-gray-400 border border-transparent flex items-center gap-2.5 hover:bg-white/5"><i class="fas fa-users w-5 text-center"></i> Members</button>
+          <button onclick="switchPanel('treasury')" data-p="treasury" class="nav-item w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold text-gray-400 border border-transparent flex items-center gap-2.5 hover:bg-white/5"><i class="fas fa-vault w-5 text-center"></i> Treasury</button>
+          <button onclick="switchPanel('permissions')" data-p="permissions" class="nav-item w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold text-gray-400 border border-transparent flex items-center gap-2.5 hover:bg-white/5"><i class="fas fa-shield-alt w-5 text-center"></i> Permissions</button>
+          <button onclick="switchPanel('billing')" data-p="billing" class="nav-item w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold text-gray-400 border border-transparent flex items-center gap-2.5 hover:bg-white/5"><i class="fas fa-credit-card w-5 text-center"></i> Billing</button>
+          <button onclick="switchPanel('settings')" data-p="settings" class="nav-item w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold text-gray-400 border border-transparent flex items-center gap-2.5 hover:bg-white/5"><i class="fas fa-cog w-5 text-center"></i> Settings</button>
         </nav>
       </aside>
 
-      <!-- CONTENT -->
       <main class="lg:col-span-9 space-y-6">
-
-        <!-- EMPTY STATE -->
         <div id="emptyWs" class="glass rounded-3xl p-12 text-center hidden">
           <div class="text-4xl mb-3">✨</div>
           <h2 class="text-xl font-extrabold mb-2">No workspace selected</h2>
-          <p class="text-gray-400 text-sm mb-5">Create your first workspace or select one from the list.</p>
+          <p class="text-gray-400 text-sm mb-5">Create a workspace, invite members, then open main modules to execute.</p>
           <button onclick="showCreateModal()" class="px-5 py-2.5 rounded-2xl bg-indigo-500 text-white font-bold text-sm">Create Workspace</button>
         </div>
 
@@ -164,15 +148,14 @@
                 <p id="ovDesc" class="text-sm text-gray-400 mt-1">—</p>
               </div>
               <div class="flex items-center gap-2">
+                <span id="ovPlan" class="role-badge bg-emerald-500/20 text-emerald-400">Free</span>
                 <span id="ovRole" class="role-badge bg-indigo-500/20 text-indigo-400">—</span>
-                <span id="ovMembers" class="text-xs font-bold text-gray-400">0 members</span>
               </div>
             </div>
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div class="bg-white/5 rounded-2xl p-4 border border-white/5">
-                <div class="text-xs text-gray-500 font-bold mb-1">Treasury</div>
+                <div class="text-xs text-gray-500 font-bold mb-1">Treasury USDC</div>
                 <div id="ovTreasuryBal" class="text-xl font-extrabold text-emerald-400">—</div>
-                <div id="ovTreasuryAddr" class="text-[10px] text-gray-500 font-mono mt-1 truncate">—</div>
               </div>
               <div class="bg-white/5 rounded-2xl p-4 border border-white/5">
                 <div class="text-xs text-gray-500 font-bold mb-1">Members</div>
@@ -182,7 +165,20 @@
                 <div class="text-xs text-gray-500 font-bold mb-1">Your Role</div>
                 <div id="ovMyRole" class="text-xl font-extrabold text-amber-400">—</div>
               </div>
+              <div class="bg-white/5 rounded-2xl p-4 border border-white/5">
+                <div class="text-xs text-gray-500 font-bold mb-1">Treasury Mode</div>
+                <div id="ovTreasuryMode" class="text-sm font-bold text-gray-300">Wallet</div>
+              </div>
             </div>
+          </div>
+        </div>
+
+        <!-- MODULES — open main site pages -->
+        <div id="panel-modules" class="space-y-5 hidden">
+          <div class="glass rounded-3xl p-6">
+            <h3 class="font-bold text-base flex items-center gap-2 mb-2"><i class="fas fa-th-large text-indigo-400"></i> Open Main Modules</h3>
+            <p class="text-xs text-gray-500 mb-5">Execution happens in the original ArcSplit pages. Locked cards mean your role has no permission.</p>
+            <div id="modulesGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
           </div>
         </div>
 
@@ -202,26 +198,55 @@
         <!-- TREASURY -->
         <div id="panel-treasury" class="space-y-5 hidden">
           <div class="glass rounded-3xl p-6">
-            <h3 class="font-bold text-base flex items-center gap-2 mb-5"><i class="fas fa-vault text-emerald-400"></i> Shared Treasury</h3>
-            <div class="bg-white/5 rounded-2xl p-5 border border-white/5 mb-5">
-              <div class="text-xs text-gray-500 font-bold mb-1">Treasury Wallet</div>
+            <h3 class="font-bold text-base flex items-center gap-2 mb-5"><i class="fas fa-vault text-emerald-400"></i> Treasury</h3>
+            <div class="bg-white/5 rounded-2xl p-5 border border-white/5 mb-4">
+              <div class="text-xs text-gray-500 font-bold mb-1">Address</div>
               <div id="trAddr" class="font-mono text-sm break-all mb-3">—</div>
               <div class="grid grid-cols-3 gap-3">
-                <div>
-                  <div class="text-[10px] text-gray-500 uppercase">USDC</div>
-                  <div id="trUsdc" class="font-bold text-emerald-400 text-lg">—</div>
-                </div>
-                <div>
-                  <div class="text-[10px] text-gray-500 uppercase">EURC</div>
-                  <div id="trEurc" class="font-bold text-emerald-400 text-lg">—</div>
-                </div>
-                <div>
-                  <div class="text-[10px] text-gray-500 uppercase">cirBTC</div>
-                  <div id="trBtc" class="font-bold text-emerald-400 text-lg">—</div>
-                </div>
+                <div><div class="text-[10px] text-gray-500 uppercase">USDC</div><div id="trUsdc" class="font-bold text-emerald-400 text-lg">—</div></div>
+                <div><div class="text-[10px] text-gray-500 uppercase">EURC</div><div id="trEurc" class="font-bold text-emerald-400 text-lg">—</div></div>
+                <div><div class="text-[10px] text-gray-500 uppercase">cirBTC</div><div id="trBtc" class="font-bold text-emerald-400 text-lg">—</div></div>
               </div>
             </div>
-            <p class="text-xs text-gray-500">Treasury is a designated wallet address. Funds are not held by a smart contract yet — this is a display + coordination layer. You can change the treasury address in Settings.</p>
+            <p class="text-xs text-gray-500">This is the designated team wallet (or optional Treasury Contract). Actual splits run in the main modules using the connected wallet. Point your ops wallet here for shared visibility.</p>
+          </div>
+        </div>
+
+        <!-- PERMISSIONS -->
+        <div id="panel-permissions" class="space-y-5 hidden">
+          <div class="glass rounded-3xl p-6">
+            <h3 class="font-bold text-base flex items-center gap-2 mb-2"><i class="fas fa-shield-alt text-indigo-400"></i> Module Permissions</h3>
+            <p class="text-xs text-gray-500 mb-5">Which roles can open each main module from this workspace.</p>
+            <div id="permTable" class="overflow-x-auto"></div>
+            <button id="savePermBtn" onclick="savePermissions()" class="mt-5 px-5 py-3 rounded-2xl bg-indigo-500 text-white font-bold text-sm">Save Permissions</button>
+          </div>
+        </div>
+
+        <!-- BILLING -->
+        <div id="panel-billing" class="space-y-5 hidden">
+          <div class="glass rounded-3xl p-6">
+            <h3 class="font-bold text-base flex items-center gap-2 mb-5"><i class="fas fa-credit-card text-indigo-400"></i> Billing Plan</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              <div id="planFree" class="rounded-2xl p-5 border-2 border-white/10 bg-white/5 cursor-pointer" onclick="selectPlan('free')">
+                <div class="font-extrabold text-lg mb-1">Free</div>
+                <div class="text-2xl font-extrabold text-gray-300 mb-3">$0<span class="text-sm font-medium text-gray-500">/mo</span></div>
+                <ul class="text-xs text-gray-400 space-y-1.5">
+                  <li>✓ Up to 5 members</li>
+                  <li>✓ Module launchers</li>
+                  <li>✓ Treasury view</li>
+                </ul>
+              </div>
+              <div id="planTeam" class="rounded-2xl p-5 border-2 border-white/10 bg-white/5 cursor-pointer" onclick="selectPlan('team')">
+                <div class="font-extrabold text-lg mb-1 text-indigo-400">Team</div>
+                <div class="text-2xl font-extrabold text-indigo-400 mb-3">$29<span class="text-sm font-medium text-gray-500">/mo</span></div>
+                <ul class="text-xs text-gray-400 space-y-1.5">
+                  <li>✓ Unlimited members</li>
+                  <li>✓ Full permissions matrix</li>
+                  <li>✓ Optional Treasury Contract</li>
+                </ul>
+              </div>
+            </div>
+            <button onclick="savePlan()" id="savePlanBtn" class="px-5 py-3 rounded-2xl bg-indigo-500 text-white font-bold text-sm">Save Plan</button>
           </div>
         </div>
 
@@ -239,36 +264,32 @@
                 <textarea id="setDesc" rows="2" class="w-full px-4 py-3 text-sm" maxlength="200"></textarea>
               </div>
               <div>
-                <label class="text-xs font-bold text-gray-400 mb-1.5 block">Treasury Wallet Address</label>
+                <label class="text-xs font-bold text-gray-400 mb-1.5 block">Treasury Wallet (EOA — for balance display)</label>
                 <input type="text" id="setTreasury" class="w-full px-4 py-3 text-sm font-mono" placeholder="0x...">
               </div>
-              <button id="saveSettingsBtn" onclick="saveSettings()" class="app-button px-5 py-3 rounded-2xl bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-sm">
-                Save Changes
-              </button>
+              <div>
+                <label class="text-xs font-bold text-gray-400 mb-1.5 block">Treasury Contract (optional — TeamTreasury proxy)</label>
+                <input type="text" id="setContract" class="w-full px-4 py-3 text-sm font-mono" placeholder="0x63b9DC34D18128B71E8AC54fb0DDa25aE3bAA0F2">
+                <p class="text-[10px] text-gray-500 mt-1.5">Proxy: 0x63b9DC34D18128B71E8AC54fb0DDa25aE3bAA0F2 — after initialize + setSplitter, paste &amp; save here.</p>
+              </div>
+              <button id="saveSettingsBtn" onclick="saveSettings()" class="app-button px-5 py-3 rounded-2xl bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-sm">Save Changes</button>
             </div>
           </div>
         </div>
-
       </main>
     </div>
   </div>
 
-  <!-- CREATE MODAL -->
+  <!-- CREATE -->
   <div id="createModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
     <div class="glass rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-4 border border-white/10">
       <h3 class="text-lg font-bold">Create Workspace</h3>
-      <div>
-        <label class="text-xs font-bold text-gray-400 mb-1.5 block">Name *</label>
-        <input type="text" id="createName" class="w-full px-4 py-3 text-sm" placeholder="My Company" maxlength="60">
-      </div>
-      <div>
-        <label class="text-xs font-bold text-gray-400 mb-1.5 block">Description</label>
-        <textarea id="createDesc" rows="2" class="w-full px-4 py-3 text-sm" placeholder="Optional"></textarea>
-      </div>
-      <div>
-        <label class="text-xs font-bold text-gray-400 mb-1.5 block">Treasury Wallet (optional, defaults to yours)</label>
-        <input type="text" id="createTreasury" class="w-full px-4 py-3 text-sm font-mono" placeholder="0x...">
-      </div>
+      <div><label class="text-xs font-bold text-gray-400 mb-1.5 block">Name *</label>
+        <input type="text" id="createName" class="w-full px-4 py-3 text-sm" placeholder="My Company" maxlength="60"></div>
+      <div><label class="text-xs font-bold text-gray-400 mb-1.5 block">Description</label>
+        <textarea id="createDesc" rows="2" class="w-full px-4 py-3 text-sm"></textarea></div>
+      <div><label class="text-xs font-bold text-gray-400 mb-1.5 block">Treasury Wallet (optional, defaults to yours)</label>
+        <input type="text" id="createTreasury" class="w-full px-4 py-3 text-sm font-mono" placeholder="0x..."></div>
       <div class="flex gap-3 pt-2">
         <button onclick="hideCreateModal()" class="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 text-sm font-bold">Cancel</button>
         <button onclick="doCreateWorkspace()" class="flex-1 py-3 rounded-xl bg-indigo-500 text-white text-sm font-bold">Create</button>
@@ -276,25 +297,19 @@
     </div>
   </div>
 
-  <!-- INVITE MODAL -->
+  <!-- INVITE -->
   <div id="inviteModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
     <div class="glass rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-4 border border-white/10">
       <h3 class="text-lg font-bold">Invite Member</h3>
-      <div>
-        <label class="text-xs font-bold text-gray-400 mb-1.5 block">Wallet Address *</label>
-        <input type="text" id="inviteAddr" class="w-full px-4 py-3 text-sm font-mono" placeholder="0x...">
-      </div>
-      <div>
-        <label class="text-xs font-bold text-gray-400 mb-1.5 block">Display Name (optional)</label>
-        <input type="text" id="inviteName" class="w-full px-4 py-3 text-sm" placeholder="Alice">
-      </div>
-      <div>
-        <label class="text-xs font-bold text-gray-400 mb-1.5 block">Role</label>
+      <div><label class="text-xs font-bold text-gray-400 mb-1.5 block">Wallet Address *</label>
+        <input type="text" id="inviteAddr" class="w-full px-4 py-3 text-sm font-mono" placeholder="0x..."></div>
+      <div><label class="text-xs font-bold text-gray-400 mb-1.5 block">Display Name</label>
+        <input type="text" id="inviteName" class="w-full px-4 py-3 text-sm" placeholder="Alice"></div>
+      <div><label class="text-xs font-bold text-gray-400 mb-1.5 block">Role</label>
         <select id="inviteRole" class="w-full px-4 py-3 text-sm">
           <option value="member">Member</option>
           <option value="admin">Admin</option>
-        </select>
-      </div>
+        </select></div>
       <div class="flex gap-3 pt-2">
         <button onclick="hideInviteModal()" class="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 text-sm font-bold">Cancel</button>
         <button onclick="doInvite()" class="flex-1 py-3 rounded-xl bg-indigo-500 text-white text-sm font-bold">Invite</button>
@@ -302,12 +317,34 @@
     </div>
   </div>
 
-  <!-- TOAST -->
   <div id="toast" class="hidden fixed bottom-8 left-1/2 -translate-x-1/2 bg-gray-900/95 border border-white/10 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 text-sm font-medium backdrop-blur-xl">
     <span id="toastText"></span>
   </div>
 
 <script>
+  /**
+   * Paths to your main module pages.
+   * Adjust filenames if different on your server.
+   */
+  const MODULE_PAGES = {
+    split:        { label: "Token Splitter",   file: "split.html",              icon: "fa-cut",           color: "emerald" },
+    batch:        { label: "Batch Split",      file: "BatchSplit.html",         icon: "fa-layer-group",   color: "rose" },
+    roles:        { label: "Role Split",       file: "ArcRoleSplitter.html",    icon: "fa-users-gear",    color: "cyan" },
+    giveaway:     { label: "Giveaway",         file: "giveaway.html",           icon: "fa-gift",          color: "amber" },
+    vesting:      { label: "Vesting",          file: "ArcsplitVesting.html",    icon: "fa-calendar-check",color: "lime" },
+    pay:          { label: "Pay Links",        file: "ArcPayLink.html",         icon: "fa-link",          color: "yellow" },
+    agentic:      { label: "Agentic",          file: "AgenticSplit.html",       icon: "fa-robot",         color: "sky" },
+    conditional:  { label: "Conditional",      file: "smartConditionalsplit.html", icon: "fa-code-branch", color: "orange" }
+  };
+
+  const MODULES = Object.keys(MODULE_PAGES).map(id => ({ id, label: MODULE_PAGES[id].label }));
+  const ROLES = ["owner", "admin", "member"];
+  const DEFAULT_PERMS = {
+    owner:  Object.fromEntries(MODULES.map(m => [m.id, true])),
+    admin:  Object.fromEntries(MODULES.map(m => [m.id, true])),
+    member: Object.fromEntries(MODULES.map(m => [m.id, false]))
+  };
+
   const TOKENS = {
     USDC: "0x3600000000000000000000000000000000000000",
     EURC: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a",
@@ -315,25 +352,46 @@
   };
   const ERC20_ABI = ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"];
 
-  let userAddress = null;
-  let signer = null;
-  let provider = null;
-  let forceDisconnected = false;
-  let myWorkspaces = [];
-  let currentWs = null;
-  let currentMembers = [];
-  let myRole = null;
+  let userAddress = null, signer = null, provider = null, forceDisconnected = false;
+  let myWorkspaces = [], currentWs = null, currentMembers = [], myRole = null;
+  let selectedPlan = "free";
+  let permState = JSON.parse(JSON.stringify(DEFAULT_PERMS));
 
-  function shortAddr(a) {
-    if (!a) return "—";
-    return a.slice(0, 6) + "…" + a.slice(-4);
-  }
-
-  function showToast(msg, ms = 3500) {
+  function shortAddr(a) { return a ? a.slice(0,6)+"…"+a.slice(-4) : "—"; }
+  function showToast(msg, ms=3500) {
     const t = document.getElementById("toast");
     document.getElementById("toastText").textContent = msg;
     t.classList.remove("hidden");
     setTimeout(() => t.classList.add("hidden"), ms);
+  }
+  function settingsOf(ws) {
+    const s = ws?.settings || {};
+    return typeof s === "string" ? JSON.parse(s || "{}") : (s || {});
+  }
+  function isAdmin() { return myRole === "owner" || myRole === "admin"; }
+  function hasPerm(moduleId) {
+    if (myRole === "owner") return true;
+    return !!(permState[myRole] && permState[myRole][moduleId]);
+  }
+  function treasuryAddress() {
+    const s = settingsOf(currentWs);
+    if (s.treasury_contract && ethers.isAddress(s.treasury_contract)) return s.treasury_contract;
+    return currentWs?.treasury_address || currentWs?.owner_address;
+  }
+
+  /** Open a main module page with workspace context in query string */
+  function openModule(moduleId) {
+    if (!hasPerm(moduleId)) return showToast("No permission for this module");
+    const mod = MODULE_PAGES[moduleId];
+    if (!mod) return;
+    const params = new URLSearchParams();
+    if (currentWs?.id) params.set("workspace", currentWs.id);
+    if (userAddress) params.set("from", userAddress);
+    const t = treasuryAddress();
+    if (t) params.set("treasury", t);
+    const q = params.toString();
+    const url = mod.file + (q ? "?" + q : "");
+    window.open(url, "_blank");
   }
 
   function setWalletUI(connected) {
@@ -343,15 +401,13 @@
     if (connected && userAddress) {
       text.textContent = shortAddr(userAddress);
       btn.className = "app-button px-5 py-2.5 rounded-2xl bg-indigo-500/15 border border-indigo-500/40 text-indigo-400 font-bold text-sm flex items-center gap-2";
-      disc.classList.remove("hidden");
-      disc.classList.add("flex");
+      disc.classList.remove("hidden"); disc.classList.add("flex");
       document.getElementById("noWallet").classList.add("hidden");
       document.getElementById("app").classList.remove("hidden");
     } else {
       text.textContent = "Connect Wallet";
       btn.className = "app-button px-5 py-2.5 rounded-2xl bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold text-sm flex items-center gap-2 shadow-lg";
-      disc.classList.add("hidden");
-      disc.classList.remove("flex");
+      disc.classList.add("hidden"); disc.classList.remove("flex");
       document.getElementById("noWallet").classList.remove("hidden");
       document.getElementById("app").classList.add("hidden");
     }
@@ -368,49 +424,35 @@
       setWalletUI(true);
       showToast("Wallet connected");
       await loadWorkspaces();
-    } catch {
-      showToast("Connection rejected");
-    }
+    } catch { showToast("Connection rejected"); }
   }
-
   function disconnectWallet() {
     forceDisconnected = true;
-    userAddress = null;
-    signer = null;
-    provider = null;
-    currentWs = null;
-    myWorkspaces = [];
-    setWalletUI(false);
-    showToast("Disconnected");
+    userAddress = null; signer = null; provider = null; currentWs = null; myWorkspaces = [];
+    setWalletUI(false); showToast("Disconnected");
   }
 
   async function loadWorkspaces() {
     if (!userAddress || typeof fetchMyWorkspaces !== "function") return;
     myWorkspaces = await fetchMyWorkspaces(userAddress);
     renderWsList();
-    if (myWorkspaces.length && !currentWs) {
-      selectWorkspace(myWorkspaces[0].id);
-    } else if (!myWorkspaces.length) {
+    if (myWorkspaces.length && !currentWs) selectWorkspace(myWorkspaces[0].id);
+    else if (!myWorkspaces.length) {
       currentWs = null;
       document.getElementById("emptyWs").classList.remove("hidden");
       document.getElementById("sideNav").classList.add("hidden");
-      ["overview","members","treasury","settings"].forEach(p => document.getElementById("panel-" + p).classList.add("hidden"));
+      ["overview","modules","members","treasury","permissions","billing","settings"].forEach(p => document.getElementById("panel-"+p).classList.add("hidden"));
     }
   }
 
   function renderWsList() {
     const box = document.getElementById("wsList");
-    if (!myWorkspaces.length) {
-      box.innerHTML = `<p class="text-xs text-gray-500 px-3 py-2">No workspaces yet</p>`;
-      return;
-    }
+    if (!myWorkspaces.length) { box.innerHTML = `<p class="text-xs text-gray-500 px-3 py-2">No workspaces yet</p>`; return; }
     box.innerHTML = myWorkspaces.map(w => `
-      <button onclick="selectWorkspace('${w.id}')"
-        class="w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold transition border ${currentWs && currentWs.id === w.id ? 'bg-indigo-500/15 border-indigo-500/40 text-indigo-300' : 'border-transparent text-gray-300 hover:bg-white/5'}">
+      <button onclick="selectWorkspace('${w.id}')" class="w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold transition border ${currentWs && currentWs.id === w.id ? 'bg-indigo-500/15 border-indigo-500/40 text-indigo-300' : 'border-transparent text-gray-300 hover:bg-white/5'}">
         <div class="truncate">${w.name}</div>
-        <div class="text-[10px] text-gray-500 font-medium capitalize">${w.my_role || ''}</div>
-      </button>
-    `).join("");
+        <div class="text-[10px] text-gray-500 font-medium capitalize">${w.my_role || ''} · ${(settingsOf(w).plan || 'free')}</div>
+      </button>`).join("");
   }
 
   async function selectWorkspace(id) {
@@ -418,19 +460,19 @@
     if (!currentWs) return;
     myRole = currentWs.my_role || (currentWs.owner_address === userAddress?.toLowerCase() ? "owner" : "member");
     currentMembers = await fetchWorkspaceMembers(id);
+    const s = settingsOf(currentWs);
+    permState = s.permissions ? { ...JSON.parse(JSON.stringify(DEFAULT_PERMS)), ...s.permissions } : JSON.parse(JSON.stringify(DEFAULT_PERMS));
+    selectedPlan = s.plan || "free";
     document.getElementById("emptyWs").classList.add("hidden");
     document.getElementById("sideNav").classList.remove("hidden");
     renderWsList();
     switchPanel("overview");
-    renderOverview();
-    renderMembers();
-    renderTreasury();
-    renderSettings();
+    renderAllPanels();
   }
 
   function switchPanel(name) {
-    ["overview","members","treasury","settings"].forEach(p => {
-      document.getElementById("panel-" + p).classList.toggle("hidden", p !== name);
+    ["overview","modules","members","treasury","permissions","billing","settings"].forEach(p => {
+      document.getElementById("panel-"+p).classList.toggle("hidden", p !== name);
     });
     document.querySelectorAll(".nav-item").forEach(b => {
       const on = b.dataset.p === name;
@@ -439,8 +481,8 @@
     });
   }
 
-  function isAdmin() {
-    return myRole === "owner" || myRole === "admin";
+  function renderAllPanels() {
+    renderOverview(); renderModules(); renderMembers(); renderTreasury(); renderPermissions(); renderBilling(); renderSettings();
   }
 
   function renderOverview() {
@@ -448,55 +490,65 @@
     document.getElementById("ovName").textContent = currentWs.name;
     document.getElementById("ovDesc").textContent = currentWs.description || "No description";
     document.getElementById("ovRole").textContent = myRole;
-    document.getElementById("ovMembers").textContent = currentMembers.length + " members";
-    document.getElementById("ovMemberCount").textContent = currentMembers.length;
     document.getElementById("ovMyRole").textContent = myRole;
-    const tAddr = currentWs.treasury_address || currentWs.owner_address;
-    document.getElementById("ovTreasuryAddr").textContent = shortAddr(tAddr);
-    loadTreasuryBalances(tAddr).then(b => {
-      document.getElementById("ovTreasuryBal").textContent = (b.USDC || 0).toFixed(2) + " USDC";
+    document.getElementById("ovMemberCount").textContent = currentMembers.length;
+    document.getElementById("ovPlan").textContent = (selectedPlan || "free").toUpperCase();
+    const s = settingsOf(currentWs);
+    document.getElementById("ovTreasuryMode").textContent = s.treasury_contract ? "Contract" : "Wallet";
+    loadBalances(treasuryAddress()).then(b => {
+      document.getElementById("ovTreasuryBal").textContent = (b.USDC||0).toFixed(2);
     });
+  }
+
+  function renderModules() {
+    const grid = document.getElementById("modulesGrid");
+    grid.innerHTML = Object.entries(MODULE_PAGES).map(([id, mod]) => {
+      const allowed = hasPerm(id);
+      return `
+        <button onclick="openModule('${id}')" class="module-card ${allowed ? '' : 'locked'} text-left p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-${mod.color}-500/40 transition">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-${mod.color}-500/15 flex items-center justify-center">
+              <i class="fas ${mod.icon} text-${mod.color}-400"></i>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="font-bold text-sm">${mod.label}</div>
+              <div class="text-[11px] text-gray-500">${allowed ? "Open main page →" : "Locked for your role"}</div>
+            </div>
+            <i class="fas ${allowed ? "fa-external-link-alt text-gray-500" : "fa-lock text-gray-600"} text-xs"></i>
+          </div>
+        </button>`;
+    }).join("");
   }
 
   function renderMembers() {
     const box = document.getElementById("membersTable");
     document.getElementById("inviteBtn").style.display = isAdmin() ? "" : "none";
-    if (!currentMembers.length) {
-      box.innerHTML = `<p class="text-sm text-gray-500 text-center py-6">No members</p>`;
-      return;
-    }
+    if (!currentMembers.length) { box.innerHTML = `<p class="text-sm text-gray-500 text-center py-6">No members</p>`; return; }
     box.innerHTML = currentMembers.map(m => {
       const roleColor = m.role === "owner" ? "bg-amber-500/20 text-amber-400" : m.role === "admin" ? "bg-indigo-500/20 text-indigo-400" : "bg-white/10 text-gray-400";
       const canManage = isAdmin() && m.role !== "owner" && m.user_address !== userAddress?.toLowerCase();
-      return `
-        <div class="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-white/5 border border-white/5">
-          <div class="min-w-0">
-            <div class="font-bold text-sm truncate">${m.display_name || shortAddr(m.user_address)}</div>
-            <div class="text-[11px] text-gray-500 font-mono truncate">${m.user_address}</div>
-          </div>
-          <div class="flex items-center gap-2 shrink-0">
-            <span class="role-badge ${roleColor}">${m.role}</span>
-            ${canManage ? `
-              <select onchange="changeRole('${m.user_address}', this.value)" class="text-[10px] px-2 py-1 rounded-lg">
-                <option value="member" ${m.role==='member'?'selected':''}>Member</option>
-                <option value="admin" ${m.role==='admin'?'selected':''}>Admin</option>
-              </select>
-              <button onclick="removeMember('${m.user_address}')" class="text-rose-400 hover:text-rose-300 p-1.5" title="Remove"><i class="fas fa-trash text-xs"></i></button>
-            ` : ""}
-          </div>
-        </div>`;
+      return `<div class="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-white/5 border border-white/5">
+        <div class="min-w-0"><div class="font-bold text-sm truncate">${m.display_name || shortAddr(m.user_address)}</div>
+        <div class="text-[11px] text-gray-500 font-mono truncate">${m.user_address}</div></div>
+        <div class="flex items-center gap-2 shrink-0">
+          <span class="role-badge ${roleColor}">${m.role}</span>
+          ${canManage ? `<select onchange="changeRole('${m.user_address}', this.value)" class="text-[10px] px-2 py-1 rounded-lg">
+            <option value="member" ${m.role==='member'?'selected':''}>Member</option>
+            <option value="admin" ${m.role==='admin'?'selected':''}>Admin</option>
+          </select>
+          <button onclick="removeMember('${m.user_address}')" class="text-rose-400 p-1.5"><i class="fas fa-trash text-xs"></i></button>` : ""}
+        </div></div>`;
     }).join("");
   }
 
-  async function loadTreasuryBalances(addr) {
+  async function loadBalances(addr) {
     const out = { USDC: 0, EURC: 0, cirBTC: 0 };
     if (!addr || !window.ethereum) return out;
     try {
       const p = provider || new ethers.BrowserProvider(window.ethereum);
       for (const [sym, tokenAddr] of Object.entries(TOKENS)) {
         try {
-          if (sym === "USDC" && tokenAddr.startsWith("0x3600")) {
-            // native-like on Arc testnet for USDC placeholder
+          if (sym === "USDC") {
             const bal = await p.getBalance(addr);
             out.USDC = parseFloat(ethers.formatUnits(bal, 18));
           } else {
@@ -512,116 +564,141 @@
 
   async function renderTreasury() {
     if (!currentWs) return;
-    const tAddr = currentWs.treasury_address || currentWs.owner_address;
-    document.getElementById("trAddr").textContent = tAddr;
-    const b = await loadTreasuryBalances(tAddr);
+    const addr = treasuryAddress();
+    document.getElementById("trAddr").textContent = addr || "—";
+    const b = await loadBalances(addr);
     document.getElementById("trUsdc").textContent = b.USDC.toFixed(4);
     document.getElementById("trEurc").textContent = b.EURC.toFixed(4);
     document.getElementById("trBtc").textContent = b.cirBTC.toFixed(6);
   }
 
+  function renderPermissions() {
+    const canEdit = isAdmin();
+    document.getElementById("savePermBtn").style.display = canEdit ? "" : "none";
+    let html = `<table class="w-full text-left text-sm"><thead><tr class="text-xs text-gray-500 uppercase">
+      <th class="p-2">Module</th>${ROLES.map(r => `<th class="p-2 text-center">${r}</th>`).join("")}</tr></thead><tbody>`;
+    MODULES.forEach(mod => {
+      html += `<tr class="border-t border-white/5"><td class="p-2 font-bold">${mod.label}</td>`;
+      ROLES.forEach(role => {
+        const checked = permState[role]?.[mod.id] ? "checked" : "";
+        const disabled = role === "owner" || !canEdit ? "disabled" : "";
+        html += `<td class="p-2 text-center"><input type="checkbox" class="perm-check" data-role="${role}" data-mod="${mod.id}" ${checked} ${disabled}></td>`;
+      });
+      html += `</tr>`;
+    });
+    html += `</tbody></table>`;
+    document.getElementById("permTable").innerHTML = html;
+  }
+
+  function renderBilling() {
+    selectedPlan = settingsOf(currentWs).plan || "free";
+    document.getElementById("planFree").className = `rounded-2xl p-5 border-2 cursor-pointer ${selectedPlan==='free' ? 'border-indigo-500 bg-indigo-500/10' : 'border-white/10 bg-white/5'}`;
+    document.getElementById("planTeam").className = `rounded-2xl p-5 border-2 cursor-pointer ${selectedPlan==='team' ? 'border-indigo-500 bg-indigo-500/10' : 'border-white/10 bg-white/5'}`;
+    document.getElementById("savePlanBtn").style.display = isAdmin() ? "" : "none";
+  }
+  function selectPlan(p) {
+    if (!isAdmin()) return showToast("Only owner/admin");
+    selectedPlan = p; renderBilling();
+  }
+  async function savePlan() {
+    if (!isAdmin()) return;
+    const s = settingsOf(currentWs); s.plan = selectedPlan;
+    if (!(await updateWorkspace(currentWs.id, { settings: s }))) return showToast("Failed");
+    showToast("Plan saved"); await loadWorkspaces(); selectWorkspace(currentWs.id);
+  }
+
   function renderSettings() {
     if (!currentWs) return;
+    const s = settingsOf(currentWs);
     document.getElementById("setName").value = currentWs.name || "";
     document.getElementById("setDesc").value = currentWs.description || "";
     document.getElementById("setTreasury").value = currentWs.treasury_address || "";
+    document.getElementById("setContract").value = s.treasury_contract || "";
     const canEdit = isAdmin();
-    ["setName","setDesc","setTreasury"].forEach(id => {
-      document.getElementById(id).disabled = !canEdit;
-    });
+    ["setName","setDesc","setTreasury","setContract"].forEach(id => document.getElementById(id).disabled = !canEdit);
     document.getElementById("saveSettingsBtn").style.display = canEdit ? "" : "none";
   }
 
-  function showCreateModal() {
-    document.getElementById("createModal").classList.remove("hidden");
-    document.getElementById("createName").value = "";
-    document.getElementById("createDesc").value = "";
-    document.getElementById("createTreasury").value = "";
+  async function savePermissions() {
+    if (!isAdmin()) return;
+    document.querySelectorAll("#permTable input[data-role]").forEach(inp => {
+      const role = inp.dataset.role, mod = inp.dataset.mod;
+      if (!permState[role]) permState[role] = {};
+      permState[role][mod] = inp.checked;
+    });
+    permState.owner = DEFAULT_PERMS.owner;
+    const s = settingsOf(currentWs); s.permissions = permState;
+    if (!(await updateWorkspace(currentWs.id, { settings: s }))) return showToast("Save failed");
+    showToast("Permissions saved");
+    renderModules();
   }
-  function hideCreateModal() { document.getElementById("createModal").classList.add("hidden"); }
 
+  function showCreateModal() { document.getElementById("createModal").classList.remove("hidden"); }
+  function hideCreateModal() { document.getElementById("createModal").classList.add("hidden"); }
   async function doCreateWorkspace() {
     const name = document.getElementById("createName").value.trim();
-    if (!name) return showToast("Name required");
-    if (!userAddress) return showToast("Connect wallet first");
-    const desc = document.getElementById("createDesc").value.trim();
+    if (!name || !userAddress) return showToast("Name + wallet required");
     const treasury = document.getElementById("createTreasury").value.trim() || null;
-    if (treasury && !ethers.isAddress(treasury)) return showToast("Invalid treasury address");
-    const ws = await createWorkspace(userAddress, { name, description: desc, treasuryAddress: treasury });
-    if (!ws) return showToast("Failed to create workspace");
-    showToast("Workspace created!");
-    hideCreateModal();
-    await loadWorkspaces();
-    selectWorkspace(ws.id);
+    if (treasury && !ethers.isAddress(treasury)) return showToast("Invalid treasury");
+    const ws = await createWorkspace(userAddress, {
+      name, description: document.getElementById("createDesc").value.trim(), treasuryAddress: treasury
+    });
+    if (!ws) return showToast("Create failed");
+    await updateWorkspace(ws.id, { settings: { plan: "free", permissions: DEFAULT_PERMS, treasury_contract: null } });
+    showToast("Workspace created"); hideCreateModal();
+    await loadWorkspaces(); selectWorkspace(ws.id);
   }
-
   function showInviteModal() {
-    if (!isAdmin()) return showToast("Only owner/admin can invite");
+    if (!isAdmin()) return showToast("Admin only");
     document.getElementById("inviteModal").classList.remove("hidden");
-    document.getElementById("inviteAddr").value = "";
-    document.getElementById("inviteName").value = "";
-    document.getElementById("inviteRole").value = "member";
   }
   function hideInviteModal() { document.getElementById("inviteModal").classList.add("hidden"); }
-
   async function doInvite() {
     const addr = document.getElementById("inviteAddr").value.trim();
-    if (!ethers.isAddress(addr)) return showToast("Invalid wallet address");
-    const name = document.getElementById("inviteName").value.trim();
-    const role = document.getElementById("inviteRole").value;
-    const ok = await inviteWorkspaceMember(currentWs.id, userAddress, addr, role, name);
+    if (!ethers.isAddress(addr)) return showToast("Invalid address");
+    const ok = await inviteWorkspaceMember(currentWs.id, userAddress, addr, document.getElementById("inviteRole").value, document.getElementById("inviteName").value.trim());
     if (!ok) return showToast("Invite failed");
-    showToast("Member invited");
-    hideInviteModal();
+    showToast("Invited"); hideInviteModal();
     currentMembers = await fetchWorkspaceMembers(currentWs.id);
-    renderMembers();
-    renderOverview();
+    renderMembers(); renderOverview();
   }
-
   async function removeMember(addr) {
-    if (!confirm("Remove this member?")) return;
-    const ok = await removeWorkspaceMember(currentWs.id, addr);
-    if (!ok) return showToast("Remove failed");
-    showToast("Member removed");
+    if (!confirm("Remove member?")) return;
+    await removeWorkspaceMember(currentWs.id, addr);
     currentMembers = await fetchWorkspaceMembers(currentWs.id);
-    renderMembers();
-    renderOverview();
+    renderMembers(); renderOverview();
   }
-
   async function changeRole(addr, role) {
-    const ok = await updateMemberRole(currentWs.id, addr, role);
-    if (!ok) return showToast("Role update failed");
-    showToast("Role updated");
+    await updateMemberRole(currentWs.id, addr, role);
     currentMembers = await fetchWorkspaceMembers(currentWs.id);
     renderMembers();
   }
-
   async function saveSettings() {
-    if (!isAdmin()) return showToast("Only owner/admin can edit");
+    if (!isAdmin()) return;
     const name = document.getElementById("setName").value.trim();
     if (!name) return showToast("Name required");
     const treasury = document.getElementById("setTreasury").value.trim();
-    if (treasury && !ethers.isAddress(treasury)) return showToast("Invalid treasury address");
+    const contract = document.getElementById("setContract").value.trim();
+    if (treasury && !ethers.isAddress(treasury)) return showToast("Invalid treasury wallet");
+    if (contract && !ethers.isAddress(contract)) return showToast("Invalid contract");
+    const s = settingsOf(currentWs);
+    s.treasury_contract = contract || null;
     const ok = await updateWorkspace(currentWs.id, {
-      name,
-      description: document.getElementById("setDesc").value.trim(),
-      treasury_address: treasury || null
+      name, description: document.getElementById("setDesc").value.trim(),
+      treasury_address: treasury || null, settings: s
     });
     if (!ok) return showToast("Save failed");
     showToast("Settings saved");
-    await loadWorkspaces();
-    selectWorkspace(currentWs.id);
+    await loadWorkspaces(); selectWorkspace(currentWs.id);
   }
 
   function toggleTheme() {
     document.documentElement.classList.toggle("light");
     const icon = document.getElementById("themeBtn").querySelector("i");
     if (document.documentElement.classList.contains("light")) {
-      icon.className = "fas fa-sun text-lg text-amber-500";
-      localStorage.setItem("theme", "light");
+      icon.className = "fas fa-sun text-lg text-amber-500"; localStorage.setItem("theme", "light");
     } else {
-      icon.className = "fas fa-moon text-lg text-indigo-400";
-      localStorage.setItem("theme", "dark");
+      icon.className = "fas fa-moon text-lg text-indigo-400"; localStorage.setItem("theme", "dark");
     }
   }
 
@@ -637,17 +714,10 @@
       } catch {}
     }
   });
-
   if (window.ethereum) {
     window.ethereum.on?.("accountsChanged", async (accs) => {
-      if (accs?.length) {
-        forceDisconnected = false;
-        userAddress = accs[0];
-        setWalletUI(true);
-        await loadWorkspaces();
-      } else {
-        disconnectWallet();
-      }
+      if (accs?.length) { forceDisconnected = false; userAddress = accs[0]; setWalletUI(true); await loadWorkspaces(); }
+      else disconnectWallet();
     });
   }
 </script>
