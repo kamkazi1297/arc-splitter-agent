@@ -534,6 +534,7 @@ function emptyState() {
     linksActive: 0, linksPaid: 0, linksExpired: 0,
     activeRules: 0, automations: [], upcoming: [],
     notifications: [], balances: { USDC: 0, EURC: 0, cirBTC: 0 },
+    claimable: [], // { contract, token, amount, symbol }
     insights: [], _pendingBatchCount: 0
   };
 }
@@ -990,6 +991,107 @@ async function fetchBalances() {
   } catch (e) { console.warn("balances", e); }
 }
 
+/* Failed Pull / Claimable balances from contracts (real on-chain) */
+const NATIVE_USDC = "0x3600000000000000000000000000000000000000";
+const TOKEN_ADDR = {
+  USDC: NATIVE_USDC,
+  EURC: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a",
+  cirBTC: "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF"
+};
+
+async function fetchClaimables() {
+  state.claimable = [];
+  if (!userAddress) return;
+  try {
+    const rp = await getReadProvider();
+    if (!rp) return;
+
+    // RoleSplitter: getClaimableNative + getClaimableERC20
+    try {
+      const role = new ethers.Contract(CONTRACTS.roleSplitter, [
+        "function getClaimableNative(address user) view returns (uint256)",
+        "function getClaimableERC20(address user, address token) view returns (uint256)"
+      ], rp);
+      const nativeAmt = await role.getClaimableNative(userAddress);
+      if (nativeAmt > 0n) {
+        state.claimable.push({
+          contract: "RoleSplitter",
+          contractAddr: CONTRACTS.roleSplitter,
+          token: NATIVE_USDC,
+          symbol: "USDC",
+          amount: parseFloat(ethers.formatUnits(nativeAmt, 18)),
+          claimFn: "claimNative"
+        });
+      }
+      for (const [sym, addr] of Object.entries(TOKEN_ADDR)) {
+        if (sym === "USDC") continue;
+        try {
+          const amt = await role.getClaimableERC20(userAddress, addr);
+          if (amt > 0n) {
+            state.claimable.push({
+              contract: "RoleSplitter",
+              contractAddr: CONTRACTS.roleSplitter,
+              token: addr,
+              symbol: sym,
+              amount: parseFloat(ethers.formatUnits(amt, 18)),
+              claimFn: "claimERC20"
+            });
+          }
+        } catch {}
+      }
+    } catch (e) { console.warn("role claimable", e); }
+
+    // Vesting: getFailedPullBalance
+    try {
+      const vest = new ethers.Contract(CONTRACTS.vesting, [
+        "function getFailedPullBalance(address wallet, address tokenKey) view returns (uint256)"
+      ], rp);
+      for (const [sym, addr] of Object.entries(TOKEN_ADDR)) {
+        try {
+          const amt = await vest.getFailedPullBalance(userAddress, addr);
+          if (amt > 0n) {
+            state.claimable.push({
+              contract: "Vesting",
+              contractAddr: CONTRACTS.vesting,
+              token: addr,
+              symbol: sym,
+              amount: parseFloat(ethers.formatUnits(amt, 18)),
+              claimFn: "claimFailedPull"
+            });
+          }
+        } catch {}
+      }
+    } catch (e) { console.warn("vest claimable", e); }
+
+  } catch (e) { console.warn("fetchClaimables", e); }
+}
+
+async function claimFailedPull(item) {
+  if (!window.ethereum || !userAddress) return showToast("Connect wallet first", "fa-wallet");
+  try {
+    const bp = new ethers.BrowserProvider(window.ethereum);
+    const s = await bp.getSigner();
+    let tx;
+    if (item.claimFn === "claimNative") {
+      const c = new ethers.Contract(item.contractAddr, ["function claimNative()"], s);
+      tx = await c.claimNative();
+    } else if (item.claimFn === "claimERC20") {
+      const c = new ethers.Contract(item.contractAddr, ["function claimERC20(address token)"], s);
+      tx = await c.claimERC20(item.token);
+    } else {
+      const c = new ethers.Contract(item.contractAddr, ["function claimFailedPull(address tokenKey)"], s);
+      tx = await c.claimFailedPull(item.token);
+    }
+    showToast("Claim submitted…", "fa-spinner");
+    await tx.wait();
+    showToast("Claimed successfully", "fa-check");
+    await refreshDashboard();
+  } catch (e) {
+    console.error(e);
+    showToast(e.shortMessage || e.message || "Claim failed", "fa-ban");
+  }
+}
+
 function buildAutomationsAndUpcoming() {
   // Only real data from cloud + on-chain + local pending batches
   const autos = [];
@@ -1034,6 +1136,20 @@ function buildAutomationsAndUpcoming() {
   // Real notifications only
   if (pendingCount > 0) {
     notifs.push({ text: `${pendingCount} incomplete batch(es) waiting to be resumed` });
+  }
+  if (state.claimable.length > 0) {
+    const total = state.claimable.reduce((s, c) => s + c.amount, 0);
+    notifs.push({ text: `${state.claimable.length} failed pull(s) claimable (~${fmt(total)} total)` });
+    upcoming.unshift({
+      when: "Claimable",
+      title: `${state.claimable.length} failed push(es) ready to claim`,
+      icon: "fa-hand-holding-dollar"
+    });
+    autos.unshift({
+      name: "Failed Pulls",
+      status: "attention",
+      next: `${state.claimable.length} claimable`
+    });
   }
   if (state.linksActive > 0) {
     notifs.push({ text: `${state.linksActive} payment link(s) currently active` });
@@ -1081,6 +1197,10 @@ function buildInsights() {
   if (state.linksPaid > 0) {
     list.push(`${state.linksPaid} Payment Link(s) have been claimed.`);
   }
+  if (state.claimable.length > 0) {
+    const total = state.claimable.reduce((s, c) => s + c.amount, 0);
+    list.push(`${state.claimable.length} failed pull(s) are claimable (~${fmt(total)}).`);
+  }
   const topTok = Object.entries(state.tokens).sort((a, b) => b[1] - a[1])[0];
   if (topTok && topTok[1] > 0) {
     list.push(`${topTok[0]} is the most used asset (${fmt(topTok[1])} volume).`);
@@ -1097,7 +1217,10 @@ function buildInsights() {
   // Health badge — only real signals
   const pendingCount = state._pendingBatchCount || state.activity.filter(a => a.status === "Pending").length;
   const badge = document.getElementById("healthBadge");
-  if (pendingCount > 0) {
+  if (state.claimable.length > 0) {
+    badge.className = "flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold";
+    badge.innerHTML = `<span class="dot bg-amber-400"></span> ${state.claimable.length} Claimable`;
+  } else if (pendingCount > 0) {
     badge.className = "flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold";
     badge.innerHTML = `<span class="dot bg-amber-400"></span> ${pendingCount} Pending Batch(es)`;
   } else if (state.linksExpired > 0) {
@@ -1155,6 +1278,28 @@ async function refreshDashboard() {
   }
 
   await fetchBalances();
+  await fetchClaimables();
+
+  // Optional: enrich link counts from payment_links table if available
+  if (userAddress && typeof fetchPaymentRecords === "function") {
+    try {
+      const rows = await fetchPaymentRecords(userAddress, { limit: 100 });
+      if (rows && rows.length) {
+        let a = 0, p = 0, e = 0;
+        rows.forEach(r => {
+          const st = (r.status || "").toLowerCase();
+          if (/paid|claimed/i.test(st)) p++;
+          else if (/expir|cancel/i.test(st)) e++;
+          else a++;
+        });
+        // Prefer dedicated table counts when present
+        state.linksActive = a;
+        state.linksPaid = p;
+        state.linksExpired = e;
+      }
+    } catch {}
+  }
+
   buildAutomationsAndUpcoming();
   buildInsights();
 
@@ -1241,7 +1386,7 @@ function renderAll() {
     </div>`;
   }).join("");
 
-  document.getElementById("balances").innerHTML = ["USDC", "EURC", "cirBTC"].map(t => `
+  let balHtml = ["USDC", "EURC", "cirBTC"].map(t => `
     <div class="flex items-center justify-between p-3.5 rounded-2xl bg-white/5 light:bg-black/5 border border-white/5 light:border-black/5">
       <div class="flex items-center gap-3">
         <div class="w-9 h-9 rounded-xl bg-cyan-500/15 flex items-center justify-center text-sm font-bold text-cyan-400">${t[0]}</div>
@@ -1249,6 +1394,24 @@ function renderAll() {
       </div>
       <span class="font-bold text-base">${fmt(state.balances[t] || 0, t === "cirBTC" ? 4 : 2)}</span>
     </div>`).join("");
+
+  if (state.claimable.length) {
+    balHtml += `<div class="pt-2 mt-1 border-t border-white/10 light:border-black/10">
+      <div class="text-xs font-bold text-amber-400 uppercase tracking-wide mb-2">Claimable (Failed Pulls)</div>
+      ${state.claimable.map((c, i) => `
+        <div class="flex items-center justify-between p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 mb-2">
+          <div>
+            <div class="font-bold text-sm text-amber-300">${fmt(c.amount)} ${c.symbol}</div>
+            <div class="text-xs text-gray-500">${c.contract}</div>
+          </div>
+          <button onclick="claimFailedPull(state.claimable[${i}])"
+            class="px-3 py-1.5 rounded-xl bg-amber-500/20 text-amber-300 text-xs font-bold border border-amber-500/30 hover:bg-amber-500/30 transition">
+            Claim
+          </button>
+        </div>`).join("")}
+    </div>`;
+  }
+  document.getElementById("balances").innerHTML = balHtml;
 
   document.getElementById("upcoming").innerHTML = state.upcoming.map(u => `
     <div class="flex items-center gap-3.5 p-3.5 rounded-2xl bg-white/5 light:bg-black/5 border border-white/5 light:border-black/5">
