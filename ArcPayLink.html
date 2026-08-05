@@ -1096,6 +1096,22 @@
       currentLinks.unshift(newLink);
       await saveLinks(currentLinks);
 
+      if (typeof savePaymentRecord === "function" && userAddress) {
+        try {
+          await savePaymentRecord(userAddress, {
+            linkId: String(newLink.id),
+            type: "link",
+            title: newLink.title,
+            token: newLink.token,
+            amount: newLink.amount,
+            status: newLink.status || "Active",
+            txHash: newLink.txHash || "",
+            url: newLink.url || "",
+            expiration: newLink.expiration || null
+          });
+        } catch (e) {}
+      }
+
       showSuccessModal(newLink, 'link');
       renderHistory();
       notify("Success", "Payment Link Created!", "fa-check-circle");
@@ -1210,6 +1226,22 @@
 
       currentInvoices.unshift(newInvoice);
       await saveInvoices(currentInvoices);
+
+      if (typeof savePaymentRecord === "function" && userAddress) {
+        try {
+          await savePaymentRecord(userAddress, {
+            linkId: String(newInvoice.id),
+            type: "invoice",
+            title: newInvoice.title,
+            token: newInvoice.token,
+            amount: newInvoice.amount,
+            status: newInvoice.status || "Pending",
+            txHash: newInvoice.txHash || "",
+            url: newInvoice.url || "",
+            expiration: newInvoice.expiration || null
+          });
+        } catch (e) {}
+      }
 
       showSuccessModal(newInvoice, 'invoice');
       renderHistory();
@@ -1441,10 +1473,16 @@
                  statusText = 'Claimed'; statusColor = 'text-cyan-400 bg-cyan-400/10';
                  link.status = 'Claimed'; // ذخیره در حافظه محلی
                  linksChanged = true;
+                 if (typeof updatePaymentStatus === "function" && userAddress) {
+                   try { await updatePaymentStatus(userAddress, String(link.id), "Claimed"); } catch(e) {}
+                 }
               } else if (onChainStatus === 3) {
                  statusText = 'Cancelled'; statusColor = 'text-rose-500 bg-rose-500/10';
                  link.status = 'Cancelled'; // ذخیره در حافظه محلی
                  linksChanged = true;
+                 if (typeof updatePaymentStatus === "function" && userAddress) {
+                   try { await updatePaymentStatus(userAddress, String(link.id), "Cancelled"); } catch(e) {}
+                 }
               } else if (onChainStatus === 1 && !isExpired) {
                  statusText = 'Active'; statusColor = 'text-emerald-400 bg-emerald-400/10';
               }
@@ -1498,10 +1536,16 @@
                  statusText = 'Paid'; statusColor = 'text-emerald-400 bg-emerald-400/10';
                  inv.status = 'Paid'; // ذخیره در حافظه محلی
                  invoicesChanged = true;
+                 if (typeof updatePaymentStatus === "function" && userAddress) {
+                   try { await updatePaymentStatus(userAddress, String(inv.id), "Paid"); } catch(e) {}
+                 }
               } else if (onChainStatus === 3) {
                  statusText = 'Cancelled'; statusColor = 'text-rose-500 bg-rose-500/10';
                  inv.status = 'Cancelled'; // ذخیره در حافظه محلی
                  invoicesChanged = true;
+                 if (typeof updatePaymentStatus === "function" && userAddress) {
+                   try { await updatePaymentStatus(userAddress, String(inv.id), "Cancelled"); } catch(e) {}
+                 }
               } else if (onChainStatus === 1 && !isExpired) {
                  statusText = 'Pending'; statusColor = 'text-yellow-500 bg-yellow-500/10';
               }
