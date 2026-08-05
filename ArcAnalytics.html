@@ -231,9 +231,7 @@
         </div>
         <div>
           <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-sky-400">Dashboard</span></h1>
-          <p class="text-sm text-gray-400 light:text-slate-600 mt-1 font-medium">Welcome back 👋
-
-Here's what's happening in your workspace.</p>
+          <p class="text-sm text-gray-400 light:text-slate-600 mt-1 font-medium">Workspace analytics · Cloud + On-chain verified</p>
         </div>
       </div>
 
@@ -262,10 +260,15 @@ Here's what's happening in your workspace.</p>
           <i class="fas fa-moon text-lg text-cyan-400"></i>
         </button>
 
-        <button onclick="connectWallet()" id="connectBtn" class="app-button px-5 py-2.5 rounded-2xl bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold text-sm flex items-center gap-2.5 shadow-lg">
-          <i class="fas fa-wallet text-cyan-600 light:text-cyan-400"></i>
-          <span id="connectText">Connect Wallet</span>
-        </button>
+        <div class="flex items-center gap-2">
+          <button onclick="connectWallet()" id="connectBtn" class="app-button px-5 py-2.5 rounded-2xl bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold text-sm flex items-center gap-2.5 shadow-lg">
+            <i class="fas fa-wallet text-cyan-600 light:text-cyan-400"></i>
+            <span id="connectText">Connect Wallet</span>
+          </button>
+          <button onclick="disconnectWallet()" id="disconnectBtn" class="hidden w-11 h-11 items-center justify-center rounded-2xl bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 transition" title="Disconnect">
+            <i class="fas fa-power-off"></i>
+          </button>
+        </div>
       </div>
     </header>
 
@@ -577,6 +580,25 @@ function toggleNotif() {
 }
 
 /* ===================== WALLET ===================== */
+function setWalletUI(connected) {
+  const btn = document.getElementById("connectBtn");
+  const text = document.getElementById("connectText");
+  const disc = document.getElementById("disconnectBtn");
+  if (connected && userAddress) {
+    text.textContent = shortAddr(userAddress);
+    btn.className =
+      "app-button px-5 py-2.5 rounded-2xl bg-cyan-500/15 border border-cyan-500/40 text-cyan-400 font-bold text-sm flex items-center gap-2.5";
+    disc.classList.remove("hidden");
+    disc.classList.add("flex");
+  } else {
+    text.textContent = "Connect Wallet";
+    btn.className =
+      "app-button px-5 py-2.5 rounded-2xl bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold text-sm flex items-center gap-2.5 shadow-lg";
+    disc.classList.add("hidden");
+    disc.classList.remove("flex");
+  }
+}
+
 async function connectWallet() {
   if (!window.ethereum) return showToast("No wallet found", "fa-exclamation-triangle");
   try {
@@ -584,14 +606,22 @@ async function connectWallet() {
     await provider.send("eth_requestAccounts", []);
     signer = await provider.getSigner();
     userAddress = await signer.getAddress();
-    document.getElementById("connectText").textContent = shortAddr(userAddress);
-    document.getElementById("connectBtn").className =
-      "app-button px-5 py-2.5 rounded-2xl bg-cyan-500/15 border border-cyan-500/40 text-cyan-400 font-bold text-sm flex items-center gap-2.5";
+    setWalletUI(true);
     showToast("Wallet connected");
     await refreshDashboard();
   } catch (e) {
     showToast("Connection rejected", "fa-ban");
   }
+}
+
+function disconnectWallet() {
+  userAddress = null;
+  signer = null;
+  provider = null;
+  setWalletUI(false);
+  Object.assign(state, emptyState());
+  showToast("Wallet disconnected", "fa-power-off");
+  refreshDashboard();
 }
 
 /* ===================== DATA PIPELINE ===================== */
@@ -1272,9 +1302,7 @@ async function refreshDashboard() {
       if (accs?.length) {
         signer = await provider.getSigner();
         userAddress = await signer.getAddress();
-        document.getElementById("connectText").textContent = shortAddr(userAddress);
-        document.getElementById("connectBtn").className =
-          "app-button px-5 py-2.5 rounded-2xl bg-cyan-500/15 border border-cyan-500/40 text-cyan-400 font-bold text-sm flex items-center gap-2.5";
+        setWalletUI(true);
       }
     } catch {}
   }
@@ -1656,14 +1684,13 @@ if (window.ethereum) {
   window.ethereum.on?.("accountsChanged", async (accs) => {
     if (accs?.length) {
       userAddress = accs[0];
-      document.getElementById("connectText").textContent = shortAddr(userAddress);
+      setWalletUI(true);
       await refreshDashboard();
     } else {
       userAddress = null;
+      signer = null;
       Object.assign(state, emptyState());
-      document.getElementById("connectText").textContent = "Connect Wallet";
-      document.getElementById("connectBtn").className =
-        "app-button px-5 py-2.5 rounded-2xl bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold text-sm flex items-center gap-2.5 shadow-lg";
+      setWalletUI(false);
       renderAll();
     }
   });
