@@ -709,8 +709,10 @@ async function connectMetaMask() {
     }
     const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
     userAddress = accounts[0];
+    window.userAddress = userAddress;
     signer = await provider.getSigner();
     localStorage.setItem("giveawayUserAddress", userAddress);
+    if (typeof refreshWorkspaceGuard === "function") refreshWorkspaceGuard();
     updateConnectButton();
     showToast("Wallet connected successfully");
     await updateBalance();
@@ -738,6 +740,7 @@ function disconnectWallet() {
   if (confirm("Disconnect wallet?")) {
     signer = null;
     userAddress = null;
+    window.userAddress = null;
     localStorage.removeItem("giveawayUserAddress");
     updateConnectButton();
     document.getElementById("status").innerHTML = `<div class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div> Ready for Giveaway on Arc Testnet (ArcRoleSplitter V30).`;
@@ -1188,16 +1191,21 @@ async function sendGiveawaySplit() {
 
     // Save to history (local + Supabase cloud)
     const historyRecord = {
+      type: "Giveaway",
+      appName: "Giveaway",
       memo: `Equal split ${totalAmount} ${symbol} → ${addresses.length} winners`,
+      hash: tx.hash,
       txHash: tx.hash,
-      token: tokenAddr,
+      token: symbol,
       tokenSymbol: symbol,
+      tokenAddress: tokenAddr,
+      amount: totalAmount.toString(),
       totalAmount: totalAmount.toString(),
       winnersCount: addresses.length,
       winners: addresses,
       batchId: 0,
-      status: "success",
-      timestamp: Date.now(),
+      status: "Success",
+      timestamp: new Date().toISOString(),
       explorerUrl: EXPLORER_TX + tx.hash
     };
     await persistHistoryRecord(historyRecord);
@@ -1235,7 +1243,9 @@ window.addEventListener("load", async () => {
   const savedAddress = localStorage.getItem("giveawayUserAddress");
   if (savedAddress) {
     userAddress = savedAddress;
+    window.userAddress = userAddress;
     updateConnectButton();
+    if (typeof refreshWorkspaceGuard === "function") refreshWorkspaceGuard();
     if (window.ethereum) {
       const provider = new ethers.BrowserProvider(window.ethereum);
       provider.getSigner().then(s => {
@@ -1243,6 +1253,25 @@ window.addEventListener("load", async () => {
         updateBalance();
       }).catch(() => {});
     }
+  }
+
+  if (window.ethereum && window.ethereum.on) {
+    window.ethereum.on("accountsChanged", (accs) => {
+      if (!accs || !accs.length) {
+        signer = null;
+        userAddress = null;
+        window.userAddress = null;
+        localStorage.removeItem("giveawayUserAddress");
+        updateConnectButton();
+        return;
+      }
+      userAddress = accs[0];
+      window.userAddress = userAddress;
+      localStorage.setItem("giveawayUserAddress", userAddress);
+      updateConnectButton();
+      if (typeof refreshWorkspaceGuard === "function") refreshWorkspaceGuard();
+      updateBalance();
+    });
   }
 
   // Restore last wallets
