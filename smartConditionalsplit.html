@@ -619,6 +619,8 @@
         await provider.send("eth_requestAccounts", []);
         signer = await provider.getSigner();
         userAddress = await signer.getAddress();
+        window.userAddress = userAddress;
+        if (typeof refreshWorkspaceGuard === "function") refreshWorkspaceGuard();
         contract = new ethers.Contract(CONTRACT_ADDRESS, SPLITTER_ABI, signer);
         
         const shortAddr = userAddress.substring(0, 6) + "..." + userAddress.substring(userAddress.length - 4);
@@ -644,7 +646,7 @@
   }
 
   function disconnectWallet() {
-    userAddress = null; signer = null; contract = null;
+    userAddress = null; window.userAddress = null; signer = null; contract = null;
     const btn = document.getElementById('connectBtn');
     btn.className = "app-button w-full px-6 py-4 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg hover:bg-blue-50 light:hover:bg-slate-800";
     document.getElementById('connectText').innerHTML = `<i class="fas fa-wallet text-blue-600 light:text-blue-400"></i> Connect Wallet`;
@@ -1054,12 +1056,13 @@
       if (typeof saveHistoryToCloud === 'function') {
         await saveHistoryToCloud(userAddress, {
           appName: APP_IDENTIFIER,
-          type: 'Smart Condition Lock',
+          type: 'Conditional',
           amount: amt,
           token: document.querySelector('.sponsorBalanceSymbol').textContent,
           recipient: recipient,
           conditionsCount: conditions.length,
           hash: tx.hash,
+          status: 'Success',
           timestamp: new Date().toISOString(),
           memo: `Rule deployed with ${conditions.length} conditions`
         });
