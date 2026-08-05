@@ -644,6 +644,7 @@ let telegramUsername = "";
     const savedTelegram = localStorage.getItem('telegramUsername');
     if (savedWallet) {
       userAddress = savedWallet;
+      window.userAddress = userAddress;
       updateConnectButton();
     }
     if (savedTelegram) {
@@ -808,11 +809,13 @@ function updateTelegramButton() {
 
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       userAddress = accounts[0];
+      window.userAddress = userAddress;
 
       localStorage.setItem('userAddress', userAddress);
 
       signer = await provider.getSigner();
 
+      if (typeof refreshWorkspaceGuard === 'function') refreshWorkspaceGuard();
       updateConnectButton();
       showToast("Wallet connected successfully");
       await updateBalance();
@@ -825,6 +828,7 @@ function updateTelegramButton() {
 
   function disconnectWallet() {
     signer = null; userAddress = null; provider = null;
+    window.userAddress = null;
     const btn = document.getElementById("connectBtn");
     btn.innerHTML = `<i class="fas fa-wallet text-emerald-400"></i> <span class="font-bold">Connect Wallet</span>`;
     btn.className = "app-button px-6 py-4 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl flex items-center justify-center gap-2.5 hover:bg-emerald-50 light:hover:bg-slate-800 transition-all";
@@ -832,6 +836,22 @@ function updateTelegramButton() {
     localStorage.removeItem('userAddress');
     showToast("Wallet disconnected");
     updateValidations();
+  }
+
+
+  if (window.ethereum && window.ethereum.on) {
+    window.ethereum.on('accountsChanged', (accs) => {
+      if (!accs || !accs.length) {
+        disconnectWallet();
+        return;
+      }
+      userAddress = accs[0];
+      window.userAddress = userAddress;
+      localStorage.setItem('userAddress', userAddress);
+      updateConnectButton();
+      if (typeof refreshWorkspaceGuard === 'function') refreshWorkspaceGuard();
+      updateBalance();
+    });
   }
 
   function getTotalAmount() {
@@ -1375,17 +1395,24 @@ function updateTelegramButton() {
       successDiv.classList.remove('hidden');
 
       const historyRecord = {
+        type: 'Split',
+        appName: 'Split',
         hash: tx.hash,
         intent: `${totalAmount} ${symbol} → ${addresses.length} recipients`,
         time: new Date().toLocaleDateString(undefined, {month: 'short', day: 'numeric'}) + ' ' + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
         amount: totalAmount,
+        token: symbol,
         symbol: symbol,
         recipientsCount: addresses.length,
+        status: 'Success',
+        timestamp: new Date().toISOString(),
         memo: (document.getElementById('txMemo') && document.getElementById('txMemo').value) || ''
       };
       transactions.unshift(historyRecord);
       localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
-      saveHistoryToCloud(userAddress, historyRecord);
+      if (typeof saveHistoryToCloud === 'function') {
+        saveHistoryToCloud(userAddress, historyRecord);
+      }
       renderHistory();
       await updateBalance();
       showToast("Transaction sent successfully!");
@@ -1515,8 +1542,10 @@ window.addEventListener('load', async () => {
   const savedAddress = localStorage.getItem('userAddress');
   if (savedAddress) {
     userAddress = savedAddress;
+    window.userAddress = userAddress;
     updateConnectButton();
     restoreWalletConnection();
+    if (typeof refreshWorkspaceGuard === 'function') refreshWorkspaceGuard();
   }
 
   telegramUsername = localStorage.getItem('telegramUsername') || "";
