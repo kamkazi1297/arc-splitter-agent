@@ -912,38 +912,80 @@ async function fetchBalances() {
 }
 
 function buildAutomationsAndUpcoming() {
+  // Only real data derived from actual activity / on-chain events
   const autos = [];
   const upcoming = [];
   const notifs = [];
 
-  const hasPayroll = state.activity.some(a => /payroll/i.test(a.type + a.memo));
-  const hasRevenue = state.activity.some(a => /revenue|sharing/i.test(a.type + a.memo));
-  const hasTreasury = state.activity.some(a => /treasury/i.test(a.type + a.memo));
-  const hasVest = state.activity.some(a => a.module === "vesting");
-  const hasCond = state.activity.some(a => a.module === "conditional");
+  const condCount = state.activity.filter(a => a.module === "conditional").length;
+  const vestCount = state.activity.filter(a => a.module === "vesting").length;
+  const batchCount = state.activity.filter(a => a.module === "batch" || a.module === "role").length;
+  const payCount = state.activity.filter(a => a.module === "pay").length;
 
-  if (hasPayroll || state.activity.length) {
-    autos.push({ name: "Monthly Payroll", status: "scheduled", next: "In 2 days" });
-    upcoming.push({ when: "Tomorrow", title: "Payroll Distribution", icon: "fa-money-check-dollar" });
+  // Real automation summary from actual rules / vesting records
+  if (condCount > 0) {
+    autos.push({
+      name: "Conditional Rules",
+      status: "running",
+      next: `${condCount} execution(s) in range`
+    });
   }
-  if (hasRevenue || hasCond) {
-    autos.push({ name: "Revenue Sharing", status: "running", next: "Live" });
+  if (vestCount > 0) {
+    autos.push({
+      name: "Vesting Schedules",
+      status: "running",
+      next: `${vestCount} event(s) in range`
+    });
   }
-  if (hasTreasury) {
-    autos.push({ name: "Treasury Split", status: "paused", next: "Paused" });
+  if (batchCount > 0) {
+    autos.push({
+      name: "Batch / Role Splits",
+      status: "running",
+      next: `${batchCount} split(s) in range`
+    });
   }
-  if (hasVest) {
-    upcoming.push({ when: "In 3 days", title: "Founder Unlock", icon: "fa-unlock" });
-    notifs.push({ text: "Vesting unlock scheduled in 3 days" });
+  if (!autos.length) {
+    autos.push({ name: "No automations detected", status: "idle", next: "—" });
   }
+
+  // Upcoming = only show if we have real pending signals (no invented dates)
+  if (state.linksActive > 0) {
+    upcoming.push({
+      when: "Active",
+      title: `${state.linksActive} Payment Link(s) open`,
+      icon: "fa-link"
+    });
+  }
+  if (state.activeRules > 0) {
+    upcoming.push({
+      when: "On-chain",
+      title: `${state.activeRules} rule / schedule event(s)`,
+      icon: "fa-robot"
+    });
+  }
+  if (!upcoming.length) {
+    upcoming.push({ when: "—", title: "Nothing pending", icon: "fa-calendar" });
+  }
+
+  // Real notifications only
   if (state.linksActive > 0) {
     notifs.push({ text: `${state.linksActive} payment link(s) currently active` });
   }
-  if (!autos.length) {
-    autos.push({ name: "No active automations", status: "idle", next: "—" });
+  if (state.linksExpired > 0) {
+    notifs.push({ text: `${state.linksExpired} payment link(s) expired or cancelled` });
   }
-  if (!upcoming.length) {
-    upcoming.push({ when: "—", title: "Nothing scheduled", icon: "fa-calendar" });
+  if (state.linksPaid > 0) {
+    notifs.push({ text: `${state.linksPaid} payment link(s) claimed / paid` });
+  }
+  if (condCount > 0) {
+    notifs.push({ text: `${condCount} conditional rule event(s) in selected range` });
+  }
+  if (vestCount > 0) {
+    notifs.push({ text: `${vestCount} vesting event(s) in selected range` });
+  }
+  const onchainCount = state.activity.filter(a => a.source === "onchain").length;
+  if (onchainCount > 0) {
+    notifs.push({ text: `${onchainCount} transaction(s) verified on-chain` });
   }
 
   state.automations = autos;
@@ -956,23 +998,46 @@ function buildInsights() {
   const delta = state.prevVolume > 0
     ? ((state.volume - state.prevVolume) / state.prevVolume * 100)
     : 0;
+
   if (state.volume > 0) {
     const dir = delta >= 0 ? "up" : "down";
-    list.push(`Distributions ${dir} ${Math.abs(delta).toFixed(0)}% vs previous period.`);
+    list.push(`Volume ${dir} ${Math.abs(delta).toFixed(0)}% vs previous period (${fmt(state.volume)} in range).`);
   }
-  if (state.linksActive > 0) list.push(`${state.linksActive} Payment Links are currently active.`);
-  if (state.linksExpired > 0) list.push(`${state.linksExpired} Payment Links expired or were cancelled.`);
-  if (state.automations.some(a => a.status === "scheduled")) list.push("Monthly Payroll is scheduled soon.");
+  if (state.tx > 0) {
+    list.push(`${state.tx} transaction(s) recorded in the selected range.`);
+  }
+  if (state.linksActive > 0) {
+    list.push(`${state.linksActive} Payment Link(s) are currently active.`);
+  }
+  if (state.linksExpired > 0) {
+    list.push(`${state.linksExpired} Payment Link(s) expired or were cancelled.`);
+  }
+  if (state.linksPaid > 0) {
+    list.push(`${state.linksPaid} Payment Link(s) have been claimed.`);
+  }
   const topTok = Object.entries(state.tokens).sort((a, b) => b[1] - a[1])[0];
-  if (topTok && topTok[1] > 0) list.push(`${topTok[0]} is your most used asset (${fmt(topTok[1])} volume).`);
-  if (!list.length) list.push("Connect a wallet and run splits to unlock workspace insights.");
+  if (topTok && topTok[1] > 0) {
+    list.push(`${topTok[0]} is the most used asset (${fmt(topTok[1])} volume).`);
+  }
+  const onchainCount = state.activity.filter(a => a.source === "onchain").length;
+  if (onchainCount > 0) {
+    list.push(`${onchainCount} event(s) cross-checked on-chain.`);
+  }
+  if (!list.length) {
+    list.push("No activity in this range yet. Run a split or create a payment link to see live data.");
+  }
   state.insights = list;
 
-  const hasAttention = state.automations.some(a => a.status === "attention" || a.status === "paused") || state.linksExpired > 3;
+  // Health badge: only real signals
+  // Attention = expired links > 0 OR zero activity when wallet is connected
+  const hasAttention = state.linksExpired > 0;
   const badge = document.getElementById("healthBadge");
   if (hasAttention) {
     badge.className = "flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold";
-    badge.innerHTML = `<span class="dot bg-amber-400"></span> Attention Required`;
+    badge.innerHTML = `<span class="dot bg-amber-400"></span> ${state.linksExpired} Expired Link(s)`;
+  } else if (userAddress && state.tx === 0 && state.activity.length === 0) {
+    badge.className = "flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-gray-500/10 border border-gray-500/30 text-gray-400 text-xs font-bold";
+    badge.innerHTML = `<span class="dot bg-gray-400"></span> No Activity`;
   } else {
     badge.className = "flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-bold";
     badge.innerHTML = `<span class="dot bg-emerald-400 animate-pulse"></span> Healthy`;
