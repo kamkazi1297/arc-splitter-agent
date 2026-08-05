@@ -524,6 +524,7 @@ const TOKEN_MAP = {
 
 /* ===================== STATE ===================== */
 let userAddress = null;
+let forceDisconnected = false;
 let provider = null;
 let signer = null;
 let readProvider = null;
@@ -608,6 +609,7 @@ async function connectWallet() {
     await provider.send("eth_requestAccounts", []);
     signer = await provider.getSigner();
     userAddress = await signer.getAddress();
+    forceDisconnected = false;
     setWalletUI(true);
     showToast("Wallet connected");
     await refreshDashboard();
@@ -617,13 +619,18 @@ async function connectWallet() {
 }
 
 function disconnectWallet() {
+  forceDisconnected = true;
   userAddress = null;
   signer = null;
   provider = null;
   setWalletUI(false);
   Object.assign(state, emptyState());
   showToast("Wallet disconnected", "fa-power-off");
-  refreshDashboard();
+  document.getElementById("emptyState").classList.remove("hidden");
+  document.getElementById("dashboardBody").classList.add("opacity-40");
+  document.getElementById("syncStatus").textContent = "Disconnected";
+  document.getElementById("dataSourceBadge").textContent = "Source: —";
+  renderAll();
 }
 
 /* ===================== DATA PIPELINE ===================== */
@@ -1297,7 +1304,7 @@ async function refreshDashboard() {
   document.getElementById("syncStatus").textContent = "Syncing…";
   Object.assign(state, emptyState());
 
-  if (!userAddress && window.ethereum) {
+  if (!userAddress && !forceDisconnected && window.ethereum) {
     try {
       provider = new ethers.BrowserProvider(window.ethereum);
       const accs = await provider.send("eth_accounts", []);
@@ -1710,6 +1717,7 @@ window.addEventListener("load", async () => {
 if (window.ethereum) {
   window.ethereum.on?.("accountsChanged", async (accs) => {
     if (accs?.length) {
+      forceDisconnected = false;
       userAddress = accs[0];
       setWalletUI(true);
       await refreshDashboard();
