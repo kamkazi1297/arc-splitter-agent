@@ -643,7 +643,8 @@
         }
         signer = await provider.getSigner();
         userAddress = await signer.getAddress();
-        window.userAddress = userAddress; // for db.js / optional workspace-guard
+        window.userAddress = userAddress;
+        if (typeof refreshWorkspaceGuard === "function") refreshWorkspaceGuard();
         
         const shortAddr = userAddress.substring(0, 6) + "..." + userAddress.substring(userAddress.length - 4);
         document.getElementById('walletBtnText').textContent = shortAddr;
@@ -1291,7 +1292,13 @@
       
       if (userAddress && typeof saveHistoryToCloud === "function") {
         newRecord.appName = "Vesting";
-        newRecord.type = newRecord.type || "Vesting Deployed";
+        newRecord.type = "Vesting";
+        newRecord.status = "Success";
+        newRecord.token = newRecord.tokenSymbol || newRecord.token;
+        newRecord.amount = newRecord.totalAmount;
+        if (!newRecord.timestamp || typeof newRecord.timestamp !== "string" || !newRecord.timestamp.includes("T")) {
+          newRecord.timestamp = new Date().toISOString();
+        }
         if (typeof getWorkspaceIdFromURL === "function") {
           const wsId = getWorkspaceIdFromURL();
           if (wsId) newRecord.workspaceId = wsId;
@@ -1341,6 +1348,17 @@
 
   function exportScheduleData() {
     showToast("Vesting Schedule report exported successfully.");
+  }
+
+
+  if (window.ethereum && window.ethereum.on) {
+    window.ethereum.on("accountsChanged", async (accs) => {
+      if (!accs || !accs.length) { disconnectWallet(); return; }
+      userAddress = accs[0];
+      window.userAddress = userAddress;
+      if (typeof refreshWorkspaceGuard === "function") refreshWorkspaceGuard();
+      try { await connectWallet(true); } catch (e) {}
+    });
   }
 
   function showToast(msg, duration = 4000) {
