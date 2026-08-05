@@ -2,7 +2,7 @@
  * ArcSplit Cloud DB helpers
  * - History API (all pages)
  * - Payment links / invoices
- * - Workspace (teams, members, treasury)
+ * - Workspace (teams, members, permissions, team activity)
  */
 
 const SUPABASE_URL = 'https://yelauzpxsfjzydffhnhb.supabase.co';
@@ -69,17 +69,60 @@ async function fetchHistoryFromCloud(userAddress) {
     if (!client || !userAddress) return [];
     const { data, error } = await client
       .from('history')
-      .select('history_data')
+      .select('history_data, user_address, id, created_at')
       .eq('user_address', userAddress.toLowerCase())
       .order('id', { ascending: false })
-      .limit(50);
+      .limit(80);
     if (error) {
       console.error('Error fetching history:', error);
       return [];
     }
-    return (data || []).map(row => row.history_data).filter(Boolean);
+    return (data || []).map(row => {
+      const h = row.history_data || {};
+      if (!h.timestamp && row.created_at) h.timestamp = row.created_at;
+      if (!h.user && row.user_address) h.user = row.user_address;
+      return h;
+    }).filter(Boolean);
   } catch (e) {
     console.error('fetchHistoryFromCloud', e);
+    return [];
+  }
+}
+
+/** Team feed: history of all member addresses, optionally prefer workspaceId tag */
+async function fetchTeamHistory(memberAddresses, workspaceId, limit = 60) {
+  try {
+    const client = await getSupabase();
+    if (!client || !memberAddresses?.length) return [];
+    const addrs = [...new Set(memberAddresses.map(a => String(a).toLowerCase()))];
+    const { data, error } = await client
+      .from('history')
+      .select('history_data, user_address, id, created_at')
+      .in('user_address', addrs)
+      .order('id', { ascending: false })
+      .limit(Math.min(limit * 3, 200));
+    if (error) {
+      console.error('fetchTeamHistory', error);
+      return [];
+    }
+    let rows = (data || []).map(row => {
+      const h = row.history_data || {};
+      return {
+        ...h,
+        user: h.user || row.user_address,
+        timestamp: h.timestamp || row.created_at,
+        _id: row.id
+      };
+    });
+    if (workspaceId) {
+      const tagged = rows.filter(r =>
+        String(r.workspaceId || r.workspace_id || '') === String(workspaceId)
+      );
+      if (tagged.length) rows = tagged;
+    }
+    return rows.slice(0, limit);
+  } catch (e) {
+    console.error('fetchTeamHistory', e);
     return [];
   }
 }
@@ -162,11 +205,27 @@ async function updatePaymentStatus(userAddress, linkId, status, extra = {}) {
 
 /* ===================== WORKSPACE ===================== */
 
+const DEFAULT_MODULE_IDS = ['split', 'batch', 'roles', 'giveaway', 'vesting', 'pay', 'agentic', 'conditional'];
+
+function defaultPermissions() {
+  const allTrue = Object.fromEntries(DEFAULT_MODULE_IDS.map(id => [id, true]));
+  const allFalse = Object.fromEntries(DEFAULT_MODULE_IDS.map(id => [id, false]));
+  return {
+    owner: { ...allTrue },
+    admin: { ...allTrue },
+    member: { ...allFalse }
+  };
+}
+
 async function createWorkspace(ownerAddress, { name, description = '', treasuryAddress = null, defaultToken = null }) {
   try {
     const client = await getSupabase();
     if (!client || !ownerAddress || !name) return null;
     const addr = ownerAddress.toLowerCase();
+    const settings = {
+      permissions: defaultPermissions(),
+      plan: 'free'
+    };
     const { data: ws, error } = await client
       .from('workspaces')
       .insert([{
@@ -174,7 +233,8 @@ async function createWorkspace(ownerAddress, { name, description = '', treasuryA
         description: description || '',
         owner_address: addr,
         treasury_address: treasuryAddress ? treasuryAddress.toLowerCase() : addr,
-        default_token: defaultToken || '0x3600000000000000000000000000000000000000'
+        default_token: defaultToken || '0x3600000000000000000000000000000000000000',
+        settings
       }])
       .select()
       .single();
@@ -358,11 +418,73 @@ async function leaveWorkspace(workspaceId, userAddress) {
   return removeWorkspaceMember(workspaceId, userAddress);
 }
 
+/**
+ * Access check for main modules (Phase B).
+ * Returns { ok, role, reason, workspace, permissions }
+ */
+async function checkWorkspaceAccess(workspaceId, userAddress, moduleId) {
+  const result = { ok: false, role: null, reason: '', workspace: null, permissions: null };
+  try {
+    if (!workspaceId || !userAddress) {
+      result.reason = 'missing_params';
+      return result;
+    }
+    const addr = userAddress.toLowerCase();
+    const [ws, members] = await Promise.all([
+      fetchWorkspace(workspaceId),
+      fetchWorkspaceMembers(workspaceId)
+    ]);
+    if (!ws) {
+      result.reason = 'workspace_not_found';
+      return result;
+    }
+    result.workspace = ws;
+    const me = (members || []).find(m => m.user_address === addr);
+    if (!me) {
+      result.reason = 'not_a_member';
+      return result;
+    }
+    result.role = me.role;
+    const settings = typeof ws.settings === 'string' ? JSON.parse(ws.settings || '{}') : (ws.settings || {});
+    const perms = settings.permissions || defaultPermissions();
+    result.permissions = perms;
+    if (me.role === 'owner') {
+      result.ok = true;
+      return result;
+    }
+    if (!moduleId) {
+      result.ok = true;
+      return result;
+    }
+    const rolePerms = perms[me.role] || {};
+    if (rolePerms[moduleId]) {
+      result.ok = true;
+      return result;
+    }
+    result.reason = 'no_module_permission';
+    return result;
+  } catch (e) {
+    console.error('checkWorkspaceAccess', e);
+    result.reason = 'error';
+    return result;
+  }
+}
+
+function getWorkspaceIdFromURL() {
+  try {
+    const q = new URLSearchParams(window.location.search);
+    return q.get('workspace') || q.get('ws') || null;
+  } catch {
+    return null;
+  }
+}
+
 /* Expose on window */
 if (typeof window !== 'undefined') {
   window.getSupabase = getSupabase;
   window.saveHistoryToCloud = saveHistoryToCloud;
   window.fetchHistoryFromCloud = fetchHistoryFromCloud;
+  window.fetchTeamHistory = fetchTeamHistory;
   window.savePaymentRecord = savePaymentRecord;
   window.fetchPaymentRecords = fetchPaymentRecords;
   window.updatePaymentStatus = updatePaymentStatus;
@@ -375,4 +497,8 @@ if (typeof window !== 'undefined') {
   window.updateMemberRole = updateMemberRole;
   window.updateWorkspace = updateWorkspace;
   window.leaveWorkspace = leaveWorkspace;
+  window.checkWorkspaceAccess = checkWorkspaceAccess;
+  window.getWorkspaceIdFromURL = getWorkspaceIdFromURL;
+  window.defaultPermissions = defaultPermissions;
+  window.ARC_DEFAULT_MODULE_IDS = DEFAULT_MODULE_IDS;
 }
