@@ -179,8 +179,8 @@
     <!-- Header Section -->
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/[0.02] border border-white/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
       <div>
-        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-yellow-300 to-stone-300">Giveaway - Ultra</span></h1>
-        <p class="text-gray-400 text-xs sm:text-sm font-medium">Powered by ArcRoleSplitter V30 • Professional Decentralized Giveaway</p>
+        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-yellow-300 to-stone-300">Giveaway  Ultra</span></h1>
+        <p class="text-gray-400 text-xs sm:text-sm font-medium">Professional Decentralized Giveaway Tool</p>
       </div>
       
       <div class="flex items-center gap-3">
@@ -221,7 +221,7 @@
       <!-- Status Boxes -->
       <div id="status" class="glass rounded-2xl p-5 mb-4 text-sm font-medium flex items-center gap-3 border-l-4 border-l-amber-500">
         <div class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
-        Professional Decentralized Giveaway Tool
+        Ready for Giveaway on Arc Testnet (ArcRoleSplitter V30).
       </div>
       <div id="successMessage" class="hidden glass border border-amber-500/30 bg-amber-500/10 rounded-2xl p-5 mb-6 text-amber-400 text-sm"></div>
 
@@ -237,18 +237,16 @@
               <div>
                 <label class="block text-gray-400 pitch-black-text text-xs font-semibold uppercase tracking-wider mb-2">Select Token</label>
                 <div class="relative">
-                  <select id="tokenSelect" onchange="updateBalance()" class="w-full rounded-2xl px-5 py-4 appearance-none focus:outline-none text-sm sm:text-base font-medium cursor-pointer">
+                  <select id="tokenSelect" onchange="onTokenSelectChange()" class="w-full rounded-2xl px-5 py-4 appearance-none focus:outline-none text-sm sm:text-base font-medium cursor-pointer">
                     <option value="0x3600000000000000000000000000000000000000">USDC</option>
                     <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
                     <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
+                    <option value="__add_custom__">➕ Add Custom Token…</option>
                   </select>
                   <div class="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
                     <i class="fas fa-chevron-down text-xs"></i>
                   </div>
                 </div>
-                <button onclick="showAddTokenModal()" class="mt-2 text-xs text-amber-400 hover:underline font-medium">
-                  <i class="fas fa-plus-circle"></i> Add Custom Token
-                </button>
               </div>
               <div>
                 <label class="block text-gray-400 pitch-black-text text-xs font-semibold uppercase tracking-wider mb-2">Total Amount</label>
@@ -320,7 +318,7 @@
             <h2 class="text-xl font-bold flex items-center gap-2">
               <i class="fas fa-history text-amber-400"></i> Giveaway History
             </h2>
-            <p class="text-xs text-gray-400 mt-1">Stored locally & optionally synced via cloud (db.js)</p>
+            <p class="text-xs text-gray-400 mt-1">Synced to Supabase cloud per connected wallet</p>
           </div>
           <div class="flex gap-2">
             <button onclick="exportHistory()" class="app-button px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-semibold">Export All</button>
@@ -556,8 +554,7 @@ function showToast(msg, duration = 4000) {
 
 function toggleTheme() {
   const isLight = document.documentElement.classList.toggle('light');
-  if (window.ArcDB) ArcDB.saveSettings({ theme: isLight ? 'light' : 'dark' });
-  else localStorage.setItem('theme', isLight ? 'light' : 'dark');
+  localStorage.setItem('theme', isLight ? 'light' : 'dark');
   const icon = document.getElementById("themeBtn").querySelector("i");
   if (isLight) {
     icon.classList.remove("fa-moon", "text-amber-400");
@@ -576,10 +573,22 @@ function switchTab(tab) {
   if (tab === "history") renderHistory();
 }
 
-// ==================== TOKENS ====================
-function loadTokenSelect() {
+// ==================== CUSTOM TOKENS (localStorage) ====================
+const CUSTOM_TOKENS_KEY = "arcsplit_custom_tokens";
+
+function getCustomTokens() {
+  try {
+    return JSON.parse(localStorage.getItem(CUSTOM_TOKENS_KEY) || "[]");
+  } catch { return []; }
+}
+
+function saveCustomTokens(list) {
+  localStorage.setItem(CUSTOM_TOKENS_KEY, JSON.stringify(list));
+}
+
+function loadTokenSelect(preferred) {
   const select = document.getElementById("tokenSelect");
-  const current = select.value;
+  const current = preferred || select.value;
   select.innerHTML = "";
   DEFAULT_TOKENS.forEach(t => {
     const opt = document.createElement("option");
@@ -587,19 +596,40 @@ function loadTokenSelect() {
     opt.textContent = t.symbol;
     select.appendChild(opt);
   });
-  const custom = (window.ArcDB && ArcDB.getCustomTokens()) || [];
-  custom.forEach(t => {
+  getCustomTokens().forEach(t => {
     const opt = document.createElement("option");
     opt.value = t.address;
     opt.textContent = t.symbol + " (custom)";
     select.appendChild(opt);
   });
-  if ([...select.options].some(o => o.value.toLowerCase() === (current || "").toLowerCase())) {
+  // Always last option: Add Custom Token
+  const addOpt = document.createElement("option");
+  addOpt.value = "__add_custom__";
+  addOpt.textContent = "➕ Add Custom Token…";
+  select.appendChild(addOpt);
+
+  if (current && current !== "__add_custom__" && [...select.options].some(o => o.value.toLowerCase() === current.toLowerCase())) {
     select.value = current;
   }
 }
 
+function onTokenSelectChange() {
+  const select = document.getElementById("tokenSelect");
+  if (select.value === "__add_custom__") {
+    // reset to previous real token so dropdown doesn't stay on "Add"
+    const custom = getCustomTokens();
+    if (custom.length) select.value = custom[custom.length - 1].address;
+    else select.value = DEFAULT_TOKENS[0].address;
+    showAddTokenModal();
+    return;
+  }
+  updateBalance();
+}
+
 function showAddTokenModal() {
+  document.getElementById("customTokenAddress").value = "";
+  document.getElementById("customTokenSymbol").value = "";
+  document.getElementById("customTokenDecimals").value = "18";
   document.getElementById("addTokenModal").classList.remove("hidden");
 }
 function hideAddTokenModal() {
@@ -609,25 +639,29 @@ function hideAddTokenModal() {
 async function addCustomToken() {
   const address = document.getElementById("customTokenAddress").value.trim();
   let symbol = document.getElementById("customTokenSymbol").value.trim();
-  let decimals = parseInt(document.getElementById("customTokenDecimals").value) || 18;
+  let decimals = parseInt(document.getElementById("customTokenDecimals").value);
+  if (isNaN(decimals)) decimals = 18;
 
   if (!ethers.isAddress(address)) return showToast("Invalid token address");
 
-  // try to fetch symbol/decimals from chain if wallet connected
   if (signer) {
     try {
       const c = new ethers.Contract(address, erc20Abi, signer);
       if (!symbol) symbol = await c.symbol();
-      decimals = await c.decimals();
+      const d = await c.decimals();
+      if (d != null) decimals = Number(d);
     } catch (e) { /* ignore */ }
   }
   if (!symbol) symbol = "TOKEN";
 
-  if (!window.ArcDB) return showToast("db.js not loaded");
-  const ok = ArcDB.addCustomToken({ address, symbol, decimals });
-  if (!ok) return showToast("Token already exists or invalid");
-  loadTokenSelect();
-  document.getElementById("tokenSelect").value = address.toLowerCase();
+  const list = getCustomTokens();
+  const lower = address.toLowerCase();
+  if (DEFAULT_TOKENS.some(t => t.address.toLowerCase() === lower) || list.some(t => t.address.toLowerCase() === lower)) {
+    return showToast("Token already exists");
+  }
+  list.push({ address: lower, symbol, decimals });
+  saveCustomTokens(list);
+  loadTokenSelect(lower);
   hideAddTokenModal();
   showToast(`Token ${symbol} added`);
   updateBalance();
@@ -802,7 +836,7 @@ function applyExtracted(mode) {
   else list = [...list, ...onlyValid];
   list = [...new Set(list.filter(a => ethers.isAddress(a)))];
   document.getElementById("winnersList").value = list.join("\n");
-  if (window.ArcDB) ArcDB.saveLastWallets(list);
+  localStorage.setItem("arcsplit_last_wallets", JSON.stringify(list));
   hideExtractModal();
   showToast(`${onlyValid.length} valid addresses ${mode === "replace" ? "replaced" : "added"}`);
 }
@@ -823,7 +857,7 @@ function selectRandomWinners() {
   const winners = shuffled.slice(0, winnerCount);
 
   document.getElementById("winnersList").value = winners.join("\n");
-  if (window.ArcDB) ArcDB.saveLastWallets(winners);
+  localStorage.setItem("arcsplit_last_wallets", JSON.stringify(winners));
 
   startCountdownAndShowWinners(winners, allAddresses.length);
 }
@@ -907,7 +941,7 @@ function importWallets() {
         const data = JSON.parse(ev.target.result);
         if (data.wallets && Array.isArray(data.wallets)) {
           document.getElementById("winnersList").value = data.wallets.join("\n");
-          if (window.ArcDB) ArcDB.saveLastWallets(data.wallets);
+          localStorage.setItem("arcsplit_last_wallets", JSON.stringify(data.wallets));
           showToast(`${data.wallets.length} addresses imported`);
         }
       } catch (err) {
@@ -929,58 +963,87 @@ function copyShareableLink() {
   showToast("Shareable link copied!");
 }
 
-// ==================== HISTORY ====================
-function renderHistory() {
-  const list = (window.ArcDB && ArcDB.getHistory()) || [];
+// ==================== HISTORY (Supabase via db.js) ====================
+let cachedHistory = [];
+
+async function renderHistory() {
   const container = document.getElementById("historyList");
   const empty = document.getElementById("historyEmpty");
+  container.innerHTML = `<p class="text-center text-gray-400 text-sm py-6">Loading history from cloud…</p>`;
+  empty.classList.add("hidden");
 
-  if (!list.length) {
+  if (!userAddress) {
     container.innerHTML = "";
     empty.classList.remove("hidden");
+    empty.innerHTML = `<i class="fas fa-wallet text-3xl mb-3 opacity-50"></i><p>Connect wallet to load your cloud history.</p>`;
+    return;
+  }
+
+  // Wait for supabase client if still loading
+  let tries = 0;
+  while (!window.supabase && tries < 20) {
+    await new Promise(r => setTimeout(r, 150));
+    tries++;
+  }
+
+  try {
+    cachedHistory = await fetchHistoryFromCloud(userAddress);
+  } catch (e) {
+    console.error(e);
+    cachedHistory = [];
+  }
+
+  // Also merge local fallback
+  try {
+    const local = JSON.parse(localStorage.getItem("arcsplit_history_local") || "[]");
+    if (Array.isArray(local) && local.length) {
+      const hashes = new Set(cachedHistory.map(h => h.txHash).filter(Boolean));
+      local.forEach(h => {
+        if (h.txHash && !hashes.has(h.txHash)) cachedHistory.push(h);
+      });
+      cachedHistory.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    }
+  } catch {}
+
+  if (!cachedHistory.length) {
+    container.innerHTML = "";
+    empty.classList.remove("hidden");
+    empty.innerHTML = `<i class="fas fa-inbox text-3xl mb-3 opacity-50"></i><p>No giveaway history yet.</p>`;
     return;
   }
   empty.classList.add("hidden");
 
-  container.innerHTML = list.map(h => {
-    const date = new Date(h.timestamp).toLocaleString();
+  container.innerHTML = cachedHistory.map((h, idx) => {
+    const date = new Date(h.timestamp || Date.now()).toLocaleString();
     const shortTx = h.txHash ? `${h.txHash.slice(0, 10)}...${h.txHash.slice(-6)}` : "—";
     return `
       <div class="history-item glass border border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 mb-1">
             <span class="text-amber-400 font-bold text-sm">${h.totalAmount} ${h.tokenSymbol || "TOKEN"}</span>
-            <span class="text-xs text-gray-400">→ ${h.winnersCount} winners</span>
+            <span class="text-xs text-gray-400">→ ${h.winnersCount || (h.winners || []).length} winners</span>
           </div>
           <div class="text-xs text-gray-400 font-mono truncate">${shortTx}</div>
-          <div class="text-[10px] text-gray-500 mt-1">${date}</div>
+          <div class="text-[10px] text-gray-500 mt-1">${date}${h.memo ? " • " + h.memo : ""}</div>
         </div>
         <div class="flex gap-2 shrink-0">
           ${h.txHash ? `<a href="${EXPLORER_TX}${h.txHash}" target="_blank" class="app-button px-3 py-1.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-xs font-semibold">Explorer</a>` : ""}
-          <button onclick="deleteHistoryItem('${h.id}')" class="app-button px-3 py-1.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs">Delete</button>
         </div>
       </div>
     `;
   }).join("");
 }
 
-function deleteHistoryItem(id) {
-  if (!window.ArcDB) return;
-  ArcDB.deleteHistoryEntry(id);
-  renderHistory();
-  showToast("Entry deleted");
-}
-
 function clearAllHistory() {
-  if (!confirm("Clear all history?")) return;
-  if (window.ArcDB) ArcDB.clearHistory();
+  if (!confirm("Clear local history cache? (Cloud records remain on Supabase)")) return;
+  localStorage.removeItem("arcsplit_history_local");
+  cachedHistory = [];
   renderHistory();
-  showToast("History cleared");
+  showToast("Local history cache cleared");
 }
 
 function exportHistory() {
-  if (!window.ArcDB) return showToast("db.js not loaded");
-  const data = ArcDB.exportAll();
+  const data = { history: cachedHistory, exportedAt: new Date().toISOString() };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -1000,11 +1063,11 @@ function importHistory() {
     reader.onload = ev => {
       try {
         const data = JSON.parse(ev.target.result);
-        if (window.ArcDB && ArcDB.importAll(data)) {
-          loadTokenSelect();
-          renderHistory();
-          showToast("Data imported successfully");
-        } else showToast("Import failed");
+        const list = data.history || (Array.isArray(data) ? data : null);
+        if (!list) return showToast("Invalid file");
+        localStorage.setItem("arcsplit_history_local", JSON.stringify(list));
+        renderHistory();
+        showToast("History imported to local cache");
       } catch {
         showToast("Invalid JSON");
       }
@@ -1012,6 +1075,25 @@ function importHistory() {
     reader.readAsText(file);
   };
   input.click();
+}
+
+async function persistHistoryRecord(record) {
+  // local fallback
+  try {
+    const local = JSON.parse(localStorage.getItem("arcsplit_history_local") || "[]");
+    local.unshift(record);
+    if (local.length > 100) local.length = 100;
+    localStorage.setItem("arcsplit_history_local", JSON.stringify(local));
+  } catch {}
+
+  // cloud (Supabase)
+  if (userAddress && typeof saveHistoryToCloud === "function") {
+    try {
+      await saveHistoryToCloud(userAddress, record);
+    } catch (e) {
+      console.error("Cloud save failed", e);
+    }
+  }
 }
 
 // ==================== SEND GIVEAWAY (ArcRoleSplitter V30) ====================
@@ -1102,20 +1184,21 @@ async function sendGiveawaySplit() {
     const tx = await contract.splitByPercentage(params, { gasLimit });
     const receipt = await tx.wait();
 
-    // Save to history
-    if (window.ArcDB) {
-      ArcDB.addHistoryEntry({
-        txHash: tx.hash,
-        token: tokenAddr,
-        tokenSymbol: symbol,
-        totalAmount: totalAmount.toString(),
-        winnersCount: addresses.length,
-        winners: addresses,
-        batchId: 0,
-        status: "success",
-        explorerUrl: EXPLORER_TX + tx.hash
-      });
-    }
+    // Save to history (local + Supabase cloud)
+    const historyRecord = {
+      memo: `Equal split ${totalAmount} ${symbol} → ${addresses.length} winners`,
+      txHash: tx.hash,
+      token: tokenAddr,
+      tokenSymbol: symbol,
+      totalAmount: totalAmount.toString(),
+      winnersCount: addresses.length,
+      winners: addresses,
+      batchId: 0,
+      status: "success",
+      timestamp: Date.now(),
+      explorerUrl: EXPLORER_TX + tx.hash
+    };
+    await persistHistoryRecord(historyRecord);
 
     const successDiv = document.getElementById("successMessage");
     successDiv.innerHTML = `Transaction Successful!<br><a href="${EXPLORER_TX}${tx.hash}" target="_blank" class="underline font-semibold">View on Explorer: ${tx.hash.substring(0, 12)}...</a>`;
@@ -1138,9 +1221,7 @@ async function sendGiveawaySplit() {
 // ==================== LOAD ====================
 window.addEventListener("load", async () => {
   // Theme
-  const settings = (window.ArcDB && ArcDB.getSettings()) || {};
-  const theme = settings.theme || localStorage.getItem("theme");
-  if (theme === "light") {
+  if (localStorage.getItem("theme") === "light") {
     document.documentElement.classList.add("light");
     const icon = document.getElementById("themeBtn").querySelector("i");
     icon.classList.remove("fa-moon", "text-amber-400");
@@ -1148,14 +1229,6 @@ window.addEventListener("load", async () => {
   }
 
   loadTokenSelect();
-
-  // Optional cloud pull
-  if (window.ArcDB && ArcDB.REMOTE && ArcDB.REMOTE.enabled) {
-    try {
-      await ArcDB.pullFromCloud();
-      loadTokenSelect();
-    } catch (e) {}
-  }
 
   const savedAddress = localStorage.getItem("giveawayUserAddress");
   if (savedAddress) {
@@ -1171,19 +1244,19 @@ window.addEventListener("load", async () => {
   }
 
   // Restore last wallets
-  if (window.ArcDB) {
-    const last = ArcDB.getLastWallets();
-    if (last && last.length) {
+  try {
+    const last = JSON.parse(localStorage.getItem("arcsplit_last_wallets") || "[]");
+    if (Array.isArray(last) && last.length) {
       document.getElementById("winnersList").value = last.join("\n");
     }
-  }
+  } catch {}
 
   const params = new URLSearchParams(window.location.search);
   if (params.has("wallets")) {
     try {
       const decoded = JSON.parse(atob(params.get("wallets")));
       document.getElementById("winnersList").value = decoded.join("\n");
-      if (window.ArcDB) ArcDB.saveLastWallets(decoded);
+      localStorage.setItem("arcsplit_last_wallets", JSON.stringify(decoded));
       showToast("Wallet list loaded from link");
     } catch (e) {}
   }
