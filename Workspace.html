@@ -216,7 +216,8 @@
                 <div>
                   <label class="text-xs font-bold text-gray-400 mb-1.5 block">Token</label>
                   <select id="trToken" class="w-full px-4 py-3 text-sm">
-                    <option value="0x3600000000000000000000000000000000000000">USDC (native-style)</option>
+                    <option value="native">Native (gas token)</option>
+                    <option value="0x3600000000000000000000000000000000000000">USDC (0x3600… ERC20 if deployed)</option>
                     <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
                     <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
                   </select>
@@ -664,31 +665,61 @@
   async function treasuryDeposit() {
     const cAddr = contractAddr();
     if (!cAddr || !signer) return showToast("Contract + wallet required");
+    if (!ethers.isAddress(cAddr)) return showToast("Invalid contract address");
+
     const token = document.getElementById("trToken").value;
     const amountStr = document.getElementById("trAmount").value;
     if (!amountStr || Number(amountStr) <= 0) return showToast("Enter amount");
+
     try {
-      const dec = await tokenDecimals(token);
-      const wei = ethers.parseUnits(amountStr, dec);
-      // native-style path: if user selected USDC placeholder and it behaves as native, try depositNative
-      if (token.toLowerCase() === "0x3600000000000000000000000000000000000000") {
-        const tc = new ethers.Contract(cAddr, TREASURY_ABI, signer);
+      // Preflight: code + initialize
+      const code = await signer.provider.getCode(cAddr);
+      if (!code || code === "0x") return showToast("No contract code at proxy address");
+
+      const tc = new ethers.Contract(cAddr, TREASURY_ABI, signer);
+      try {
+        const own = await tc.owner();
+        if (!own || own === ethers.ZeroAddress) {
+          return showToast("Proxy not initialized — call initialize(owner) in Remix first");
+        }
+      } catch {
+        return showToast("Proxy not initialized or wrong ABI — call initialize(owner) on proxy");
+      }
+
+      if (token === "native") {
+        const wei = ethers.parseEther(amountStr);
+        if (wei === 0n) return showToast("Amount too small");
         showToast("Depositing native…");
-        await (await tc.depositNative({ value: wei })).wait();
+        const tx = await tc.depositNative({ value: wei });
+        await tx.wait();
+        await logWsHistory({ type: "Treasury Deposit", amount: amountStr, token: "NATIVE", hash: tx.hash });
       } else {
+        const dec = await tokenDecimals(token);
+        const wei = ethers.parseUnits(amountStr, dec);
+        if (wei === 0n) return showToast("Amount too small");
         const erc = new ethers.Contract(token, ERC20_ABI, signer);
+        // check wallet balance optional
+        try {
+          const bal = await erc.balanceOf(userAddress);
+          if (bal < wei) return showToast("Insufficient token balance");
+        } catch {}
         showToast("Approving token…");
-        await (await erc.approve(cAddr, wei)).wait();
-        const tc = new ethers.Contract(cAddr, TREASURY_ABI, signer);
-        showToast("Depositing…");
-        await (await tc.depositERC20(token, wei)).wait();
+        const aTx = await erc.approve(cAddr, wei);
+        await aTx.wait();
+        showToast("Depositing ERC20…");
+        const tx = await tc.depositERC20(token, wei);
+        await tx.wait();
+        await logWsHistory({ type: "Treasury Deposit", amount: amountStr, token, hash: tx.hash });
       }
       showToast("Deposit OK");
-      await logWsHistory({ type: "Treasury Deposit", amount: amountStr, token, memo: "Deposit to TeamTreasury" });
       renderTreasury(); renderOverview(); loadHistory();
     } catch (e) {
       console.error(e);
-      showToast(e.reason || e.shortMessage || "Deposit failed");
+      let msg = e.reason || e.shortMessage || e.message || "Deposit failed";
+      if (/Internal JSON-RPC|missing revert data|CALL_EXCEPTION/i.test(String(msg))) {
+        msg = "TX reverted — check: 1) initialize done 2) token address valid 3) balance/allowance";
+      }
+      showToast(msg);
     }
   }
 
@@ -700,17 +731,20 @@
     const amountStr = document.getElementById("trAmount").value;
     if (!amountStr || Number(amountStr) <= 0) return showToast("Enter amount");
     try {
-      const dec = await tokenDecimals(token);
-      const wei = ethers.parseUnits(amountStr, dec);
       const tc = new ethers.Contract(cAddr, TREASURY_ABI, signer);
       showToast("Withdrawing…");
-      if (token.toLowerCase() === "0x3600000000000000000000000000000000000000") {
-        await (await tc.withdrawNative(userAddress, wei)).wait();
+      let tx;
+      if (token === "native") {
+        const wei = ethers.parseEther(amountStr);
+        tx = await tc.withdrawNative(userAddress, wei);
       } else {
-        await (await tc.withdrawERC20(token, userAddress, wei)).wait();
+        const dec = await tokenDecimals(token);
+        const wei = ethers.parseUnits(amountStr, dec);
+        tx = await tc.withdrawERC20(token, userAddress, wei);
       }
+      await tx.wait();
+      await logWsHistory({ type: "Treasury Withdraw", amount: amountStr, token: token === "native" ? "NATIVE" : token, memo: "Withdraw to " + shortAddr(userAddress), hash: tx.hash });
       showToast("Withdraw OK — now open a main module to split");
-      await logWsHistory({ type: "Treasury Withdraw", amount: amountStr, token, memo: "Withdraw to " + shortAddr(userAddress) });
       renderTreasury(); renderOverview(); loadHistory();
     } catch (e) {
       console.error(e);
@@ -722,12 +756,16 @@
     const cAddr = contractAddr();
     if (!cAddr || !signer) return showToast("Contract + wallet required");
     const token = document.getElementById("trToken").value;
+    if (token === "native") return showToast("Approve is for ERC20 only — pick EURC/cirBTC/USDC token");
     const amountStr = document.getElementById("trAmount").value;
     if (!amountStr || Number(amountStr) <= 0) return showToast("Enter amount");
     try {
       const dec = await tokenDecimals(token);
       const wei = ethers.parseUnits(amountStr, dec);
       const tc = new ethers.Contract(cAddr, TREASURY_ABI, signer);
+      try { await tc.splitter(); } catch { return showToast("Call Set Splitter first"); }
+      const sp = await tc.splitter();
+      if (!sp || sp === ethers.ZeroAddress) return showToast("Call Set Splitter first");
       showToast("Approving splitter…");
       await (await tc.approveSplitter(token, wei)).wait();
       showToast("Splitter approved");
@@ -742,8 +780,11 @@
     const cAddr = contractAddr();
     if (!cAddr || !signer) return showToast("Contract + wallet required");
     const token = document.getElementById("trToken").value;
+    if (token === "native") return showToast("Approve is for ERC20 only");
     try {
       const tc = new ethers.Contract(cAddr, TREASURY_ABI, signer);
+      const sp = await tc.splitter();
+      if (!sp || sp === ethers.ZeroAddress) return showToast("Call Set Splitter first");
       showToast("Approve max…");
       await (await tc.approveSplitterMax(token)).wait();
       showToast("Max approval set");
