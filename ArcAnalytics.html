@@ -42,6 +42,8 @@
     .stat-pill{font-size:10px;padding:2px 8px;border-radius:999px;font-weight:700}
     .scan-badge{animation:pulse 2s infinite}
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+    .progress-bar{height:4px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden}
+    .progress-fill{height:100%;background:linear-gradient(90deg,#06b6d4,#0ea5e9);border-radius:999px;transition:width .3s}
   </style>
 </head>
 <body class="text-white min-h-screen selection:bg-cyan-500/40 selection:text-black">
@@ -54,12 +56,12 @@
         </div>
         <div>
           <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">ArcSplit <span class="gradient-text">Analytics</span></h1>
-          <p class="text-gray-400 text-xs sm:text-sm font-medium mt-0.5">On-chain enterprise insights · All contracts indexed live</p>
+          <p class="text-gray-400 text-xs sm:text-sm font-medium mt-0.5">On-chain enterprise insights · Rate-limit safe scanner</p>
         </div>
       </div>
       <div class="flex items-center gap-3 flex-wrap">
         <div id="scanStatus" class="hidden text-[10px] px-3 py-1.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 font-bold scan-badge">
-          <i class="fas fa-satellite-dish mr-1"></i> Scanning chain…
+          <i class="fas fa-satellite-dish mr-1"></i> <span id="scanStatusText">Scanning…</span>
         </div>
         <button onclick="connectWallet()" id="connectBtn" class="app-button px-5 py-2.5 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl text-xs flex items-center gap-2 shadow-lg">
           <i class="fas fa-wallet text-cyan-500"></i> <span id="connectText">Connect Wallet</span>
@@ -69,6 +71,15 @@
           <i class="fas fa-moon text-lg text-cyan-400"></i>
         </button>
       </div>
+    </div>
+
+    <!-- SCAN PROGRESS -->
+    <div id="scanProgressBox" class="hidden glass rounded-2xl p-4 mb-6">
+      <div class="flex items-center justify-between text-xs mb-2">
+        <span id="scanProgressLabel" class="text-gray-400 font-semibold">Preparing scan…</span>
+        <span id="scanProgressPct" class="text-cyan-400 font-bold">0%</span>
+      </div>
+      <div class="progress-bar"><div id="scanProgressFill" class="progress-fill" style="width:0%"></div></div>
     </div>
 
     <!-- FILTERS -->
@@ -82,14 +93,14 @@
         <button onclick="setModuleFilter('agentic')" class="module-pill px-3.5 py-1.5 rounded-xl text-xs font-bold border border-white/10 bg-white/5 text-gray-400" data-module="agentic">Agentic</button>
         <button onclick="setModuleFilter('pay')" class="module-pill px-3.5 py-1.5 rounded-xl text-xs font-bold border border-white/10 bg-white/5 text-gray-400" data-module="pay">ArcPay</button>
       </div>
-      <div class="flex items-center gap-2">
-        <select id="timeRange" onchange="refreshDashboard()" class="rounded-xl px-3 py-2 text-xs font-bold">
+      <div class="flex items-center gap-2 flex-wrap">
+        <select id="timeRange" class="rounded-xl px-3 py-2 text-xs font-bold">
+          <option value="1">Last 1 day</option>
+          <option value="3" selected>Last 3 days</option>
           <option value="7">Last 7 days</option>
-          <option value="30" selected>Last 30 days</option>
-          <option value="90">Last 90 days</option>
-          <option value="all">All time (limited)</option>
+          <option value="14">Last 14 days</option>
         </select>
-        <button onclick="refreshDashboard()" class="app-button px-3.5 py-2 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-400 border border-cyan-500/30 rounded-xl text-xs font-bold"><i class="fas fa-sync-alt mr-1"></i> Rescan</button>
+        <button onclick="refreshDashboard()" id="rescanBtn" class="app-button px-3.5 py-2 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-400 border border-cyan-500/30 rounded-xl text-xs font-bold"><i class="fas fa-sync-alt mr-1"></i> Rescan</button>
       </div>
     </div>
 
@@ -106,7 +117,7 @@
     <!-- CHARTS -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
       <div class="lg:col-span-8 glass rounded-3xl p-6">
-        <div class="flex items-center justify-between mb-5"><h3 class="font-bold text-sm flex items-center gap-2"><i class="fas fa-chart-area text-cyan-400"></i> Volume Timeline</h3><span id="chartRangeLabel" class="text-[10px] text-gray-500 font-semibold">30 days</span></div>
+        <div class="flex items-center justify-between mb-5"><h3 class="font-bold text-sm flex items-center gap-2"><i class="fas fa-chart-area text-cyan-400"></i> Volume Timeline</h3><span id="chartRangeLabel" class="text-[10px] text-gray-500 font-semibold">3 days</span></div>
         <div class="chart-box"><canvas id="volumeChart"></canvas></div>
       </div>
       <div class="lg:col-span-4 glass rounded-3xl p-6">
@@ -156,20 +167,20 @@
           <h3 class="font-bold text-sm flex items-center gap-2"><i class="fas fa-stream text-cyan-400"></i> On-Chain Activity Feed</h3>
           <span id="dataSourceBadge" class="text-[10px] text-gray-500">Source: —</span>
         </div>
-        <div id="activityFeed" class="preview-scroll space-y-2"><div class="text-center py-16 text-gray-500 italic text-sm">Connect wallet &amp; rescan to load on-chain events.</div></div>
+        <div id="activityFeed" class="preview-scroll space-y-2"><div class="text-center py-16 text-gray-500 italic text-sm">Connect wallet &amp; Rescan to load events.</div></div>
       </div>
     </div>
 
     <div class="text-center text-[11px] text-gray-500 pb-6">
-      ArcSplit Analytics · Live getLogs from all proxies · Conditional+Agentic · Vesting · Role · ArcPayLink · ArcInvoice<br>
-      <span class="text-cyan-400/70">Block range limited by RPC · Cloud history merged when available</span>
+      ArcSplit Analytics · Safe sequential getLogs · Chunk size 2 000 blocks · Delay 350 ms<br>
+      <span class="text-cyan-400/70">If rate-limited: wait 30s then Rescan · Prefer smaller time range (1–3 days)</span>
     </div>
   </div>
 
   <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#0e0e1c] border border-white/10 text-white px-5 py-3 rounded-2xl shadow-2xl z-50 text-sm font-bold text-center min-w-[260px] backdrop-blur-xl"><span id="toastText"></span></div>
 
 <script>
-/* ===================== CONTRACTS & ABIs ===================== */
+/* ===================== CONTRACTS ===================== */
 const EXPLORER = "https://testnet.arcscan.app/tx/";
 const NATIVE_USDC = "0x3600000000000000000000000000000000000000";
 const ZERO = "0x0000000000000000000000000000000000000000";
@@ -194,8 +205,7 @@ const ABI = {
     "function activeRuleCount() view returns (uint256)",
     "event RuleRegistered(bytes32 indexed ruleHash, address indexed sponsor, address indexed token, bool isRecurring)",
     "event SplitExecuted(bytes32 indexed ruleHash, address indexed sponsor, address indexed recipient, address token, address relayer, uint256 netAmountPushed, uint256 feeDeducted, uint256 nonce)",
-    "event FundsDeposited(address indexed sponsor, address indexed token, uint256 amount)",
-    "event FundsWithdrawn(address indexed sponsor, address indexed token, uint256 amount)"
+    "event FundsDeposited(address indexed sponsor, address indexed token, uint256 amount)"
   ],
   vesting: [
     "event ScheduleCreated(uint256 indexed scheduleId, address indexed recipient, address indexed token, uint256 totalAmount, uint32 vestingDuration, uint32 cliffDuration, uint32 slicePeriodSeconds, bool revocable, bool allowRelayerPush)",
@@ -218,11 +228,19 @@ const ABI = {
   ]
 };
 
+/* Rate-limit safe settings */
+const CHUNK_SIZE = 2000;      // blocks per request
+const DELAY_MS = 400;         // wait between requests
+const MAX_RETRIES = 3;
+const RETRY_WAIT = 2500;      // wait on 429
+
 /* ===================== STATE ===================== */
 let provider = null, signer = null, userAddress = null, currentModule = "all";
 let volumeChart = null, moduleChart = null, tokenChart = null;
 let data = emptyData();
 let dataSource = "demo";
+let scanning = false;
+let blockTsCache = {};
 
 function emptyData() {
   return {
@@ -245,12 +263,13 @@ function emptyData() {
 }
 
 /* ===================== HELPERS ===================== */
-function showToast(m, d = 3500) {
+function showToast(m, d = 4000) {
   const t = document.getElementById("toast");
   document.getElementById("toastText").innerHTML = m;
   t.classList.remove("hidden");
   setTimeout(() => t.classList.add("hidden"), d);
 }
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 function toggleTheme() {
   document.documentElement.classList.toggle("light");
   const icon = document.getElementById("themeBtn").querySelector("i");
@@ -280,18 +299,17 @@ function fmt(n, d = 2) {
 }
 function tokenInfo(addr) {
   if (!addr) return { symbol: "USDC", decimals: 6 };
-  const k = addr.toLowerCase();
-  return TOKEN_MAP[k] || { symbol: "Other", decimals: 18 };
+  return TOKEN_MAP[addr.toLowerCase()] || { symbol: "Other", decimals: 18 };
 }
 function formatUnitsSafe(raw, decimals) {
   try { return parseFloat(ethers.formatUnits(raw, decimals)); }
   catch { return 0; }
 }
 function addTokenVol(addr, amountHuman) {
-  const info = tokenInfo(addr);
-  if (info.symbol === "USDC") data.tokens.USDC += amountHuman;
-  else if (info.symbol === "EURC") data.tokens.EURC += amountHuman;
-  else if (info.symbol === "cirBTC") data.tokens.cirBTC += amountHuman;
+  const s = tokenInfo(addr).symbol;
+  if (s === "USDC") data.tokens.USDC += amountHuman;
+  else if (s === "EURC") data.tokens.EURC += amountHuman;
+  else if (s === "cirBTC") data.tokens.cirBTC += amountHuman;
   else data.tokens.Other += amountHuman;
 }
 function pushActivity(obj) {
@@ -301,6 +319,13 @@ function pushActivity(obj) {
 }
 function dayKey(ts) {
   return new Date(ts * 1000).toISOString().slice(0, 10);
+}
+function setProgress(pct, label) {
+  document.getElementById("scanProgressBox").classList.remove("hidden");
+  document.getElementById("scanProgressFill").style.width = Math.min(100, pct) + "%";
+  document.getElementById("scanProgressPct").textContent = Math.round(pct) + "%";
+  if (label) document.getElementById("scanProgressLabel").textContent = label;
+  document.getElementById("scanStatusText").textContent = label || "Scanning…";
 }
 
 /* ===================== WALLET ===================== */
@@ -315,8 +340,7 @@ async function connectWallet() {
     document.getElementById("connectText").innerHTML = `<i class="fas fa-check-circle text-cyan-400"></i> ${short}`;
     document.getElementById("connectBtn").className = "app-button px-5 py-2.5 bg-cyan-500/15 border border-cyan-500/40 text-cyan-400 font-bold rounded-2xl text-xs flex items-center gap-2";
     document.getElementById("disconnectBtn").classList.remove("hidden");
-    showToast("Connected · scanning chain…");
-    await refreshDashboard();
+    showToast("Connected — click Rescan");
   } catch (e) {
     showToast("Connection rejected");
   }
@@ -332,409 +356,335 @@ function disconnectWallet() {
   updateUI();
 }
 
-/* ===================== ON-CHAIN SCAN ===================== */
-async function getBlockRange() {
-  const latest = await provider.getBlockNumber();
-  const days = document.getElementById("timeRange").value;
-  // ~2s block time on many L1s → ~43200 blocks / day. Use conservative window.
-  let lookback = 50000; // safe default for most public RPCs
-  if (days === "7") lookback = 30000;
-  else if (days === "30") lookback = 80000;
-  else if (days === "90") lookback = 120000;
-  else lookback = 150000;
-  // Cap to avoid RPC errors
-  lookback = Math.min(lookback, 100000);
-  const from = Math.max(0, latest - lookback);
-  return { from, to: latest };
+/* ===================== SAFE getLogs ===================== */
+async function safeGetLogs(filter) {
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    try {
+      return await provider.getLogs(filter);
+    } catch (e) {
+      const msg = (e.message || "") + (e.info?.error?.message || "") + (e.code || "");
+      const is429 = msg.includes("429") || msg.includes("rate limit") || msg.includes("-32005") || e.code === -32005;
+      const isRange = msg.includes("range") || msg.includes("exceed") || msg.includes("limit");
+      if ((is429 || isRange) && attempt < MAX_RETRIES - 1) {
+        await sleep(RETRY_WAIT * (attempt + 1));
+        continue;
+      }
+      // final fail — return empty rather than crash
+      console.warn("getLogs skip", filter.address, filter.fromBlock, e.message || e);
+      return [];
+    }
+  }
+  return [];
 }
 
-async function queryLogs(address, iface, eventNames, fromBlock, toBlock) {
-  const topics = eventNames.map(n => iface.getEvent(n).topicHash);
-  // Query each event separately to avoid topic limit issues
+async function getLogsChunked(address, topic0, fromBlock, toBlock, onChunk) {
   const all = [];
-  for (const topic of topics) {
-    try {
-      const logs = await provider.getLogs({
-        address,
-        topics: [topic],
-        fromBlock,
-        toBlock
-      });
-      all.push(...logs);
-    } catch (e) {
-      console.warn("getLogs partial fail", address, e.message);
-      // try smaller chunk
-      try {
-        const mid = Math.floor((fromBlock + toBlock) / 2);
-        const a = await provider.getLogs({ address, topics: [topic], fromBlock, toBlock: mid });
-        const b = await provider.getLogs({ address, topics: [topic], fromBlock: mid + 1, toBlock });
-        all.push(...a, ...b);
-      } catch (e2) {
-        console.warn("chunked getLogs failed", e2.message);
-      }
-    }
+  let start = fromBlock;
+  while (start <= toBlock) {
+    const end = Math.min(start + CHUNK_SIZE - 1, toBlock);
+    const logs = await safeGetLogs({
+      address,
+      topics: [topic0],
+      fromBlock: start,
+      toBlock: end
+    });
+    all.push(...logs);
+    if (onChunk) onChunk(start, end);
+    start = end + 1;
+    if (start <= toBlock) await sleep(DELAY_MS);
   }
   return all;
 }
 
-async function scanPayLink(fromBlock, toBlock) {
-  const iface = new ethers.Interface(ABI.payLink);
-  const logs = await queryLogs(CONTRACTS.payLink, iface, ["LinkCreated", "LinkClaimed", "LinkCancelled"], fromBlock, toBlock);
-  const daily = {};
-  for (const log of logs) {
-    try {
-      const parsed = iface.parseLog({ topics: log.topics, data: log.data });
-      if (!parsed) continue;
-      const block = await provider.getBlock(log.blockNumber).catch(() => null);
-      const ts = block ? block.timestamp : Math.floor(Date.now() / 1000);
-      const name = parsed.name;
-
-      if (name === "LinkCreated") {
-        const token = parsed.args.token;
-        const amount = formatUnitsSafe(parsed.args.amount, tokenInfo(token).decimals);
-        data.modules.pay.links.created++;
-        data.modules.pay.links.vol += amount;
-        data.volume += amount;
-        data.links++;
-        addTokenVol(token, amount);
-        daily[dayKey(ts)] = (daily[dayKey(ts)] || 0) + amount;
-        pushActivity({
-          type: "Payment Link Created",
-          amount,
-          token: tokenInfo(token).symbol,
-          memo: `linkId ${String(parsed.args.linkId).slice(0, 10)}…`,
-          hash: log.transactionHash,
-          timestamp: ts * 1000,
-          module: "pay",
-          recipient: parsed.args.creator
-        });
-      } else if (name === "LinkClaimed") {
-        const amount = formatUnitsSafe(parsed.args.amount, 6); // amount already human in event is wei of token; we don't have token here easily — use 6 as default for USDC-native
-        // Better: amount is net transferred; fee separate. Token not in event — assume USDC-native scale or re-fetch
-        data.modules.pay.links.claimed++;
-        // volume already counted on create; optionally count claimed separately without double-counting volume
-        pushActivity({
-          type: "Payment Link Claimed",
-          amount: formatUnitsSafe(parsed.args.amount, 6),
-          token: "USDC",
-          memo: `relayer ${String(parsed.args.relayer).slice(0, 8)}…`,
-          hash: log.transactionHash,
-          timestamp: ts * 1000,
-          module: "pay",
-          recipient: parsed.args.destination
-        });
-      } else if (name === "LinkCancelled") {
-        data.modules.pay.links.cancelled++;
-        pushActivity({
-          type: "Payment Link Cancelled",
-          amount: formatUnitsSafe(parsed.args.amount, 6),
-          token: "USDC",
-          memo: "Refund to creator",
-          hash: log.transactionHash,
-          timestamp: ts * 1000,
-          module: "pay",
-          recipient: parsed.args.creator
-        });
-      }
-    } catch (e) { console.warn("payLink parse", e); }
+async function getBlockTs(bn) {
+  if (blockTsCache[bn]) return blockTsCache[bn];
+  try {
+    const b = await provider.getBlock(bn);
+    const ts = b ? b.timestamp : Math.floor(Date.now() / 1000);
+    blockTsCache[bn] = ts;
+    return ts;
+  } catch {
+    return Math.floor(Date.now() / 1000);
   }
-  return daily;
 }
 
-async function scanInvoice(fromBlock, toBlock) {
-  const iface = new ethers.Interface(ABI.invoice);
-  const logs = await queryLogs(CONTRACTS.invoice, iface, ["InvoiceCreated", "InvoicePaid", "InvoiceCancelled"], fromBlock, toBlock);
+/* ===================== SCANNERS (sequential) ===================== */
+async function scanContract(name, address, abi, eventHandlers, fromBlock, toBlock, progressBase, progressSpan) {
+  const iface = new ethers.Interface(abi);
+  const eventNames = Object.keys(eventHandlers);
+  const topics = eventNames.map(n => {
+    try { return iface.getEvent(n).topicHash; } catch { return null; }
+  }).filter(Boolean);
+
+  const totalChunks = Math.ceil((toBlock - fromBlock + 1) / CHUNK_SIZE) * topics.length;
+  let doneChunks = 0;
   const daily = {};
-  // Cache amounts from create for paid events
-  const invAmounts = {};
-  for (const log of logs) {
-    try {
-      const parsed = iface.parseLog({ topics: log.topics, data: log.data });
-      if (!parsed) continue;
-      const block = await provider.getBlock(log.blockNumber).catch(() => null);
-      const ts = block ? block.timestamp : Math.floor(Date.now() / 1000);
-      const name = parsed.name;
 
-      if (name === "InvoiceCreated") {
-        const token = parsed.args.token;
-        const amount = formatUnitsSafe(parsed.args.amount, tokenInfo(token).decimals);
-        invAmounts[parsed.args.invoiceId.toString()] = { amount, token };
-        data.modules.pay.invoices.created++;
-        data.modules.pay.invoices.vol += amount;
-        data.volume += amount;
-        data.invoices++;
-        addTokenVol(token, amount);
-        daily[dayKey(ts)] = (daily[dayKey(ts)] || 0) + amount;
-        pushActivity({
-          type: "Invoice Created",
-          amount,
-          token: tokenInfo(token).symbol,
-          memo: `Invoice #${parsed.args.invoiceId}`,
-          hash: log.transactionHash,
-          timestamp: ts * 1000,
-          module: "pay",
-          recipient: parsed.args.issuer
-        });
-      } else if (name === "InvoicePaid") {
-        const id = parsed.args.invoiceId.toString();
-        const cached = invAmounts[id];
-        const amount = cached ? cached.amount : formatUnitsSafe(parsed.args.amountPaid, 6);
-        data.modules.pay.invoices.paid++;
-        pushActivity({
-          type: "Invoice Paid",
-          amount,
-          token: cached ? tokenInfo(cached.token).symbol : "USDC",
-          memo: `Invoice #${id}`,
-          hash: log.transactionHash,
-          timestamp: ts * 1000,
-          module: "pay",
-          recipient: parsed.args.payer
-        });
-      } else if (name === "InvoiceCancelled") {
-        data.modules.pay.invoices.cancelled++;
-        pushActivity({
-          type: "Invoice Cancelled",
-          amount: 0,
-          token: "—",
-          memo: `Invoice #${parsed.args.invoiceId}`,
-          hash: log.transactionHash,
-          timestamp: ts * 1000,
-          module: "pay"
-        });
-      }
-    } catch (e) { console.warn("invoice parse", e); }
-  }
-  return daily;
-}
+  for (let ti = 0; ti < topics.length; ti++) {
+    const topic = topics[ti];
+    const ename = eventNames[ti];
+    const logs = await getLogsChunked(address, topic, fromBlock, toBlock, () => {
+      doneChunks++;
+      const pct = progressBase + (doneChunks / Math.max(1, totalChunks)) * progressSpan;
+      setProgress(pct, `Scanning ${name} · ${ename}`);
+    });
 
-async function scanConditional(fromBlock, toBlock) {
-  const iface = new ethers.Interface(ABI.conditional);
-  const logs = await queryLogs(CONTRACTS.conditional, iface, ["RuleRegistered", "SplitExecuted", "FundsDeposited"], fromBlock, toBlock);
-  const daily = {};
-  for (const log of logs) {
-    try {
-      const parsed = iface.parseLog({ topics: log.topics, data: log.data });
-      if (!parsed) continue;
-      const block = await provider.getBlock(log.blockNumber).catch(() => null);
-      const ts = block ? block.timestamp : Math.floor(Date.now() / 1000);
-      const name = parsed.name;
-
-      if (name === "RuleRegistered") {
-        data.modules.conditional.rules++;
-        // Agentic also uses this — count half heuristically or all under conditional + agentic share
-        pushActivity({
-          type: "Rule Registered",
-          amount: 0,
-          token: tokenInfo(parsed.args.token).symbol,
-          memo: parsed.args.isRecurring ? "Recurring" : "One-time",
-          hash: log.transactionHash,
-          timestamp: ts * 1000,
-          module: "conditional",
-          recipient: parsed.args.sponsor
-        });
-      } else if (name === "SplitExecuted") {
-        const token = parsed.args.token;
-        const amount = formatUnitsSafe(parsed.args.netAmountPushed, tokenInfo(token).decimals);
-        const fee = formatUnitsSafe(parsed.args.feeDeducted, tokenInfo(token).decimals);
-        data.modules.conditional.vol += amount;
-        data.modules.conditional.exec++;
-        data.modules.agentic.vol += amount * 0.3; // shared contract — approximate split for UI
-        data.modules.agentic.exec++;
-        data.modules.agentic.fees += fee;
-        data.volume += amount;
-        addTokenVol(token, amount);
-        daily[dayKey(ts)] = (daily[dayKey(ts)] || 0) + amount;
-        pushActivity({
-          type: "Conditional / Agentic Push",
-          amount,
-          token: tokenInfo(token).symbol,
-          memo: fee > 0 ? `Fee ${fmt(fee)}` : "Executed",
-          hash: log.transactionHash,
-          timestamp: ts * 1000,
-          module: "conditional",
-          recipient: parsed.args.recipient
-        });
-      } else if (name === "FundsDeposited") {
-        const token = parsed.args.token;
-        const amount = formatUnitsSafe(parsed.args.amount, tokenInfo(token).decimals);
-        addTokenVol(token, amount);
-        pushActivity({
-          type: "Funds Deposited",
-          amount,
-          token: tokenInfo(token).symbol,
-          memo: "Treasury deposit",
-          hash: log.transactionHash,
-          timestamp: ts * 1000,
-          module: "conditional",
-          recipient: parsed.args.sponsor
-        });
-      }
-    } catch (e) { console.warn("cond parse", e); }
-  }
-  return daily;
-}
-
-async function scanVesting(fromBlock, toBlock) {
-  const iface = new ethers.Interface(ABI.vesting);
-  const logs = await queryLogs(CONTRACTS.vesting, iface, ["ScheduleCreated", "VestedAmountPushed"], fromBlock, toBlock);
-  const daily = {};
-  for (const log of logs) {
-    try {
-      const parsed = iface.parseLog({ topics: log.topics, data: log.data });
-      if (!parsed) continue;
-      const block = await provider.getBlock(log.blockNumber).catch(() => null);
-      const ts = block ? block.timestamp : Math.floor(Date.now() / 1000);
-
-      if (parsed.name === "ScheduleCreated") {
-        const token = parsed.args.token;
-        const amount = formatUnitsSafe(parsed.args.totalAmount, tokenInfo(token).decimals);
-        data.modules.vesting.vol += amount;
-        data.modules.vesting.schedules++;
-        data.modules.vesting.locked += amount;
-        data.volume += amount;
-        addTokenVol(token, amount);
-        daily[dayKey(ts)] = (daily[dayKey(ts)] || 0) + amount;
-        pushActivity({
-          type: "Vesting Schedule Created",
-          amount,
-          token: tokenInfo(token).symbol,
-          memo: `Duration ${parsed.args.vestingDuration}s`,
-          hash: log.transactionHash,
-          timestamp: ts * 1000,
-          module: "vesting",
-          recipient: parsed.args.recipient
-        });
-      } else if (parsed.name === "VestedAmountPushed") {
-        const token = parsed.args.token;
-        const amount = formatUnitsSafe(parsed.args.amountReceived, tokenInfo(token).decimals);
-        data.modules.vesting.pushes++;
-        data.modules.vesting.locked = Math.max(0, data.modules.vesting.locked - amount);
-        pushActivity({
-          type: "Vested Amount Pushed",
-          amount,
-          token: tokenInfo(token).symbol,
-          memo: "Release",
-          hash: log.transactionHash,
-          timestamp: ts * 1000,
-          module: "vesting",
-          recipient: parsed.args.recipient
-        });
-      }
-    } catch (e) { console.warn("vest parse", e); }
-  }
-  return daily;
-}
-
-async function scanRole(fromBlock, toBlock) {
-  const iface = new ethers.Interface(ABI.role);
-  const logs = await queryLogs(CONTRACTS.role, iface, ["BatchPercentageExecuted", "BatchAmountExecuted"], fromBlock, toBlock);
-  const daily = {};
-  for (const log of logs) {
-    try {
-      const parsed = iface.parseLog({ topics: log.topics, data: log.data });
-      if (!parsed) continue;
-      const block = await provider.getBlock(log.blockNumber).catch(() => null);
-      const ts = block ? block.timestamp : Math.floor(Date.now() / 1000);
-      const token = parsed.args.token;
-      const amount = formatUnitsSafe(parsed.args.totalDistributed, tokenInfo(token).decimals);
-      data.modules.role.vol += amount;
-      data.modules.role.batches++;
-      data.batches++;
-      data.volume += amount;
-      addTokenVol(token, amount);
-      daily[dayKey(ts)] = (daily[dayKey(ts)] || 0) + amount;
-      pushActivity({
-        type: parsed.name === "BatchPercentageExecuted" ? "Role % Batch" : "Role Amount Batch",
-        amount,
-        token: tokenInfo(token).symbol,
-        memo: `Batch #${parsed.args.batchId}`,
-        hash: log.transactionHash,
-        timestamp: ts * 1000,
-        module: "role",
-        recipient: parsed.args.sender
-      });
-    } catch (e) { console.warn("role parse", e); }
+    for (const log of logs) {
+      try {
+        const parsed = iface.parseLog({ topics: log.topics, data: log.data });
+        if (!parsed) continue;
+        const ts = await getBlockTs(log.blockNumber);
+        const result = eventHandlers[parsed.name](parsed.args, log, ts);
+        if (result && result.dayVol) {
+          daily[dayKey(ts)] = (daily[dayKey(ts)] || 0) + result.dayVol;
+        }
+      } catch (e) { /* ignore bad log */ }
+    }
+    await sleep(DELAY_MS);
   }
   return daily;
 }
 
 async function fetchOnChainAll() {
-  if (!provider) return false;
+  if (!provider || scanning) return false;
+  scanning = true;
   document.getElementById("scanStatus").classList.remove("hidden");
+  document.getElementById("rescanBtn").disabled = true;
   data = emptyData();
+  blockTsCache = {};
+
   try {
-    const { from, to } = await getBlockRange();
-    showToast(`Scanning blocks ${from} → ${to}…`, 5000);
+    const latest = await provider.getBlockNumber();
+    const days = parseInt(document.getElementById("timeRange").value, 10) || 3;
+    // ~2s block → ~43200 / day. Cap hard for MetaMask public RPC.
+    const blocksPerDay = 40000;
+    let lookback = days * blocksPerDay;
+    lookback = Math.min(lookback, days <= 1 ? 25000 : days <= 3 ? 50000 : days <= 7 ? 80000 : 100000);
+    const fromBlock = Math.max(0, latest - lookback);
+    const toBlock = latest;
 
-    // Parallel scans
-    const [dPay, dInv, dCond, dVest, dRole] = await Promise.all([
-      scanPayLink(from, to),
-      scanInvoice(from, to),
-      scanConditional(from, to),
-      scanVesting(from, to),
-      scanRole(from, to)
-    ]);
+    setProgress(2, `Blocks ${fromBlock} → ${toBlock}`);
 
-    // Merge timelines
-    const daily = {};
-    for (const d of [dPay, dInv, dCond, dVest, dRole]) {
-      for (const [k, v] of Object.entries(d)) daily[k] = (daily[k] || 0) + v;
+    // 5 contracts × ~3 events — sequential, each gets 18% of progress
+    const jobs = [
+      {
+        name: "PayLink",
+        address: CONTRACTS.payLink,
+        abi: ABI.payLink,
+        handlers: {
+          LinkCreated: (args, log, ts) => {
+            const token = args.token;
+            const amount = formatUnitsSafe(args.amount, tokenInfo(token).decimals);
+            data.modules.pay.links.created++;
+            data.modules.pay.links.vol += amount;
+            data.volume += amount;
+            data.links++;
+            addTokenVol(token, amount);
+            pushActivity({ type: "Payment Link Created", amount, token: tokenInfo(token).symbol, memo: `link ${String(args.linkId).slice(0, 10)}…`, hash: log.transactionHash, timestamp: ts * 1000, module: "pay", recipient: args.creator });
+            return { dayVol: amount };
+          },
+          LinkClaimed: (args, log, ts) => {
+            const amount = formatUnitsSafe(args.amount, 6);
+            data.modules.pay.links.claimed++;
+            pushActivity({ type: "Payment Link Claimed", amount, token: "USDC", memo: `→ ${String(args.destination).slice(0, 8)}…`, hash: log.transactionHash, timestamp: ts * 1000, module: "pay", recipient: args.destination });
+            return null;
+          },
+          LinkCancelled: (args, log, ts) => {
+            const amount = formatUnitsSafe(args.amount, 6);
+            data.modules.pay.links.cancelled++;
+            pushActivity({ type: "Payment Link Cancelled", amount, token: "USDC", memo: "Refund", hash: log.transactionHash, timestamp: ts * 1000, module: "pay", recipient: args.creator });
+            return null;
+          }
+        }
+      },
+      {
+        name: "Invoice",
+        address: CONTRACTS.invoice,
+        abi: ABI.invoice,
+        handlers: {
+          InvoiceCreated: (args, log, ts) => {
+            const token = args.token;
+            const amount = formatUnitsSafe(args.amount, tokenInfo(token).decimals);
+            data.modules.pay.invoices.created++;
+            data.modules.pay.invoices.vol += amount;
+            data.volume += amount;
+            data.invoices++;
+            addTokenVol(token, amount);
+            pushActivity({ type: "Invoice Created", amount, token: tokenInfo(token).symbol, memo: `Invoice #${args.invoiceId}`, hash: log.transactionHash, timestamp: ts * 1000, module: "pay", recipient: args.issuer });
+            return { dayVol: amount };
+          },
+          InvoicePaid: (args, log, ts) => {
+            const amount = formatUnitsSafe(args.amountPaid, 6);
+            data.modules.pay.invoices.paid++;
+            pushActivity({ type: "Invoice Paid", amount, token: "USDC", memo: `Invoice #${args.invoiceId}`, hash: log.transactionHash, timestamp: ts * 1000, module: "pay", recipient: args.payer });
+            return null;
+          },
+          InvoiceCancelled: (args, log, ts) => {
+            data.modules.pay.invoices.cancelled++;
+            pushActivity({ type: "Invoice Cancelled", amount: 0, token: "—", memo: `Invoice #${args.invoiceId}`, hash: log.transactionHash, timestamp: ts * 1000, module: "pay" });
+            return null;
+          }
+        }
+      },
+      {
+        name: "Conditional",
+        address: CONTRACTS.conditional,
+        abi: ABI.conditional,
+        handlers: {
+          RuleRegistered: (args, log, ts) => {
+            data.modules.conditional.rules++;
+            pushActivity({ type: "Rule Registered", amount: 0, token: tokenInfo(args.token).symbol, memo: args.isRecurring ? "Recurring" : "One-time", hash: log.transactionHash, timestamp: ts * 1000, module: "conditional", recipient: args.sponsor });
+            return null;
+          },
+          SplitExecuted: (args, log, ts) => {
+            const token = args.token;
+            const amount = formatUnitsSafe(args.netAmountPushed, tokenInfo(token).decimals);
+            const fee = formatUnitsSafe(args.feeDeducted, tokenInfo(token).decimals);
+            data.modules.conditional.vol += amount;
+            data.modules.conditional.exec++;
+            data.modules.agentic.vol += amount * 0.25;
+            data.modules.agentic.exec++;
+            data.modules.agentic.fees += fee;
+            data.volume += amount;
+            addTokenVol(token, amount);
+            pushActivity({ type: "Conditional / Agentic Push", amount, token: tokenInfo(token).symbol, memo: fee > 0 ? `Fee ${fmt(fee)}` : "Executed", hash: log.transactionHash, timestamp: ts * 1000, module: "conditional", recipient: args.recipient });
+            return { dayVol: amount };
+          },
+          FundsDeposited: (args, log, ts) => {
+            const token = args.token;
+            const amount = formatUnitsSafe(args.amount, tokenInfo(token).decimals);
+            addTokenVol(token, amount);
+            pushActivity({ type: "Funds Deposited", amount, token: tokenInfo(token).symbol, memo: "Treasury", hash: log.transactionHash, timestamp: ts * 1000, module: "conditional", recipient: args.sponsor });
+            return null;
+          }
+        }
+      },
+      {
+        name: "Vesting",
+        address: CONTRACTS.vesting,
+        abi: ABI.vesting,
+        handlers: {
+          ScheduleCreated: (args, log, ts) => {
+            const token = args.token;
+            const amount = formatUnitsSafe(args.totalAmount, tokenInfo(token).decimals);
+            data.modules.vesting.vol += amount;
+            data.modules.vesting.schedules++;
+            data.modules.vesting.locked += amount;
+            data.volume += amount;
+            addTokenVol(token, amount);
+            pushActivity({ type: "Vesting Schedule", amount, token: tokenInfo(token).symbol, memo: `${args.vestingDuration}s duration`, hash: log.transactionHash, timestamp: ts * 1000, module: "vesting", recipient: args.recipient });
+            return { dayVol: amount };
+          },
+          VestedAmountPushed: (args, log, ts) => {
+            const token = args.token;
+            const amount = formatUnitsSafe(args.amountReceived, tokenInfo(token).decimals);
+            data.modules.vesting.pushes++;
+            data.modules.vesting.locked = Math.max(0, data.modules.vesting.locked - amount);
+            pushActivity({ type: "Vested Push", amount, token: tokenInfo(token).symbol, memo: "Release", hash: log.transactionHash, timestamp: ts * 1000, module: "vesting", recipient: args.recipient });
+            return null;
+          }
+        }
+      },
+      {
+        name: "Role",
+        address: CONTRACTS.role,
+        abi: ABI.role,
+        handlers: {
+          BatchPercentageExecuted: (args, log, ts) => {
+            const token = args.token;
+            const amount = formatUnitsSafe(args.totalDistributed, tokenInfo(token).decimals);
+            data.modules.role.vol += amount;
+            data.modules.role.batches++;
+            data.batches++;
+            data.volume += amount;
+            addTokenVol(token, amount);
+            pushActivity({ type: "Role % Batch", amount, token: tokenInfo(token).symbol, memo: `Batch #${args.batchId}`, hash: log.transactionHash, timestamp: ts * 1000, module: "role", recipient: args.sender });
+            return { dayVol: amount };
+          },
+          BatchAmountExecuted: (args, log, ts) => {
+            const token = args.token;
+            const amount = formatUnitsSafe(args.totalDistributed, tokenInfo(token).decimals);
+            data.modules.role.vol += amount;
+            data.modules.role.batches++;
+            data.batches++;
+            data.volume += amount;
+            addTokenVol(token, amount);
+            pushActivity({ type: "Role Amount Batch", amount, token: tokenInfo(token).symbol, memo: `Batch #${args.batchId}`, hash: log.transactionHash, timestamp: ts * 1000, module: "role", recipient: args.sender });
+            return { dayVol: amount };
+          }
+        }
+      }
+    ];
+
+    const dailyAll = {};
+    for (let i = 0; i < jobs.length; i++) {
+      const job = jobs[i];
+      const base = 5 + i * 17;
+      const d = await scanContract(job.name, job.address, job.abi, job.handlers, fromBlock, toBlock, base, 17);
+      for (const [k, v] of Object.entries(d)) dailyAll[k] = (dailyAll[k] || 0) + v;
     }
-    data.timeline = Object.entries(daily).map(([date, volume]) => ({ date, volume })).sort((a, b) => a.date.localeCompare(b.date));
 
-    // Live views
+    data.timeline = Object.entries(dailyAll).map(([date, volume]) => ({ date, volume })).sort((a, b) => a.date.localeCompare(b.date));
+
+    // Live view calls (cheap)
+    setProgress(92, "Reading live counters…");
     try {
       const cond = new ethers.Contract(CONTRACTS.conditional, ABI.conditional, provider);
       const active = await cond.activeRuleCount();
       data.modules.conditional.active = Number(active);
       data.active = Number(active);
     } catch {}
-
+    await sleep(300);
     try {
       const inv = new ethers.Contract(CONTRACTS.invoice, ABI.invoice, provider);
       const counter = await inv.invoiceCounter();
-      // fill created if events missed some
       if (Number(counter) > data.modules.pay.invoices.created) {
         data.modules.pay.invoices.created = Number(counter);
         data.invoices = Math.max(data.invoices, Number(counter));
       }
     } catch {}
 
+    setProgress(100, "Done");
     dataSource = "on-chain";
+    await sleep(400);
+    document.getElementById("scanProgressBox").classList.add("hidden");
     document.getElementById("scanStatus").classList.add("hidden");
+    scanning = false;
+    document.getElementById("rescanBtn").disabled = false;
     return true;
   } catch (e) {
-    console.error("scan failed", e);
+    console.error(e);
+    document.getElementById("scanProgressBox").classList.add("hidden");
     document.getElementById("scanStatus").classList.add("hidden");
-    showToast("On-chain scan failed: " + (e.shortMessage || e.message || "RPC error"), 6000);
+    scanning = false;
+    document.getElementById("rescanBtn").disabled = false;
+    showToast("Scan error: " + (e.shortMessage || e.message || "RPC"), 6000);
     return false;
   }
 }
 
-/* ===================== CLOUD MERGE ===================== */
+/* ===================== CLOUD ===================== */
 async function mergeCloud() {
   if (!userAddress || typeof fetchHistoryFromCloud !== "function") return;
   try {
     const hist = await fetchHistoryFromCloud(userAddress);
-    if (!hist || !hist.length) return;
-    // Only add activity items that we don't already have by hash
+    if (!hist?.length) return;
     const seen = new Set(data.activity.map(a => a.hash).filter(Boolean));
     hist.forEach(item => {
       const hash = item.hash || item.txHash;
       if (hash && seen.has(hash)) return;
       const amount = parseFloat(item.amount || item.totalAmount || 0) || 0;
-      const tokenSym = (item.tokenSymbol || item.token || "USDC").toString().toUpperCase();
+      const tok = (item.tokenSymbol || item.token || "USDC").toString().toUpperCase();
       const type = (item.type || item.memo || "").toLowerCase();
       let mod = "other";
       if (type.includes("link") || type.includes("invoice") || type.includes("pay")) mod = "pay";
       else if (type.includes("vest")) mod = "vesting";
       else if (type.includes("condition") || type.includes("agentic") || type.includes("rule")) mod = "conditional";
       else if (type.includes("role") || type.includes("batch") || type.includes("giveaway") || type.includes("split")) mod = "role";
-
       pushActivity({
-        type: item.type || item.memo || "Cloud record",
+        type: item.type || item.memo || "Cloud",
         amount,
-        token: tokenSym.includes("USDC") ? "USDC" : tokenSym.includes("EURC") ? "EURC" : tokenSym.includes("BTC") ? "cirBTC" : "Other",
+        token: tok.includes("USDC") ? "USDC" : tok.includes("EURC") ? "EURC" : tok.includes("BTC") ? "cirBTC" : "Other",
         memo: item.memo || "",
         hash,
         timestamp: item.timestamp || Date.now(),
@@ -742,10 +692,10 @@ async function mergeCloud() {
       });
     });
     if (dataSource === "on-chain") dataSource = "on-chain + cloud";
-  } catch (e) { console.warn("cloud merge", e); }
+  } catch (e) { console.warn(e); }
 }
 
-/* ===================== DEMO FALLBACK ===================== */
+/* ===================== DEMO ===================== */
 function loadDemo() {
   data.volume = 284650; data.tx = 612; data.active = 57;
   data.recipients = new Set(Array.from({ length: 214 }, (_, i) => "0x" + i));
@@ -763,59 +713,46 @@ function loadDemo() {
   data.tokens = { USDC: 198400, EURC: 42100, cirBTC: 28400, Other: 15750 };
   const today = new Date();
   data.timeline = [];
-  for (let i = 29; i >= 0; i--) {
+  for (let i = 6; i >= 0; i--) {
     const d = new Date(today); d.setDate(d.getDate() - i);
-    const base = 4500 + Math.random() * 9000;
-    const boost = (d.getDay() === 0 || d.getDay() === 6) ? 0.65 : 1.15;
-    data.timeline.push({ date: d.toISOString().slice(0, 10), volume: Math.round(base * boost) });
+    data.timeline.push({ date: d.toISOString().slice(0, 10), volume: Math.round(4000 + Math.random() * 8000) });
   }
-  const samples = [
-    { type: "Payment Link Created", amount: 750, token: "USDC", memo: "Birthday gift", module: "pay" },
-    { type: "Invoice Paid", amount: 3200, token: "USDC", memo: "Invoice #42", module: "pay" },
-    { type: "Link Claimed", amount: 500, token: "USDC", memo: "Relayer claim", module: "pay" },
-    { type: "Role Batch", amount: 12500, token: "EURC", memo: "Payroll", module: "role" },
-    { type: "Vesting Created", amount: 18000, token: "USDC", memo: "12M cliff", module: "vesting" },
-    { type: "Conditional Push", amount: 2800, token: "USDC", memo: "Condition met", module: "conditional" }
+  data.activity = [
+    { type: "Payment Link Created", amount: 750, token: "USDC", memo: "Gift", module: "pay", hash: "0xdemo1", timestamp: Date.now() - 3600000 },
+    { type: "Invoice Paid", amount: 3200, token: "USDC", memo: "Invoice #42", module: "pay", hash: "0xdemo2", timestamp: Date.now() - 7200000 },
+    { type: "Role Batch", amount: 12500, token: "EURC", memo: "Payroll", module: "role", hash: "0xdemo3", timestamp: Date.now() - 10800000 }
   ];
-  data.activity = samples.map((s, i) => ({ ...s, hash: "0xdemo" + i, timestamp: Date.now() - i * 7200000 }));
   dataSource = "demo";
 }
 
 /* ===================== REFRESH ===================== */
 async function refreshDashboard() {
+  if (scanning) return showToast("Scan already running…");
+  if (!provider) {
+    if (window.ethereum) {
+      try {
+        provider = new ethers.BrowserProvider(window.ethereum);
+        const accs = await provider.send("eth_accounts", []);
+        if (accs?.length) {
+          signer = await provider.getSigner();
+          userAddress = await signer.getAddress();
+        }
+      } catch {}
+    }
+  }
   if (provider) {
     const ok = await fetchOnChainAll();
     if (ok) {
       await mergeCloud();
       updateUI();
-      showToast(`On-chain scan done · ${data.tx} events`);
+      showToast(`Scan complete · ${data.tx} events`);
       return;
     }
   }
-  // fallback
   data = emptyData();
-  if (userAddress && typeof fetchHistoryFromCloud === "function") {
-    try {
-      const hist = await fetchHistoryFromCloud(userAddress);
-      // simple cloud-only path (previous logic abbreviated)
-      if (hist && hist.length) {
-        dataSource = "cloud";
-        // minimal process
-        hist.forEach(item => {
-          const amount = parseFloat(item.amount || item.totalAmount || 0) || 0;
-          data.volume += amount;
-          data.tx++;
-          const tok = (item.tokenSymbol || "USDC").toUpperCase();
-          if (tok.includes("USDC")) data.tokens.USDC += amount;
-          else if (tok.includes("EURC")) data.tokens.EURC += amount;
-          else if (tok.includes("BTC")) data.tokens.cirBTC += amount;
-          else data.tokens.Other += amount;
-        });
-      }
-    } catch {}
-  }
-  if (data.tx === 0) loadDemo();
+  loadDemo();
   updateUI();
+  showToast("Using demo data — connect + Rescan for live chain", 5000);
 }
 
 /* ===================== RENDER ===================== */
@@ -875,7 +812,7 @@ function updateUI() {
   document.getElementById("mInvCancel").textContent = fmt(inv.cancelled, 0);
 
   const range = document.getElementById("timeRange").value;
-  document.getElementById("chartRangeLabel").textContent = range === "all" ? "All time (RPC limited)" : `Last ${range} days`;
+  document.getElementById("chartRangeLabel").textContent = `Last ${range} day(s)`;
 
   renderCharts();
   renderActivity();
@@ -930,7 +867,6 @@ function renderCharts() {
   document.getElementById("moduleLegend").innerHTML = modLabels.map((l, i) => `
     <div class="flex items-center justify-between"><div class="flex items-center gap-2"><div class="w-2.5 h-2.5 rounded-full" style="background:${modCols[i]}"></div><span class="text-gray-400">${l}</span></div><span class="font-bold">${((modData[i] / totalM) * 100).toFixed(1)}%</span></div>`).join("");
 
-  // Token — ensure zeros still show
   const tokLabels = ["USDC", "EURC", "cirBTC", "Other"];
   const tokData = [data.tokens.USDC, data.tokens.EURC, data.tokens.cirBTC, data.tokens.Other];
   const tokCols = [col.cyan, col.sky, col.amber, col.rose];
@@ -954,7 +890,7 @@ function renderActivity() {
   }
   items = items.sort((a, b) => b.timestamp - a.timestamp).slice(0, 40);
   if (!items.length) {
-    box.innerHTML = `<div class="text-center py-16 text-gray-500 italic text-sm">No on-chain events in this range. Try a wider time window or Rescan.</div>`;
+    box.innerHTML = `<div class="text-center py-16 text-gray-500 italic text-sm">No events in this range. Try wider range or wait if rate-limited.</div>`;
     return;
   }
   const icons = {
@@ -968,7 +904,7 @@ function renderActivity() {
   box.innerHTML = items.map(item => {
     const m = icons[item.module] || icons.other;
     const time = new Date(item.timestamp).toLocaleString();
-    const link = item.hash && String(item.hash).startsWith("0x")
+    const link = item.hash && String(item.hash).startsWith("0x") && !String(item.hash).startsWith("0xdemo")
       ? `<a href="${EXPLORER}${item.hash}" target="_blank" class="text-[10px] text-cyan-400 hover:underline font-mono">${String(item.hash).slice(0, 10)}…</a>` : "";
     return `<div class="activity-row flex items-center gap-3.5 p-3.5 rounded-2xl border border-white/5 light:border-black/5 transition-all">
       <div class="w-10 h-10 rounded-xl ${m.b} flex items-center justify-center shrink-0"><i class="fas ${m.i} ${m.c}"></i></div>
@@ -985,7 +921,15 @@ window.addEventListener("load", async () => {
   if (window.ethereum) {
     try {
       const accs = await window.ethereum.request({ method: "eth_accounts" });
-      if (accs?.length) await connectWallet();
+      if (accs?.length) {
+        provider = new ethers.BrowserProvider(window.ethereum);
+        signer = await provider.getSigner();
+        userAddress = await signer.getAddress();
+        const short = userAddress.slice(0, 6) + "…" + userAddress.slice(-4);
+        document.getElementById("connectText").innerHTML = `<i class="fas fa-check-circle text-cyan-400"></i> ${short}`;
+        document.getElementById("connectBtn").className = "app-button px-5 py-2.5 bg-cyan-500/15 border border-cyan-500/40 text-cyan-400 font-bold rounded-2xl text-xs flex items-center gap-2";
+        document.getElementById("disconnectBtn").classList.remove("hidden");
+      }
     } catch {}
   }
 });
