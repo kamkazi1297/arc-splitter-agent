@@ -1229,14 +1229,50 @@ function updateTelegramButton() {
       return bps;
     });
     let sumBps = sharesBps.reduce((a, b) => a + b, 0);
+    let lastAdjustedBps = 0;
     if (sumBps !== TOTAL_BPS && sharesBps.length > 0) {
       const diff = TOTAL_BPS - sumBps;
+      lastAdjustedBps = diff;
       sharesBps[sharesBps.length - 1] = Math.max(0, sharesBps[sharesBps.length - 1] + diff);
     }
     // Final safety check
     sumBps = sharesBps.reduce((a, b) => a + b, 0);
     if (sumBps !== TOTAL_BPS) {
       return showToast(`Cannot normalize percentages to exactly 100% (got ${sumBps / 100}%). Adjust values.`, 5000);
+    }
+
+    // Warn when the last recipient receives a slightly larger share due to rounding
+    if (sharesBps.length >= 2) {
+      const lastBps = sharesBps[sharesBps.length - 1];
+      const idealBps = Math.floor(TOTAL_BPS / sharesBps.length);
+      const extraBps = lastBps - idealBps;
+      // Also compare against the average of the other recipients
+      const othersSum = sumBps - lastBps;
+      const othersAvg = sharesBps.length > 1 ? othersSum / (sharesBps.length - 1) : idealBps;
+      const diffFromOthers = lastBps - othersAvg;
+
+      if (Math.abs(extraBps) > 0 || Math.abs(lastAdjustedBps) > 0) {
+        const extraPercent = (extraBps / 100).toFixed(4);
+        const lastPercent = (lastBps / 100).toFixed(4);
+        const idealPercent = (idealBps / 100).toFixed(4);
+        const diffOthersPercent = (diffFromOthers / 100).toFixed(4);
+
+        let msg = `⚠️ Rounding adjustment detected\n\n`;
+        msg += `The last recipient will receive ${lastPercent}% `;
+        if (extraBps > 0) {
+          msg += `(${extraPercent}% more than an equal share of ${idealPercent}%).\n`;
+        } else if (extraBps < 0) {
+          msg += `(${Math.abs(parseFloat(extraPercent)).toFixed(4)}% less than an equal share of ${idealPercent}%).\n`;
+        } else {
+          msg += `.\n`;
+        }
+        if (Math.abs(diffFromOthers) > 0.0001) {
+          msg += `Compared to the other recipients, the difference is ${diffOthersPercent}%.\n`;
+        }
+        msg += `\nDo you want to proceed with the split?`;
+
+        if (!confirm(msg)) return;
+      }
     }
 
     if (!confirm(`Send ${totalAmount} tokens to ${addresses.length} recipients?\n\nTotal BPS: ${sumBps}/10000`)) return;
