@@ -3,246 +3,79 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ArcSplit - Analytics Dashboard</title>
+  <title>ArcSplit Analytics — Enterprise Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
   <script src="db.js"></script>
-
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-    
-    :root {
-      --accent-cyan: #06b6d4;
-      --accent-sky: #0ea5e9;
-      --accent-lime: #a3e635;
-      --accent-rose: #f43f5e;
-      --accent-amber: #f59e0b;
-      --accent-blue: #3b82f6;
-    }
-
-    body { 
-      font-family: 'Plus Jakarta Sans', system-ui, sans-serif; 
-      background: #070711;
-      background-image: 
-        radial-gradient(circle at 8% 15%, rgba(6, 182, 212, 0.09) 0%, transparent 42%),
-        radial-gradient(circle at 92% 85%, rgba(244, 63, 94, 0.07) 0%, transparent 40%),
-        radial-gradient(circle at 50% 50%, rgba(14, 165, 233, 0.05) 0%, transparent 55%);
-      color: #f8fafc;
-      min-height: 100vh;
-      overflow-x: hidden;
-    }
-    
-    .glass {
-      background: rgba(18, 18, 38, 0.65);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      border: 1px solid rgba(255, 255, 255, 0.07);
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
-    }
-    
-    .light {
-      background: #f8fafc !important; 
-      background-image: 
-        radial-gradient(circle at 8% 15%, rgba(6, 182, 212, 0.12) 0%, transparent 42%),
-        radial-gradient(circle at 92% 85%, rgba(244, 63, 94, 0.10) 0%, transparent 40%),
-        radial-gradient(circle at 50% 50%, rgba(14, 165, 233, 0.08) 0%, transparent 55%) !important;
-      color: #0f172a !important;
-    }
-
-    .light .glass {
-      background: rgba(255, 255, 255, 0.55) !important;
-      backdrop-filter: blur(24px) !important;
-      -webkit-backdrop-filter: blur(24px) !important;
-      border: 1px solid rgba(255, 255, 255, 0.85) !important;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
-    }
-
-    .light body, .light h1, .light h2, .light h3, .light label, .light .text-white {
-      color: #0f172a !important;
-    }
-    .light .text-gray-400 { color: #334155 !important; }
-    .light .text-gray-300 { color: #1e293b !important; }
-    .light .text-gray-500 { color: #475569 !important; }
-    .light .text-slate-400 { color: #334155 !important; }
-    .light .text-slate-500 { color: #475569 !important; }
-    .light .text-slate-600 { color: #1e293b !important; }
-
-    .light .text-cyan-400 { color: #0e7490 !important; }
-    .light .text-sky-400 { color: #0369a1 !important; }
-    .light .text-lime-400 { color: #3f6212 !important; }
-    .light .text-rose-400 { color: #be123c !important; }
-    .light .text-amber-400 { color: #b45309 !important; }
-    .light .text-blue-400 { color: #1d4ed8 !important; }
-
-    .kpi-card {
-      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .kpi-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 25px 50px rgba(0, 0, 0, 0.35);
-    }
-    .light .kpi-card:hover {
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.08);
-    }
-
-    .module-pill {
-      transition: all 0.2s ease;
-    }
-    .module-pill.active {
-      background: linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(14, 165, 233, 0.15));
-      border-color: rgba(6, 182, 212, 0.5);
-      color: #22d3ee;
-    }
-    .light .module-pill.active {
-      background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(14, 165, 233, 0.12));
-      border-color: rgba(14, 116, 144, 0.45);
-      color: #0e7490 !important;
-    }
-
-    .chart-container {
-      position: relative;
-      height: 280px;
-    }
-
-    .activity-row:hover {
-      background: rgba(255, 255, 255, 0.04);
-    }
-    .light .activity-row:hover {
-      background: rgba(0, 0, 0, 0.03);
-    }
-
-    .app-button {
-      position: relative;
-      overflow: hidden;
-      transition: all 0.25s ease;
-    }
-    .app-button:active {
-      transform: scale(0.98);
-    }
-
-    .light #toast, .light #toast span, .light #toast i {
-      color: #ffffff !important;
-    }
-
-    .gradient-text {
-      background: linear-gradient(90deg, #06b6d4, #0ea5e9, #a3e635);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-    }
-    .light .gradient-text {
-      background: linear-gradient(90deg, #0e7490, #0369a1, #3f6212) !important;
-      -webkit-background-clip: text !important;
-      -webkit-text-fill-color: transparent !important;
-    }
-
-    .skeleton {
-      background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.5s infinite;
-      border-radius: 12px;
-    }
-    .light .skeleton {
-      background: linear-gradient(90deg, rgba(0,0,0,0.04) 25%, rgba(0,0,0,0.08) 50%, rgba(0,0,0,0.04) 75%);
-      background-size: 200% 100%;
-    }
-    @keyframes shimmer {
-      0% { background-position: 200% 0; }
-      100% { background-position: -200% 0; }
-    }
-
-    select, input {
-      background-color: rgba(255, 255, 255, 0.03);
-      color: white;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    select:focus, input:focus {
-      border-color: #06b6d4;
-      box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.15);
-      outline: none;
-    }
-    .light select, .light input {
-      background-color: #ffffff !important;
-      color: #0f172a !important;
-      border: 1px solid rgba(0, 0, 0, 0.1) !important;
-    }
-    .light select:focus, .light input:focus {
-      border-color: #06b6d4 !important;
-      box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.15) !important;
-    }
-    select option {
-      background-color: #0f172a;
-      color: white;
-    }
-    .light select option {
-      background-color: #ffffff !important;
-      color: #0f172a !important;
-    }
-
-    .preview-scroll {
-      max-height: 420px;
-      overflow-y: auto;
-      scrollbar-width: thin;
-      scrollbar-color: rgba(255,255,255,0.2) transparent;
-    }
-    .light .preview-scroll {
-      scrollbar-color: rgba(0,0,0,0.2) transparent;
-    }
-    .preview-scroll::-webkit-scrollbar { width: 5px; }
-    .preview-scroll::-webkit-scrollbar-thumb {
-      background-color: rgba(255,255,255,0.2);
-      border-radius: 10px;
-    }
-    .light .preview-scroll::-webkit-scrollbar-thumb {
-      background-color: rgba(0,0,0,0.25);
-    }
-
-    @media (max-width: 640px) {
-      .max-w-7xl { max-width: 100% !important; padding-left: 12px; padding-right: 12px; }
-    }
+    body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:#06060f;background-image:radial-gradient(ellipse 80% 50% at 10% 10%,rgba(6,182,212,.07) 0%,transparent 50%),radial-gradient(ellipse 60% 40% at 90% 90%,rgba(244,63,94,.06) 0%,transparent 45%),radial-gradient(ellipse 50% 30% at 50% 50%,rgba(14,165,233,.04) 0%,transparent 60%);color:#f8fafc;min-height:100vh;overflow-x:hidden}
+    .glass{background:rgba(14,14,28,.72);backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);border:1px solid rgba(255,255,255,.06);box-shadow:0 25px 60px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.06)}
+    .light{background:#f1f5f9!important;background-image:radial-gradient(ellipse 80% 50% at 10% 10%,rgba(6,182,212,.1) 0%,transparent 50%),radial-gradient(ellipse 60% 40% at 90% 90%,rgba(244,63,94,.08) 0%,transparent 45%)!important;color:#0f172a!important}
+    .light .glass{background:rgba(255,255,255,.72)!important;border:1px solid rgba(255,255,255,.9)!important;box-shadow:0 12px 40px rgba(0,0,0,.06),inset 0 1px 0 #fff!important}
+    .light body,.light h1,.light h2,.light h3,.light label{color:#0f172a!important}
+    .light .text-gray-400{color:#334155!important}.light .text-gray-300{color:#1e293b!important}.light .text-gray-500{color:#475569!important}
+    .light .text-cyan-400{color:#0e7490!important}.light .text-sky-400{color:#0369a1!important}.light .text-lime-400{color:#3f6212!important}
+    .light .text-rose-400{color:#be123c!important}.light .text-amber-400{color:#b45309!important}.light .text-blue-400{color:#1d4ed8!important}
+    .light .text-emerald-400{color:#047857!important}.light .text-violet-400{color:#6d28d9!important}.light .text-yellow-400{color:#a16207!important}
+    .kpi-card{transition:all .35s cubic-bezier(.4,0,.2,1)}.kpi-card:hover{transform:translateY(-5px);box-shadow:0 30px 60px rgba(0,0,0,.4)}
+    .light .kpi-card:hover{box-shadow:0 20px 45px rgba(0,0,0,.1)}
+    .module-pill{transition:all .2s}.module-pill.active{background:linear-gradient(135deg,rgba(6,182,212,.22),rgba(14,165,233,.12));border-color:rgba(6,182,212,.45);color:#22d3ee}
+    .light .module-pill.active{background:linear-gradient(135deg,rgba(6,182,212,.18),rgba(14,165,233,.1));border-color:rgba(14,116,144,.4);color:#0e7490!important}
+    .chart-box{position:relative;height:260px}.chart-box-sm{position:relative;height:200px}
+    .activity-row:hover{background:rgba(255,255,255,.035)}.light .activity-row:hover{background:rgba(0,0,0,.025)}
+    .app-button{transition:all .25s}.app-button:active{transform:scale(.97)}
+    .gradient-text{background:linear-gradient(90deg,#06b6d4,#0ea5e9,#a3e635,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .light .gradient-text{background:linear-gradient(90deg,#0e7490,#0369a1,#3f6212,#b45309)!important;-webkit-background-clip:text!important;-webkit-text-fill-color:transparent!important}
+    .module-card{transition:all .3s;border-left-width:4px}.module-card:hover{transform:translateY(-3px)}
+    select,input{background:rgba(255,255,255,.03);color:#fff;border:1px solid rgba(255,255,255,.1);transition:all .25s}
+    select:focus,input:focus{border-color:#06b6d4;box-shadow:0 0 0 4px rgba(6,182,212,.15);outline:none}
+    .light select,.light input{background:#fff!important;color:#0f172a!important;border:1px solid rgba(0,0,0,.1)!important}
+    select option{background:#0f172a;color:#fff}.light select option{background:#fff!important;color:#0f172a!important}
+    .preview-scroll{max-height:480px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.15) transparent}
+    .light .preview-scroll{scrollbar-color:rgba(0,0,0,.15) transparent}
+    .preview-scroll::-webkit-scrollbar{width:5px}.preview-scroll::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:10px}
+    .light .preview-scroll::-webkit-scrollbar-thumb{background:rgba(0,0,0,.2)}
+    .light #toast,.light #toast *{color:#fff!important}
+    .stat-pill{font-size:10px;padding:2px 8px;border-radius:999px;font-weight:700}
   </style>
 </head>
-<body class="text-white min-h-screen selection:bg-cyan-500 selection:text-black">
-
-  <div class="max-w-7xl mx-auto px-4 py-6 sm:py-8">
-    
-    <!-- Header -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
-      <div>
-        <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">
-          ArcSplit <span class="gradient-text">Analytics</span>
-        </h1>
-        <p class="text-gray-400 light:text-slate-600 text-xs sm:text-sm font-medium mt-1">
-          Unified platform insights across Conditional • Vesting • Role • Agentic
-        </p>
+<body class="text-white min-h-screen selection:bg-cyan-500/40 selection:text-black">
+  <div class="max-w-[1400px] mx-auto px-4 py-6 sm:py-8">
+    <!-- HEADER -->
+    <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-5 mb-8 glass rounded-3xl p-5 sm:p-7">
+      <div class="flex items-center gap-4">
+        <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-cyan-500 via-sky-500 to-lime-400 flex items-center justify-center shadow-lg shadow-cyan-500/25">
+          <i class="fas fa-chart-pie text-white text-2xl"></i>
+        </div>
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">ArcSplit <span class="gradient-text">Analytics</span></h1>
+          <p class="text-gray-400 text-xs sm:text-sm font-medium mt-0.5">Enterprise insights across the entire ArcSplit suite</p>
+        </div>
       </div>
       <div class="flex items-center gap-3 flex-wrap">
-        <div id="walletSection" class="flex items-center gap-2">
-          <button onclick="connectWallet()" id="connectBtn" class="app-button px-5 py-2.5 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl text-xs flex items-center gap-2 shadow-lg">
-            <i class="fas fa-wallet text-cyan-500"></i> <span id="connectText">Connect Wallet</span>
-          </button>
-          <button onclick="disconnectWallet()" id="disconnectBtn" class="hidden app-button px-3 py-2.5 bg-rose-500/10 border border-rose-500/30 text-rose-400 font-bold rounded-2xl text-xs">
-            <i class="fas fa-power-off"></i>
-          </button>
-        </div>
-        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/10 light:hover:bg-black/10 border border-white/10 light:border-black/10 rounded-2xl transition-all shadow-lg">
+        <button onclick="connectWallet()" id="connectBtn" class="app-button px-5 py-2.5 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl text-xs flex items-center gap-2 shadow-lg">
+          <i class="fas fa-wallet text-cyan-500"></i> <span id="connectText">Connect Wallet</span>
+        </button>
+        <button onclick="disconnectWallet()" id="disconnectBtn" class="hidden app-button px-3 py-2.5 bg-rose-500/10 border border-rose-500/30 text-rose-400 font-bold rounded-2xl text-xs"><i class="fas fa-power-off"></i></button>
+        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/10 border border-white/10 rounded-2xl transition-all">
           <i class="fas fa-moon text-lg text-cyan-400"></i>
         </button>
       </div>
     </div>
 
-    <!-- Filters Bar -->
-    <div class="glass rounded-2xl p-4 mb-6 flex flex-wrap items-center gap-3 justify-between">
+    <!-- FILTERS -->
+    <div class="glass rounded-2xl p-4 mb-7 flex flex-wrap items-center gap-3 justify-between">
       <div class="flex flex-wrap items-center gap-2">
-        <span class="text-xs font-bold text-gray-400 uppercase tracking-wider mr-1">Module:</span>
-        <button onclick="setModuleFilter('all')" class="module-pill active px-3.5 py-1.5 rounded-xl text-xs font-bold border border-white/10 light:border-black/10 bg-white/5 light:bg-black/5" data-module="all">All</button>
-        <button onclick="setModuleFilter('conditional')" class="module-pill px-3.5 py-1.5 rounded-xl text-xs font-bold border border-white/10 light:border-black/10 bg-white/5 light:bg-black/5 text-gray-400" data-module="conditional">Conditional</button>
-        <button onclick="setModuleFilter('vesting')" class="module-pill px-3.5 py-1.5 rounded-xl text-xs font-bold border border-white/10 light:border-black/10 bg-white/5 light:bg-black/5 text-gray-400" data-module="vesting">Vesting</button>
-        <button onclick="setModuleFilter('role')" class="module-pill px-3.5 py-1.5 rounded-xl text-xs font-bold border border-white/10 light:border-black/10 bg-white/5 light:bg-black/5 text-gray-400" data-module="role">Role</button>
-        <button onclick="setModuleFilter('agentic')" class="module-pill px-3.5 py-1.5 rounded-xl text-xs font-bold border border-white/10 light:border-black/10 bg-white/5 light:bg-black/5 text-gray-400" data-module="agentic">Agentic</button>
+        <span class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mr-1">Filter</span>
+        <button onclick="setModuleFilter('all')" class="module-pill active px-3.5 py-1.5 rounded-xl text-xs font-bold border border-white/10 bg-white/5" data-module="all">All Suite</button>
+        <button onclick="setModuleFilter('conditional')" class="module-pill px-3.5 py-1.5 rounded-xl text-xs font-bold border border-white/10 bg-white/5 text-gray-400" data-module="conditional">Conditional</button>
+        <button onclick="setModuleFilter('vesting')" class="module-pill px-3.5 py-1.5 rounded-xl text-xs font-bold border border-white/10 bg-white/5 text-gray-400" data-module="vesting">Vesting</button>
+        <button onclick="setModuleFilter('role')" class="module-pill px-3.5 py-1.5 rounded-xl text-xs font-bold border border-white/10 bg-white/5 text-gray-400" data-module="role">Role / Split / Giveaway</button>
+        <button onclick="setModuleFilter('agentic')" class="module-pill px-3.5 py-1.5 rounded-xl text-xs font-bold border border-white/10 bg-white/5 text-gray-400" data-module="agentic">Agentic</button>
+        <button onclick="setModuleFilter('pay')" class="module-pill px-3.5 py-1.5 rounded-xl text-xs font-bold border border-white/10 bg-white/5 text-gray-400" data-module="pay">ArcPay</button>
       </div>
       <div class="flex items-center gap-2">
         <select id="timeRange" onchange="refreshDashboard()" class="rounded-xl px-3 py-2 text-xs font-bold">
@@ -251,865 +84,123 @@
           <option value="90">Last 90 days</option>
           <option value="all">All time</option>
         </select>
-        <button onclick="refreshDashboard()" class="app-button px-3.5 py-2 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-400 border border-cyan-500/30 rounded-xl text-xs font-bold transition-all">
-          <i class="fas fa-sync-alt mr-1"></i> Refresh
-        </button>
+        <button onclick="refreshDashboard()" class="app-button px-3.5 py-2 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-400 border border-cyan-500/30 rounded-xl text-xs font-bold"><i class="fas fa-sync-alt mr-1"></i> Refresh</button>
       </div>
     </div>
 
-    <!-- KPI Cards -->
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-      <div class="glass kpi-card rounded-3xl p-5">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Total Volume</span>
-          <div class="w-9 h-9 rounded-xl bg-cyan-500/15 flex items-center justify-center">
-            <i class="fas fa-chart-line text-cyan-400 text-sm"></i>
-          </div>
-        </div>
-        <div id="kpiVolume" class="text-2xl sm:text-3xl font-extrabold text-cyan-400">—</div>
-        <div id="kpiVolumeSub" class="text-[11px] text-gray-500 mt-1">USDC equivalent</div>
-      </div>
-
-      <div class="glass kpi-card rounded-3xl p-5">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Transactions</span>
-          <div class="w-9 h-9 rounded-xl bg-sky-500/15 flex items-center justify-center">
-            <i class="fas fa-exchange-alt text-sky-400 text-sm"></i>
-          </div>
-        </div>
-        <div id="kpiTxCount" class="text-2xl sm:text-3xl font-extrabold text-sky-400">—</div>
-        <div id="kpiTxSub" class="text-[11px] text-gray-500 mt-1">Successful ops</div>
-      </div>
-
-      <div class="glass kpi-card rounded-3xl p-5">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Active Rules / Schedules</span>
-          <div class="w-9 h-9 rounded-xl bg-lime-500/15 flex items-center justify-center">
-            <i class="fas fa-lock text-lime-400 text-sm"></i>
-          </div>
-        </div>
-        <div id="kpiActive" class="text-2xl sm:text-3xl font-extrabold text-lime-400">—</div>
-        <div id="kpiActiveSub" class="text-[11px] text-gray-500 mt-1">On-chain live</div>
-      </div>
-
-      <div class="glass kpi-card rounded-3xl p-5">
-        <div class="flex items-center justify-between mb-3">
-          <span class="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Unique Recipients</span>
-          <div class="w-9 h-9 rounded-xl bg-rose-500/15 flex items-center justify-center">
-            <i class="fas fa-users text-rose-400 text-sm"></i>
-          </div>
-        </div>
-        <div id="kpiRecipients" class="text-2xl sm:text-3xl font-extrabold text-rose-400">—</div>
-        <div id="kpiRecipientsSub" class="text-[11px] text-gray-500 mt-1">Across modules</div>
-      </div>
+    <!-- KPIs -->
+    <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
+      <div class="glass kpi-card rounded-3xl p-5"><div class="flex items-center justify-between mb-3"><span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Total Volume</span><div class="w-8 h-8 rounded-xl bg-cyan-500/15 flex items-center justify-center"><i class="fas fa-chart-line text-cyan-400 text-xs"></i></div></div><div id="kpiVolume" class="text-xl sm:text-2xl font-extrabold text-cyan-400">—</div><div class="text-[10px] text-gray-500 mt-1">USDC equiv.</div></div>
+      <div class="glass kpi-card rounded-3xl p-5"><div class="flex items-center justify-between mb-3"><span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Transactions</span><div class="w-8 h-8 rounded-xl bg-sky-500/15 flex items-center justify-center"><i class="fas fa-exchange-alt text-sky-400 text-xs"></i></div></div><div id="kpiTx" class="text-xl sm:text-2xl font-extrabold text-sky-400">—</div><div class="text-[10px] text-gray-500 mt-1">All modules</div></div>
+      <div class="glass kpi-card rounded-3xl p-5"><div class="flex items-center justify-between mb-3"><span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Active Rules</span><div class="w-8 h-8 rounded-xl bg-lime-500/15 flex items-center justify-center"><i class="fas fa-lock text-lime-400 text-xs"></i></div></div><div id="kpiActive" class="text-xl sm:text-2xl font-extrabold text-lime-400">—</div><div class="text-[10px] text-gray-500 mt-1">On-chain live</div></div>
+      <div class="glass kpi-card rounded-3xl p-5"><div class="flex items-center justify-between mb-3"><span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Recipients</span><div class="w-8 h-8 rounded-xl bg-rose-500/15 flex items-center justify-center"><i class="fas fa-users text-rose-400 text-xs"></i></div></div><div id="kpiRecipients" class="text-xl sm:text-2xl font-extrabold text-rose-400">—</div><div class="text-[10px] text-gray-500 mt-1">Unique wallets</div></div>
+      <div class="glass kpi-card rounded-3xl p-5"><div class="flex items-center justify-between mb-3"><span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Pay Links</span><div class="w-8 h-8 rounded-xl bg-emerald-500/15 flex items-center justify-center"><i class="fas fa-link text-emerald-400 text-xs"></i></div></div><div id="kpiLinks" class="text-xl sm:text-2xl font-extrabold text-emerald-400">—</div><div class="text-[10px] text-gray-500 mt-1">+ Invoices</div></div>
+      <div class="glass kpi-card rounded-3xl p-5"><div class="flex items-center justify-between mb-3"><span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Batches</span><div class="w-8 h-8 rounded-xl bg-violet-500/15 flex items-center justify-center"><i class="fas fa-layer-group text-violet-400 text-xs"></i></div></div><div id="kpiBatches" class="text-xl sm:text-2xl font-extrabold text-violet-400">—</div><div class="text-[10px] text-gray-500 mt-1">Role + Multi-token</div></div>
     </div>
 
-    <!-- Charts Row -->
+    <!-- CHARTS -->
     <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
       <div class="lg:col-span-8 glass rounded-3xl p-6">
-        <div class="flex items-center justify-between mb-5">
-          <h3 class="font-bold text-base flex items-center gap-2">
-            <i class="fas fa-chart-area text-cyan-400"></i> Volume Over Time
-          </h3>
-          <span id="chartVolumeLabel" class="text-[11px] text-gray-500 font-semibold">30 days</span>
-        </div>
-        <div class="chart-container">
-          <canvas id="volumeChart"></canvas>
-        </div>
+        <div class="flex items-center justify-between mb-5"><h3 class="font-bold text-sm flex items-center gap-2"><i class="fas fa-chart-area text-cyan-400"></i> Volume Timeline</h3><span id="chartRangeLabel" class="text-[10px] text-gray-500 font-semibold">30 days</span></div>
+        <div class="chart-box"><canvas id="volumeChart"></canvas></div>
       </div>
-
       <div class="lg:col-span-4 glass rounded-3xl p-6">
-        <div class="flex items-center justify-between mb-5">
-          <h3 class="font-bold text-base flex items-center gap-2">
-            <i class="fas fa-chart-pie text-sky-400"></i> Module Share
-          </h3>
-        </div>
-        <div class="chart-container" style="height: 240px;">
-          <canvas id="moduleChart"></canvas>
-        </div>
+        <h3 class="font-bold text-sm flex items-center gap-2 mb-5"><i class="fas fa-chart-pie text-sky-400"></i> Module Share</h3>
+        <div class="chart-box-sm"><canvas id="moduleChart"></canvas></div>
         <div id="moduleLegend" class="mt-4 space-y-2 text-xs"></div>
       </div>
     </div>
 
-    <!-- Module Breakdown + Token Stats -->
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
-      <!-- Module Cards -->
-      <div class="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div class="glass rounded-3xl p-5 border-l-4 border-l-blue-500">
-          <div class="flex items-center gap-3 mb-4">
-            <div class="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center">
-              <i class="fas fa-code-branch text-blue-400"></i>
-            </div>
-            <div>
-              <div class="font-bold text-sm">Conditional Split</div>
-              <div class="text-[10px] text-gray-500">Smart Condition Engine</div>
-            </div>
-          </div>
-          <div class="grid grid-cols-2 gap-3 text-xs">
-            <div>
-              <div class="text-gray-500 mb-0.5">Volume</div>
-              <div id="modCondVolume" class="font-bold text-blue-400">—</div>
-            </div>
-            <div>
-              <div class="text-gray-500 mb-0.5">Rules</div>
-              <div id="modCondRules" class="font-bold">—</div>
-            </div>
-            <div>
-              <div class="text-gray-500 mb-0.5">Executions</div>
-              <div id="modCondExec" class="font-bold">—</div>
-            </div>
-            <div>
-              <div class="text-gray-500 mb-0.5">Active</div>
-              <div id="modCondActive" class="font-bold text-lime-400">—</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="glass rounded-3xl p-5 border-l-4 border-l-lime-500">
-          <div class="flex items-center gap-3 mb-4">
-            <div class="w-10 h-10 rounded-xl bg-lime-500/15 flex items-center justify-center">
-              <i class="fas fa-calendar-check text-lime-400"></i>
-            </div>
-            <div>
-              <div class="font-bold text-sm">Vesting & Cliff</div>
-              <div class="text-[10px] text-gray-500">Time-based Release</div>
-            </div>
-          </div>
-          <div class="grid grid-cols-2 gap-3 text-xs">
-            <div>
-              <div class="text-gray-500 mb-0.5">Volume</div>
-              <div id="modVestVolume" class="font-bold text-lime-400">—</div>
-            </div>
-            <div>
-              <div class="text-gray-500 mb-0.5">Schedules</div>
-              <div id="modVestSchedules" class="font-bold">—</div>
-            </div>
-            <div>
-              <div class="text-gray-500 mb-0.5">Pushes</div>
-              <div id="modVestPushes" class="font-bold">—</div>
-            </div>
-            <div>
-              <div class="text-gray-500 mb-0.5">Locked</div>
-              <div id="modVestLocked" class="font-bold text-amber-400">—</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="glass rounded-3xl p-5 border-l-4 border-l-cyan-500">
-          <div class="flex items-center gap-3 mb-4">
-            <div class="w-10 h-10 rounded-xl bg-cyan-500/15 flex items-center justify-center">
-              <i class="fas fa-users-gear text-cyan-400"></i>
-            </div>
-            <div>
-              <div class="font-bold text-sm">Role-Based Split</div>
-              <div class="text-[10px] text-gray-500">Team Batch Engine</div>
-            </div>
-          </div>
-          <div class="grid grid-cols-2 gap-3 text-xs">
-            <div>
-              <div class="text-gray-500 mb-0.5">Volume</div>
-              <div id="modRoleVolume" class="font-bold text-cyan-400">—</div>
-            </div>
-            <div>
-              <div class="text-gray-500 mb-0.5">Batches</div>
-              <div id="modRoleBatches" class="font-bold">—</div>
-            </div>
-            <div>
-              <div class="text-gray-500 mb-0.5">Wallets</div>
-              <div id="modRoleWallets" class="font-bold">—</div>
-            </div>
-            <div>
-              <div class="text-gray-500 mb-0.5">Avg / Batch</div>
-              <div id="modRoleAvg" class="font-bold">—</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="glass rounded-3xl p-5 border-l-4 border-l-amber-500">
-          <div class="flex items-center gap-3 mb-4">
-            <div class="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center">
-              <i class="fas fa-robot text-amber-400"></i>
-            </div>
-            <div>
-              <div class="font-bold text-sm">Agentic Push</div>
-              <div class="text-[10px] text-gray-500">Rule-based Relayer</div>
-            </div>
-          </div>
-          <div class="grid grid-cols-2 gap-3 text-xs">
-            <div>
-              <div class="text-gray-500 mb-0.5">Volume</div>
-              <div id="modAgentVolume" class="font-bold text-amber-400">—</div>
-            </div>
-            <div>
-              <div class="text-gray-500 mb-0.5">Rules</div>
-              <div id="modAgentRules" class="font-bold">—</div>
-            </div>
-            <div>
-              <div class="text-gray-500 mb-0.5">Executions</div>
-              <div id="modAgentExec" class="font-bold">—</div>
-            </div>
-            <div>
-              <div class="text-gray-500 mb-0.5">Relayer Fees</div>
-              <div id="modAgentFees" class="font-bold text-rose-400">—</div>
-            </div>
-          </div>
-        </div>
+    <!-- MODULE CARDS -->
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 mb-8">
+      <div class="glass module-card rounded-3xl p-5 border-l-blue-500">
+        <div class="flex items-center gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center"><i class="fas fa-code-branch text-blue-400"></i></div><div><div class="font-bold text-sm">Conditional Split</div><div class="text-[10px] text-gray-500">Smart Condition Engine</div></div></div>
+        <div class="grid grid-cols-2 gap-3 text-xs"><div><div class="text-gray-500 mb-0.5">Volume</div><div id="mCondVol" class="font-bold text-blue-400">—</div></div><div><div class="text-gray-500 mb-0.5">Rules</div><div id="mCondRules" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Executions</div><div id="mCondExec" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Active</div><div id="mCondActive" class="font-bold text-lime-400">—</div></div></div>
       </div>
+      <div class="glass module-card rounded-3xl p-5 border-l-lime-500">
+        <div class="flex items-center gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-lime-500/15 flex items-center justify-center"><i class="fas fa-calendar-check text-lime-400"></i></div><div><div class="font-bold text-sm">Vesting & Cliff</div><div class="text-[10px] text-gray-500">Time-locked Releases</div></div></div>
+        <div class="grid grid-cols-2 gap-3 text-xs"><div><div class="text-gray-500 mb-0.5">Volume</div><div id="mVestVol" class="font-bold text-lime-400">—</div></div><div><div class="text-gray-500 mb-0.5">Schedules</div><div id="mVestSched" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Pushes</div><div id="mVestPush" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Locked</div><div id="mVestLocked" class="font-bold text-amber-400">—</div></div></div>
+      </div>
+      <div class="glass module-card rounded-3xl p-5 border-l-cyan-500">
+        <div class="flex items-center gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-cyan-500/15 flex items-center justify-center"><i class="fas fa-users-gear text-cyan-400"></i></div><div><div class="font-bold text-sm">Role · Split · Giveaway · Batch</div><div class="text-[10px] text-gray-500">ArcRoleSplitter Engine</div></div></div>
+        <div class="grid grid-cols-2 gap-3 text-xs"><div><div class="text-gray-500 mb-0.5">Volume</div><div id="mRoleVol" class="font-bold text-cyan-400">—</div></div><div><div class="text-gray-500 mb-0.5">Batches</div><div id="mRoleBatches" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Wallets Hit</div><div id="mRoleWallets" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Giveaways</div><div id="mRoleGive" class="font-bold text-amber-400">—</div></div></div>
+      </div>
+      <div class="glass module-card rounded-3xl p-5 border-l-amber-500">
+        <div class="flex items-center gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center"><i class="fas fa-robot text-amber-400"></i></div><div><div class="font-bold text-sm">Agentic Push</div><div class="text-[10px] text-gray-500">Rule-based Relayer</div></div></div>
+        <div class="grid grid-cols-2 gap-3 text-xs"><div><div class="text-gray-500 mb-0.5">Volume</div><div id="mAgentVol" class="font-bold text-amber-400">—</div></div><div><div class="text-gray-500 mb-0.5">Rules</div><div id="mAgentRules" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Executions</div><div id="mAgentExec" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Relayer Fees</div><div id="mAgentFees" class="font-bold text-rose-400">—</div></div></div>
+      </div>
+      <div class="glass module-card rounded-3xl p-5 border-l-emerald-500">
+        <div class="flex items-center gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center"><i class="fas fa-link text-emerald-400"></i></div><div><div class="font-bold text-sm">Payment Links</div><div class="text-[10px] text-gray-500">ArcPayLink</div></div></div>
+        <div class="grid grid-cols-2 gap-3 text-xs"><div><div class="text-gray-500 mb-0.5">Volume</div><div id="mLinkVol" class="font-bold text-emerald-400">—</div></div><div><div class="text-gray-500 mb-0.5">Created</div><div id="mLinkCreated" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Claimed</div><div id="mLinkClaimed" class="font-bold text-cyan-400">—</div></div><div><div class="text-gray-500 mb-0.5">Active</div><div id="mLinkActive" class="font-bold text-lime-400">—</div></div></div>
+      </div>
+      <div class="glass module-card rounded-3xl p-5 border-l-yellow-500">
+        <div class="flex items-center gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-yellow-500/15 flex items-center justify-center"><i class="fas fa-file-invoice text-yellow-400"></i></div><div><div class="font-bold text-sm">Smart Invoices</div><div class="text-[10px] text-gray-500">ArcInvoice</div></div></div>
+        <div class="grid grid-cols-2 gap-3 text-xs"><div><div class="text-gray-500 mb-0.5">Volume</div><div id="mInvVol" class="font-bold text-yellow-400">—</div></div><div><div class="text-gray-500 mb-0.5">Created</div><div id="mInvCreated" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Paid</div><div id="mInvPaid" class="font-bold text-emerald-400">—</div></div><div><div class="text-gray-500 mb-0.5">Pending</div><div id="mInvPending" class="font-bold text-amber-400">—</div></div></div>
+      </div>
+    </div>
 
-      <!-- Token Distribution -->
+    <!-- TOKEN + ACTIVITY -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
       <div class="lg:col-span-4 glass rounded-3xl p-6">
-        <h3 class="font-bold text-base mb-5 flex items-center gap-2">
-          <i class="fas fa-coins text-amber-400"></i> Token Distribution
-        </h3>
-        <div class="chart-container" style="height: 200px;">
-          <canvas id="tokenChart"></canvas>
-        </div>
+        <h3 class="font-bold text-sm flex items-center gap-2 mb-5"><i class="fas fa-coins text-amber-400"></i> Token Distribution</h3>
+        <div class="chart-box-sm"><canvas id="tokenChart"></canvas></div>
         <div id="tokenLegend" class="mt-4 space-y-2 text-xs"></div>
       </div>
-    </div>
-
-    <!-- Recent Activity -->
-    <div class="glass rounded-3xl p-6">
-      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
-        <h3 class="font-bold text-base flex items-center gap-2">
-          <i class="fas fa-history text-cyan-400"></i> Recent Activity
-        </h3>
-        <div class="text-[11px] text-gray-500">
-          Showing latest from connected wallet + platform events
+      <div class="lg:col-span-8 glass rounded-3xl p-6">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
+          <h3 class="font-bold text-sm flex items-center gap-2"><i class="fas fa-stream text-cyan-400"></i> Live Activity Feed</h3>
+          <span class="text-[10px] text-gray-500">Cloud history + on-chain signals</span>
         </div>
-      </div>
-      <div id="activityContainer" class="preview-scroll space-y-2">
-        <div class="text-center py-12 text-gray-500 italic text-sm">
-          Connect wallet to load personal history, or view platform-wide mock insights.
-        </div>
+        <div id="activityFeed" class="preview-scroll space-y-2"><div class="text-center py-16 text-gray-500 italic text-sm">Connect wallet or load data to see activity.</div></div>
       </div>
     </div>
 
-    <!-- Footer note -->
-    <div class="mt-8 text-center text-[11px] text-gray-500">
-      ArcSplit Analytics • Data from on-chain events + cloud history • 
-      <span class="text-cyan-400">Conditional/Agentic</span> share the same contract
+    <div class="text-center text-[11px] text-gray-500 pb-6">
+      ArcSplit Analytics Enterprise · Conditional · Vesting · Role/Split/Giveaway/Batch · Agentic · ArcPay Links & Invoices<br>
+      <span class="text-cyan-400/70">Conditional + Agentic share one contract · Role family shares ArcRoleSplitter · Pay uses ArcPayLink + ArcInvoice</span>
     </div>
   </div>
 
-  <!-- Toast -->
-  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#121228] light:bg-slate-900 border border-white/15 light:border-slate-700 text-white px-5 py-3 rounded-2xl shadow-2xl z-50 text-sm backdrop-blur-xl font-bold text-center min-w-[280px]">
-    <span id="toastText"></span>
-  </div>
+  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#0e0e1c] border border-white/10 text-white px-5 py-3 rounded-2xl shadow-2xl z-50 text-sm font-bold text-center min-w-[260px] backdrop-blur-xl"><span id="toastText"></span></div>
 
 <script>
-  // ============== CONFIG ==============
-  const EXPLORER = "https://testnet.arcscan.app/tx/";
-  const NATIVE_USDC = "0x3600000000000000000000000000000000000000";
-
-  // Contract addresses (Proxies)
-  const CONTRACTS = {
-    conditional: "0x08af7753FCE9e664fa5E2D5EB96a60b739E6BD51", // shared with Agentic
-    vesting: "0xd3640D303e2e7962aEeba09a8aDA73eb80e6606d",
-    role: "0xf2073671b726b96DC1c99D001BBF6e60EE1f187F"
-  };
-
-  // Minimal ABIs for view calls
-  const CONDITIONAL_ABI = [
-    "function activeRuleCount() view returns (uint256)",
-    "function nativeBalances(address) view returns (uint256)",
-    "function tokenBalances(address,address) view returns (uint256)",
-    "event RuleRegistered(bytes32 indexed ruleHash, address indexed sponsor, address indexed token, bool isRecurring)",
-    "event SplitExecuted(bytes32 indexed ruleHash, address indexed sponsor, address indexed recipient, address token, address relayer, uint256 netAmountPushed, uint256 feeDeducted, uint256 nonce)",
-    "event FundsDeposited(address indexed sponsor, address indexed token, uint256 amount)",
-    "event FundsWithdrawn(address indexed sponsor, address indexed token, uint256 amount)"
-  ];
-
-  const VESTING_ABI = [
-    "function getSchedule(uint256) view returns (tuple(address token, uint64 startTime, uint32 cliffDuration, address recipient, uint32 vestingDuration, uint32 slicePeriodSeconds, bool isRevocable, bool isRevoked, bool allowRelayerPush, uint8 reserved, uint128 totalAmount, uint128 releasedAmount))",
-    "event ScheduleCreated(uint256 indexed scheduleId, address indexed recipient, address indexed token, uint256 totalAmount, uint32 vestingDuration, uint32 cliffDuration, uint32 slicePeriodSeconds, bool revocable, bool allowRelayerPush)",
-    "event VestedAmountPushed(uint256 indexed scheduleId, address indexed recipient, address indexed token, address relayer, uint256 amountReceived, uint256 gasRefunded)"
-  ];
-
-  const ROLE_ABI = [
-    "event BatchPercentageExecuted(uint256 indexed batchId, address indexed sender, address indexed token, uint256 totalDistributed, uint256 gasRefunded, uint256 unspentRefunded)",
-    "event BatchAmountExecuted(uint256 indexed batchId, address indexed sender, address indexed token, uint256 totalDistributed, uint256 gasRefunded, uint256 unspentRefunded)"
-  ];
-
-  // State
-  let provider = null;
-  let signer = null;
-  let userAddress = null;
-  let currentModule = 'all';
-  let volumeChart = null;
-  let moduleChart = null;
-  let tokenChart = null;
-
-  // Demo / aggregated data store (will be enriched by cloud + on-chain)
-  let analyticsData = {
-    volume: 0,
-    txCount: 0,
-    activeRules: 0,
-    uniqueRecipients: new Set(),
-    modules: {
-      conditional: { volume: 0, rules: 0, exec: 0, active: 0 },
-      vesting: { volume: 0, schedules: 0, pushes: 0, locked: 0 },
-      role: { volume: 0, batches: 0, wallets: 0 },
-      agentic: { volume: 0, rules: 0, exec: 0, fees: 0 }
-    },
-    tokens: { USDC: 0, EURC: 0, cirBTC: 0, Other: 0 },
-    timeline: [], // { date, volume }
-    activity: []
-  };
-
-  // ============== UI HELPERS ==============
-  function showToast(msg, duration = 3500) {
-    const toast = document.getElementById("toast");
-    document.getElementById("toastText").innerHTML = msg;
-    toast.classList.remove("hidden");
-    setTimeout(() => toast.classList.add("hidden"), duration);
-  }
-
-  function toggleTheme() {
-    document.documentElement.classList.toggle('light');
-    const icon = document.getElementById("themeBtn").querySelector("i");
-    if (icon.classList.contains("fa-moon")) {
-      icon.classList.remove("fa-moon", "text-cyan-400");
-      icon.classList.add("fa-sun", "text-amber-400");
-    } else {
-      icon.classList.remove("fa-sun", "text-amber-400");
-      icon.classList.add("fa-moon", "text-cyan-400");
-    }
-    // Refresh charts for theme colors
-    setTimeout(() => renderCharts(), 100);
-  }
-
-  function setModuleFilter(mod) {
-    currentModule = mod;
-    document.querySelectorAll('.module-pill').forEach(btn => {
-      btn.classList.toggle('active', btn.dataset.module === mod);
-      if (btn.dataset.module !== mod) {
-        btn.classList.remove('text-cyan-400');
-        btn.classList.add('text-gray-400');
-      } else {
-        btn.classList.remove('text-gray-400');
-      }
-    });
-    refreshDashboard();
-  }
-
-  function formatNum(n, decimals = 2) {
-    if (n === null || n === undefined || isNaN(n)) return "—";
-    if (n >= 1_000_000) return (n / 1_000_000).toFixed(2) + "M";
-    if (n >= 1_000) return (n / 1_000).toFixed(1) + "K";
-    return Number(n).toLocaleString('en-US', { maximumFractionDigits: decimals });
-  }
-
-  // ============== WALLET ==============
-  async function connectWallet() {
-    if (typeof window.ethereum === 'undefined') {
-      return showToast("MetaMask not found");
-    }
-    try {
-      provider = new ethers.BrowserProvider(window.ethereum);
-      await provider.send("eth_requestAccounts", []);
-      signer = await provider.getSigner();
-      userAddress = await signer.getAddress();
-
-      const short = userAddress.slice(0, 6) + "..." + userAddress.slice(-4);
-      document.getElementById('connectText').innerHTML = `<i class="fas fa-check-circle text-cyan-400"></i> ${short}`;
-      document.getElementById('connectBtn').className = "app-button px-5 py-2.5 bg-cyan-500/15 border border-cyan-500/40 text-cyan-400 font-bold rounded-2xl text-xs flex items-center gap-2";
-      document.getElementById('disconnectBtn').classList.remove('hidden');
-
-      showToast("Wallet connected");
-      await refreshDashboard();
-    } catch (e) {
-      console.error(e);
-      showToast("Connection rejected");
-    }
-  }
-
-  function disconnectWallet() {
-    userAddress = null;
-    signer = null;
-    provider = null;
-    document.getElementById('connectText').textContent = "Connect Wallet";
-    document.getElementById('connectBtn').className = "app-button px-5 py-2.5 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl text-xs flex items-center gap-2 shadow-lg";
-    document.getElementById('disconnectBtn').classList.add('hidden');
-    showToast("Disconnected");
-    loadDemoData();
-    updateUI();
-  }
-
-  // ============== DATA LOADING ==============
-  async function refreshDashboard() {
-    // Reset
-    analyticsData = {
-      volume: 0,
-      txCount: 0,
-      activeRules: 0,
-      uniqueRecipients: new Set(),
-      modules: {
-        conditional: { volume: 0, rules: 0, exec: 0, active: 0 },
-        vesting: { volume: 0, schedules: 0, pushes: 0, locked: 0 },
-        role: { volume: 0, batches: 0, wallets: 0 },
-        agentic: { volume: 0, rules: 0, exec: 0, fees: 0 }
-      },
-      tokens: { USDC: 0, EURC: 0, cirBTC: 0, Other: 0 },
-      timeline: [],
-      activity: []
-    };
-
-    // 1. Load cloud history if available
-    if (userAddress && typeof fetchHistoryFromCloud === 'function') {
-      try {
-        const history = await fetchHistoryFromCloud(userAddress);
-        processCloudHistory(history || []);
-      } catch (e) {
-        console.warn("Cloud history failed", e);
-      }
-    }
-
-    // 2. On-chain live stats
-    if (provider) {
-      await fetchOnChainStats();
-    }
-
-    // 3. If no real data, seed realistic demo
-    if (analyticsData.txCount === 0) {
-      loadDemoData();
-    }
-
-    updateUI();
-  }
-
-  function processCloudHistory(items) {
-    const days = parseInt(document.getElementById('timeRange').value) || 30;
-    const cutoff = days === 'all' ? 0 : Date.now() - days * 86400000;
-
-    const daily = {};
-
-    items.forEach(item => {
-      const ts = new Date(item.timestamp || item.date || Date.now()).getTime();
-      if (cutoff && ts < cutoff) return;
-
-      const amount = parseFloat(item.amount) || 0;
-      const token = (item.token || 'USDC').toUpperCase();
-      const type = (item.type || item.memo || '').toLowerCase();
-      const app = (item.appName || '').toLowerCase();
-
-      analyticsData.volume += amount;
-      analyticsData.txCount++;
-
-      // Token
-      if (token.includes('USDC')) analyticsData.tokens.USDC += amount;
-      else if (token.includes('EURC')) analyticsData.tokens.EURC += amount;
-      else if (token.includes('BTC') || token.includes('CIR')) analyticsData.tokens.cirBTC += amount;
-      else analyticsData.tokens.Other += amount;
-
-      // Module mapping
-      if (app.includes('conditional') || type.includes('condition') || type.includes('smart condition')) {
-        analyticsData.modules.conditional.volume += amount;
-        analyticsData.modules.conditional.exec++;
-        if (type.includes('lock') || type.includes('rule')) analyticsData.modules.conditional.rules++;
-      } else if (app.includes('vesting') || type.includes('vest')) {
-        analyticsData.modules.vesting.volume += amount;
-        analyticsData.modules.vesting.schedules++;
-        analyticsData.modules.vesting.pushes++;
-      } else if (app.includes('role') || type.includes('role')) {
-        analyticsData.modules.role.volume += amount;
-        analyticsData.modules.role.batches++;
-        analyticsData.modules.role.wallets += (item.rolesCount || item.conditionsCount || 1);
-      } else if (app.includes('agentic') || type.includes('agentic') || type.includes('batch rule') || type.includes('new rule')) {
-        analyticsData.modules.agentic.volume += amount;
-        analyticsData.modules.agentic.exec++;
-        if (type.includes('rule')) analyticsData.modules.agentic.rules++;
-      }
-
-      // Recipient tracking
-      if (item.recipient && item.recipient !== 'Multiple') {
-        analyticsData.uniqueRecipients.add(item.recipient.toLowerCase());
-      }
-
-      // Timeline
-      const dayKey = new Date(ts).toISOString().slice(0, 10);
-      daily[dayKey] = (daily[dayKey] || 0) + amount;
-
-      // Activity
-      analyticsData.activity.push({
-        type: item.type || 'Transaction',
-        amount,
-        token: item.token || 'USDC',
-        memo: item.memo || '',
-        hash: item.hash,
-        timestamp: ts,
-        module: detectModule(app, type)
-      });
-    });
-
-    // Build timeline sorted
-    analyticsData.timeline = Object.entries(daily)
-      .map(([date, vol]) => ({ date, volume: vol }))
-      .sort((a, b) => a.date.localeCompare(b.date));
-  }
-
-  function detectModule(app, type) {
-    if (app.includes('conditional') || type.includes('condition')) return 'conditional';
-    if (app.includes('vesting') || type.includes('vest')) return 'vesting';
-    if (app.includes('role') || type.includes('role')) return 'role';
-    if (app.includes('agentic') || type.includes('agentic') || type.includes('rule')) return 'agentic';
-    return 'other';
-  }
-
-  async function fetchOnChainStats() {
-    try {
-      // Conditional active rules
-      const cond = new ethers.Contract(CONTRACTS.conditional, CONDITIONAL_ABI, provider);
-      try {
-        const active = await cond.activeRuleCount();
-        analyticsData.modules.conditional.active = Number(active);
-        analyticsData.activeRules += Number(active);
-      } catch (e) { console.warn("activeRuleCount", e); }
-
-      // Note: Vesting scheduleCounter is private storage, Role has no simple counter.
-      // For production you would index events or expose view functions.
-    } catch (e) {
-      console.warn("On-chain fetch error", e);
-    }
-  }
-
-  function loadDemoData() {
-    // Realistic demo numbers matching ArcSplit scale
-    analyticsData.volume = 128450;
-    analyticsData.txCount = 347;
-    analyticsData.activeRules = 42;
-    analyticsData.uniqueRecipients = new Set(Array.from({length: 89}, (_, i) => `0x${i}`));
-
-    analyticsData.modules = {
-      conditional: { volume: 38500, rules: 28, exec: 112, active: 19 },
-      vesting: { volume: 51200, schedules: 34, pushes: 86, locked: 18400 },
-      role: { volume: 27800, batches: 45, wallets: 312 },
-      agentic: { volume: 10950, rules: 17, exec: 64, fees: 320 }
-    };
-
-    analyticsData.tokens = { USDC: 98500, EURC: 18200, cirBTC: 8900, Other: 2850 };
-
-    // 30-day timeline
-    const today = new Date();
-    analyticsData.timeline = [];
-    for (let i = 29; i >= 0; i--) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
-      const base = 2000 + Math.random() * 4500;
-      const weekendBoost = (d.getDay() === 0 || d.getDay() === 6) ? 0.7 : 1.2;
-      analyticsData.timeline.push({
-        date: d.toISOString().slice(0, 10),
-        volume: Math.round(base * weekendBoost)
-      });
-    }
-
-    // Sample activity
-    const samples = [
-      { type: 'Smart Condition Lock', amount: 2500, token: 'USDC', memo: 'Rule with 2 conditions', module: 'conditional', hash: '0xabc1' },
-      { type: 'Vesting Schedule', amount: 12000, token: 'USDC', memo: '12M vesting • 3M cliff', module: 'vesting', hash: '0xdef2' },
-      { type: 'Role Split', amount: 4800, token: 'EURC', memo: 'Founder + Dev teams', module: 'role', hash: '0xghi3' },
-      { type: 'Agentic Rule', amount: 750, token: 'USDC', memo: 'Recurring push', module: 'agentic', hash: '0xjkl4' },
-      { type: 'Deposit', amount: 10000, token: 'USDC', memo: 'Treasury top-up', module: 'conditional', hash: '0xmno5' },
-      { type: 'Vested Amount Pushed', amount: 833, token: 'USDC', memo: 'Monthly release', module: 'vesting', hash: '0xpqr6' },
-      { type: 'Batch Role Split', amount: 15600, token: 'cirBTC', memo: '48 wallets', module: 'role', hash: '0xstu7' },
-      { type: 'Conditional Execution', amount: 1200, token: 'USDC', memo: 'Price condition met', module: 'conditional', hash: '0xvwx8' }
-    ];
-    analyticsData.activity = samples.map((s, i) => ({
-      ...s,
-      timestamp: Date.now() - i * 3600000 * (2 + Math.random() * 8)
-    }));
-  }
-
-  // ============== RENDER ==============
-  function updateUI() {
-    // Filter by module if needed
-    let vol = analyticsData.volume;
-    let tx = analyticsData.txCount;
-    let active = analyticsData.activeRules;
-    let recipients = analyticsData.uniqueRecipients.size;
-
-    if (currentModule !== 'all') {
-      const m = analyticsData.modules[currentModule];
-      vol = m.volume || 0;
-      tx = (m.exec || m.pushes || m.batches || m.rules || 0);
-      // keep global active / recipients for overview feel
-    }
-
-    document.getElementById('kpiVolume').textContent = formatNum(vol);
-    document.getElementById('kpiTxCount').textContent = formatNum(tx, 0);
-    document.getElementById('kpiActive').textContent = formatNum(active, 0);
-    document.getElementById('kpiRecipients').textContent = formatNum(recipients, 0);
-
-    // Module cards
-    const c = analyticsData.modules.conditional;
-    document.getElementById('modCondVolume').textContent = formatNum(c.volume);
-    document.getElementById('modCondRules').textContent = formatNum(c.rules, 0);
-    document.getElementById('modCondExec').textContent = formatNum(c.exec, 0);
-    document.getElementById('modCondActive').textContent = formatNum(c.active, 0);
-
-    const v = analyticsData.modules.vesting;
-    document.getElementById('modVestVolume').textContent = formatNum(v.volume);
-    document.getElementById('modVestSchedules').textContent = formatNum(v.schedules, 0);
-    document.getElementById('modVestPushes').textContent = formatNum(v.pushes, 0);
-    document.getElementById('modVestLocked').textContent = formatNum(v.locked);
-
-    const r = analyticsData.modules.role;
-    document.getElementById('modRoleVolume').textContent = formatNum(r.volume);
-    document.getElementById('modRoleBatches').textContent = formatNum(r.batches, 0);
-    document.getElementById('modRoleWallets').textContent = formatNum(r.wallets, 0);
-    document.getElementById('modRoleAvg').textContent = r.batches ? formatNum(r.wallets / r.batches, 1) : '—';
-
-    const a = analyticsData.modules.agentic;
-    document.getElementById('modAgentVolume').textContent = formatNum(a.volume);
-    document.getElementById('modAgentRules').textContent = formatNum(a.rules, 0);
-    document.getElementById('modAgentExec').textContent = formatNum(a.exec, 0);
-    document.getElementById('modAgentFees').textContent = formatNum(a.fees);
-
-    // Range label
-    const range = document.getElementById('timeRange').value;
-    document.getElementById('chartVolumeLabel').textContent = range === 'all' ? 'All time' : `Last ${range} days`;
-
-    renderCharts();
-    renderActivity();
-  }
-
-  function getChartColors() {
-    const isLight = document.documentElement.classList.contains('light');
-    return {
-      text: isLight ? '#334155' : '#94a3b8',
-      grid: isLight ? 'rgba(0,0,0,0.06)' : 'rgba(255,255,255,0.06)',
-      cyan: isLight ? '#0e7490' : '#22d3ee',
-      sky: isLight ? '#0369a1' : '#38bdf8',
-      lime: isLight ? '#3f6212' : '#a3e635',
-      rose: isLight ? '#be123c' : '#fb7185',
-      amber: isLight ? '#b45309' : '#fbbf24',
-      blue: isLight ? '#1d4ed8' : '#60a5fa'
-    };
-  }
-
-  function renderCharts() {
-    const colors = getChartColors();
-
-    // Volume Line
-    const volCtx = document.getElementById('volumeChart').getContext('2d');
-    if (volumeChart) volumeChart.destroy();
-
-    const labels = analyticsData.timeline.map(t => {
-      const d = new Date(t.date);
-      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    });
-    const data = analyticsData.timeline.map(t => t.volume);
-
-    volumeChart = new Chart(volCtx, {
-      type: 'line',
-      data: {
-        labels,
-        datasets: [{
-          label: 'Volume',
-          data,
-          borderColor: colors.cyan,
-          backgroundColor: (ctx) => {
-            const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 280);
-            g.addColorStop(0, colors.cyan + '40');
-            g.addColorStop(1, colors.cyan + '00');
-            return g;
-          },
-          fill: true,
-          tension: 0.4,
-          pointRadius: 0,
-          pointHoverRadius: 5,
-          borderWidth: 2.5
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: 'rgba(15,15,30,0.95)',
-            titleFont: { family: 'Plus Jakarta Sans', size: 12 },
-            bodyFont: { family: 'Plus Jakarta Sans', size: 13 },
-            padding: 12,
-            cornerRadius: 10
-          }
-        },
-        scales: {
-          x: {
-            grid: { color: colors.grid, drawBorder: false },
-            ticks: { color: colors.text, font: { size: 10 }, maxTicksLimit: 8 }
-          },
-          y: {
-            grid: { color: colors.grid, drawBorder: false },
-            ticks: { color: colors.text, font: { size: 10 }, callback: v => formatNum(v, 0) }
-          }
-        }
-      }
-    });
-
-    // Module Doughnut
-    const modCtx = document.getElementById('moduleChart').getContext('2d');
-    if (moduleChart) moduleChart.destroy();
-
-    const modData = [
-      analyticsData.modules.conditional.volume,
-      analyticsData.modules.vesting.volume,
-      analyticsData.modules.role.volume,
-      analyticsData.modules.agentic.volume
-    ];
-    const modLabels = ['Conditional', 'Vesting', 'Role', 'Agentic'];
-    const modColors = [colors.blue, colors.lime, colors.cyan, colors.amber];
-
-    moduleChart = new Chart(modCtx, {
-      type: 'doughnut',
-      data: {
-        labels: modLabels,
-        datasets: [{
-          data: modData,
-          backgroundColor: modColors,
-          borderWidth: 0,
-          hoverOffset: 8
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        cutout: '68%',
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: 'rgba(15,15,30,0.95)',
-            padding: 12,
-            cornerRadius: 10
-          }
-        }
-      }
-    });
-
-    // Module legend
-    const totalMod = modData.reduce((a, b) => a + b, 0) || 1;
-    document.getElementById('moduleLegend').innerHTML = modLabels.map((l, i) => `
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <div class="w-2.5 h-2.5 rounded-full" style="background:${modColors[i]}"></div>
-          <span class="text-gray-400">${l}</span>
-        </div>
-        <span class="font-bold">${((modData[i] / totalMod) * 100).toFixed(1)}%</span>
-      </div>
-    `).join('');
-
-    // Token Doughnut
-    const tokCtx = document.getElementById('tokenChart').getContext('2d');
-    if (tokenChart) tokenChart.destroy();
-
-    const tokLabels = Object.keys(analyticsData.tokens);
-    const tokData = Object.values(analyticsData.tokens);
-    const tokColors = [colors.cyan, colors.sky, colors.amber, colors.rose];
-
-    tokenChart = new Chart(tokCtx, {
-      type: 'doughnut',
-      data: {
-        labels: tokLabels,
-        datasets: [{
-          data: tokData,
-          backgroundColor: tokColors,
-          borderWidth: 0,
-          hoverOffset: 6
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        cutout: '65%',
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: 'rgba(15,15,30,0.95)',
-            padding: 10,
-            cornerRadius: 10
-          }
-        }
-      }
-    });
-
-    const totalTok = tokData.reduce((a, b) => a + b, 0) || 1;
-    document.getElementById('tokenLegend').innerHTML = tokLabels.map((l, i) => `
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <div class="w-2.5 h-2.5 rounded-full" style="background:${tokColors[i]}"></div>
-          <span class="text-gray-400">${l}</span>
-        </div>
-        <span class="font-bold">${formatNum(tokData[i])}</span>
-      </div>
-    `).join('');
-  }
-
-  function renderActivity() {
-    const container = document.getElementById('activityContainer');
-    let items = analyticsData.activity;
-
-    if (currentModule !== 'all') {
-      items = items.filter(i => i.module === currentModule);
-    }
-
-    items = items.sort((a, b) => b.timestamp - a.timestamp).slice(0, 20);
-
-    if (items.length === 0) {
-      container.innerHTML = `<div class="text-center py-12 text-gray-500 italic text-sm">No activity found for this filter.</div>`;
-      return;
-    }
-
-    const icons = {
-      conditional: { icon: 'fa-code-branch', color: 'text-blue-400', bg: 'bg-blue-500/15' },
-      vesting: { icon: 'fa-calendar-check', color: 'text-lime-400', bg: 'bg-lime-500/15' },
-      role: { icon: 'fa-users-gear', color: 'text-cyan-400', bg: 'bg-cyan-500/15' },
-      agentic: { icon: 'fa-robot', color: 'text-amber-400', bg: 'bg-amber-500/15' },
-      other: { icon: 'fa-exchange-alt', color: 'text-sky-400', bg: 'bg-sky-500/15' }
-    };
-
-    container.innerHTML = items.map(item => {
-      const meta = icons[item.module] || icons.other;
-      const time = new Date(item.timestamp).toLocaleString();
-      const hashLink = item.hash && item.hash.startsWith('0x')
-        ? `<a href="${EXPLORER}${item.hash}" target="_blank" class="text-[10px] text-cyan-400 hover:underline font-mono">${item.hash.slice(0,10)}…</a>`
-        : '';
-
-      return `
-        <div class="activity-row flex items-center gap-4 p-3.5 rounded-2xl border border-white/5 light:border-black/5 transition-all">
-          <div class="w-10 h-10 rounded-xl ${meta.bg} flex items-center justify-center shrink-0">
-            <i class="fas ${meta.icon} ${meta.color}"></i>
-          </div>
-          <div class="flex-1 min-w-0">
-            <div class="flex items-center gap-2 flex-wrap">
-              <span class="font-bold text-sm">${item.type}</span>
-              <span class="text-[10px] px-2 py-0.5 rounded-lg bg-white/5 light:bg-black/5 text-gray-400 capitalize">${item.module}</span>
-            </div>
-            <div class="text-xs text-gray-500 mt-0.5 truncate">${item.memo || '—'}</div>
-          </div>
-          <div class="text-right shrink-0">
-            <div class="font-bold text-sm">${formatNum(item.amount)} <span class="text-[10px] text-gray-500">${item.token}</span></div>
-            <div class="text-[10px] text-gray-500 mt-0.5">${time}</div>
-            ${hashLink}
-          </div>
-        </div>
-      `;
-    }).join('');
-  }
-
-  // ============== INIT ==============
-  window.addEventListener('load', async () => {
-    loadDemoData();
-    updateUI();
-
-    if (typeof window.ethereum !== 'undefined') {
-      try {
-        const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-        if (accounts && accounts.length > 0) {
-          await connectWallet();
-        }
-      } catch (e) {}
-    }
-  });
+const EXPLORER="https://testnet.arcscan.app/tx/";
+const CONTRACTS={conditional:"0x08af7753FCE9e664fa5E2D5EB96a60b739E6BD51",vesting:"0xd3640D303e2e7962aEeba09a8aDA73eb80e6606d",role:"0xf2073671b726b96DC1c99D001BBF6e60EE1f187F",payLink:"0x9B438F8Aa736Ed685e7aFF84eB173A9bb7c08320",invoice:"0xD915573BCC42c5d4f859627435E975AEe316BCe0"};
+const CONDITIONAL_ABI=["function activeRuleCount() view returns (uint256)"];
+let provider=null,signer=null,userAddress=null,currentModule="all";
+let volumeChart=null,moduleChart=null,tokenChart=null;
+let data={volume:0,tx:0,active:0,recipients:new Set(),links:0,invoices:0,batches:0,modules:{conditional:{vol:0,rules:0,exec:0,active:0},vesting:{vol:0,schedules:0,pushes:0,locked:0},role:{vol:0,batches:0,wallets:0,giveaways:0},agentic:{vol:0,rules:0,exec:0,fees:0},pay:{links:{vol:0,created:0,claimed:0,active:0},invoices:{vol:0,created:0,paid:0,pending:0}}},tokens:{USDC:0,EURC:0,cirBTC:0,Other:0},timeline:[],activity:[]};
+
+function showToast(m,d=3200){const t=document.getElementById("toast");document.getElementById("toastText").innerHTML=m;t.classList.remove("hidden");setTimeout(()=>t.classList.add("hidden"),d)}
+function toggleTheme(){document.documentElement.classList.toggle("light");const icon=document.getElementById("themeBtn").querySelector("i");if(icon.classList.contains("fa-moon")){icon.classList.replace("fa-moon","fa-sun");icon.classList.replace("text-cyan-400","text-amber-400")}else{icon.classList.replace("fa-sun","fa-moon");icon.classList.replace("text-amber-400","text-cyan-400")}setTimeout(renderCharts,80)}
+function setModuleFilter(mod){currentModule=mod;document.querySelectorAll(".module-pill").forEach(b=>{const on=b.dataset.module===mod;b.classList.toggle("active",on);b.classList.toggle("text-gray-400",!on)});updateUI()}
+function fmt(n,d=2){if(n==null||isNaN(n))return"—";if(n>=1e6)return(n/1e6).toFixed(2)+"M";if(n>=1e3)return(n/1e3).toFixed(1)+"K";return Number(n).toLocaleString("en-US",{maximumFractionDigits:d})}
+
+async function connectWallet(){if(!window.ethereum)return showToast("MetaMask not found");try{provider=new ethers.BrowserProvider(window.ethereum);await provider.send("eth_requestAccounts",[]);signer=await provider.getSigner();userAddress=await signer.getAddress();const short=userAddress.slice(0,6)+"…"+userAddress.slice(-4);document.getElementById("connectText").innerHTML=`<i class="fas fa-check-circle text-cyan-400"></i> ${short}`;document.getElementById("connectBtn").className="app-button px-5 py-2.5 bg-cyan-500/15 border border-cyan-500/40 text-cyan-400 font-bold rounded-2xl text-xs flex items-center gap-2";document.getElementById("disconnectBtn").classList.remove("hidden");showToast("Connected");await refreshDashboard()}catch(e){showToast("Connection rejected")}}
+function disconnectWallet(){userAddress=null;signer=null;provider=null;document.getElementById("connectText").textContent="Connect Wallet";document.getElementById("connectBtn").className="app-button px-5 py-2.5 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl text-xs flex items-center gap-2 shadow-lg";document.getElementById("disconnectBtn").classList.add("hidden");loadDemo();updateUI()}
+
+async function refreshDashboard(){resetData();if(userAddress&&typeof fetchHistoryFromCloud==="function"){try{const hist=await fetchHistoryFromCloud(userAddress);processHistory(hist||[])}catch(e){console.warn(e)}}if(provider)await fetchOnChain();if(data.tx===0)loadDemo();updateUI()}
+function resetData(){data={volume:0,tx:0,active:0,recipients:new Set(),links:0,invoices:0,batches:0,modules:{conditional:{vol:0,rules:0,exec:0,active:0},vesting:{vol:0,schedules:0,pushes:0,locked:0},role:{vol:0,batches:0,wallets:0,giveaways:0},agentic:{vol:0,rules:0,exec:0,fees:0},pay:{links:{vol:0,created:0,claimed:0,active:0},invoices:{vol:0,created:0,paid:0,pending:0}}},tokens:{USDC:0,EURC:0,cirBTC:0,Other:0},timeline:[],activity:[]}}
+function detectModule(app,type,memo){const s=`${app||""} ${type||""} ${memo||""}`.toLowerCase();if(s.includes("condition")||s.includes("smart condition"))return"conditional";if(s.includes("vest"))return"vesting";if(s.includes("agentic")||(s.includes("rule")&&!s.includes("role")))return"agentic";if(s.includes("giveaway")||s.includes("winner"))return"role";if(s.includes("role")||s.includes("batch")||s.includes("split")||s.includes("adhoc"))return"role";if(s.includes("link")||s.includes("invoice")||s.includes("pay"))return"pay";return"other"}
+function processHistory(items){const days=document.getElementById("timeRange").value;const cutoff=days==="all"?0:Date.now()-parseInt(days)*86400000;const daily={};items.forEach(item=>{const ts=new Date(item.timestamp||item.date||Date.now()).getTime();if(cutoff&&ts<cutoff)return;const amount=parseFloat(item.amount||item.totalAmount||0)||0;const token=(item.token||item.tokenSymbol||"USDC").toUpperCase();const type=(item.type||"").toLowerCase();const app=(item.appName||"").toLowerCase();const memo=(item.memo||"").toLowerCase();const mod=detectModule(app,type,memo);data.volume+=amount;data.tx++;if(token.includes("USDC"))data.tokens.USDC+=amount;else if(token.includes("EURC"))data.tokens.EURC+=amount;else if(token.includes("BTC")||token.includes("CIR"))data.tokens.cirBTC+=amount;else data.tokens.Other+=amount;if(item.recipient&&item.recipient!=="Multiple")data.recipients.add(String(item.recipient).toLowerCase());if(item.winners)item.winners.forEach(w=>data.recipients.add(String(w).toLowerCase()));if(mod==="conditional"){data.modules.conditional.vol+=amount;data.modules.conditional.exec++;if(type.includes("lock")||type.includes("rule"))data.modules.conditional.rules++}else if(mod==="vesting"){data.modules.vesting.vol+=amount;data.modules.vesting.schedules++;data.modules.vesting.pushes++}else if(mod==="role"){data.modules.role.vol+=amount;data.modules.role.batches++;data.batches++;data.modules.role.wallets+=(item.winnersCount||item.rolesCount||item.recipientsCount||1);if(type.includes("giveaway")||memo.includes("giveaway")||memo.includes("winner"))data.modules.role.giveaways++}else if(mod==="agentic"){data.modules.agentic.vol+=amount;data.modules.agentic.exec++;if(type.includes("rule"))data.modules.agentic.rules++}else if(mod==="pay"){if(type.includes("invoice")||memo.includes("invoice")){data.modules.pay.invoices.vol+=amount;data.modules.pay.invoices.created++;data.invoices++;if(type.includes("paid")||item.status==="Paid")data.modules.pay.invoices.paid++;else data.modules.pay.invoices.pending++}else{data.modules.pay.links.vol+=amount;data.modules.pay.links.created++;data.links++;if(type.includes("claim")||item.status==="Claimed")data.modules.pay.links.claimed++;else data.modules.pay.links.active++}}const day=new Date(ts).toISOString().slice(0,10);daily[day]=(daily[day]||0)+amount;data.activity.push({type:item.type||"Transaction",amount,token:item.token||item.tokenSymbol||"USDC",memo:item.memo||"",hash:item.hash||item.txHash,timestamp:ts,module:mod})});data.timeline=Object.entries(daily).map(([date,volume])=>({date,volume})).sort((a,b)=>a.date.localeCompare(b.date))}
+async function fetchOnChain(){try{const cond=new ethers.Contract(CONTRACTS.conditional,CONDITIONAL_ABI,provider);const active=await cond.activeRuleCount();data.modules.conditional.active=Number(active);data.active+=Number(active)}catch(e){console.warn("on-chain",e)}}
+function loadDemo(){data.volume=284650;data.tx=612;data.active=57;data.recipients=new Set(Array.from({length:214},(_,i)=>"0x"+i));data.links=48;data.invoices=31;data.batches=89;data.modules={conditional:{vol:52400,rules:34,exec:148,active:22},vesting:{vol:78600,schedules:41,pushes:112,locked:24800},role:{vol:91200,batches:89,wallets:1240,giveaways:18},agentic:{vol:18750,rules:23,exec:87,fees:480},pay:{links:{vol:28900,created:48,claimed:31,active:14},invoices:{vol:14800,created:31,paid:19,pending:9}}};data.tokens={USDC:198400,EURC:42100,cirBTC:28400,Other:15750};const today=new Date();data.timeline=[];for(let i=29;i>=0;i--){const d=new Date(today);d.setDate(d.getDate()-i);const base=4500+Math.random()*9000;const boost=(d.getDay()===0||d.getDay()===6)?0.65:1.15;data.timeline.push({date:d.toISOString().slice(0,10),volume:Math.round(base*boost)})}const samples=[{type:"Smart Condition Lock",amount:4200,token:"USDC",memo:"3 conditions · Time + Price",module:"conditional"},{type:"Vesting Schedule",amount:18000,token:"USDC",memo:"Founder 12M cliff / 36M",module:"vesting"},{type:"Role Batch Split",amount:12500,token:"EURC",memo:"Founder + Dev + Treasury",module:"role"},{type:"Giveaway Equal Split",amount:5000,token:"USDC",memo:"50 winners selected",module:"role"},{type:"Multi-Token Batch",amount:8900,token:"cirBTC",memo:"3 tokens · 28 wallets",module:"role"},{type:"Agentic Rule",amount:1100,token:"USDC",memo:"Recurring push · cooldown 24h",module:"agentic"},{type:"Payment Link Created",amount:750,token:"USDC",memo:"Birthday gift link",module:"pay"},{type:"Invoice Paid",amount:3200,token:"USDC",memo:"Client invoice #42",module:"pay"},{type:"Token Splitter",amount:6400,token:"USDC",memo:"Equal split 12 recipients",module:"role"},{type:"Vested Push",amount:1500,token:"USDC",memo:"Monthly release",module:"vesting"},{type:"Conditional Execution",amount:2800,token:"EURC",memo:"Gas condition met",module:"conditional"},{type:"Link Claimed",amount:500,token:"USDC",memo:"Relayer claim",module:"pay"}];data.activity=samples.map((s,i)=>({...s,hash:"0x"+Math.random().toString(16).slice(2,14),timestamp:Date.now()-i*3600000*(1.5+Math.random()*6)}))}
+
+function updateUI(){let vol=data.volume,tx=data.tx;if(currentModule==="conditional"){vol=data.modules.conditional.vol;tx=data.modules.conditional.exec}else if(currentModule==="vesting"){vol=data.modules.vesting.vol;tx=data.modules.vesting.pushes}else if(currentModule==="role"){vol=data.modules.role.vol;tx=data.modules.role.batches}else if(currentModule==="agentic"){vol=data.modules.agentic.vol;tx=data.modules.agentic.exec}else if(currentModule==="pay"){vol=data.modules.pay.links.vol+data.modules.pay.invoices.vol;tx=data.modules.pay.links.created+data.modules.pay.invoices.created}
+document.getElementById("kpiVolume").textContent=fmt(vol);document.getElementById("kpiTx").textContent=fmt(tx,0);document.getElementById("kpiActive").textContent=fmt(data.active,0);document.getElementById("kpiRecipients").textContent=fmt(data.recipients.size,0);document.getElementById("kpiLinks").textContent=fmt(data.links+data.invoices,0);document.getElementById("kpiBatches").textContent=fmt(data.batches,0);
+const c=data.modules.conditional;document.getElementById("mCondVol").textContent=fmt(c.vol);document.getElementById("mCondRules").textContent=fmt(c.rules,0);document.getElementById("mCondExec").textContent=fmt(c.exec,0);document.getElementById("mCondActive").textContent=fmt(c.active,0);
+const v=data.modules.vesting;document.getElementById("mVestVol").textContent=fmt(v.vol);document.getElementById("mVestSched").textContent=fmt(v.schedules,0);document.getElementById("mVestPush").textContent=fmt(v.pushes,0);document.getElementById("mVestLocked").textContent=fmt(v.locked);
+const r=data.modules.role;document.getElementById("mRoleVol").textContent=fmt(r.vol);document.getElementById("mRoleBatches").textContent=fmt(r.batches,0);document.getElementById("mRoleWallets").textContent=fmt(r.wallets,0);document.getElementById("mRoleGive").textContent=fmt(r.giveaways,0);
+const a=data.modules.agentic;document.getElementById("mAgentVol").textContent=fmt(a.vol);document.getElementById("mAgentRules").textContent=fmt(a.rules,0);document.getElementById("mAgentExec").textContent=fmt(a.exec,0);document.getElementById("mAgentFees").textContent=fmt(a.fees);
+const pl=data.modules.pay.links;document.getElementById("mLinkVol").textContent=fmt(pl.vol);document.getElementById("mLinkCreated").textContent=fmt(pl.created,0);document.getElementById("mLinkClaimed").textContent=fmt(pl.claimed,0);document.getElementById("mLinkActive").textContent=fmt(pl.active,0);
+const inv=data.modules.pay.invoices;document.getElementById("mInvVol").textContent=fmt(inv.vol);document.getElementById("mInvCreated").textContent=fmt(inv.created,0);document.getElementById("mInvPaid").textContent=fmt(inv.paid,0);document.getElementById("mInvPending").textContent=fmt(inv.pending,0);
+const range=document.getElementById("timeRange").value;document.getElementById("chartRangeLabel").textContent=range==="all"?"All time":`Last ${range} days`;renderCharts();renderActivity()}
+function getColors(){const light=document.documentElement.classList.contains("light");return{text:light?"#334155":"#94a3b8",grid:light?"rgba(0,0,0,0.05)":"rgba(255,255,255,0.05)",cyan:light?"#0e7490":"#22d3ee",sky:light?"#0369a1":"#38bdf8",lime:light?"#3f6212":"#a3e635",rose:light?"#be123c":"#fb7185",amber:light?"#b45309":"#fbbf24",blue:light?"#1d4ed8":"#60a5fa",emerald:light?"#047857":"#34d399",violet:light?"#6d28d9":"#a78bfa",yellow:light?"#a16207":"#facc15"}}
+function renderCharts(){const col=getColors();const vCtx=document.getElementById("volumeChart").getContext("2d");if(volumeChart)volumeChart.destroy();volumeChart=new Chart(vCtx,{type:"line",data:{labels:data.timeline.map(t=>new Date(t.date).toLocaleDateString("en-US",{month:"short",day:"numeric"})),datasets:[{data:data.timeline.map(t=>t.volume),borderColor:col.cyan,backgroundColor:ctx=>{const g=ctx.chart.ctx.createLinearGradient(0,0,0,260);g.addColorStop(0,col.cyan+"35");g.addColorStop(1,col.cyan+"00");return g},fill:true,tension:.4,pointRadius:0,pointHoverRadius:5,borderWidth:2.5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:"rgba(10,10,22,0.95)",padding:12,cornerRadius:10}},scales:{x:{grid:{color:col.grid,drawBorder:false},ticks:{color:col.text,font:{size:10},maxTicksLimit:8}},y:{grid:{color:col.grid,drawBorder:false},ticks:{color:col.text,font:{size:10},callback:v=>fmt(v,0)}}}}});
+const modData=[data.modules.conditional.vol,data.modules.vesting.vol,data.modules.role.vol,data.modules.agentic.vol,data.modules.pay.links.vol+data.modules.pay.invoices.vol];const modLabels=["Conditional","Vesting","Role Family","Agentic","ArcPay"];const modCols=[col.blue,col.lime,col.cyan,col.amber,col.emerald];const mCtx=document.getElementById("moduleChart").getContext("2d");if(moduleChart)moduleChart.destroy();moduleChart=new Chart(mCtx,{type:"doughnut",data:{labels:modLabels,datasets:[{data:modData,backgroundColor:modCols,borderWidth:0,hoverOffset:8}]},options:{responsive:true,maintainAspectRatio:false,cutout:"68%",plugins:{legend:{display:false},tooltip:{backgroundColor:"rgba(10,10,22,0.95)",padding:12,cornerRadius:10}}}});const totalM=modData.reduce((a,b)=>a+b,0)||1;document.getElementById("moduleLegend").innerHTML=modLabels.map((l,i)=>`<div class="flex items-center justify-between"><div class="flex items-center gap-2"><div class="w-2.5 h-2.5 rounded-full" style="background:${modCols[i]}"></div><span class="text-gray-400">${l}</span></div><span class="font-bold">${((modData[i]/totalM)*100).toFixed(1)}%</span></div>`).join("");
+const tokLabels=Object.keys(data.tokens);const tokData=Object.values(data.tokens);const tokCols=[col.cyan,col.sky,col.amber,col.rose];const tCtx=document.getElementById("tokenChart").getContext("2d");if(tokenChart)tokenChart.destroy();tokenChart=new Chart(tCtx,{type:"doughnut",data:{labels:tokLabels,datasets:[{data:tokData,backgroundColor:tokCols,borderWidth:0,hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,cutout:"65%",plugins:{legend:{display:false},tooltip:{backgroundColor:"rgba(10,10,22,0.95)",padding:10,cornerRadius:10}}}});document.getElementById("tokenLegend").innerHTML=tokLabels.map((l,i)=>`<div class="flex items-center justify-between"><div class="flex items-center gap-2"><div class="w-2.5 h-2.5 rounded-full" style="background:${tokCols[i]}"></div><span class="text-gray-400">${l}</span></div><span class="font-bold">${fmt(tokData[i])}</span></div>`).join("")}
+function renderActivity(){const box=document.getElementById("activityFeed");let items=data.activity;if(currentModule!=="all"){if(currentModule==="pay")items=items.filter(i=>i.module==="pay");else items=items.filter(i=>i.module===currentModule)}items=items.sort((a,b)=>b.timestamp-a.timestamp).slice(0,25);if(!items.length){box.innerHTML=`<div class="text-center py-16 text-gray-500 italic text-sm">No activity for this filter.</div>`;return}const icons={conditional:{i:"fa-code-branch",c:"text-blue-400",b:"bg-blue-500/15"},vesting:{i:"fa-calendar-check",c:"text-lime-400",b:"bg-lime-500/15"},role:{i:"fa-users-gear",c:"text-cyan-400",b:"bg-cyan-500/15"},agentic:{i:"fa-robot",c:"text-amber-400",b:"bg-amber-500/15"},pay:{i:"fa-link",c:"text-emerald-400",b:"bg-emerald-500/15"},other:{i:"fa-exchange-alt",c:"text-sky-400",b:"bg-sky-500/15"}};box.innerHTML=items.map(item=>{const m=icons[item.module]||icons.other;const time=new Date(item.timestamp).toLocaleString();const link=item.hash?`<a href="${EXPLORER}${item.hash}" target="_blank" class="text-[10px] text-cyan-400 hover:underline font-mono">${String(item.hash).slice(0,10)}…</a>`:"";return`<div class="activity-row flex items-center gap-3.5 p-3.5 rounded-2xl border border-white/5 light:border-black/5 transition-all"><div class="w-10 h-10 rounded-xl ${m.b} flex items-center justify-center shrink-0"><i class="fas ${m.i} ${m.c}"></i></div><div class="flex-1 min-w-0"><div class="flex items-center gap-2 flex-wrap"><span class="font-bold text-sm">${item.type}</span><span class="stat-pill bg-white/5 light:bg-black/5 text-gray-400 capitalize">${item.module}</span></div><div class="text-xs text-gray-500 mt-0.5 truncate">${item.memo||"—"}</div></div><div class="text-right shrink-0"><div class="font-bold text-sm">${fmt(item.amount)} <span class="text-[10px] text-gray-500">${item.token}</span></div><div class="text-[10px] text-gray-500 mt-0.5">${time}</div>${link}</div></div>`}).join("")}
+window.addEventListener("load",async()=>{loadDemo();updateUI();if(window.ethereum){try{const accs=await window.ethereum.request({method:"eth_accounts"});if(accs?.length)await connectWallet()}catch{}}});
 </script>
 </body>
 </html>
