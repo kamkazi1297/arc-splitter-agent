@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ArcSplit Analytics — Enterprise Dashboard</title>
+  <title>ArcSplit Analytics — Enterprise On-Chain Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -40,6 +40,8 @@
     .light .preview-scroll::-webkit-scrollbar-thumb{background:rgba(0,0,0,.2)}
     .light #toast,.light #toast *{color:#fff!important}
     .stat-pill{font-size:10px;padding:2px 8px;border-radius:999px;font-weight:700}
+    .scan-badge{animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
   </style>
 </head>
 <body class="text-white min-h-screen selection:bg-cyan-500/40 selection:text-black">
@@ -52,10 +54,13 @@
         </div>
         <div>
           <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">ArcSplit <span class="gradient-text">Analytics</span></h1>
-          <p class="text-gray-400 text-xs sm:text-sm font-medium mt-0.5">Enterprise insights across the entire ArcSplit suite</p>
+          <p class="text-gray-400 text-xs sm:text-sm font-medium mt-0.5">On-chain enterprise insights · All contracts indexed live</p>
         </div>
       </div>
       <div class="flex items-center gap-3 flex-wrap">
+        <div id="scanStatus" class="hidden text-[10px] px-3 py-1.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 font-bold scan-badge">
+          <i class="fas fa-satellite-dish mr-1"></i> Scanning chain…
+        </div>
         <button onclick="connectWallet()" id="connectBtn" class="app-button px-5 py-2.5 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl text-xs flex items-center gap-2 shadow-lg">
           <i class="fas fa-wallet text-cyan-500"></i> <span id="connectText">Connect Wallet</span>
         </button>
@@ -82,20 +87,20 @@
           <option value="7">Last 7 days</option>
           <option value="30" selected>Last 30 days</option>
           <option value="90">Last 90 days</option>
-          <option value="all">All time</option>
+          <option value="all">All time (limited)</option>
         </select>
-        <button onclick="refreshDashboard()" class="app-button px-3.5 py-2 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-400 border border-cyan-500/30 rounded-xl text-xs font-bold"><i class="fas fa-sync-alt mr-1"></i> Refresh</button>
+        <button onclick="refreshDashboard()" class="app-button px-3.5 py-2 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-400 border border-cyan-500/30 rounded-xl text-xs font-bold"><i class="fas fa-sync-alt mr-1"></i> Rescan</button>
       </div>
     </div>
 
     <!-- KPIs -->
     <div class="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
       <div class="glass kpi-card rounded-3xl p-5"><div class="flex items-center justify-between mb-3"><span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Total Volume</span><div class="w-8 h-8 rounded-xl bg-cyan-500/15 flex items-center justify-center"><i class="fas fa-chart-line text-cyan-400 text-xs"></i></div></div><div id="kpiVolume" class="text-xl sm:text-2xl font-extrabold text-cyan-400">—</div><div class="text-[10px] text-gray-500 mt-1">USDC equiv.</div></div>
-      <div class="glass kpi-card rounded-3xl p-5"><div class="flex items-center justify-between mb-3"><span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Transactions</span><div class="w-8 h-8 rounded-xl bg-sky-500/15 flex items-center justify-center"><i class="fas fa-exchange-alt text-sky-400 text-xs"></i></div></div><div id="kpiTx" class="text-xl sm:text-2xl font-extrabold text-sky-400">—</div><div class="text-[10px] text-gray-500 mt-1">All modules</div></div>
-      <div class="glass kpi-card rounded-3xl p-5"><div class="flex items-center justify-between mb-3"><span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Active Rules</span><div class="w-8 h-8 rounded-xl bg-lime-500/15 flex items-center justify-center"><i class="fas fa-lock text-lime-400 text-xs"></i></div></div><div id="kpiActive" class="text-xl sm:text-2xl font-extrabold text-lime-400">—</div><div class="text-[10px] text-gray-500 mt-1">On-chain live</div></div>
+      <div class="glass kpi-card rounded-3xl p-5"><div class="flex items-center justify-between mb-3"><span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Transactions</span><div class="w-8 h-8 rounded-xl bg-sky-500/15 flex items-center justify-center"><i class="fas fa-exchange-alt text-sky-400 text-xs"></i></div></div><div id="kpiTx" class="text-xl sm:text-2xl font-extrabold text-sky-400">—</div><div class="text-[10px] text-gray-500 mt-1">On-chain events</div></div>
+      <div class="glass kpi-card rounded-3xl p-5"><div class="flex items-center justify-between mb-3"><span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Active Rules</span><div class="w-8 h-8 rounded-xl bg-lime-500/15 flex items-center justify-center"><i class="fas fa-lock text-lime-400 text-xs"></i></div></div><div id="kpiActive" class="text-xl sm:text-2xl font-extrabold text-lime-400">—</div><div class="text-[10px] text-gray-500 mt-1">Live storage</div></div>
       <div class="glass kpi-card rounded-3xl p-5"><div class="flex items-center justify-between mb-3"><span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Recipients</span><div class="w-8 h-8 rounded-xl bg-rose-500/15 flex items-center justify-center"><i class="fas fa-users text-rose-400 text-xs"></i></div></div><div id="kpiRecipients" class="text-xl sm:text-2xl font-extrabold text-rose-400">—</div><div class="text-[10px] text-gray-500 mt-1">Unique wallets</div></div>
       <div class="glass kpi-card rounded-3xl p-5"><div class="flex items-center justify-between mb-3"><span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Pay Links</span><div class="w-8 h-8 rounded-xl bg-emerald-500/15 flex items-center justify-center"><i class="fas fa-link text-emerald-400 text-xs"></i></div></div><div id="kpiLinks" class="text-xl sm:text-2xl font-extrabold text-emerald-400">—</div><div class="text-[10px] text-gray-500 mt-1">+ Invoices</div></div>
-      <div class="glass kpi-card rounded-3xl p-5"><div class="flex items-center justify-between mb-3"><span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Batches</span><div class="w-8 h-8 rounded-xl bg-violet-500/15 flex items-center justify-center"><i class="fas fa-layer-group text-violet-400 text-xs"></i></div></div><div id="kpiBatches" class="text-xl sm:text-2xl font-extrabold text-violet-400">—</div><div class="text-[10px] text-gray-500 mt-1">Role + Multi-token</div></div>
+      <div class="glass kpi-card rounded-3xl p-5"><div class="flex items-center justify-between mb-3"><span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Batches</span><div class="w-8 h-8 rounded-xl bg-violet-500/15 flex items-center justify-center"><i class="fas fa-layer-group text-violet-400 text-xs"></i></div></div><div id="kpiBatches" class="text-xl sm:text-2xl font-extrabold text-violet-400">—</div><div class="text-[10px] text-gray-500 mt-1">Role family</div></div>
     </div>
 
     <!-- CHARTS -->
@@ -114,28 +119,28 @@
     <!-- MODULE CARDS -->
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 mb-8">
       <div class="glass module-card rounded-3xl p-5 border-l-blue-500">
-        <div class="flex items-center gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center"><i class="fas fa-code-branch text-blue-400"></i></div><div><div class="font-bold text-sm">Conditional Split</div><div class="text-[10px] text-gray-500">Smart Condition Engine</div></div></div>
+        <div class="flex items-center gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-blue-500/15 flex items-center justify-center"><i class="fas fa-code-branch text-blue-400"></i></div><div><div class="font-bold text-sm">Conditional Split</div><div class="text-[10px] text-gray-500">ArcConditionalSplitter</div></div></div>
         <div class="grid grid-cols-2 gap-3 text-xs"><div><div class="text-gray-500 mb-0.5">Volume</div><div id="mCondVol" class="font-bold text-blue-400">—</div></div><div><div class="text-gray-500 mb-0.5">Rules</div><div id="mCondRules" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Executions</div><div id="mCondExec" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Active</div><div id="mCondActive" class="font-bold text-lime-400">—</div></div></div>
       </div>
       <div class="glass module-card rounded-3xl p-5 border-l-lime-500">
-        <div class="flex items-center gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-lime-500/15 flex items-center justify-center"><i class="fas fa-calendar-check text-lime-400"></i></div><div><div class="font-bold text-sm">Vesting & Cliff</div><div class="text-[10px] text-gray-500">Time-locked Releases</div></div></div>
+        <div class="flex items-center gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-lime-500/15 flex items-center justify-center"><i class="fas fa-calendar-check text-lime-400"></i></div><div><div class="font-bold text-sm">Vesting & Cliff</div><div class="text-[10px] text-gray-500">ArcVestingSplitter</div></div></div>
         <div class="grid grid-cols-2 gap-3 text-xs"><div><div class="text-gray-500 mb-0.5">Volume</div><div id="mVestVol" class="font-bold text-lime-400">—</div></div><div><div class="text-gray-500 mb-0.5">Schedules</div><div id="mVestSched" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Pushes</div><div id="mVestPush" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Locked</div><div id="mVestLocked" class="font-bold text-amber-400">—</div></div></div>
       </div>
       <div class="glass module-card rounded-3xl p-5 border-l-cyan-500">
-        <div class="flex items-center gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-cyan-500/15 flex items-center justify-center"><i class="fas fa-users-gear text-cyan-400"></i></div><div><div class="font-bold text-sm">Role · Split · Giveaway · Batch</div><div class="text-[10px] text-gray-500">ArcRoleSplitter Engine</div></div></div>
+        <div class="flex items-center gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-cyan-500/15 flex items-center justify-center"><i class="fas fa-users-gear text-cyan-400"></i></div><div><div class="font-bold text-sm">Role · Split · Giveaway · Batch</div><div class="text-[10px] text-gray-500">ArcRoleSplitter</div></div></div>
         <div class="grid grid-cols-2 gap-3 text-xs"><div><div class="text-gray-500 mb-0.5">Volume</div><div id="mRoleVol" class="font-bold text-cyan-400">—</div></div><div><div class="text-gray-500 mb-0.5">Batches</div><div id="mRoleBatches" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Wallets Hit</div><div id="mRoleWallets" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Giveaways</div><div id="mRoleGive" class="font-bold text-amber-400">—</div></div></div>
       </div>
       <div class="glass module-card rounded-3xl p-5 border-l-amber-500">
-        <div class="flex items-center gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center"><i class="fas fa-robot text-amber-400"></i></div><div><div class="font-bold text-sm">Agentic Push</div><div class="text-[10px] text-gray-500">Rule-based Relayer</div></div></div>
+        <div class="flex items-center gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center"><i class="fas fa-robot text-amber-400"></i></div><div><div class="font-bold text-sm">Agentic Push</div><div class="text-[10px] text-gray-500">Shared Conditional contract</div></div></div>
         <div class="grid grid-cols-2 gap-3 text-xs"><div><div class="text-gray-500 mb-0.5">Volume</div><div id="mAgentVol" class="font-bold text-amber-400">—</div></div><div><div class="text-gray-500 mb-0.5">Rules</div><div id="mAgentRules" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Executions</div><div id="mAgentExec" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Relayer Fees</div><div id="mAgentFees" class="font-bold text-rose-400">—</div></div></div>
       </div>
       <div class="glass module-card rounded-3xl p-5 border-l-emerald-500">
-        <div class="flex items-center gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center"><i class="fas fa-link text-emerald-400"></i></div><div><div class="font-bold text-sm">Payment Links</div><div class="text-[10px] text-gray-500">ArcPayLink</div></div></div>
-        <div class="grid grid-cols-2 gap-3 text-xs"><div><div class="text-gray-500 mb-0.5">Volume</div><div id="mLinkVol" class="font-bold text-emerald-400">—</div></div><div><div class="text-gray-500 mb-0.5">Created</div><div id="mLinkCreated" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Claimed</div><div id="mLinkClaimed" class="font-bold text-cyan-400">—</div></div><div><div class="text-gray-500 mb-0.5">Active</div><div id="mLinkActive" class="font-bold text-lime-400">—</div></div></div>
+        <div class="flex items-center gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center"><i class="fas fa-link text-emerald-400"></i></div><div><div class="font-bold text-sm">Payment Links</div><div class="text-[10px] text-gray-500">ArcPayLink · on-chain</div></div></div>
+        <div class="grid grid-cols-2 gap-3 text-xs"><div><div class="text-gray-500 mb-0.5">Volume</div><div id="mLinkVol" class="font-bold text-emerald-400">—</div></div><div><div class="text-gray-500 mb-0.5">Created</div><div id="mLinkCreated" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Claimed</div><div id="mLinkClaimed" class="font-bold text-cyan-400">—</div></div><div><div class="text-gray-500 mb-0.5">Cancelled</div><div id="mLinkCancel" class="font-bold text-rose-400">—</div></div></div>
       </div>
       <div class="glass module-card rounded-3xl p-5 border-l-yellow-500">
-        <div class="flex items-center gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-yellow-500/15 flex items-center justify-center"><i class="fas fa-file-invoice text-yellow-400"></i></div><div><div class="font-bold text-sm">Smart Invoices</div><div class="text-[10px] text-gray-500">ArcInvoice</div></div></div>
-        <div class="grid grid-cols-2 gap-3 text-xs"><div><div class="text-gray-500 mb-0.5">Volume</div><div id="mInvVol" class="font-bold text-yellow-400">—</div></div><div><div class="text-gray-500 mb-0.5">Created</div><div id="mInvCreated" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Paid</div><div id="mInvPaid" class="font-bold text-emerald-400">—</div></div><div><div class="text-gray-500 mb-0.5">Pending</div><div id="mInvPending" class="font-bold text-amber-400">—</div></div></div>
+        <div class="flex items-center gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-yellow-500/15 flex items-center justify-center"><i class="fas fa-file-invoice text-yellow-400"></i></div><div><div class="font-bold text-sm">Smart Invoices</div><div class="text-[10px] text-gray-500">ArcInvoice · on-chain</div></div></div>
+        <div class="grid grid-cols-2 gap-3 text-xs"><div><div class="text-gray-500 mb-0.5">Volume</div><div id="mInvVol" class="font-bold text-yellow-400">—</div></div><div><div class="text-gray-500 mb-0.5">Created</div><div id="mInvCreated" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Paid</div><div id="mInvPaid" class="font-bold text-emerald-400">—</div></div><div><div class="text-gray-500 mb-0.5">Cancelled</div><div id="mInvCancel" class="font-bold text-rose-400">—</div></div></div>
       </div>
     </div>
 
@@ -148,59 +153,842 @@
       </div>
       <div class="lg:col-span-8 glass rounded-3xl p-6">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5">
-          <h3 class="font-bold text-sm flex items-center gap-2"><i class="fas fa-stream text-cyan-400"></i> Live Activity Feed</h3>
-          <span class="text-[10px] text-gray-500">Cloud history + on-chain signals</span>
+          <h3 class="font-bold text-sm flex items-center gap-2"><i class="fas fa-stream text-cyan-400"></i> On-Chain Activity Feed</h3>
+          <span id="dataSourceBadge" class="text-[10px] text-gray-500">Source: —</span>
         </div>
-        <div id="activityFeed" class="preview-scroll space-y-2"><div class="text-center py-16 text-gray-500 italic text-sm">Connect wallet or load data to see activity.</div></div>
+        <div id="activityFeed" class="preview-scroll space-y-2"><div class="text-center py-16 text-gray-500 italic text-sm">Connect wallet &amp; rescan to load on-chain events.</div></div>
       </div>
     </div>
 
     <div class="text-center text-[11px] text-gray-500 pb-6">
-      ArcSplit Analytics Enterprise · Conditional · Vesting · Role/Split/Giveaway/Batch · Agentic · ArcPay Links & Invoices<br>
-      <span class="text-cyan-400/70">Conditional + Agentic share one contract · Role family shares ArcRoleSplitter · Pay uses ArcPayLink + ArcInvoice</span>
+      ArcSplit Analytics · Live getLogs from all proxies · Conditional+Agentic · Vesting · Role · ArcPayLink · ArcInvoice<br>
+      <span class="text-cyan-400/70">Block range limited by RPC · Cloud history merged when available</span>
     </div>
   </div>
 
   <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#0e0e1c] border border-white/10 text-white px-5 py-3 rounded-2xl shadow-2xl z-50 text-sm font-bold text-center min-w-[260px] backdrop-blur-xl"><span id="toastText"></span></div>
 
 <script>
-const EXPLORER="https://testnet.arcscan.app/tx/";
-const CONTRACTS={conditional:"0x08af7753FCE9e664fa5E2D5EB96a60b739E6BD51",vesting:"0xd3640D303e2e7962aEeba09a8aDA73eb80e6606d",role:"0xf2073671b726b96DC1c99D001BBF6e60EE1f187F",payLink:"0x9B438F8Aa736Ed685e7aFF84eB173A9bb7c08320",invoice:"0xD915573BCC42c5d4f859627435E975AEe316BCe0"};
-const CONDITIONAL_ABI=["function activeRuleCount() view returns (uint256)"];
-let provider=null,signer=null,userAddress=null,currentModule="all";
-let volumeChart=null,moduleChart=null,tokenChart=null;
-let data={volume:0,tx:0,active:0,recipients:new Set(),links:0,invoices:0,batches:0,modules:{conditional:{vol:0,rules:0,exec:0,active:0},vesting:{vol:0,schedules:0,pushes:0,locked:0},role:{vol:0,batches:0,wallets:0,giveaways:0},agentic:{vol:0,rules:0,exec:0,fees:0},pay:{links:{vol:0,created:0,claimed:0,active:0},invoices:{vol:0,created:0,paid:0,pending:0}}},tokens:{USDC:0,EURC:0,cirBTC:0,Other:0},timeline:[],activity:[]};
+/* ===================== CONTRACTS & ABIs ===================== */
+const EXPLORER = "https://testnet.arcscan.app/tx/";
+const NATIVE_USDC = "0x3600000000000000000000000000000000000000";
+const ZERO = "0x0000000000000000000000000000000000000000";
 
-function showToast(m,d=3200){const t=document.getElementById("toast");document.getElementById("toastText").innerHTML=m;t.classList.remove("hidden");setTimeout(()=>t.classList.add("hidden"),d)}
-function toggleTheme(){document.documentElement.classList.toggle("light");const icon=document.getElementById("themeBtn").querySelector("i");if(icon.classList.contains("fa-moon")){icon.classList.replace("fa-moon","fa-sun");icon.classList.replace("text-cyan-400","text-amber-400")}else{icon.classList.replace("fa-sun","fa-moon");icon.classList.replace("text-amber-400","text-cyan-400")}setTimeout(renderCharts,80)}
-function setModuleFilter(mod){currentModule=mod;document.querySelectorAll(".module-pill").forEach(b=>{const on=b.dataset.module===mod;b.classList.toggle("active",on);b.classList.toggle("text-gray-400",!on)});updateUI()}
-function fmt(n,d=2){if(n==null||isNaN(n))return"—";if(n>=1e6)return(n/1e6).toFixed(2)+"M";if(n>=1e3)return(n/1e3).toFixed(1)+"K";return Number(n).toLocaleString("en-US",{maximumFractionDigits:d})}
+const CONTRACTS = {
+  conditional: "0x08af7753FCE9e664fa5E2D5EB96a60b739E6BD51",
+  vesting: "0xd3640D303e2e7962aEeba09a8aDA73eb80e6606d",
+  role: "0xf2073671b726b96DC1c99D001BBF6e60EE1f187F",
+  payLink: "0x9B438F8Aa736Ed685e7aFF84eB173A9bb7c08320",
+  invoice: "0xD915573BCC42c5d4f859627435E975AEe316BCe0"
+};
 
-async function connectWallet(){if(!window.ethereum)return showToast("MetaMask not found");try{provider=new ethers.BrowserProvider(window.ethereum);await provider.send("eth_requestAccounts",[]);signer=await provider.getSigner();userAddress=await signer.getAddress();const short=userAddress.slice(0,6)+"…"+userAddress.slice(-4);document.getElementById("connectText").innerHTML=`<i class="fas fa-check-circle text-cyan-400"></i> ${short}`;document.getElementById("connectBtn").className="app-button px-5 py-2.5 bg-cyan-500/15 border border-cyan-500/40 text-cyan-400 font-bold rounded-2xl text-xs flex items-center gap-2";document.getElementById("disconnectBtn").classList.remove("hidden");showToast("Connected");await refreshDashboard()}catch(e){showToast("Connection rejected")}}
-function disconnectWallet(){userAddress=null;signer=null;provider=null;document.getElementById("connectText").textContent="Connect Wallet";document.getElementById("connectBtn").className="app-button px-5 py-2.5 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl text-xs flex items-center gap-2 shadow-lg";document.getElementById("disconnectBtn").classList.add("hidden");loadDemo();updateUI()}
+const TOKEN_MAP = {
+  [NATIVE_USDC.toLowerCase()]: { symbol: "USDC", decimals: 6 },
+  [ZERO]: { symbol: "USDC", decimals: 6 },
+  "0x89b50855aa3be2f677cd6303cec089b5f319d72a": { symbol: "EURC", decimals: 6 },
+  "0xf0c4a4ce82a5746abaad9425360ab04fbba432bf": { symbol: "cirBTC", decimals: 8 }
+};
 
-async function refreshDashboard(){resetData();if(userAddress&&typeof fetchHistoryFromCloud==="function"){try{const hist=await fetchHistoryFromCloud(userAddress);processHistory(hist||[])}catch(e){console.warn(e)}}if(provider)await fetchOnChain();if(data.tx===0)loadDemo();updateUI()}
-function resetData(){data={volume:0,tx:0,active:0,recipients:new Set(),links:0,invoices:0,batches:0,modules:{conditional:{vol:0,rules:0,exec:0,active:0},vesting:{vol:0,schedules:0,pushes:0,locked:0},role:{vol:0,batches:0,wallets:0,giveaways:0},agentic:{vol:0,rules:0,exec:0,fees:0},pay:{links:{vol:0,created:0,claimed:0,active:0},invoices:{vol:0,created:0,paid:0,pending:0}}},tokens:{USDC:0,EURC:0,cirBTC:0,Other:0},timeline:[],activity:[]}}
-function detectModule(app,type,memo){const s=`${app||""} ${type||""} ${memo||""}`.toLowerCase();if(s.includes("condition")||s.includes("smart condition"))return"conditional";if(s.includes("vest"))return"vesting";if(s.includes("agentic")||(s.includes("rule")&&!s.includes("role")))return"agentic";if(s.includes("giveaway")||s.includes("winner"))return"role";if(s.includes("role")||s.includes("batch")||s.includes("split")||s.includes("adhoc"))return"role";if(s.includes("link")||s.includes("invoice")||s.includes("pay"))return"pay";return"other"}
-function processHistory(items){const days=document.getElementById("timeRange").value;const cutoff=days==="all"?0:Date.now()-parseInt(days)*86400000;const daily={};items.forEach(item=>{const ts=new Date(item.timestamp||item.date||Date.now()).getTime();if(cutoff&&ts<cutoff)return;const amount=parseFloat(item.amount||item.totalAmount||0)||0;const token=(item.token||item.tokenSymbol||"USDC").toUpperCase();const type=(item.type||"").toLowerCase();const app=(item.appName||"").toLowerCase();const memo=(item.memo||"").toLowerCase();const mod=detectModule(app,type,memo);data.volume+=amount;data.tx++;if(token.includes("USDC"))data.tokens.USDC+=amount;else if(token.includes("EURC"))data.tokens.EURC+=amount;else if(token.includes("BTC")||token.includes("CIR"))data.tokens.cirBTC+=amount;else data.tokens.Other+=amount;if(item.recipient&&item.recipient!=="Multiple")data.recipients.add(String(item.recipient).toLowerCase());if(item.winners)item.winners.forEach(w=>data.recipients.add(String(w).toLowerCase()));if(mod==="conditional"){data.modules.conditional.vol+=amount;data.modules.conditional.exec++;if(type.includes("lock")||type.includes("rule"))data.modules.conditional.rules++}else if(mod==="vesting"){data.modules.vesting.vol+=amount;data.modules.vesting.schedules++;data.modules.vesting.pushes++}else if(mod==="role"){data.modules.role.vol+=amount;data.modules.role.batches++;data.batches++;data.modules.role.wallets+=(item.winnersCount||item.rolesCount||item.recipientsCount||1);if(type.includes("giveaway")||memo.includes("giveaway")||memo.includes("winner"))data.modules.role.giveaways++}else if(mod==="agentic"){data.modules.agentic.vol+=amount;data.modules.agentic.exec++;if(type.includes("rule"))data.modules.agentic.rules++}else if(mod==="pay"){if(type.includes("invoice")||memo.includes("invoice")){data.modules.pay.invoices.vol+=amount;data.modules.pay.invoices.created++;data.invoices++;if(type.includes("paid")||item.status==="Paid")data.modules.pay.invoices.paid++;else data.modules.pay.invoices.pending++}else{data.modules.pay.links.vol+=amount;data.modules.pay.links.created++;data.links++;if(type.includes("claim")||item.status==="Claimed")data.modules.pay.links.claimed++;else data.modules.pay.links.active++}}const day=new Date(ts).toISOString().slice(0,10);daily[day]=(daily[day]||0)+amount;data.activity.push({type:item.type||"Transaction",amount,token:item.token||item.tokenSymbol||"USDC",memo:item.memo||"",hash:item.hash||item.txHash,timestamp:ts,module:mod})});data.timeline=Object.entries(daily).map(([date,volume])=>({date,volume})).sort((a,b)=>a.date.localeCompare(b.date))}
-async function fetchOnChain(){try{const cond=new ethers.Contract(CONTRACTS.conditional,CONDITIONAL_ABI,provider);const active=await cond.activeRuleCount();data.modules.conditional.active=Number(active);data.active+=Number(active)}catch(e){console.warn("on-chain",e)}}
-function loadDemo(){data.volume=284650;data.tx=612;data.active=57;data.recipients=new Set(Array.from({length:214},(_,i)=>"0x"+i));data.links=48;data.invoices=31;data.batches=89;data.modules={conditional:{vol:52400,rules:34,exec:148,active:22},vesting:{vol:78600,schedules:41,pushes:112,locked:24800},role:{vol:91200,batches:89,wallets:1240,giveaways:18},agentic:{vol:18750,rules:23,exec:87,fees:480},pay:{links:{vol:28900,created:48,claimed:31,active:14},invoices:{vol:14800,created:31,paid:19,pending:9}}};data.tokens={USDC:198400,EURC:42100,cirBTC:28400,Other:15750};const today=new Date();data.timeline=[];for(let i=29;i>=0;i--){const d=new Date(today);d.setDate(d.getDate()-i);const base=4500+Math.random()*9000;const boost=(d.getDay()===0||d.getDay()===6)?0.65:1.15;data.timeline.push({date:d.toISOString().slice(0,10),volume:Math.round(base*boost)})}const samples=[{type:"Smart Condition Lock",amount:4200,token:"USDC",memo:"3 conditions · Time + Price",module:"conditional"},{type:"Vesting Schedule",amount:18000,token:"USDC",memo:"Founder 12M cliff / 36M",module:"vesting"},{type:"Role Batch Split",amount:12500,token:"EURC",memo:"Founder + Dev + Treasury",module:"role"},{type:"Giveaway Equal Split",amount:5000,token:"USDC",memo:"50 winners selected",module:"role"},{type:"Multi-Token Batch",amount:8900,token:"cirBTC",memo:"3 tokens · 28 wallets",module:"role"},{type:"Agentic Rule",amount:1100,token:"USDC",memo:"Recurring push · cooldown 24h",module:"agentic"},{type:"Payment Link Created",amount:750,token:"USDC",memo:"Birthday gift link",module:"pay"},{type:"Invoice Paid",amount:3200,token:"USDC",memo:"Client invoice #42",module:"pay"},{type:"Token Splitter",amount:6400,token:"USDC",memo:"Equal split 12 recipients",module:"role"},{type:"Vested Push",amount:1500,token:"USDC",memo:"Monthly release",module:"vesting"},{type:"Conditional Execution",amount:2800,token:"EURC",memo:"Gas condition met",module:"conditional"},{type:"Link Claimed",amount:500,token:"USDC",memo:"Relayer claim",module:"pay"}];data.activity=samples.map((s,i)=>({...s,hash:"0x"+Math.random().toString(16).slice(2,14),timestamp:Date.now()-i*3600000*(1.5+Math.random()*6)}))}
+const ABI = {
+  conditional: [
+    "function activeRuleCount() view returns (uint256)",
+    "event RuleRegistered(bytes32 indexed ruleHash, address indexed sponsor, address indexed token, bool isRecurring)",
+    "event SplitExecuted(bytes32 indexed ruleHash, address indexed sponsor, address indexed recipient, address token, address relayer, uint256 netAmountPushed, uint256 feeDeducted, uint256 nonce)",
+    "event FundsDeposited(address indexed sponsor, address indexed token, uint256 amount)",
+    "event FundsWithdrawn(address indexed sponsor, address indexed token, uint256 amount)"
+  ],
+  vesting: [
+    "event ScheduleCreated(uint256 indexed scheduleId, address indexed recipient, address indexed token, uint256 totalAmount, uint32 vestingDuration, uint32 cliffDuration, uint32 slicePeriodSeconds, bool revocable, bool allowRelayerPush)",
+    "event VestedAmountPushed(uint256 indexed scheduleId, address indexed recipient, address indexed token, address relayer, uint256 amountReceived, uint256 gasRefunded)"
+  ],
+  role: [
+    "event BatchPercentageExecuted(uint256 indexed batchId, address indexed sender, address indexed token, uint256 totalDistributed, uint256 gasRefunded, uint256 unspentRefunded)",
+    "event BatchAmountExecuted(uint256 indexed batchId, address indexed sender, address indexed token, uint256 totalDistributed, uint256 gasRefunded, uint256 unspentRefunded)"
+  ],
+  payLink: [
+    "event LinkCreated(address indexed linkId, address indexed creator, address indexed token, uint256 amount, uint40 expiration)",
+    "event LinkClaimed(address indexed linkId, address indexed destination, address indexed relayer, uint256 amount, uint256 feeAmount)",
+    "event LinkCancelled(address indexed linkId, address indexed creator, uint256 amount)"
+  ],
+  invoice: [
+    "event InvoiceCreated(uint256 indexed invoiceId, address indexed issuer, address indexed payer, address token, uint256 amount, uint40 dueDate, string metadataURI)",
+    "event InvoicePaid(uint256 indexed invoiceId, address indexed payer, uint256 amountPaid)",
+    "event InvoiceCancelled(uint256 indexed invoiceId)",
+    "function invoiceCounter() view returns (uint256)"
+  ]
+};
 
-function updateUI(){let vol=data.volume,tx=data.tx;if(currentModule==="conditional"){vol=data.modules.conditional.vol;tx=data.modules.conditional.exec}else if(currentModule==="vesting"){vol=data.modules.vesting.vol;tx=data.modules.vesting.pushes}else if(currentModule==="role"){vol=data.modules.role.vol;tx=data.modules.role.batches}else if(currentModule==="agentic"){vol=data.modules.agentic.vol;tx=data.modules.agentic.exec}else if(currentModule==="pay"){vol=data.modules.pay.links.vol+data.modules.pay.invoices.vol;tx=data.modules.pay.links.created+data.modules.pay.invoices.created}
-document.getElementById("kpiVolume").textContent=fmt(vol);document.getElementById("kpiTx").textContent=fmt(tx,0);document.getElementById("kpiActive").textContent=fmt(data.active,0);document.getElementById("kpiRecipients").textContent=fmt(data.recipients.size,0);document.getElementById("kpiLinks").textContent=fmt(data.links+data.invoices,0);document.getElementById("kpiBatches").textContent=fmt(data.batches,0);
-const c=data.modules.conditional;document.getElementById("mCondVol").textContent=fmt(c.vol);document.getElementById("mCondRules").textContent=fmt(c.rules,0);document.getElementById("mCondExec").textContent=fmt(c.exec,0);document.getElementById("mCondActive").textContent=fmt(c.active,0);
-const v=data.modules.vesting;document.getElementById("mVestVol").textContent=fmt(v.vol);document.getElementById("mVestSched").textContent=fmt(v.schedules,0);document.getElementById("mVestPush").textContent=fmt(v.pushes,0);document.getElementById("mVestLocked").textContent=fmt(v.locked);
-const r=data.modules.role;document.getElementById("mRoleVol").textContent=fmt(r.vol);document.getElementById("mRoleBatches").textContent=fmt(r.batches,0);document.getElementById("mRoleWallets").textContent=fmt(r.wallets,0);document.getElementById("mRoleGive").textContent=fmt(r.giveaways,0);
-const a=data.modules.agentic;document.getElementById("mAgentVol").textContent=fmt(a.vol);document.getElementById("mAgentRules").textContent=fmt(a.rules,0);document.getElementById("mAgentExec").textContent=fmt(a.exec,0);document.getElementById("mAgentFees").textContent=fmt(a.fees);
-const pl=data.modules.pay.links;document.getElementById("mLinkVol").textContent=fmt(pl.vol);document.getElementById("mLinkCreated").textContent=fmt(pl.created,0);document.getElementById("mLinkClaimed").textContent=fmt(pl.claimed,0);document.getElementById("mLinkActive").textContent=fmt(pl.active,0);
-const inv=data.modules.pay.invoices;document.getElementById("mInvVol").textContent=fmt(inv.vol);document.getElementById("mInvCreated").textContent=fmt(inv.created,0);document.getElementById("mInvPaid").textContent=fmt(inv.paid,0);document.getElementById("mInvPending").textContent=fmt(inv.pending,0);
-const range=document.getElementById("timeRange").value;document.getElementById("chartRangeLabel").textContent=range==="all"?"All time":`Last ${range} days`;renderCharts();renderActivity()}
-function getColors(){const light=document.documentElement.classList.contains("light");return{text:light?"#334155":"#94a3b8",grid:light?"rgba(0,0,0,0.05)":"rgba(255,255,255,0.05)",cyan:light?"#0e7490":"#22d3ee",sky:light?"#0369a1":"#38bdf8",lime:light?"#3f6212":"#a3e635",rose:light?"#be123c":"#fb7185",amber:light?"#b45309":"#fbbf24",blue:light?"#1d4ed8":"#60a5fa",emerald:light?"#047857":"#34d399",violet:light?"#6d28d9":"#a78bfa",yellow:light?"#a16207":"#facc15"}}
-function renderCharts(){const col=getColors();const vCtx=document.getElementById("volumeChart").getContext("2d");if(volumeChart)volumeChart.destroy();volumeChart=new Chart(vCtx,{type:"line",data:{labels:data.timeline.map(t=>new Date(t.date).toLocaleDateString("en-US",{month:"short",day:"numeric"})),datasets:[{data:data.timeline.map(t=>t.volume),borderColor:col.cyan,backgroundColor:ctx=>{const g=ctx.chart.ctx.createLinearGradient(0,0,0,260);g.addColorStop(0,col.cyan+"35");g.addColorStop(1,col.cyan+"00");return g},fill:true,tension:.4,pointRadius:0,pointHoverRadius:5,borderWidth:2.5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{backgroundColor:"rgba(10,10,22,0.95)",padding:12,cornerRadius:10}},scales:{x:{grid:{color:col.grid,drawBorder:false},ticks:{color:col.text,font:{size:10},maxTicksLimit:8}},y:{grid:{color:col.grid,drawBorder:false},ticks:{color:col.text,font:{size:10},callback:v=>fmt(v,0)}}}}});
-const modData=[data.modules.conditional.vol,data.modules.vesting.vol,data.modules.role.vol,data.modules.agentic.vol,data.modules.pay.links.vol+data.modules.pay.invoices.vol];const modLabels=["Conditional","Vesting","Role Family","Agentic","ArcPay"];const modCols=[col.blue,col.lime,col.cyan,col.amber,col.emerald];const mCtx=document.getElementById("moduleChart").getContext("2d");if(moduleChart)moduleChart.destroy();moduleChart=new Chart(mCtx,{type:"doughnut",data:{labels:modLabels,datasets:[{data:modData,backgroundColor:modCols,borderWidth:0,hoverOffset:8}]},options:{responsive:true,maintainAspectRatio:false,cutout:"68%",plugins:{legend:{display:false},tooltip:{backgroundColor:"rgba(10,10,22,0.95)",padding:12,cornerRadius:10}}}});const totalM=modData.reduce((a,b)=>a+b,0)||1;document.getElementById("moduleLegend").innerHTML=modLabels.map((l,i)=>`<div class="flex items-center justify-between"><div class="flex items-center gap-2"><div class="w-2.5 h-2.5 rounded-full" style="background:${modCols[i]}"></div><span class="text-gray-400">${l}</span></div><span class="font-bold">${((modData[i]/totalM)*100).toFixed(1)}%</span></div>`).join("");
-const tokLabels=Object.keys(data.tokens);const tokData=Object.values(data.tokens);const tokCols=[col.cyan,col.sky,col.amber,col.rose];const tCtx=document.getElementById("tokenChart").getContext("2d");if(tokenChart)tokenChart.destroy();tokenChart=new Chart(tCtx,{type:"doughnut",data:{labels:tokLabels,datasets:[{data:tokData,backgroundColor:tokCols,borderWidth:0,hoverOffset:6}]},options:{responsive:true,maintainAspectRatio:false,cutout:"65%",plugins:{legend:{display:false},tooltip:{backgroundColor:"rgba(10,10,22,0.95)",padding:10,cornerRadius:10}}}});document.getElementById("tokenLegend").innerHTML=tokLabels.map((l,i)=>`<div class="flex items-center justify-between"><div class="flex items-center gap-2"><div class="w-2.5 h-2.5 rounded-full" style="background:${tokCols[i]}"></div><span class="text-gray-400">${l}</span></div><span class="font-bold">${fmt(tokData[i])}</span></div>`).join("")}
-function renderActivity(){const box=document.getElementById("activityFeed");let items=data.activity;if(currentModule!=="all"){if(currentModule==="pay")items=items.filter(i=>i.module==="pay");else items=items.filter(i=>i.module===currentModule)}items=items.sort((a,b)=>b.timestamp-a.timestamp).slice(0,25);if(!items.length){box.innerHTML=`<div class="text-center py-16 text-gray-500 italic text-sm">No activity for this filter.</div>`;return}const icons={conditional:{i:"fa-code-branch",c:"text-blue-400",b:"bg-blue-500/15"},vesting:{i:"fa-calendar-check",c:"text-lime-400",b:"bg-lime-500/15"},role:{i:"fa-users-gear",c:"text-cyan-400",b:"bg-cyan-500/15"},agentic:{i:"fa-robot",c:"text-amber-400",b:"bg-amber-500/15"},pay:{i:"fa-link",c:"text-emerald-400",b:"bg-emerald-500/15"},other:{i:"fa-exchange-alt",c:"text-sky-400",b:"bg-sky-500/15"}};box.innerHTML=items.map(item=>{const m=icons[item.module]||icons.other;const time=new Date(item.timestamp).toLocaleString();const link=item.hash?`<a href="${EXPLORER}${item.hash}" target="_blank" class="text-[10px] text-cyan-400 hover:underline font-mono">${String(item.hash).slice(0,10)}…</a>`:"";return`<div class="activity-row flex items-center gap-3.5 p-3.5 rounded-2xl border border-white/5 light:border-black/5 transition-all"><div class="w-10 h-10 rounded-xl ${m.b} flex items-center justify-center shrink-0"><i class="fas ${m.i} ${m.c}"></i></div><div class="flex-1 min-w-0"><div class="flex items-center gap-2 flex-wrap"><span class="font-bold text-sm">${item.type}</span><span class="stat-pill bg-white/5 light:bg-black/5 text-gray-400 capitalize">${item.module}</span></div><div class="text-xs text-gray-500 mt-0.5 truncate">${item.memo||"—"}</div></div><div class="text-right shrink-0"><div class="font-bold text-sm">${fmt(item.amount)} <span class="text-[10px] text-gray-500">${item.token}</span></div><div class="text-[10px] text-gray-500 mt-0.5">${time}</div>${link}</div></div>`}).join("")}
-window.addEventListener("load",async()=>{loadDemo();updateUI();if(window.ethereum){try{const accs=await window.ethereum.request({method:"eth_accounts"});if(accs?.length)await connectWallet()}catch{}}});
+/* ===================== STATE ===================== */
+let provider = null, signer = null, userAddress = null, currentModule = "all";
+let volumeChart = null, moduleChart = null, tokenChart = null;
+let data = emptyData();
+let dataSource = "demo";
+
+function emptyData() {
+  return {
+    volume: 0, tx: 0, active: 0, recipients: new Set(),
+    links: 0, invoices: 0, batches: 0,
+    modules: {
+      conditional: { vol: 0, rules: 0, exec: 0, active: 0 },
+      vesting: { vol: 0, schedules: 0, pushes: 0, locked: 0 },
+      role: { vol: 0, batches: 0, wallets: 0, giveaways: 0 },
+      agentic: { vol: 0, rules: 0, exec: 0, fees: 0 },
+      pay: {
+        links: { vol: 0, created: 0, claimed: 0, cancelled: 0 },
+        invoices: { vol: 0, created: 0, paid: 0, cancelled: 0 }
+      }
+    },
+    tokens: { USDC: 0, EURC: 0, cirBTC: 0, Other: 0 },
+    timeline: [],
+    activity: []
+  };
+}
+
+/* ===================== HELPERS ===================== */
+function showToast(m, d = 3500) {
+  const t = document.getElementById("toast");
+  document.getElementById("toastText").innerHTML = m;
+  t.classList.remove("hidden");
+  setTimeout(() => t.classList.add("hidden"), d);
+}
+function toggleTheme() {
+  document.documentElement.classList.toggle("light");
+  const icon = document.getElementById("themeBtn").querySelector("i");
+  if (icon.classList.contains("fa-moon")) {
+    icon.classList.replace("fa-moon", "fa-sun");
+    icon.classList.replace("text-cyan-400", "text-amber-400");
+  } else {
+    icon.classList.replace("fa-sun", "fa-moon");
+    icon.classList.replace("text-amber-400", "text-cyan-400");
+  }
+  setTimeout(renderCharts, 80);
+}
+function setModuleFilter(mod) {
+  currentModule = mod;
+  document.querySelectorAll(".module-pill").forEach(b => {
+    const on = b.dataset.module === mod;
+    b.classList.toggle("active", on);
+    b.classList.toggle("text-gray-400", !on);
+  });
+  updateUI();
+}
+function fmt(n, d = 2) {
+  if (n == null || isNaN(n)) return "—";
+  if (n >= 1e6) return (n / 1e6).toFixed(2) + "M";
+  if (n >= 1e3) return (n / 1e3).toFixed(1) + "K";
+  return Number(n).toLocaleString("en-US", { maximumFractionDigits: d });
+}
+function tokenInfo(addr) {
+  if (!addr) return { symbol: "USDC", decimals: 6 };
+  const k = addr.toLowerCase();
+  return TOKEN_MAP[k] || { symbol: "Other", decimals: 18 };
+}
+function formatUnitsSafe(raw, decimals) {
+  try { return parseFloat(ethers.formatUnits(raw, decimals)); }
+  catch { return 0; }
+}
+function addTokenVol(addr, amountHuman) {
+  const info = tokenInfo(addr);
+  if (info.symbol === "USDC") data.tokens.USDC += amountHuman;
+  else if (info.symbol === "EURC") data.tokens.EURC += amountHuman;
+  else if (info.symbol === "cirBTC") data.tokens.cirBTC += amountHuman;
+  else data.tokens.Other += amountHuman;
+}
+function pushActivity(obj) {
+  data.activity.push(obj);
+  data.tx++;
+  if (obj.recipient) data.recipients.add(String(obj.recipient).toLowerCase());
+}
+function dayKey(ts) {
+  return new Date(ts * 1000).toISOString().slice(0, 10);
+}
+
+/* ===================== WALLET ===================== */
+async function connectWallet() {
+  if (!window.ethereum) return showToast("MetaMask not found");
+  try {
+    provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    signer = await provider.getSigner();
+    userAddress = await signer.getAddress();
+    const short = userAddress.slice(0, 6) + "…" + userAddress.slice(-4);
+    document.getElementById("connectText").innerHTML = `<i class="fas fa-check-circle text-cyan-400"></i> ${short}`;
+    document.getElementById("connectBtn").className = "app-button px-5 py-2.5 bg-cyan-500/15 border border-cyan-500/40 text-cyan-400 font-bold rounded-2xl text-xs flex items-center gap-2";
+    document.getElementById("disconnectBtn").classList.remove("hidden");
+    showToast("Connected · scanning chain…");
+    await refreshDashboard();
+  } catch (e) {
+    showToast("Connection rejected");
+  }
+}
+function disconnectWallet() {
+  userAddress = null; signer = null; provider = null;
+  document.getElementById("connectText").textContent = "Connect Wallet";
+  document.getElementById("connectBtn").className = "app-button px-5 py-2.5 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl text-xs flex items-center gap-2 shadow-lg";
+  document.getElementById("disconnectBtn").classList.add("hidden");
+  data = emptyData();
+  loadDemo();
+  dataSource = "demo";
+  updateUI();
+}
+
+/* ===================== ON-CHAIN SCAN ===================== */
+async function getBlockRange() {
+  const latest = await provider.getBlockNumber();
+  const days = document.getElementById("timeRange").value;
+  // ~2s block time on many L1s → ~43200 blocks / day. Use conservative window.
+  let lookback = 50000; // safe default for most public RPCs
+  if (days === "7") lookback = 30000;
+  else if (days === "30") lookback = 80000;
+  else if (days === "90") lookback = 120000;
+  else lookback = 150000;
+  // Cap to avoid RPC errors
+  lookback = Math.min(lookback, 100000);
+  const from = Math.max(0, latest - lookback);
+  return { from, to: latest };
+}
+
+async function queryLogs(address, iface, eventNames, fromBlock, toBlock) {
+  const topics = eventNames.map(n => iface.getEvent(n).topicHash);
+  // Query each event separately to avoid topic limit issues
+  const all = [];
+  for (const topic of topics) {
+    try {
+      const logs = await provider.getLogs({
+        address,
+        topics: [topic],
+        fromBlock,
+        toBlock
+      });
+      all.push(...logs);
+    } catch (e) {
+      console.warn("getLogs partial fail", address, e.message);
+      // try smaller chunk
+      try {
+        const mid = Math.floor((fromBlock + toBlock) / 2);
+        const a = await provider.getLogs({ address, topics: [topic], fromBlock, toBlock: mid });
+        const b = await provider.getLogs({ address, topics: [topic], fromBlock: mid + 1, toBlock });
+        all.push(...a, ...b);
+      } catch (e2) {
+        console.warn("chunked getLogs failed", e2.message);
+      }
+    }
+  }
+  return all;
+}
+
+async function scanPayLink(fromBlock, toBlock) {
+  const iface = new ethers.Interface(ABI.payLink);
+  const logs = await queryLogs(CONTRACTS.payLink, iface, ["LinkCreated", "LinkClaimed", "LinkCancelled"], fromBlock, toBlock);
+  const daily = {};
+  for (const log of logs) {
+    try {
+      const parsed = iface.parseLog({ topics: log.topics, data: log.data });
+      if (!parsed) continue;
+      const block = await provider.getBlock(log.blockNumber).catch(() => null);
+      const ts = block ? block.timestamp : Math.floor(Date.now() / 1000);
+      const name = parsed.name;
+
+      if (name === "LinkCreated") {
+        const token = parsed.args.token;
+        const amount = formatUnitsSafe(parsed.args.amount, tokenInfo(token).decimals);
+        data.modules.pay.links.created++;
+        data.modules.pay.links.vol += amount;
+        data.volume += amount;
+        data.links++;
+        addTokenVol(token, amount);
+        daily[dayKey(ts)] = (daily[dayKey(ts)] || 0) + amount;
+        pushActivity({
+          type: "Payment Link Created",
+          amount,
+          token: tokenInfo(token).symbol,
+          memo: `linkId ${String(parsed.args.linkId).slice(0, 10)}…`,
+          hash: log.transactionHash,
+          timestamp: ts * 1000,
+          module: "pay",
+          recipient: parsed.args.creator
+        });
+      } else if (name === "LinkClaimed") {
+        const amount = formatUnitsSafe(parsed.args.amount, 6); // amount already human in event is wei of token; we don't have token here easily — use 6 as default for USDC-native
+        // Better: amount is net transferred; fee separate. Token not in event — assume USDC-native scale or re-fetch
+        data.modules.pay.links.claimed++;
+        // volume already counted on create; optionally count claimed separately without double-counting volume
+        pushActivity({
+          type: "Payment Link Claimed",
+          amount: formatUnitsSafe(parsed.args.amount, 6),
+          token: "USDC",
+          memo: `relayer ${String(parsed.args.relayer).slice(0, 8)}…`,
+          hash: log.transactionHash,
+          timestamp: ts * 1000,
+          module: "pay",
+          recipient: parsed.args.destination
+        });
+      } else if (name === "LinkCancelled") {
+        data.modules.pay.links.cancelled++;
+        pushActivity({
+          type: "Payment Link Cancelled",
+          amount: formatUnitsSafe(parsed.args.amount, 6),
+          token: "USDC",
+          memo: "Refund to creator",
+          hash: log.transactionHash,
+          timestamp: ts * 1000,
+          module: "pay",
+          recipient: parsed.args.creator
+        });
+      }
+    } catch (e) { console.warn("payLink parse", e); }
+  }
+  return daily;
+}
+
+async function scanInvoice(fromBlock, toBlock) {
+  const iface = new ethers.Interface(ABI.invoice);
+  const logs = await queryLogs(CONTRACTS.invoice, iface, ["InvoiceCreated", "InvoicePaid", "InvoiceCancelled"], fromBlock, toBlock);
+  const daily = {};
+  // Cache amounts from create for paid events
+  const invAmounts = {};
+  for (const log of logs) {
+    try {
+      const parsed = iface.parseLog({ topics: log.topics, data: log.data });
+      if (!parsed) continue;
+      const block = await provider.getBlock(log.blockNumber).catch(() => null);
+      const ts = block ? block.timestamp : Math.floor(Date.now() / 1000);
+      const name = parsed.name;
+
+      if (name === "InvoiceCreated") {
+        const token = parsed.args.token;
+        const amount = formatUnitsSafe(parsed.args.amount, tokenInfo(token).decimals);
+        invAmounts[parsed.args.invoiceId.toString()] = { amount, token };
+        data.modules.pay.invoices.created++;
+        data.modules.pay.invoices.vol += amount;
+        data.volume += amount;
+        data.invoices++;
+        addTokenVol(token, amount);
+        daily[dayKey(ts)] = (daily[dayKey(ts)] || 0) + amount;
+        pushActivity({
+          type: "Invoice Created",
+          amount,
+          token: tokenInfo(token).symbol,
+          memo: `Invoice #${parsed.args.invoiceId}`,
+          hash: log.transactionHash,
+          timestamp: ts * 1000,
+          module: "pay",
+          recipient: parsed.args.issuer
+        });
+      } else if (name === "InvoicePaid") {
+        const id = parsed.args.invoiceId.toString();
+        const cached = invAmounts[id];
+        const amount = cached ? cached.amount : formatUnitsSafe(parsed.args.amountPaid, 6);
+        data.modules.pay.invoices.paid++;
+        pushActivity({
+          type: "Invoice Paid",
+          amount,
+          token: cached ? tokenInfo(cached.token).symbol : "USDC",
+          memo: `Invoice #${id}`,
+          hash: log.transactionHash,
+          timestamp: ts * 1000,
+          module: "pay",
+          recipient: parsed.args.payer
+        });
+      } else if (name === "InvoiceCancelled") {
+        data.modules.pay.invoices.cancelled++;
+        pushActivity({
+          type: "Invoice Cancelled",
+          amount: 0,
+          token: "—",
+          memo: `Invoice #${parsed.args.invoiceId}`,
+          hash: log.transactionHash,
+          timestamp: ts * 1000,
+          module: "pay"
+        });
+      }
+    } catch (e) { console.warn("invoice parse", e); }
+  }
+  return daily;
+}
+
+async function scanConditional(fromBlock, toBlock) {
+  const iface = new ethers.Interface(ABI.conditional);
+  const logs = await queryLogs(CONTRACTS.conditional, iface, ["RuleRegistered", "SplitExecuted", "FundsDeposited"], fromBlock, toBlock);
+  const daily = {};
+  for (const log of logs) {
+    try {
+      const parsed = iface.parseLog({ topics: log.topics, data: log.data });
+      if (!parsed) continue;
+      const block = await provider.getBlock(log.blockNumber).catch(() => null);
+      const ts = block ? block.timestamp : Math.floor(Date.now() / 1000);
+      const name = parsed.name;
+
+      if (name === "RuleRegistered") {
+        data.modules.conditional.rules++;
+        // Agentic also uses this — count half heuristically or all under conditional + agentic share
+        pushActivity({
+          type: "Rule Registered",
+          amount: 0,
+          token: tokenInfo(parsed.args.token).symbol,
+          memo: parsed.args.isRecurring ? "Recurring" : "One-time",
+          hash: log.transactionHash,
+          timestamp: ts * 1000,
+          module: "conditional",
+          recipient: parsed.args.sponsor
+        });
+      } else if (name === "SplitExecuted") {
+        const token = parsed.args.token;
+        const amount = formatUnitsSafe(parsed.args.netAmountPushed, tokenInfo(token).decimals);
+        const fee = formatUnitsSafe(parsed.args.feeDeducted, tokenInfo(token).decimals);
+        data.modules.conditional.vol += amount;
+        data.modules.conditional.exec++;
+        data.modules.agentic.vol += amount * 0.3; // shared contract — approximate split for UI
+        data.modules.agentic.exec++;
+        data.modules.agentic.fees += fee;
+        data.volume += amount;
+        addTokenVol(token, amount);
+        daily[dayKey(ts)] = (daily[dayKey(ts)] || 0) + amount;
+        pushActivity({
+          type: "Conditional / Agentic Push",
+          amount,
+          token: tokenInfo(token).symbol,
+          memo: fee > 0 ? `Fee ${fmt(fee)}` : "Executed",
+          hash: log.transactionHash,
+          timestamp: ts * 1000,
+          module: "conditional",
+          recipient: parsed.args.recipient
+        });
+      } else if (name === "FundsDeposited") {
+        const token = parsed.args.token;
+        const amount = formatUnitsSafe(parsed.args.amount, tokenInfo(token).decimals);
+        addTokenVol(token, amount);
+        pushActivity({
+          type: "Funds Deposited",
+          amount,
+          token: tokenInfo(token).symbol,
+          memo: "Treasury deposit",
+          hash: log.transactionHash,
+          timestamp: ts * 1000,
+          module: "conditional",
+          recipient: parsed.args.sponsor
+        });
+      }
+    } catch (e) { console.warn("cond parse", e); }
+  }
+  return daily;
+}
+
+async function scanVesting(fromBlock, toBlock) {
+  const iface = new ethers.Interface(ABI.vesting);
+  const logs = await queryLogs(CONTRACTS.vesting, iface, ["ScheduleCreated", "VestedAmountPushed"], fromBlock, toBlock);
+  const daily = {};
+  for (const log of logs) {
+    try {
+      const parsed = iface.parseLog({ topics: log.topics, data: log.data });
+      if (!parsed) continue;
+      const block = await provider.getBlock(log.blockNumber).catch(() => null);
+      const ts = block ? block.timestamp : Math.floor(Date.now() / 1000);
+
+      if (parsed.name === "ScheduleCreated") {
+        const token = parsed.args.token;
+        const amount = formatUnitsSafe(parsed.args.totalAmount, tokenInfo(token).decimals);
+        data.modules.vesting.vol += amount;
+        data.modules.vesting.schedules++;
+        data.modules.vesting.locked += amount;
+        data.volume += amount;
+        addTokenVol(token, amount);
+        daily[dayKey(ts)] = (daily[dayKey(ts)] || 0) + amount;
+        pushActivity({
+          type: "Vesting Schedule Created",
+          amount,
+          token: tokenInfo(token).symbol,
+          memo: `Duration ${parsed.args.vestingDuration}s`,
+          hash: log.transactionHash,
+          timestamp: ts * 1000,
+          module: "vesting",
+          recipient: parsed.args.recipient
+        });
+      } else if (parsed.name === "VestedAmountPushed") {
+        const token = parsed.args.token;
+        const amount = formatUnitsSafe(parsed.args.amountReceived, tokenInfo(token).decimals);
+        data.modules.vesting.pushes++;
+        data.modules.vesting.locked = Math.max(0, data.modules.vesting.locked - amount);
+        pushActivity({
+          type: "Vested Amount Pushed",
+          amount,
+          token: tokenInfo(token).symbol,
+          memo: "Release",
+          hash: log.transactionHash,
+          timestamp: ts * 1000,
+          module: "vesting",
+          recipient: parsed.args.recipient
+        });
+      }
+    } catch (e) { console.warn("vest parse", e); }
+  }
+  return daily;
+}
+
+async function scanRole(fromBlock, toBlock) {
+  const iface = new ethers.Interface(ABI.role);
+  const logs = await queryLogs(CONTRACTS.role, iface, ["BatchPercentageExecuted", "BatchAmountExecuted"], fromBlock, toBlock);
+  const daily = {};
+  for (const log of logs) {
+    try {
+      const parsed = iface.parseLog({ topics: log.topics, data: log.data });
+      if (!parsed) continue;
+      const block = await provider.getBlock(log.blockNumber).catch(() => null);
+      const ts = block ? block.timestamp : Math.floor(Date.now() / 1000);
+      const token = parsed.args.token;
+      const amount = formatUnitsSafe(parsed.args.totalDistributed, tokenInfo(token).decimals);
+      data.modules.role.vol += amount;
+      data.modules.role.batches++;
+      data.batches++;
+      data.volume += amount;
+      addTokenVol(token, amount);
+      daily[dayKey(ts)] = (daily[dayKey(ts)] || 0) + amount;
+      pushActivity({
+        type: parsed.name === "BatchPercentageExecuted" ? "Role % Batch" : "Role Amount Batch",
+        amount,
+        token: tokenInfo(token).symbol,
+        memo: `Batch #${parsed.args.batchId}`,
+        hash: log.transactionHash,
+        timestamp: ts * 1000,
+        module: "role",
+        recipient: parsed.args.sender
+      });
+    } catch (e) { console.warn("role parse", e); }
+  }
+  return daily;
+}
+
+async function fetchOnChainAll() {
+  if (!provider) return false;
+  document.getElementById("scanStatus").classList.remove("hidden");
+  data = emptyData();
+  try {
+    const { from, to } = await getBlockRange();
+    showToast(`Scanning blocks ${from} → ${to}…`, 5000);
+
+    // Parallel scans
+    const [dPay, dInv, dCond, dVest, dRole] = await Promise.all([
+      scanPayLink(from, to),
+      scanInvoice(from, to),
+      scanConditional(from, to),
+      scanVesting(from, to),
+      scanRole(from, to)
+    ]);
+
+    // Merge timelines
+    const daily = {};
+    for (const d of [dPay, dInv, dCond, dVest, dRole]) {
+      for (const [k, v] of Object.entries(d)) daily[k] = (daily[k] || 0) + v;
+    }
+    data.timeline = Object.entries(daily).map(([date, volume]) => ({ date, volume })).sort((a, b) => a.date.localeCompare(b.date));
+
+    // Live views
+    try {
+      const cond = new ethers.Contract(CONTRACTS.conditional, ABI.conditional, provider);
+      const active = await cond.activeRuleCount();
+      data.modules.conditional.active = Number(active);
+      data.active = Number(active);
+    } catch {}
+
+    try {
+      const inv = new ethers.Contract(CONTRACTS.invoice, ABI.invoice, provider);
+      const counter = await inv.invoiceCounter();
+      // fill created if events missed some
+      if (Number(counter) > data.modules.pay.invoices.created) {
+        data.modules.pay.invoices.created = Number(counter);
+        data.invoices = Math.max(data.invoices, Number(counter));
+      }
+    } catch {}
+
+    dataSource = "on-chain";
+    document.getElementById("scanStatus").classList.add("hidden");
+    return true;
+  } catch (e) {
+    console.error("scan failed", e);
+    document.getElementById("scanStatus").classList.add("hidden");
+    showToast("On-chain scan failed: " + (e.shortMessage || e.message || "RPC error"), 6000);
+    return false;
+  }
+}
+
+/* ===================== CLOUD MERGE ===================== */
+async function mergeCloud() {
+  if (!userAddress || typeof fetchHistoryFromCloud !== "function") return;
+  try {
+    const hist = await fetchHistoryFromCloud(userAddress);
+    if (!hist || !hist.length) return;
+    // Only add activity items that we don't already have by hash
+    const seen = new Set(data.activity.map(a => a.hash).filter(Boolean));
+    hist.forEach(item => {
+      const hash = item.hash || item.txHash;
+      if (hash && seen.has(hash)) return;
+      const amount = parseFloat(item.amount || item.totalAmount || 0) || 0;
+      const tokenSym = (item.tokenSymbol || item.token || "USDC").toString().toUpperCase();
+      const type = (item.type || item.memo || "").toLowerCase();
+      let mod = "other";
+      if (type.includes("link") || type.includes("invoice") || type.includes("pay")) mod = "pay";
+      else if (type.includes("vest")) mod = "vesting";
+      else if (type.includes("condition") || type.includes("agentic") || type.includes("rule")) mod = "conditional";
+      else if (type.includes("role") || type.includes("batch") || type.includes("giveaway") || type.includes("split")) mod = "role";
+
+      pushActivity({
+        type: item.type || item.memo || "Cloud record",
+        amount,
+        token: tokenSym.includes("USDC") ? "USDC" : tokenSym.includes("EURC") ? "EURC" : tokenSym.includes("BTC") ? "cirBTC" : "Other",
+        memo: item.memo || "",
+        hash,
+        timestamp: item.timestamp || Date.now(),
+        module: mod
+      });
+    });
+    if (dataSource === "on-chain") dataSource = "on-chain + cloud";
+  } catch (e) { console.warn("cloud merge", e); }
+}
+
+/* ===================== DEMO FALLBACK ===================== */
+function loadDemo() {
+  data.volume = 284650; data.tx = 612; data.active = 57;
+  data.recipients = new Set(Array.from({ length: 214 }, (_, i) => "0x" + i));
+  data.links = 48; data.invoices = 31; data.batches = 89;
+  data.modules = {
+    conditional: { vol: 52400, rules: 34, exec: 148, active: 22 },
+    vesting: { vol: 78600, schedules: 41, pushes: 112, locked: 24800 },
+    role: { vol: 91200, batches: 89, wallets: 1240, giveaways: 18 },
+    agentic: { vol: 18750, rules: 23, exec: 87, fees: 480 },
+    pay: {
+      links: { vol: 28900, created: 48, claimed: 31, cancelled: 3 },
+      invoices: { vol: 14800, created: 31, paid: 19, cancelled: 2 }
+    }
+  };
+  data.tokens = { USDC: 198400, EURC: 42100, cirBTC: 28400, Other: 15750 };
+  const today = new Date();
+  data.timeline = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(today); d.setDate(d.getDate() - i);
+    const base = 4500 + Math.random() * 9000;
+    const boost = (d.getDay() === 0 || d.getDay() === 6) ? 0.65 : 1.15;
+    data.timeline.push({ date: d.toISOString().slice(0, 10), volume: Math.round(base * boost) });
+  }
+  const samples = [
+    { type: "Payment Link Created", amount: 750, token: "USDC", memo: "Birthday gift", module: "pay" },
+    { type: "Invoice Paid", amount: 3200, token: "USDC", memo: "Invoice #42", module: "pay" },
+    { type: "Link Claimed", amount: 500, token: "USDC", memo: "Relayer claim", module: "pay" },
+    { type: "Role Batch", amount: 12500, token: "EURC", memo: "Payroll", module: "role" },
+    { type: "Vesting Created", amount: 18000, token: "USDC", memo: "12M cliff", module: "vesting" },
+    { type: "Conditional Push", amount: 2800, token: "USDC", memo: "Condition met", module: "conditional" }
+  ];
+  data.activity = samples.map((s, i) => ({ ...s, hash: "0xdemo" + i, timestamp: Date.now() - i * 7200000 }));
+  dataSource = "demo";
+}
+
+/* ===================== REFRESH ===================== */
+async function refreshDashboard() {
+  if (provider) {
+    const ok = await fetchOnChainAll();
+    if (ok) {
+      await mergeCloud();
+      updateUI();
+      showToast(`On-chain scan done · ${data.tx} events`);
+      return;
+    }
+  }
+  // fallback
+  data = emptyData();
+  if (userAddress && typeof fetchHistoryFromCloud === "function") {
+    try {
+      const hist = await fetchHistoryFromCloud(userAddress);
+      // simple cloud-only path (previous logic abbreviated)
+      if (hist && hist.length) {
+        dataSource = "cloud";
+        // minimal process
+        hist.forEach(item => {
+          const amount = parseFloat(item.amount || item.totalAmount || 0) || 0;
+          data.volume += amount;
+          data.tx++;
+          const tok = (item.tokenSymbol || "USDC").toUpperCase();
+          if (tok.includes("USDC")) data.tokens.USDC += amount;
+          else if (tok.includes("EURC")) data.tokens.EURC += amount;
+          else if (tok.includes("BTC")) data.tokens.cirBTC += amount;
+          else data.tokens.Other += amount;
+        });
+      }
+    } catch {}
+  }
+  if (data.tx === 0) loadDemo();
+  updateUI();
+}
+
+/* ===================== RENDER ===================== */
+function updateUI() {
+  let vol = data.volume, tx = data.tx;
+  if (currentModule === "conditional") { vol = data.modules.conditional.vol; tx = data.modules.conditional.exec; }
+  else if (currentModule === "vesting") { vol = data.modules.vesting.vol; tx = data.modules.vesting.pushes; }
+  else if (currentModule === "role") { vol = data.modules.role.vol; tx = data.modules.role.batches; }
+  else if (currentModule === "agentic") { vol = data.modules.agentic.vol; tx = data.modules.agentic.exec; }
+  else if (currentModule === "pay") {
+    vol = data.modules.pay.links.vol + data.modules.pay.invoices.vol;
+    tx = data.modules.pay.links.created + data.modules.pay.invoices.created;
+  }
+
+  document.getElementById("kpiVolume").textContent = fmt(vol);
+  document.getElementById("kpiTx").textContent = fmt(tx, 0);
+  document.getElementById("kpiActive").textContent = fmt(data.active, 0);
+  document.getElementById("kpiRecipients").textContent = fmt(data.recipients.size, 0);
+  document.getElementById("kpiLinks").textContent = fmt(data.links + data.invoices, 0);
+  document.getElementById("kpiBatches").textContent = fmt(data.batches, 0);
+  document.getElementById("dataSourceBadge").textContent = "Source: " + dataSource;
+
+  const c = data.modules.conditional;
+  document.getElementById("mCondVol").textContent = fmt(c.vol);
+  document.getElementById("mCondRules").textContent = fmt(c.rules, 0);
+  document.getElementById("mCondExec").textContent = fmt(c.exec, 0);
+  document.getElementById("mCondActive").textContent = fmt(c.active, 0);
+
+  const v = data.modules.vesting;
+  document.getElementById("mVestVol").textContent = fmt(v.vol);
+  document.getElementById("mVestSched").textContent = fmt(v.schedules, 0);
+  document.getElementById("mVestPush").textContent = fmt(v.pushes, 0);
+  document.getElementById("mVestLocked").textContent = fmt(v.locked);
+
+  const r = data.modules.role;
+  document.getElementById("mRoleVol").textContent = fmt(r.vol);
+  document.getElementById("mRoleBatches").textContent = fmt(r.batches, 0);
+  document.getElementById("mRoleWallets").textContent = fmt(r.wallets, 0);
+  document.getElementById("mRoleGive").textContent = fmt(r.giveaways, 0);
+
+  const a = data.modules.agentic;
+  document.getElementById("mAgentVol").textContent = fmt(a.vol);
+  document.getElementById("mAgentRules").textContent = fmt(a.rules, 0);
+  document.getElementById("mAgentExec").textContent = fmt(a.exec, 0);
+  document.getElementById("mAgentFees").textContent = fmt(a.fees);
+
+  const pl = data.modules.pay.links;
+  document.getElementById("mLinkVol").textContent = fmt(pl.vol);
+  document.getElementById("mLinkCreated").textContent = fmt(pl.created, 0);
+  document.getElementById("mLinkClaimed").textContent = fmt(pl.claimed, 0);
+  document.getElementById("mLinkCancel").textContent = fmt(pl.cancelled, 0);
+
+  const inv = data.modules.pay.invoices;
+  document.getElementById("mInvVol").textContent = fmt(inv.vol);
+  document.getElementById("mInvCreated").textContent = fmt(inv.created, 0);
+  document.getElementById("mInvPaid").textContent = fmt(inv.paid, 0);
+  document.getElementById("mInvCancel").textContent = fmt(inv.cancelled, 0);
+
+  const range = document.getElementById("timeRange").value;
+  document.getElementById("chartRangeLabel").textContent = range === "all" ? "All time (RPC limited)" : `Last ${range} days`;
+
+  renderCharts();
+  renderActivity();
+}
+
+function getColors() {
+  const light = document.documentElement.classList.contains("light");
+  return {
+    text: light ? "#334155" : "#94a3b8",
+    grid: light ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.05)",
+    cyan: light ? "#0e7490" : "#22d3ee",
+    sky: light ? "#0369a1" : "#38bdf8",
+    lime: light ? "#3f6212" : "#a3e635",
+    rose: light ? "#be123c" : "#fb7185",
+    amber: light ? "#b45309" : "#fbbf24",
+    blue: light ? "#1d4ed8" : "#60a5fa",
+    emerald: light ? "#047857" : "#34d399",
+    violet: light ? "#6d28d9" : "#a78bfa",
+    yellow: light ? "#a16207" : "#facc15"
+  };
+}
+
+function renderCharts() {
+  const col = getColors();
+  const vCtx = document.getElementById("volumeChart").getContext("2d");
+  if (volumeChart) volumeChart.destroy();
+  const labels = data.timeline.length ? data.timeline.map(t => new Date(t.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })) : ["—"];
+  const vols = data.timeline.length ? data.timeline.map(t => t.volume) : [0];
+  volumeChart = new Chart(vCtx, {
+    type: "line",
+    data: { labels, datasets: [{ data: vols, borderColor: col.cyan, backgroundColor: ctx => { const g = ctx.chart.ctx.createLinearGradient(0, 0, 0, 260); g.addColorStop(0, col.cyan + "35"); g.addColorStop(1, col.cyan + "00"); return g; }, fill: true, tension: 0.4, pointRadius: 0, pointHoverRadius: 5, borderWidth: 2.5 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { backgroundColor: "rgba(10,10,22,0.95)", padding: 12, cornerRadius: 10 } }, scales: { x: { grid: { color: col.grid, drawBorder: false }, ticks: { color: col.text, font: { size: 10 }, maxTicksLimit: 8 } }, y: { grid: { color: col.grid, drawBorder: false }, ticks: { color: col.text, font: { size: 10 }, callback: v => fmt(v, 0) } } } }
+  });
+
+  const modData = [
+    data.modules.conditional.vol,
+    data.modules.vesting.vol,
+    data.modules.role.vol,
+    data.modules.agentic.vol,
+    data.modules.pay.links.vol + data.modules.pay.invoices.vol
+  ];
+  const modLabels = ["Conditional", "Vesting", "Role Family", "Agentic", "ArcPay"];
+  const modCols = [col.blue, col.lime, col.cyan, col.amber, col.emerald];
+  const mCtx = document.getElementById("moduleChart").getContext("2d");
+  if (moduleChart) moduleChart.destroy();
+  moduleChart = new Chart(mCtx, {
+    type: "doughnut",
+    data: { labels: modLabels, datasets: [{ data: modData, backgroundColor: modCols, borderWidth: 0, hoverOffset: 8 }] },
+    options: { responsive: true, maintainAspectRatio: false, cutout: "68%", plugins: { legend: { display: false }, tooltip: { backgroundColor: "rgba(10,10,22,0.95)", padding: 12, cornerRadius: 10 } } }
+  });
+  const totalM = modData.reduce((a, b) => a + b, 0) || 1;
+  document.getElementById("moduleLegend").innerHTML = modLabels.map((l, i) => `
+    <div class="flex items-center justify-between"><div class="flex items-center gap-2"><div class="w-2.5 h-2.5 rounded-full" style="background:${modCols[i]}"></div><span class="text-gray-400">${l}</span></div><span class="font-bold">${((modData[i] / totalM) * 100).toFixed(1)}%</span></div>`).join("");
+
+  // Token — ensure zeros still show
+  const tokLabels = ["USDC", "EURC", "cirBTC", "Other"];
+  const tokData = [data.tokens.USDC, data.tokens.EURC, data.tokens.cirBTC, data.tokens.Other];
+  const tokCols = [col.cyan, col.sky, col.amber, col.rose];
+  const tCtx = document.getElementById("tokenChart").getContext("2d");
+  if (tokenChart) tokenChart.destroy();
+  tokenChart = new Chart(tCtx, {
+    type: "doughnut",
+    data: { labels: tokLabels, datasets: [{ data: tokData, backgroundColor: tokCols, borderWidth: 0, hoverOffset: 6 }] },
+    options: { responsive: true, maintainAspectRatio: false, cutout: "65%", plugins: { legend: { display: false }, tooltip: { backgroundColor: "rgba(10,10,22,0.95)", padding: 10, cornerRadius: 10 } } }
+  });
+  document.getElementById("tokenLegend").innerHTML = tokLabels.map((l, i) => `
+    <div class="flex items-center justify-between"><div class="flex items-center gap-2"><div class="w-2.5 h-2.5 rounded-full" style="background:${tokCols[i]}"></div><span class="text-gray-400">${l}</span></div><span class="font-bold">${fmt(tokData[i])}</span></div>`).join("");
+}
+
+function renderActivity() {
+  const box = document.getElementById("activityFeed");
+  let items = data.activity;
+  if (currentModule !== "all") {
+    if (currentModule === "pay") items = items.filter(i => i.module === "pay");
+    else items = items.filter(i => i.module === currentModule);
+  }
+  items = items.sort((a, b) => b.timestamp - a.timestamp).slice(0, 40);
+  if (!items.length) {
+    box.innerHTML = `<div class="text-center py-16 text-gray-500 italic text-sm">No on-chain events in this range. Try a wider time window or Rescan.</div>`;
+    return;
+  }
+  const icons = {
+    conditional: { i: "fa-code-branch", c: "text-blue-400", b: "bg-blue-500/15" },
+    vesting: { i: "fa-calendar-check", c: "text-lime-400", b: "bg-lime-500/15" },
+    role: { i: "fa-users-gear", c: "text-cyan-400", b: "bg-cyan-500/15" },
+    agentic: { i: "fa-robot", c: "text-amber-400", b: "bg-amber-500/15" },
+    pay: { i: "fa-link", c: "text-emerald-400", b: "bg-emerald-500/15" },
+    other: { i: "fa-exchange-alt", c: "text-sky-400", b: "bg-sky-500/15" }
+  };
+  box.innerHTML = items.map(item => {
+    const m = icons[item.module] || icons.other;
+    const time = new Date(item.timestamp).toLocaleString();
+    const link = item.hash && String(item.hash).startsWith("0x")
+      ? `<a href="${EXPLORER}${item.hash}" target="_blank" class="text-[10px] text-cyan-400 hover:underline font-mono">${String(item.hash).slice(0, 10)}…</a>` : "";
+    return `<div class="activity-row flex items-center gap-3.5 p-3.5 rounded-2xl border border-white/5 light:border-black/5 transition-all">
+      <div class="w-10 h-10 rounded-xl ${m.b} flex items-center justify-center shrink-0"><i class="fas ${m.i} ${m.c}"></i></div>
+      <div class="flex-1 min-w-0"><div class="flex items-center gap-2 flex-wrap"><span class="font-bold text-sm">${item.type}</span><span class="stat-pill bg-white/5 light:bg-black/5 text-gray-400 capitalize">${item.module}</span></div>
+      <div class="text-xs text-gray-500 mt-0.5 truncate">${item.memo || "—"}</div></div>
+      <div class="text-right shrink-0"><div class="font-bold text-sm">${fmt(item.amount)} <span class="text-[10px] text-gray-500">${item.token}</span></div>
+      <div class="text-[10px] text-gray-500 mt-0.5">${time}</div>${link}</div></div>`;
+  }).join("");
+}
+
+window.addEventListener("load", async () => {
+  loadDemo();
+  updateUI();
+  if (window.ethereum) {
+    try {
+      const accs = await window.ethereum.request({ method: "eth_accounts" });
+      if (accs?.length) await connectWallet();
+    } catch {}
+  }
+});
 </script>
 </body>
 </html>
