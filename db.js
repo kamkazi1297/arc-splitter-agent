@@ -1,7 +1,8 @@
 /**
  * ArcSplit Cloud DB helpers
- * - Existing history API unchanged (safe for all current pages)
- * - Optional payment_links table helpers (run supabase_setup.sql first)
+ * - History API (all pages)
+ * - Payment links / invoices
+ * - Workspace (teams, members, treasury)
  */
 
 const SUPABASE_URL = 'https://yelauzpxsfjzydffhnhb.supabase.co';
@@ -38,7 +39,7 @@ async function getSupabase() {
   return supabaseClient;
 }
 
-/* ===================== HISTORY (unchanged – used by all pages) ===================== */
+/* ===================== HISTORY ===================== */
 
 async function saveHistoryToCloud(userAddress, record) {
   try {
@@ -83,12 +84,8 @@ async function fetchHistoryFromCloud(userAddress) {
   }
 }
 
-/* ===================== PAYMENT LINKS / INVOICES (optional new table) ===================== */
+/* ===================== PAYMENT LINKS / INVOICES ===================== */
 
-/**
- * Save a payment link or invoice row.
- * record fields: linkId, type, title, token, amount, status, txHash, url, expiration, meta
- */
 async function savePaymentRecord(userAddress, record) {
   try {
     const client = await getSupabase();
@@ -118,10 +115,6 @@ async function savePaymentRecord(userAddress, record) {
   }
 }
 
-/**
- * Fetch payment links / invoices for a user.
- * opts: { status, type, limit }
- */
 async function fetchPaymentRecords(userAddress, opts = {}) {
   try {
     const client = await getSupabase();
@@ -146,9 +139,6 @@ async function fetchPaymentRecords(userAddress, opts = {}) {
   }
 }
 
-/**
- * Update status of a payment link / invoice by link_id (and user).
- */
 async function updatePaymentStatus(userAddress, linkId, status, extra = {}) {
   try {
     const client = await getSupabase();
@@ -170,7 +160,205 @@ async function updatePaymentStatus(userAddress, linkId, status, extra = {}) {
   }
 }
 
-/* Expose on window for non-module pages */
+/* ===================== WORKSPACE ===================== */
+
+async function createWorkspace(ownerAddress, { name, description = '', treasuryAddress = null, defaultToken = null }) {
+  try {
+    const client = await getSupabase();
+    if (!client || !ownerAddress || !name) return null;
+    const addr = ownerAddress.toLowerCase();
+    const { data: ws, error } = await client
+      .from('workspaces')
+      .insert([{
+        name: name.trim(),
+        description: description || '',
+        owner_address: addr,
+        treasury_address: treasuryAddress ? treasuryAddress.toLowerCase() : addr,
+        default_token: defaultToken || '0x3600000000000000000000000000000000000000'
+      }])
+      .select()
+      .single();
+    if (error) {
+      console.error('createWorkspace', error);
+      return null;
+    }
+    const { error: mErr } = await client.from('workspace_members').insert([{
+      workspace_id: ws.id,
+      user_address: addr,
+      role: 'owner',
+      display_name: 'Owner',
+      invited_by: addr
+    }]);
+    if (mErr) console.error('createWorkspace member', mErr);
+    return ws;
+  } catch (e) {
+    console.error('createWorkspace', e);
+    return null;
+  }
+}
+
+async function fetchMyWorkspaces(userAddress) {
+  try {
+    const client = await getSupabase();
+    if (!client || !userAddress) return [];
+    const addr = userAddress.toLowerCase();
+    const { data: memberships, error } = await client
+      .from('workspace_members')
+      .select('role, display_name, workspace_id, workspaces(*)')
+      .eq('user_address', addr);
+    if (error) {
+      console.error('fetchMyWorkspaces', error);
+      return [];
+    }
+    return (memberships || []).map(m => ({
+      ...m.workspaces,
+      my_role: m.role,
+      my_display_name: m.display_name
+    })).filter(w => w && w.id);
+  } catch (e) {
+    console.error('fetchMyWorkspaces', e);
+    return [];
+  }
+}
+
+async function fetchWorkspace(workspaceId) {
+  try {
+    const client = await getSupabase();
+    if (!client || !workspaceId) return null;
+    const { data, error } = await client
+      .from('workspaces')
+      .select('*')
+      .eq('id', workspaceId)
+      .single();
+    if (error) {
+      console.error('fetchWorkspace', error);
+      return null;
+    }
+    return data;
+  } catch (e) {
+    console.error('fetchWorkspace', e);
+    return null;
+  }
+}
+
+async function fetchWorkspaceMembers(workspaceId) {
+  try {
+    const client = await getSupabase();
+    if (!client || !workspaceId) return [];
+    const { data, error } = await client
+      .from('workspace_members')
+      .select('*')
+      .eq('workspace_id', workspaceId)
+      .order('joined_at', { ascending: true });
+    if (error) {
+      console.error('fetchWorkspaceMembers', error);
+      return [];
+    }
+    return data || [];
+  } catch (e) {
+    console.error('fetchWorkspaceMembers', e);
+    return [];
+  }
+}
+
+async function inviteWorkspaceMember(workspaceId, inviterAddress, memberAddress, role = 'member', displayName = '') {
+  try {
+    const client = await getSupabase();
+    if (!client || !workspaceId || !memberAddress) return false;
+    const { error } = await client.from('workspace_members').upsert([{
+      workspace_id: workspaceId,
+      user_address: memberAddress.toLowerCase(),
+      role: role === 'admin' ? 'admin' : 'member',
+      display_name: displayName || '',
+      invited_by: (inviterAddress || '').toLowerCase()
+    }], { onConflict: 'workspace_id,user_address' });
+    if (error) {
+      console.error('inviteWorkspaceMember', error);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error('inviteWorkspaceMember', e);
+    return false;
+  }
+}
+
+async function removeWorkspaceMember(workspaceId, memberAddress) {
+  try {
+    const client = await getSupabase();
+    if (!client || !workspaceId || !memberAddress) return false;
+    const { error } = await client
+      .from('workspace_members')
+      .delete()
+      .eq('workspace_id', workspaceId)
+      .eq('user_address', memberAddress.toLowerCase())
+      .neq('role', 'owner');
+    if (error) {
+      console.error('removeWorkspaceMember', error);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error('removeWorkspaceMember', e);
+    return false;
+  }
+}
+
+async function updateMemberRole(workspaceId, memberAddress, newRole) {
+  try {
+    const client = await getSupabase();
+    if (!client || !workspaceId || !memberAddress) return false;
+    if (!['admin', 'member'].includes(newRole)) return false;
+    const { error } = await client
+      .from('workspace_members')
+      .update({ role: newRole })
+      .eq('workspace_id', workspaceId)
+      .eq('user_address', memberAddress.toLowerCase())
+      .neq('role', 'owner');
+    if (error) {
+      console.error('updateMemberRole', error);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error('updateMemberRole', e);
+    return false;
+  }
+}
+
+async function updateWorkspace(workspaceId, patch) {
+  try {
+    const client = await getSupabase();
+    if (!client || !workspaceId) return false;
+    const allowed = {};
+    if (patch.name !== undefined) allowed.name = String(patch.name).trim();
+    if (patch.description !== undefined) allowed.description = String(patch.description);
+    if (patch.treasury_address !== undefined) {
+      allowed.treasury_address = patch.treasury_address ? patch.treasury_address.toLowerCase() : null;
+    }
+    if (patch.default_token !== undefined) allowed.default_token = patch.default_token;
+    if (patch.settings !== undefined) allowed.settings = patch.settings;
+    allowed.updated_at = new Date().toISOString();
+    const { error } = await client
+      .from('workspaces')
+      .update(allowed)
+      .eq('id', workspaceId);
+    if (error) {
+      console.error('updateWorkspace', error);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error('updateWorkspace', e);
+    return false;
+  }
+}
+
+async function leaveWorkspace(workspaceId, userAddress) {
+  return removeWorkspaceMember(workspaceId, userAddress);
+}
+
+/* Expose on window */
 if (typeof window !== 'undefined') {
   window.getSupabase = getSupabase;
   window.saveHistoryToCloud = saveHistoryToCloud;
@@ -178,4 +366,13 @@ if (typeof window !== 'undefined') {
   window.savePaymentRecord = savePaymentRecord;
   window.fetchPaymentRecords = fetchPaymentRecords;
   window.updatePaymentStatus = updatePaymentStatus;
+  window.createWorkspace = createWorkspace;
+  window.fetchMyWorkspaces = fetchMyWorkspaces;
+  window.fetchWorkspace = fetchWorkspace;
+  window.fetchWorkspaceMembers = fetchWorkspaceMembers;
+  window.inviteWorkspaceMember = inviteWorkspaceMember;
+  window.removeWorkspaceMember = removeWorkspaceMember;
+  window.updateMemberRole = updateMemberRole;
+  window.updateWorkspace = updateWorkspace;
+  window.leaveWorkspace = leaveWorkspace;
 }
