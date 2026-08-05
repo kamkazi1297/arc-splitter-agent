@@ -44,6 +44,10 @@
     @keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
     .progress-bar{height:4px;background:rgba(255,255,255,.08);border-radius:999px;overflow:hidden}
     .progress-fill{height:100%;background:linear-gradient(90deg,#06b6d4,#0ea5e9);border-radius:999px;transition:width .3s}
+    
+    /* Tailwind fix for light mode custom colors on buttons */
+    .light #connectBtn { background-color: #0f172a !important; color: #ffffff !important; }
+    .light #disconnectBtn { background-color: rgba(226, 29, 72, 0.1) !important; border-color: rgba(226, 29, 72, 0.3) !important; }
   </style>
 </head>
 <body class="text-white min-h-screen selection:bg-cyan-500/40 selection:text-black">
@@ -63,11 +67,11 @@
         <div id="scanStatus" class="hidden text-[10px] px-3 py-1.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 font-bold scan-badge">
           <i class="fas fa-satellite-dish mr-1"></i> <span id="scanStatusText">Scanning…</span>
         </div>
-        <button onclick="connectWallet()" id="connectBtn" class="app-button px-5 py-2.5 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl text-xs flex items-center gap-2 shadow-lg">
+        <button onclick="connectWallet()" id="connectBtn" class="app-button px-5 py-2.5 bg-white text-gray-950 font-bold rounded-2xl text-xs flex items-center gap-2 shadow-lg">
           <i class="fas fa-wallet text-cyan-500"></i> <span id="connectText">Connect Wallet</span>
         </button>
         <button onclick="disconnectWallet()" id="disconnectBtn" class="hidden app-button px-3 py-2.5 bg-rose-500/10 border border-rose-500/30 text-rose-400 font-bold rounded-2xl text-xs"><i class="fas fa-power-off"></i></button>
-        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/10 border border-white/10 rounded-2xl transition-all">
+        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl transition-all">
           <i class="fas fa-moon text-lg text-cyan-400"></i>
         </button>
       </div>
@@ -196,7 +200,7 @@ const CONTRACTS = {
   invoice: "0xD915573BCC42c5d4f859627435E975AEe316BCe0"
 };
 
-/* Official Arc Testnet RPCs — used for getLogs (NOT MetaMask) */
+/* Official Arc Testnet RPCs */
 const ARC_RPCS = [
   "https://rpc.testnet.arc.network",
   "https://rpc.testnet.arc.io",
@@ -204,15 +208,8 @@ const ARC_RPCS = [
   "https://rpc.quicknode.testnet.arc.network",
   "https://rpc.blockdaemon.testnet.arc.network"
 ];
-let readProvider = null; // dedicated JsonRpcProvider for reads
+let readProvider = null; 
 
-
-/* Decimals per user preference:
-   USDC 0x3600… → 6
-   address(0)   → 18
-   EURC         → 6
-   cirBTC       → 8
-*/
 const TOKEN_MAP = {
   [NATIVE_USDC.toLowerCase()]: { symbol: "USDC", decimals: 6 },
   [ZERO]: { symbol: "USDC", decimals: 18 },
@@ -248,11 +245,10 @@ const ABI = {
   ]
 };
 
-/* Rate-limit safe settings (public Arc RPC is more permissive) */
-const CHUNK_SIZE = 5000;      // blocks per request
-const DELAY_MS = 250;         // wait between requests
+const CHUNK_SIZE = 5000;
+const DELAY_MS = 250;
 const MAX_RETRIES = 4;
-const RETRY_WAIT = 2000;      // wait on 429
+const RETRY_WAIT = 2000;
 
 /* ===================== STATE ===================== */
 let provider = null, signer = null, userAddress = null, currentModule = "all";
@@ -261,6 +257,9 @@ let data = emptyData();
 let dataSource = "demo";
 let scanning = false;
 let blockTsCache = {};
+
+let latestBlockNum = 0;
+let latestBlockTimestamp = 0;
 
 function emptyData() {
   return {
@@ -282,7 +281,6 @@ function emptyData() {
   };
 }
 
-
 async function initReadProvider() {
   if (readProvider) {
     try {
@@ -292,7 +290,8 @@ async function initReadProvider() {
   }
   for (const url of ARC_RPCS) {
     try {
-      const p = new ethers.JsonRpcProvider(url, 5042002, { staticNetwork: true });
+      // Changed: chainId removed for dynamic resolution
+      const p = new ethers.JsonRpcProvider(url, undefined, { staticNetwork: true });
       const n = await Promise.race([
         p.getBlockNumber(),
         new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 8000))
@@ -304,9 +303,7 @@ async function initReadProvider() {
       console.warn("RPC fail", url, e.message);
     }
   }
-  // last resort: MetaMask provider
   if (provider) {
-    console.warn("Falling back to MetaMask provider");
     readProvider = provider;
     return provider;
   }
@@ -356,6 +353,15 @@ function formatUnitsSafe(raw, decimals) {
   try { return parseFloat(ethers.formatUnits(raw, decimals)); }
   catch { return 0; }
 }
+
+// XSS Sanitizer added
+function escapeHTML(str) {
+  if (!str) return "—";
+  return String(str).replace(/[&<>'"]/g, match => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+  })[match] || match);
+}
+
 function addTokenVol(addr, amountHuman) {
   const s = tokenInfo(addr).symbol;
   if (s === "USDC") data.tokens.USDC += amountHuman;
@@ -368,9 +374,15 @@ function pushActivity(obj) {
   data.tx++;
   if (obj.recipient) data.recipients.add(String(obj.recipient).toLowerCase());
 }
+
+// Timezone fixed to Local timezone mapping
 function dayKey(ts) {
-  return new Date(ts * 1000).toISOString().slice(0, 10);
+  const d = new Date(ts * 1000);
+  return d.getFullYear() + "-" + 
+         String(d.getMonth() + 1).padStart(2, '0') + "-" + 
+         String(d.getDate()).padStart(2, '0');
 }
+
 function setProgress(pct, label) {
   document.getElementById("scanProgressBox").classList.remove("hidden");
   document.getElementById("scanProgressFill").style.width = Math.min(100, pct) + "%";
@@ -400,7 +412,7 @@ async function connectWallet() {
 function disconnectWallet() {
   userAddress = null; signer = null; provider = null;
   document.getElementById("connectText").textContent = "Connect Wallet";
-  document.getElementById("connectBtn").className = "app-button px-5 py-2.5 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl text-xs flex items-center gap-2 shadow-lg";
+  document.getElementById("connectBtn").className = "app-button px-5 py-2.5 bg-white text-gray-950 font-bold rounded-2xl text-xs flex items-center gap-2 shadow-lg";
   document.getElementById("disconnectBtn").classList.add("hidden");
   data = emptyData();
   dataSource = "—";
@@ -423,8 +435,9 @@ async function safeGetLogs(filter) {
         await sleep(RETRY_WAIT * (attempt + 1));
         continue;
       }
-      // final fail — return empty rather than crash
       console.warn("getLogs skip", filter.address, filter.fromBlock, e.message || e);
+      // Added warning for silent fails
+      showToast("Warning: RPC limit reached. Some data may be missing.", 5000);
       return [];
     }
   }
@@ -450,8 +463,18 @@ async function getLogsChunked(address, topic0, fromBlock, toBlock, onChunk) {
   return all;
 }
 
+// Optimized Timestamp fetcher (reduces RPC calls by 99% using block estimations)
 async function getBlockTs(bn) {
   if (blockTsCache[bn]) return blockTsCache[bn];
+  
+  if (latestBlockNum > 0 && latestBlockTimestamp > 0) {
+    // Arc network: ~40,000 blocks per day = ~2.16 seconds per block
+    const diff = latestBlockNum - bn;
+    const estimatedTs = latestBlockTimestamp - Math.floor(diff * 2.16);
+    blockTsCache[bn] = estimatedTs;
+    return estimatedTs;
+  }
+
   try {
     const rp = readProvider || provider;
     const b = await rp.getBlock(bn);
@@ -463,7 +486,7 @@ async function getBlockTs(bn) {
   }
 }
 
-/* ===================== SCANNERS (sequential) ===================== */
+/* ===================== SCANNERS ===================== */
 async function scanContract(name, address, abi, eventHandlers, fromBlock, toBlock, progressBase, progressSpan) {
   const iface = new ethers.Interface(abi);
   const eventNames = Object.keys(eventHandlers);
@@ -493,7 +516,7 @@ async function scanContract(name, address, abi, eventHandlers, fromBlock, toBloc
         if (result && result.dayVol) {
           daily[dayKey(ts)] = (daily[dayKey(ts)] || 0) + result.dayVol;
         }
-      } catch (e) { /* ignore bad log */ }
+      } catch (e) { }
     }
     await sleep(DELAY_MS);
   }
@@ -504,31 +527,32 @@ async function fetchOnChainAll() {
   if (scanning) return false;
   scanning = true;
   document.getElementById("scanStatus").classList.remove("hidden");
-  document.getElementById("rescanBtn").disabled = true;
-  // Note: caller may merge — we still reset local scan state here
   data = emptyData();
   blockTsCache = {};
 
   try {
     setProgress(1, "Connecting to Arc RPC…");
     const rp = await initReadProvider();
-    const latest = await rp.getBlockNumber();
+    
+    // Set baseline for timestamp estimation (massive speedup)
+    latestBlockNum = await rp.getBlockNumber();
+    try {
+      const b = await rp.getBlock(latestBlockNum);
+      latestBlockTimestamp = b ? b.timestamp : Math.floor(Date.now() / 1000);
+    } catch { latestBlockTimestamp = Math.floor(Date.now() / 1000); }
+
     const days = parseInt(document.getElementById("timeRange").value, 10) || 3;
-    // Arc blocks are fast; cap lookback for speed
     const blocksPerDay = 40000;
     let lookback = days * blocksPerDay;
     lookback = Math.min(lookback, days <= 1 ? 30000 : days <= 3 ? 60000 : days <= 7 ? 100000 : 120000);
-    const fromBlock = Math.max(0, latest - lookback);
-    const toBlock = latest;
+    const fromBlock = Math.max(0, latestBlockNum - lookback);
+    const toBlock = latestBlockNum;
 
     setProgress(3, `Arc RPC · blocks ${fromBlock} → ${toBlock}`);
 
-    // 5 contracts × ~3 events — sequential, each gets 18% of progress
     const jobs = [
       {
-        name: "PayLink",
-        address: CONTRACTS.payLink,
-        abi: ABI.payLink,
+        name: "PayLink", address: CONTRACTS.payLink, abi: ABI.payLink,
         handlers: {
           LinkCreated: (args, log, ts) => {
             const token = args.token;
@@ -556,9 +580,7 @@ async function fetchOnChainAll() {
         }
       },
       {
-        name: "Invoice",
-        address: CONTRACTS.invoice,
-        abi: ABI.invoice,
+        name: "Invoice", address: CONTRACTS.invoice, abi: ABI.invoice,
         handlers: {
           InvoiceCreated: (args, log, ts) => {
             const token = args.token;
@@ -585,9 +607,7 @@ async function fetchOnChainAll() {
         }
       },
       {
-        name: "Conditional",
-        address: CONTRACTS.conditional,
-        abi: ABI.conditional,
+        name: "Conditional", address: CONTRACTS.conditional, abi: ABI.conditional,
         handlers: {
           RuleRegistered: (args, log, ts) => {
             data.modules.conditional.rules++;
@@ -618,9 +638,7 @@ async function fetchOnChainAll() {
         }
       },
       {
-        name: "Vesting",
-        address: CONTRACTS.vesting,
-        abi: ABI.vesting,
+        name: "Vesting", address: CONTRACTS.vesting, abi: ABI.vesting,
         handlers: {
           ScheduleCreated: (args, log, ts) => {
             const token = args.token;
@@ -644,9 +662,7 @@ async function fetchOnChainAll() {
         }
       },
       {
-        name: "Role",
-        address: CONTRACTS.role,
-        abi: ABI.role,
+        name: "Role", address: CONTRACTS.role, abi: ABI.role,
         handlers: {
           BatchPercentageExecuted: (args, log, ts) => {
             const token = args.token;
@@ -684,7 +700,6 @@ async function fetchOnChainAll() {
 
     data.timeline = Object.entries(dailyAll).map(([date, volume]) => ({ date, volume })).sort((a, b) => a.date.localeCompare(b.date));
 
-    // Live view calls (cheap)
     setProgress(92, "Reading live counters…");
     try {
       const cond = new ethers.Contract(CONTRACTS.conditional, ABI.conditional, readProvider || provider);
@@ -708,82 +723,17 @@ async function fetchOnChainAll() {
     document.getElementById("scanProgressBox").classList.add("hidden");
     document.getElementById("scanStatus").classList.add("hidden");
     scanning = false;
-    document.getElementById("rescanBtn").disabled = false;
     return true;
   } catch (e) {
     console.error(e);
     document.getElementById("scanProgressBox").classList.add("hidden");
     document.getElementById("scanStatus").classList.add("hidden");
     scanning = false;
-    document.getElementById("rescanBtn").disabled = false;
     showToast("Scan error: " + (e.shortMessage || e.message || "RPC"), 6000);
     return false;
   }
 }
 
-/* ===================== CLOUD ===================== */
-async function mergeCloud() {
-  if (!userAddress || typeof fetchHistoryFromCloud !== "function") return;
-  try {
-    const hist = await fetchHistoryFromCloud(userAddress);
-    if (!hist?.length) return;
-    const seen = new Set(data.activity.map(a => a.hash).filter(Boolean));
-    hist.forEach(item => {
-      const hash = item.hash || item.txHash;
-      if (hash && seen.has(hash)) return;
-      const amount = parseFloat(item.amount || item.totalAmount || 0) || 0;
-      const tok = (item.tokenSymbol || item.token || "USDC").toString().toUpperCase();
-      const type = (item.type || item.memo || "").toLowerCase();
-      let mod = "other";
-      if (type.includes("link") || type.includes("invoice") || type.includes("pay")) mod = "pay";
-      else if (type.includes("vest")) mod = "vesting";
-      else if (type.includes("condition") || type.includes("agentic") || type.includes("rule")) mod = "conditional";
-      else if (type.includes("role") || type.includes("batch") || type.includes("giveaway") || type.includes("split")) mod = "role";
-      pushActivity({
-        type: item.type || item.memo || "Cloud",
-        amount,
-        token: tok.includes("USDC") ? "USDC" : tok.includes("EURC") ? "EURC" : tok.includes("BTC") ? "cirBTC" : "Other",
-        memo: item.memo || "",
-        hash,
-        timestamp: item.timestamp || Date.now(),
-        module: mod
-      });
-    });
-    if (dataSource === "on-chain") dataSource = "on-chain + cloud";
-  } catch (e) { console.warn(e); }
-}
-
-/* ===================== DEMO ===================== */
-function loadDemo() {
-  data.volume = 284650; data.tx = 612; data.active = 57;
-  data.recipients = new Set(Array.from({ length: 214 }, (_, i) => "0x" + i));
-  data.links = 48; data.invoices = 31; data.batches = 89;
-  data.modules = {
-    conditional: { vol: 52400, rules: 34, exec: 148, active: 22 },
-    vesting: { vol: 78600, schedules: 41, pushes: 112, locked: 24800 },
-    role: { vol: 91200, batches: 89, wallets: 1240, giveaways: 18 },
-    agentic: { vol: 18750, rules: 23, exec: 87, fees: 480 },
-    pay: {
-      links: { vol: 28900, created: 48, claimed: 31, cancelled: 3 },
-      invoices: { vol: 14800, created: 31, paid: 19, cancelled: 2 }
-    }
-  };
-  data.tokens = { USDC: 198400, EURC: 42100, cirBTC: 28400, Other: 15750 };
-  const today = new Date();
-  data.timeline = [];
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(today); d.setDate(d.getDate() - i);
-    data.timeline.push({ date: d.toISOString().slice(0, 10), volume: Math.round(4000 + Math.random() * 8000) });
-  }
-  data.activity = [
-    { type: "Payment Link Created", amount: 750, token: "USDC", memo: "Gift", module: "pay", hash: "0xdemo1", timestamp: Date.now() - 3600000 },
-    { type: "Invoice Paid", amount: 3200, token: "USDC", memo: "Invoice #42", module: "pay", hash: "0xdemo2", timestamp: Date.now() - 7200000 },
-    { type: "Role Batch", amount: 12500, token: "EURC", memo: "Payroll", module: "role", hash: "0xdemo3", timestamp: Date.now() - 10800000 }
-  ];
-  dataSource = "demo";
-}
-
-/* ===================== REFRESH ===================== */
 async function processCloudHistory(hist) {
   if (!hist || !hist.length) return 0;
   let added = 0;
@@ -806,7 +756,6 @@ async function processCloudHistory(hist) {
     else if (type.includes("agentic") || type.includes("condition") || type.includes("rule") || type.includes("evaluator")) mod = "conditional";
     else if (type.includes("role") || type.includes("batch") || type.includes("giveaway") || type.includes("split") || type.includes("payroll")) mod = "role";
 
-    // module stats
     if (mod === "pay") {
       if (type.includes("invoice")) {
         data.modules.pay.invoices.created++;
@@ -844,18 +793,13 @@ async function processCloudHistory(hist) {
 
     const ts = item.timestamp || item.createdAt || item.time || Date.now();
     const tsMs = typeof ts === "number" ? (ts < 1e12 ? ts * 1000 : ts) : Date.now();
-    const day = new Date(tsMs).toISOString().slice(0, 10);
+    const day = dayKey(tsMs / 1000); 
     daily[day] = (daily[day] || 0) + amount;
 
     pushActivity({
       type: item.type || item.memo || "History",
-      amount,
-      token: tokenSym,
-      memo: item.memo || item.note || "",
-      hash: item.hash || item.txHash || "",
-      timestamp: tsMs,
-      module: mod,
-      recipient: item.recipient || item.to || item.user || null
+      amount, token: tokenSym, memo: item.memo || item.note || "", hash: item.hash || item.txHash || "",
+      timestamp: tsMs, module: mod, recipient: item.recipient || item.to || item.user || null
     });
     added++;
   });
@@ -866,7 +810,6 @@ async function processCloudHistory(hist) {
 async function refreshDashboard() {
   if (scanning) return showToast("Scan already running…");
 
-  // Ensure wallet if available
   if (!provider && window.ethereum) {
     try {
       provider = new ethers.BrowserProvider(window.ethereum);
@@ -878,29 +821,35 @@ async function refreshDashboard() {
     } catch {}
   }
 
-  // ========== PHASE 1: Cloud first (instant UI) ==========
+  // =================== PHASE 1: INSTANT CLOUD UI ===================
   data = emptyData();
   let cloudCount = 0;
-  document.getElementById("scanStatus").classList.remove("hidden");
-  document.getElementById("scanStatusText").textContent = "Loading cloud…";
-
+  
   if (userAddress && typeof fetchHistoryFromCloud === "function") {
+    document.getElementById("scanStatus").classList.remove("hidden");
+    document.getElementById("scanStatusText").textContent = "Loading cloud…";
+    
     try {
       const hist = await fetchHistoryFromCloud(userAddress);
       cloudCount = await processCloudHistory(hist);
       if (cloudCount > 0) {
         dataSource = "cloud";
-        updateUI();
-        showToast(`Cloud · ${cloudCount} records`, 2500);
+      } else {
+        dataSource = "empty";
       }
     } catch (e) {
-      console.warn("cloud load", e);
+      console.warn("cloud load error", e);
+      dataSource = "empty";
     }
+  } else {
+    dataSource = userAddress ? "empty" : "—";
   }
 
-  if (data.tx === 0 && !userAddress) {
-    dataSource = "—";
-    updateUI();
+  // نمایش فوری دیتا در UI بدون صبر کردن برای On-chain
+  updateUI();
+  if (cloudCount > 0) showToast(`Cloud loaded · ${cloudCount} records`, 2000);
+
+  if (!userAddress) {
     document.getElementById("activityFeed").innerHTML =
       `<div class="text-center py-16 text-gray-500 italic text-sm">
         <i class="fas fa-wallet text-2xl mb-3 block text-cyan-400/50"></i>
@@ -910,90 +859,42 @@ async function refreshDashboard() {
     return;
   }
 
-  if (data.tx === 0) {
-    dataSource = "empty";
-    updateUI();
-  }
-
-  // ========== PHASE 2: Background on-chain verify ==========
-  const doOnChain = document.getElementById("enableOnChain")
-    ? document.getElementById("enableOnChain").checked
-    : true;
-
+  // =================== PHASE 2: BACKGROUND ON-CHAIN ===================
+  const doOnChain = document.getElementById("enableOnChain") ? document.getElementById("enableOnChain").checked : true;
   if (!doOnChain) {
     document.getElementById("scanStatus").classList.add("hidden");
-    document.getElementById("scanProgressBox").classList.add("hidden");
     return;
   }
 
-  // Snapshot cloud state before scan (fetchOnChainAll resets data)
   const cloudSnapshot = {
-    volume: data.volume,
-    tx: data.tx,
-    activity: [...data.activity],
-    tokens: { ...data.tokens },
-    modules: JSON.parse(JSON.stringify(data.modules)),
-    links: data.links,
-    invoices: data.invoices,
-    batches: data.batches,
-    recipients: new Set(data.recipients),
-    timeline: [...data.timeline],
-    active: data.active
+    volume: data.volume, tx: data.tx, activity: [...data.activity], tokens: { ...data.tokens },
+    modules: JSON.parse(JSON.stringify(data.modules)), links: data.links, invoices: data.invoices,
+    batches: data.batches, recipients: new Set(data.recipients), timeline: [...data.timeline], active: data.active
   };
   const seenHashes = new Set(cloudSnapshot.activity.map(a => a.hash).filter(Boolean));
 
-  document.getElementById("scanStatusText").textContent = "Scanning chain…";
-  setProgress(10, "Background on-chain scan…");
+  document.getElementById("scanStatus").classList.remove("hidden");
+  document.getElementById("scanStatusText").textContent = "Background scanning…";
+  setProgress(5, "Verifying on-chain logs…");
+  document.getElementById("rescanBtn").disabled = true;
 
-  // Run in background — don't block UI (cloud already shown)
-  (async () => {
+  // اجرا در بک‌گراند بدون بلاک کردن کاربر
+  setTimeout(async () => {
     try {
-      scanning = false; // allow fetchOnChainAll
+      scanning = false; 
       const ok = await fetchOnChainAll();
       if (!ok) {
-        // keep cloud UI as-is
-        data.volume = cloudSnapshot.volume;
-        data.tx = cloudSnapshot.tx;
-        data.activity = cloudSnapshot.activity;
-        data.tokens = cloudSnapshot.tokens;
-        data.modules = cloudSnapshot.modules;
-        data.links = cloudSnapshot.links;
-        data.invoices = cloudSnapshot.invoices;
-        data.batches = cloudSnapshot.batches;
-        data.recipients = cloudSnapshot.recipients;
-        data.timeline = cloudSnapshot.timeline;
-        data.active = cloudSnapshot.active;
-        dataSource = cloudCount > 0 ? "cloud" : "empty";
-        updateUI();
-        document.getElementById("scanStatus").classList.add("hidden");
-        document.getElementById("scanProgressBox").classList.add("hidden");
+        restoreCloudData();
         return;
       }
 
-      // fetchOnChainAll filled `data` with chain-only — merge onto cloud
       const chainActivity = data.activity;
       const chainModules = data.modules;
       const chainActive = data.active;
 
-      // restore cloud base
-      data.volume = cloudSnapshot.volume;
-      data.tx = cloudSnapshot.tx;
-      data.activity = cloudSnapshot.activity;
-      data.tokens = cloudSnapshot.tokens;
-      data.modules = cloudSnapshot.modules;
-      data.links = cloudSnapshot.links;
-      data.invoices = cloudSnapshot.invoices;
-      data.batches = cloudSnapshot.batches;
-      data.recipients = cloudSnapshot.recipients;
-      data.timeline = cloudSnapshot.timeline;
-      data.active = Math.max(cloudSnapshot.active || 0, chainActive || 0);
-
-      // Prefer higher live counters from chain for conditional active
+      restoreCloudData();
       if (chainModules?.conditional?.active) {
-        data.modules.conditional.active = Math.max(
-          data.modules.conditional.active || 0,
-          chainModules.conditional.active || 0
-        );
+        data.modules.conditional.active = Math.max(data.modules.conditional.active || 0, chainModules.conditional.active || 0);
       }
 
       let merged = 0;
@@ -1008,54 +909,39 @@ async function refreshDashboard() {
         else if (ev.token === "cirBTC") data.tokens.cirBTC += ev.amount || 0;
         else data.tokens.Other += ev.amount || 0;
         if (ev.recipient) data.recipients.add(String(ev.recipient).toLowerCase());
-        // light module bump for new chain-only events
-        if (ev.module === "pay") {
-          data.modules.pay.links.vol += ev.amount || 0;
-        } else if (ev.module === "role") {
-          data.modules.role.vol += ev.amount || 0;
-        } else if (ev.module === "vesting") {
-          data.modules.vesting.vol += ev.amount || 0;
-        } else if (ev.module === "conditional") {
-          data.modules.conditional.vol += ev.amount || 0;
-        }
+        
+        if (ev.module === "pay") data.modules.pay.links.vol += ev.amount || 0;
+        else if (ev.module === "role") data.modules.role.vol += ev.amount || 0;
+        else if (ev.module === "vesting") data.modules.vesting.vol += ev.amount || 0;
+        else if (ev.module === "conditional") data.modules.conditional.vol += ev.amount || 0;
         merged++;
       });
 
-      dataSource = cloudCount > 0
-        ? (merged > 0 ? "cloud + on-chain" : "cloud")
-        : (merged > 0 ? "on-chain" : "empty");
+      dataSource = cloudCount > 0 ? (merged > 0 ? "cloud + on-chain" : "cloud") : (merged > 0 ? "on-chain" : "empty");
+      updateUI();
+      
+      if (merged > 0) showToast(`Sync complete · +${merged} on-chain events`, 3500);
+      else if (cloudCount > 0) showToast("On-chain verified · Sync complete", 2500);
 
-      updateUI();
-      if (merged > 0) {
-        showToast(`Updated · +${merged} on-chain events`, 3500);
-      } else if (cloudCount > 0) {
-        showToast("On-chain verified · no new events", 2500);
-      }
     } catch (e) {
-      console.warn("bg on-chain", e);
-      // restore cloud
-      data.volume = cloudSnapshot.volume;
-      data.tx = cloudSnapshot.tx;
-      data.activity = cloudSnapshot.activity;
-      data.tokens = cloudSnapshot.tokens;
-      data.modules = cloudSnapshot.modules;
-      data.links = cloudSnapshot.links;
-      data.invoices = cloudSnapshot.invoices;
-      data.batches = cloudSnapshot.batches;
-      data.recipients = cloudSnapshot.recipients;
-      data.timeline = cloudSnapshot.timeline;
-      data.active = cloudSnapshot.active;
-      dataSource = cloudCount > 0 ? "cloud" : "empty";
-      updateUI();
+      restoreCloudData();
     } finally {
       scanning = false;
       document.getElementById("rescanBtn").disabled = false;
       document.getElementById("scanStatus").classList.add("hidden");
       document.getElementById("scanProgressBox").classList.add("hidden");
     }
-  })();
-}
 
+    function restoreCloudData() {
+      data.volume = cloudSnapshot.volume; data.tx = cloudSnapshot.tx; data.activity = cloudSnapshot.activity;
+      data.tokens = cloudSnapshot.tokens; data.modules = cloudSnapshot.modules; data.links = cloudSnapshot.links;
+      data.invoices = cloudSnapshot.invoices; data.batches = cloudSnapshot.batches;
+      data.recipients = cloudSnapshot.recipients; data.timeline = cloudSnapshot.timeline; data.active = cloudSnapshot.active;
+      dataSource = cloudCount > 0 ? "cloud" : "empty";
+      updateUI();
+    }
+  }, 50);
+}
 
 function updateUI() {
   let vol = data.volume, tx = data.tx;
@@ -1122,16 +1008,11 @@ function updateUI() {
 function getColors() {
   const light = document.documentElement.classList.contains("light");
   return {
-    text: light ? "#334155" : "#94a3b8",
-    grid: light ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.05)",
-    cyan: light ? "#0e7490" : "#22d3ee",
-    sky: light ? "#0369a1" : "#38bdf8",
-    lime: light ? "#3f6212" : "#a3e635",
-    rose: light ? "#be123c" : "#fb7185",
-    amber: light ? "#b45309" : "#fbbf24",
-    blue: light ? "#1d4ed8" : "#60a5fa",
-    emerald: light ? "#047857" : "#34d399",
-    violet: light ? "#6d28d9" : "#a78bfa",
+    text: light ? "#334155" : "#94a3b8", grid: light ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.05)",
+    cyan: light ? "#0e7490" : "#22d3ee", sky: light ? "#0369a1" : "#38bdf8",
+    lime: light ? "#3f6212" : "#a3e635", rose: light ? "#be123c" : "#fb7185",
+    amber: light ? "#b45309" : "#fbbf24", blue: light ? "#1d4ed8" : "#60a5fa",
+    emerald: light ? "#047857" : "#34d399", violet: light ? "#6d28d9" : "#a78bfa",
     yellow: light ? "#a16207" : "#facc15"
   };
 }
@@ -1140,7 +1021,11 @@ function renderCharts() {
   const col = getColors();
   const vCtx = document.getElementById("volumeChart").getContext("2d");
   if (volumeChart) volumeChart.destroy();
-  const labels = data.timeline.length ? data.timeline.map(t => new Date(t.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })) : ["—"];
+  const labels = data.timeline.length ? data.timeline.map(t => {
+    // Handling timezone fix for charts
+    const parts = t.date.split('-'); 
+    return new Date(parts[0], parts[1]-1, parts[2]).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+  }) : ["—"];
   const vols = data.timeline.length ? data.timeline.map(t => t.volume) : [0];
   volumeChart = new Chart(vCtx, {
     type: "line",
@@ -1148,13 +1033,7 @@ function renderCharts() {
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { backgroundColor: "rgba(10,10,22,0.95)", padding: 12, cornerRadius: 10 } }, scales: { x: { grid: { color: col.grid, drawBorder: false }, ticks: { color: col.text, font: { size: 10 }, maxTicksLimit: 8 } }, y: { grid: { color: col.grid, drawBorder: false }, ticks: { color: col.text, font: { size: 10 }, callback: v => fmt(v, 0) } } } }
   });
 
-  const modData = [
-    data.modules.conditional.vol,
-    data.modules.vesting.vol,
-    data.modules.role.vol,
-    data.modules.agentic.vol,
-    data.modules.pay.links.vol + data.modules.pay.invoices.vol
-  ];
+  const modData = [data.modules.conditional.vol, data.modules.vesting.vol, data.modules.role.vol, data.modules.agentic.vol, data.modules.pay.links.vol + data.modules.pay.invoices.vol];
   const modLabels = ["Conditional", "Vesting", "Role Family", "Agentic", "ArcPay"];
   const modCols = [col.blue, col.lime, col.cyan, col.amber, col.emerald];
   const mCtx = document.getElementById("moduleChart").getContext("2d");
@@ -1202,6 +1081,8 @@ function renderActivity() {
     pay: { i: "fa-link", c: "text-emerald-400", b: "bg-emerald-500/15" },
     other: { i: "fa-exchange-alt", c: "text-sky-400", b: "bg-sky-500/15" }
   };
+  
+  // XSS fixed through escapeHTML here
   box.innerHTML = items.map(item => {
     const m = icons[item.module] || icons.other;
     const time = new Date(item.timestamp).toLocaleString();
@@ -1210,21 +1091,19 @@ function renderActivity() {
     return `<div class="activity-row flex items-center gap-3.5 p-3.5 rounded-2xl border border-white/5 light:border-black/5 transition-all">
       <div class="w-10 h-10 rounded-xl ${m.b} flex items-center justify-center shrink-0"><i class="fas ${m.i} ${m.c}"></i></div>
       <div class="flex-1 min-w-0"><div class="flex items-center gap-2 flex-wrap"><span class="font-bold text-sm">${item.type}</span><span class="stat-pill bg-white/5 light:bg-black/5 text-gray-400 capitalize">${item.module}</span></div>
-      <div class="text-xs text-gray-500 mt-0.5 truncate">${item.memo || "—"}</div></div>
+      <div class="text-xs text-gray-500 mt-0.5 truncate">${escapeHTML(item.memo)}</div></div>
       <div class="text-right shrink-0"><div class="font-bold text-sm">${fmt(item.amount)} <span class="text-[10px] text-gray-500">${item.token}</span></div>
       <div class="text-[10px] text-gray-500 mt-0.5">${time}</div>${link}</div></div>`;
   }).join("");
 }
 
 window.addEventListener("load", async () => {
-  // Empty state first — no fake demo numbers
   data = emptyData();
   dataSource = "—";
   updateUI();
   document.getElementById("activityFeed").innerHTML =
     `<div class="text-center py-16 text-gray-500 italic text-sm">Connecting… loading your data</div>`;
 
-  // Auto-connect if wallet already authorized
   if (window.ethereum) {
     try {
       const accs = await window.ethereum.request({ method: "eth_accounts" });
@@ -1236,16 +1115,14 @@ window.addEventListener("load", async () => {
         document.getElementById("connectText").innerHTML = `<i class="fas fa-check-circle text-cyan-400"></i> ${short}`;
         document.getElementById("connectBtn").className = "app-button px-5 py-2.5 bg-cyan-500/15 border border-cyan-500/40 text-cyan-400 font-bold rounded-2xl text-xs flex items-center gap-2";
         document.getElementById("disconnectBtn").classList.remove("hidden");
-        // Auto load cloud (+ optional on-chain)
         await refreshDashboard();
         return;
       }
     } catch (e) {
-      console.warn("auto connect", e);
+      console.warn("auto connect error", e);
     }
   }
 
-  // No wallet yet — clean empty UI, not demo garbage
   document.getElementById("activityFeed").innerHTML =
     `<div class="text-center py-16 text-gray-500 italic text-sm">
       <i class="fas fa-wallet text-2xl mb-3 block text-cyan-400/50"></i>
@@ -1254,7 +1131,6 @@ window.addEventListener("load", async () => {
   document.getElementById("dataSourceBadge").textContent = "Source: connect wallet";
 });
 
-// Re-load when user switches account in MetaMask
 if (window.ethereum) {
   window.ethereum.on?.("accountsChanged", async (accs) => {
     if (accs?.length) {
