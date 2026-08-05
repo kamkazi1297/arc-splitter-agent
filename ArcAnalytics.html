@@ -391,7 +391,8 @@ async function connectWallet() {
     document.getElementById("connectText").innerHTML = `<i class="fas fa-check-circle text-cyan-400"></i> ${short}`;
     document.getElementById("connectBtn").className = "app-button px-5 py-2.5 bg-cyan-500/15 border border-cyan-500/40 text-cyan-400 font-bold rounded-2xl text-xs flex items-center gap-2";
     document.getElementById("disconnectBtn").classList.remove("hidden");
-    showToast("Connected — click Rescan");
+    showToast("Connected · loading data…");
+    await refreshDashboard();
   } catch (e) {
     showToast("Connection rejected");
   }
@@ -402,9 +403,10 @@ function disconnectWallet() {
   document.getElementById("connectBtn").className = "app-button px-5 py-2.5 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl text-xs flex items-center gap-2 shadow-lg";
   document.getElementById("disconnectBtn").classList.add("hidden");
   data = emptyData();
-  loadDemo();
-  dataSource = "demo";
+  dataSource = "—";
   updateUI();
+  document.getElementById("activityFeed").innerHTML =
+    `<div class="text-center py-16 text-gray-500 italic text-sm">Connect wallet to load analytics</div>`;
 }
 
 /* ===================== SAFE getLogs ===================== */
@@ -974,9 +976,11 @@ async function refreshDashboard() {
     }
   }
 
-  if (data.tx === 0) {
-    loadDemo();
-    dataSource = "demo";
+  // Keep real zeros if cloud/chain returned nothing — do NOT inject fake demo
+  if (data.tx === 0 && !userAddress) {
+    dataSource = "—";
+  } else if (data.tx === 0) {
+    dataSource = dataSource === "demo" ? "empty" : (dataSource || "empty");
   }
 
   scanning = false;
@@ -1148,8 +1152,14 @@ function renderActivity() {
 }
 
 window.addEventListener("load", async () => {
-  loadDemo();
+  // Empty state first — no fake demo numbers
+  data = emptyData();
+  dataSource = "—";
   updateUI();
+  document.getElementById("activityFeed").innerHTML =
+    `<div class="text-center py-16 text-gray-500 italic text-sm">Connecting… loading your data</div>`;
+
+  // Auto-connect if wallet already authorized
   if (window.ethereum) {
     try {
       const accs = await window.ethereum.request({ method: "eth_accounts" });
@@ -1161,10 +1171,43 @@ window.addEventListener("load", async () => {
         document.getElementById("connectText").innerHTML = `<i class="fas fa-check-circle text-cyan-400"></i> ${short}`;
         document.getElementById("connectBtn").className = "app-button px-5 py-2.5 bg-cyan-500/15 border border-cyan-500/40 text-cyan-400 font-bold rounded-2xl text-xs flex items-center gap-2";
         document.getElementById("disconnectBtn").classList.remove("hidden");
+        // Auto load cloud (+ optional on-chain)
+        await refreshDashboard();
+        return;
       }
-    } catch {}
+    } catch (e) {
+      console.warn("auto connect", e);
+    }
   }
+
+  // No wallet yet — clean empty UI, not demo garbage
+  document.getElementById("activityFeed").innerHTML =
+    `<div class="text-center py-16 text-gray-500 italic text-sm">
+      <i class="fas fa-wallet text-2xl mb-3 block text-cyan-400/50"></i>
+      Connect wallet to load your analytics from cloud &amp; chain
+    </div>`;
+  document.getElementById("dataSourceBadge").textContent = "Source: connect wallet";
 });
+
+// Re-load when user switches account in MetaMask
+if (window.ethereum) {
+  window.ethereum.on?.("accountsChanged", async (accs) => {
+    if (accs?.length) {
+      try {
+        provider = new ethers.BrowserProvider(window.ethereum);
+        signer = await provider.getSigner();
+        userAddress = await signer.getAddress();
+        const short = userAddress.slice(0, 6) + "…" + userAddress.slice(-4);
+        document.getElementById("connectText").innerHTML = `<i class="fas fa-check-circle text-cyan-400"></i> ${short}`;
+        document.getElementById("connectBtn").className = "app-button px-5 py-2.5 bg-cyan-500/15 border border-cyan-500/40 text-cyan-400 font-bold rounded-2xl text-xs flex items-center gap-2";
+        document.getElementById("disconnectBtn").classList.remove("hidden");
+        await refreshDashboard();
+      } catch {}
+    } else {
+      disconnectWallet();
+    }
+  });
+}
 </script>
 </body>
 </html>
