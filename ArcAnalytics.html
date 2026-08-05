@@ -176,7 +176,7 @@
 
     <div class="text-center text-[11px] text-gray-500 pb-6">
       ArcSplit Analytics · Cloud-first + optional on-chain verify<br>
-      
+      <span class="text-cyan-400/70">USDC 0x3600→6 · address(0)→18 · EURC→6 · cirBTC→8</span>
     </div>
   </div>
 
@@ -865,10 +865,6 @@ async function processCloudHistory(hist) {
 
 async function refreshDashboard() {
   if (scanning) return showToast("Scan already running…");
-  scanning = true;
-  document.getElementById("rescanBtn").disabled = true;
-  document.getElementById("scanStatus").classList.remove("hidden");
-  setProgress(5, "Loading cloud history…");
 
   // Ensure wallet if available
   if (!provider && window.ethereum) {
@@ -882,116 +878,185 @@ async function refreshDashboard() {
     } catch {}
   }
 
+  // ========== PHASE 1: Cloud first (instant UI) ==========
   data = emptyData();
   let cloudCount = 0;
+  document.getElementById("scanStatus").classList.remove("hidden");
+  document.getElementById("scanStatusText").textContent = "Loading cloud…";
 
-  // ===== 1) PRIMARY: Cloud database =====
   if (userAddress && typeof fetchHistoryFromCloud === "function") {
     try {
       const hist = await fetchHistoryFromCloud(userAddress);
       cloudCount = await processCloudHistory(hist);
       if (cloudCount > 0) {
         dataSource = "cloud";
-        setProgress(40, `Cloud: ${cloudCount} records`);
+        updateUI();
+        showToast(`Cloud · ${cloudCount} records`, 2500);
       }
     } catch (e) {
       console.warn("cloud load", e);
     }
   }
 
-  // ===== 2) OPTIONAL: On-chain verify / fill gaps =====
-  const doOnChain = document.getElementById("enableOnChain") ? document.getElementById("enableOnChain").checked : true;
-  if (doOnChain && (provider || true)) {
-    try {
-      setProgress(45, "Verifying on-chain…");
-      // Don't reset data — merge on top of cloud
-      const beforeTx = data.tx;
-      const beforeVol = data.volume;
-      // temporary: run on-chain into a side structure then merge unique hashes
-      const saved = {
-        volume: data.volume, tx: data.tx, activity: [...data.activity],
-        tokens: { ...data.tokens }, modules: JSON.parse(JSON.stringify(data.modules)),
-        links: data.links, invoices: data.invoices, batches: data.batches,
-        recipients: new Set(data.recipients), timeline: [...data.timeline],
-        active: data.active
-      };
-
-      // fetch on-chain (will reset data inside — we restore & merge after)
-      scanning = false; // allow fetchOnChainAll
-      const ok = await fetchOnChainAll();
-      if (ok) {
-        const chainActivity = data.activity;
-        const chainSeen = new Set(saved.activity.map(a => a.hash).filter(Boolean));
-        // restore cloud base
-        data.volume = saved.volume;
-        data.tx = saved.tx;
-        data.activity = saved.activity;
-        data.tokens = saved.tokens;
-        data.modules = saved.modules;
-        data.links = saved.links;
-        data.invoices = saved.invoices;
-        data.batches = saved.batches;
-        data.recipients = saved.recipients;
-        data.timeline = saved.timeline;
-        data.active = saved.active || data.active;
-
-        // merge only NEW on-chain events (by hash)
-        let merged = 0;
-        chainActivity.forEach(ev => {
-          if (ev.hash && chainSeen.has(ev.hash)) return;
-          if (ev.hash) chainSeen.add(ev.hash);
-          data.activity.push(ev);
-          data.tx++;
-          data.volume += ev.amount || 0;
-          if (ev.token === "USDC") data.tokens.USDC += ev.amount || 0;
-          else if (ev.token === "EURC") data.tokens.EURC += ev.amount || 0;
-          else if (ev.token === "cirBTC") data.tokens.cirBTC += ev.amount || 0;
-          else data.tokens.Other += ev.amount || 0;
-          if (ev.recipient) data.recipients.add(String(ev.recipient).toLowerCase());
-          merged++;
-        });
-        // keep on-chain live counters if higher
-        if (data.modules.conditional.active < (saved.modules?.conditional?.active || 0)) {
-          /* keep */
-        }
-        dataSource = cloudCount > 0 ? (merged > 0 ? "cloud + on-chain" : "cloud") : "on-chain";
-        setProgress(95, `Merged ${merged} on-chain events`);
-      } else {
-        // restore if scan failed
-        data.volume = saved.volume;
-        data.tx = saved.tx;
-        data.activity = saved.activity;
-        data.tokens = saved.tokens;
-        data.modules = saved.modules;
-        data.links = saved.links;
-        data.invoices = saved.invoices;
-        data.batches = saved.batches;
-        data.recipients = saved.recipients;
-        data.timeline = saved.timeline;
-        dataSource = cloudCount > 0 ? "cloud" : "demo";
-      }
-    } catch (e) {
-      console.warn("on-chain verify", e);
-      dataSource = cloudCount > 0 ? "cloud" : dataSource;
-    }
-  }
-
-  // Keep real zeros if cloud/chain returned nothing — do NOT inject fake demo
   if (data.tx === 0 && !userAddress) {
     dataSource = "—";
-  } else if (data.tx === 0) {
-    dataSource = dataSource === "demo" ? "empty" : (dataSource || "empty");
+    updateUI();
+    document.getElementById("activityFeed").innerHTML =
+      `<div class="text-center py-16 text-gray-500 italic text-sm">
+        <i class="fas fa-wallet text-2xl mb-3 block text-cyan-400/50"></i>
+        Connect wallet to load your analytics
+      </div>`;
+    document.getElementById("scanStatus").classList.add("hidden");
+    return;
   }
 
-  scanning = false;
-  document.getElementById("rescanBtn").disabled = false;
-  document.getElementById("scanStatus").classList.add("hidden");
-  document.getElementById("scanProgressBox").classList.add("hidden");
-  updateUI();
-  showToast(`${dataSource} · ${data.tx} events · vol ${fmt(data.volume)}`, 4500);
+  if (data.tx === 0) {
+    dataSource = "empty";
+    updateUI();
+  }
+
+  // ========== PHASE 2: Background on-chain verify ==========
+  const doOnChain = document.getElementById("enableOnChain")
+    ? document.getElementById("enableOnChain").checked
+    : true;
+
+  if (!doOnChain) {
+    document.getElementById("scanStatus").classList.add("hidden");
+    document.getElementById("scanProgressBox").classList.add("hidden");
+    return;
+  }
+
+  // Snapshot cloud state before scan (fetchOnChainAll resets data)
+  const cloudSnapshot = {
+    volume: data.volume,
+    tx: data.tx,
+    activity: [...data.activity],
+    tokens: { ...data.tokens },
+    modules: JSON.parse(JSON.stringify(data.modules)),
+    links: data.links,
+    invoices: data.invoices,
+    batches: data.batches,
+    recipients: new Set(data.recipients),
+    timeline: [...data.timeline],
+    active: data.active
+  };
+  const seenHashes = new Set(cloudSnapshot.activity.map(a => a.hash).filter(Boolean));
+
+  document.getElementById("scanStatusText").textContent = "Scanning chain…";
+  setProgress(10, "Background on-chain scan…");
+
+  // Run in background — don't block UI (cloud already shown)
+  (async () => {
+    try {
+      scanning = false; // allow fetchOnChainAll
+      const ok = await fetchOnChainAll();
+      if (!ok) {
+        // keep cloud UI as-is
+        data.volume = cloudSnapshot.volume;
+        data.tx = cloudSnapshot.tx;
+        data.activity = cloudSnapshot.activity;
+        data.tokens = cloudSnapshot.tokens;
+        data.modules = cloudSnapshot.modules;
+        data.links = cloudSnapshot.links;
+        data.invoices = cloudSnapshot.invoices;
+        data.batches = cloudSnapshot.batches;
+        data.recipients = cloudSnapshot.recipients;
+        data.timeline = cloudSnapshot.timeline;
+        data.active = cloudSnapshot.active;
+        dataSource = cloudCount > 0 ? "cloud" : "empty";
+        updateUI();
+        document.getElementById("scanStatus").classList.add("hidden");
+        document.getElementById("scanProgressBox").classList.add("hidden");
+        return;
+      }
+
+      // fetchOnChainAll filled `data` with chain-only — merge onto cloud
+      const chainActivity = data.activity;
+      const chainModules = data.modules;
+      const chainActive = data.active;
+
+      // restore cloud base
+      data.volume = cloudSnapshot.volume;
+      data.tx = cloudSnapshot.tx;
+      data.activity = cloudSnapshot.activity;
+      data.tokens = cloudSnapshot.tokens;
+      data.modules = cloudSnapshot.modules;
+      data.links = cloudSnapshot.links;
+      data.invoices = cloudSnapshot.invoices;
+      data.batches = cloudSnapshot.batches;
+      data.recipients = cloudSnapshot.recipients;
+      data.timeline = cloudSnapshot.timeline;
+      data.active = Math.max(cloudSnapshot.active || 0, chainActive || 0);
+
+      // Prefer higher live counters from chain for conditional active
+      if (chainModules?.conditional?.active) {
+        data.modules.conditional.active = Math.max(
+          data.modules.conditional.active || 0,
+          chainModules.conditional.active || 0
+        );
+      }
+
+      let merged = 0;
+      chainActivity.forEach(ev => {
+        if (ev.hash && seenHashes.has(ev.hash)) return;
+        if (ev.hash) seenHashes.add(ev.hash);
+        data.activity.push(ev);
+        data.tx++;
+        data.volume += ev.amount || 0;
+        if (ev.token === "USDC") data.tokens.USDC += ev.amount || 0;
+        else if (ev.token === "EURC") data.tokens.EURC += ev.amount || 0;
+        else if (ev.token === "cirBTC") data.tokens.cirBTC += ev.amount || 0;
+        else data.tokens.Other += ev.amount || 0;
+        if (ev.recipient) data.recipients.add(String(ev.recipient).toLowerCase());
+        // light module bump for new chain-only events
+        if (ev.module === "pay") {
+          data.modules.pay.links.vol += ev.amount || 0;
+        } else if (ev.module === "role") {
+          data.modules.role.vol += ev.amount || 0;
+        } else if (ev.module === "vesting") {
+          data.modules.vesting.vol += ev.amount || 0;
+        } else if (ev.module === "conditional") {
+          data.modules.conditional.vol += ev.amount || 0;
+        }
+        merged++;
+      });
+
+      dataSource = cloudCount > 0
+        ? (merged > 0 ? "cloud + on-chain" : "cloud")
+        : (merged > 0 ? "on-chain" : "empty");
+
+      updateUI();
+      if (merged > 0) {
+        showToast(`Updated · +${merged} on-chain events`, 3500);
+      } else if (cloudCount > 0) {
+        showToast("On-chain verified · no new events", 2500);
+      }
+    } catch (e) {
+      console.warn("bg on-chain", e);
+      // restore cloud
+      data.volume = cloudSnapshot.volume;
+      data.tx = cloudSnapshot.tx;
+      data.activity = cloudSnapshot.activity;
+      data.tokens = cloudSnapshot.tokens;
+      data.modules = cloudSnapshot.modules;
+      data.links = cloudSnapshot.links;
+      data.invoices = cloudSnapshot.invoices;
+      data.batches = cloudSnapshot.batches;
+      data.recipients = cloudSnapshot.recipients;
+      data.timeline = cloudSnapshot.timeline;
+      data.active = cloudSnapshot.active;
+      dataSource = cloudCount > 0 ? "cloud" : "empty";
+      updateUI();
+    } finally {
+      scanning = false;
+      document.getElementById("rescanBtn").disabled = false;
+      document.getElementById("scanStatus").classList.add("hidden");
+      document.getElementById("scanProgressBox").classList.add("hidden");
+    }
+  })();
 }
 
-/* ===================== RENDER ===================== */
+
 function updateUI() {
   let vol = data.volume, tx = data.tx;
   if (currentModule === "conditional") { vol = data.modules.conditional.vol; tx = data.modules.conditional.exec; }
