@@ -172,8 +172,8 @@
     </div>
 
     <div class="text-center text-[11px] text-gray-500 pb-6">
-      ArcSplit Analytics · Safe sequential getLogs · Chunk size 2 000 blocks · Delay 350 ms<br>
-      <span class="text-cyan-400/70">If rate-limited: wait 30s then Rescan · Prefer smaller time range (1–3 days)</span>
+      ArcSplit Analytics · Official Arc RPC (not MetaMask) · Chunk 5 000 · Sequential<br>
+      <span class="text-cyan-400/70">RPC: rpc.testnet.arc.network · Rate-limit safe</span>
     </div>
   </div>
 
@@ -192,6 +192,17 @@ const CONTRACTS = {
   payLink: "0x9B438F8Aa736Ed685e7aFF84eB173A9bb7c08320",
   invoice: "0xD915573BCC42c5d4f859627435E975AEe316BCe0"
 };
+
+/* Official Arc Testnet RPCs — used for getLogs (NOT MetaMask) */
+const ARC_RPCS = [
+  "https://rpc.testnet.arc.network",
+  "https://rpc.testnet.arc.io",
+  "https://rpc.drpc.testnet.arc.network",
+  "https://rpc.quicknode.testnet.arc.network",
+  "https://rpc.blockdaemon.testnet.arc.network"
+];
+let readProvider = null; // dedicated JsonRpcProvider for reads
+
 
 const TOKEN_MAP = {
   [NATIVE_USDC.toLowerCase()]: { symbol: "USDC", decimals: 6 },
@@ -228,11 +239,11 @@ const ABI = {
   ]
 };
 
-/* Rate-limit safe settings */
-const CHUNK_SIZE = 2000;      // blocks per request
-const DELAY_MS = 400;         // wait between requests
-const MAX_RETRIES = 3;
-const RETRY_WAIT = 2500;      // wait on 429
+/* Rate-limit safe settings (public Arc RPC is more permissive) */
+const CHUNK_SIZE = 5000;      // blocks per request
+const DELAY_MS = 250;         // wait between requests
+const MAX_RETRIES = 4;
+const RETRY_WAIT = 2000;      // wait on 429
 
 /* ===================== STATE ===================== */
 let provider = null, signer = null, userAddress = null, currentModule = "all";
@@ -260,6 +271,37 @@ function emptyData() {
     timeline: [],
     activity: []
   };
+}
+
+
+async function initReadProvider() {
+  if (readProvider) {
+    try {
+      await readProvider.getBlockNumber();
+      return readProvider;
+    } catch { readProvider = null; }
+  }
+  for (const url of ARC_RPCS) {
+    try {
+      const p = new ethers.JsonRpcProvider(url, 5042002, { staticNetwork: true });
+      const n = await Promise.race([
+        p.getBlockNumber(),
+        new Promise((_, rej) => setTimeout(() => rej(new Error("timeout")), 8000))
+      ]);
+      console.log("Arc RPC OK:", url, "block", n);
+      readProvider = p;
+      return p;
+    } catch (e) {
+      console.warn("RPC fail", url, e.message);
+    }
+  }
+  // last resort: MetaMask provider
+  if (provider) {
+    console.warn("Falling back to MetaMask provider");
+    readProvider = provider;
+    return provider;
+  }
+  throw new Error("No working Arc RPC");
 }
 
 /* ===================== HELPERS ===================== */
@@ -358,9 +400,10 @@ function disconnectWallet() {
 
 /* ===================== SAFE getLogs ===================== */
 async function safeGetLogs(filter) {
+  const rp = readProvider || provider;
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     try {
-      return await provider.getLogs(filter);
+      return await rp.getLogs(filter);
     } catch (e) {
       const msg = (e.message || "") + (e.info?.error?.message || "") + (e.code || "");
       const is429 = msg.includes("429") || msg.includes("rate limit") || msg.includes("-32005") || e.code === -32005;
@@ -399,7 +442,8 @@ async function getLogsChunked(address, topic0, fromBlock, toBlock, onChunk) {
 async function getBlockTs(bn) {
   if (blockTsCache[bn]) return blockTsCache[bn];
   try {
-    const b = await provider.getBlock(bn);
+    const rp = readProvider || provider;
+    const b = await rp.getBlock(bn);
     const ts = b ? b.timestamp : Math.floor(Date.now() / 1000);
     blockTsCache[bn] = ts;
     return ts;
@@ -454,16 +498,18 @@ async function fetchOnChainAll() {
   blockTsCache = {};
 
   try {
-    const latest = await provider.getBlockNumber();
+    setProgress(1, "Connecting to Arc RPC…");
+    const rp = await initReadProvider();
+    const latest = await rp.getBlockNumber();
     const days = parseInt(document.getElementById("timeRange").value, 10) || 3;
-    // ~2s block → ~43200 / day. Cap hard for MetaMask public RPC.
+    // Arc blocks are fast; cap lookback for speed
     const blocksPerDay = 40000;
     let lookback = days * blocksPerDay;
-    lookback = Math.min(lookback, days <= 1 ? 25000 : days <= 3 ? 50000 : days <= 7 ? 80000 : 100000);
+    lookback = Math.min(lookback, days <= 1 ? 30000 : days <= 3 ? 60000 : days <= 7 ? 100000 : 120000);
     const fromBlock = Math.max(0, latest - lookback);
     const toBlock = latest;
 
-    setProgress(2, `Blocks ${fromBlock} → ${toBlock}`);
+    setProgress(3, `Arc RPC · blocks ${fromBlock} → ${toBlock}`);
 
     // 5 contracts × ~3 events — sequential, each gets 18% of progress
     const jobs = [
@@ -629,14 +675,14 @@ async function fetchOnChainAll() {
     // Live view calls (cheap)
     setProgress(92, "Reading live counters…");
     try {
-      const cond = new ethers.Contract(CONTRACTS.conditional, ABI.conditional, provider);
+      const cond = new ethers.Contract(CONTRACTS.conditional, ABI.conditional, readProvider || provider);
       const active = await cond.activeRuleCount();
       data.modules.conditional.active = Number(active);
       data.active = Number(active);
     } catch {}
-    await sleep(300);
+    await sleep(200);
     try {
-      const inv = new ethers.Contract(CONTRACTS.invoice, ABI.invoice, provider);
+      const inv = new ethers.Contract(CONTRACTS.invoice, ABI.invoice, readProvider || provider);
       const counter = await inv.invoiceCounter();
       if (Number(counter) > data.modules.pay.invoices.created) {
         data.modules.pay.invoices.created = Number(counter);
