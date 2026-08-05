@@ -9,8 +9,9 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   
-  <!-- Supabase Integration -->
+  <!-- Cloud DB: keys only in db.js (same folder) -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="db.js"></script>
   
   <!-- FontAwesome -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
@@ -573,42 +574,9 @@
 
 <script>
   // -----------------------------------------------------
-  // Supabase Database Configuration & Functions
-  // -----------------------------------------------------
-  const SUPABASE_URL = 'https://yelauzpxsfjzydffhnhb.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InllbGF1enB4c2ZqenlkZmZobmhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzNjEyOTMsImV4cCI6MjEwMDkzNzI5M30.qtLEnhS8Zs34U_inur4e5UIBuKB5AmS_Z0VrT7jFvqM';
-
-  let supabaseClient = null;
-  function getSupabase() {
-    if (!supabaseClient && window.supabase) {
-      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    }
-    return supabaseClient;
-  }
-
-  async function saveHistoryToCloud(userAddress, record) {
-    const client = getSupabase();
-    if (!client || !userAddress) return;
-    const { error } = await client
-      .from('history')
-      .insert([{ user_address: userAddress.toLowerCase(), memo: record.memo || "Vesting Record", history_data: record }]);
-    if (error) console.error("Error saving to cloud:", error);
-  }
-
-  async function fetchHistoryFromCloud(userAddress) {
-    const client = getSupabase();
-    if (!client || !userAddress) return [];
-    const { data, error } = await client
-      .from('history')
-      .select('history_data')
-      .eq('user_address', userAddress.toLowerCase())
-      .order('id', { ascending: false });
-    if (error) return [];
-    return data.map(row => row.history_data);
-  }
-
-  // -----------------------------------------------------
   // Application Logic
+  // Cloud history via db.js → window.saveHistoryToCloud / fetchHistoryFromCloud
+  // (SUPABASE_URL / KEY are NOT in this page)
   // -----------------------------------------------------
   let provider, signer, userAddress;
   let historyTransactions = [];
@@ -672,6 +640,7 @@
         }
         signer = await provider.getSigner();
         userAddress = await signer.getAddress();
+        window.userAddress = userAddress; // for db.js / optional workspace-guard
         
         const shortAddr = userAddress.substring(0, 6) + "..." + userAddress.substring(userAddress.length - 4);
         document.getElementById('walletBtnText').textContent = shortAddr;
@@ -680,7 +649,10 @@
         await fetchRealTokenBalanceWithRetry();
         
         // Fetch History from Cloud
-        const cloudHistory = await fetchHistoryFromCloud(userAddress);
+        let cloudHistory = [];
+        if (typeof fetchHistoryFromCloud === "function") {
+          cloudHistory = await fetchHistoryFromCloud(userAddress);
+        }
         if (cloudHistory && cloudHistory.length > 0) {
             historyTransactions = cloudHistory;
         } else {
@@ -702,6 +674,7 @@
   function disconnectWallet() {
     signer = null;
     userAddress = null;
+    window.userAddress = null;
     document.getElementById('walletBtnText').textContent = "Connect Wallet";
     document.getElementById('disconnectWalletBtn').classList.add('hidden');
     document.getElementById('walletBalanceDisplay').textContent = `0.00 (Not Connected)`;
@@ -1313,7 +1286,13 @@
       renderHistoryList();
       renderCalendarView();
       
-      if (userAddress) {
+      if (userAddress && typeof saveHistoryToCloud === "function") {
+        newRecord.appName = "Vesting";
+        newRecord.type = newRecord.type || "Vesting Deployed";
+        if (typeof getWorkspaceIdFromURL === "function") {
+          const wsId = getWorkspaceIdFromURL();
+          if (wsId) newRecord.workspaceId = wsId;
+        }
         await saveHistoryToCloud(userAddress, newRecord);
       }
 
