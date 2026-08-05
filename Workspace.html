@@ -79,7 +79,7 @@
         </div>
         <div>
           <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-emerald-400">Workspace</span></h1>
-          <p class="text-sm text-gray-400 mt-0.5 font-medium">Team · roles · permissions · modules · team activity</p>
+          <p class="text-sm text-gray-400 mt-0.5 font-medium">Team · roles · permissions · invite links · modules · activity</p>
         </div>
       </div>
       <div class="flex flex-wrap items-center gap-2.5">
@@ -96,10 +96,18 @@
       </div>
     </header>
 
+    <div id="inviteBanner" class="hidden glass rounded-2xl p-4 border border-indigo-500/30 flex flex-wrap items-center justify-between gap-3">
+      <div class="text-sm">
+        <span class="font-bold text-indigo-300">Invite pending</span>
+        <span id="inviteBannerText" class="text-gray-400 ml-2">Connect wallet to join this workspace.</span>
+      </div>
+      <button onclick="connectWallet()" class="px-4 py-2 rounded-xl bg-indigo-500 text-white text-xs font-bold">Connect & Join</button>
+    </div>
+
     <div id="noWallet" class="glass rounded-3xl p-14 text-center">
       <div class="text-5xl mb-4">🏢</div>
       <h2 class="text-2xl font-extrabold mb-2">Connect to use Workspace</h2>
-      <p class="text-gray-400 text-sm mb-6 max-w-md mx-auto">Create a team, invite wallets, set who can open which module, then run tools from the main pages with your own wallet. No contract required.</p>
+      <p class="text-gray-400 text-sm mb-6 max-w-md mx-auto">Create a team, invite by wallet or link, set who can open which module, then run tools from the main pages with your own wallet. No contract required.</p>
       <button onclick="connectWallet()" class="px-6 py-3 rounded-2xl bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-sm shadow-lg shadow-indigo-500/20">
         <i class="fas fa-wallet mr-2"></i> Connect Wallet
       </button>
@@ -128,7 +136,7 @@
         <div id="emptyWs" class="glass rounded-3xl p-12 text-center hidden">
           <div class="text-4xl mb-3">✨</div>
           <h2 class="text-xl font-extrabold mb-2">No workspace selected</h2>
-          <p class="text-gray-400 text-sm mb-5">Create one, invite members by wallet, set permissions, open modules.</p>
+          <p class="text-gray-400 text-sm mb-5">Create one, invite members by wallet or link, set permissions, open modules.</p>
           <button onclick="showCreateModal()" class="px-5 py-2.5 rounded-2xl bg-indigo-500 text-white font-bold text-sm">Create Workspace</button>
         </div>
 
@@ -185,10 +193,16 @@
           <div class="glass rounded-3xl p-6">
             <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
               <h3 class="font-bold text-base"><i class="fas fa-users text-sky-400 mr-2"></i> Members</h3>
-              <button id="inviteBtn" onclick="showInviteModal()" class="px-4 py-2 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold">
-                <i class="fas fa-user-plus mr-1"></i> Invite by Wallet
-              </button>
+              <div class="flex flex-wrap gap-2">
+                <button id="inviteLinkBtn" onclick="showInviteLinkModal()" class="px-4 py-2 rounded-xl bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 text-xs font-bold">
+                  <i class="fas fa-link mr-1"></i> Invite Link
+                </button>
+                <button id="inviteBtn" onclick="showInviteModal()" class="px-4 py-2 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold">
+                  <i class="fas fa-user-plus mr-1"></i> Invite by Wallet
+                </button>
+              </div>
             </div>
+            <div id="pendingInvitesBox" class="mb-4 hidden"></div>
             <div id="membersTable" class="space-y-2"></div>
           </div>
         </div>
@@ -196,7 +210,7 @@
         <div id="panel-permissions" class="space-y-5 hidden">
           <div class="glass rounded-3xl p-6">
             <h3 class="font-bold text-base mb-2"><i class="fas fa-shield-alt text-violet-400 mr-2"></i> Permissions</h3>
-            <p class="text-xs text-gray-500 mb-4">Owner always has full access. Saved permissions are enforced in Workspace and on main pages that include workspace-guard.js.</p>
+            <p class="text-xs text-gray-500 mb-4">Owner always has full access. Viewer is read-only. Saved permissions are enforced on main pages that include workspace-guard.js.</p>
             <div id="permTable" class="overflow-x-auto"></div>
             <button id="savePermBtn" onclick="savePermissions()" class="mt-4 px-5 py-2.5 rounded-xl bg-indigo-500 text-white text-sm font-bold hidden">Save permissions</button>
           </div>
@@ -208,7 +222,7 @@
               <h3 class="font-bold text-base"><i class="fas fa-stream text-emerald-400 mr-2"></i> Team Activity</h3>
               <button onclick="loadTeamActivity()" class="text-xs font-bold text-indigo-400"><i class="fas fa-sync-alt mr-1"></i> Refresh</button>
             </div>
-            <p class="text-xs text-gray-500 mb-4">Recent cloud history from all member wallets.</p>
+            <p class="text-xs text-gray-500 mb-4">Recent cloud history from all member wallets (tagged with this workspace when opened via Modules).</p>
             <div id="activityList" class="space-y-2 max-h-[480px] overflow-y-auto"></div>
           </div>
         </div>
@@ -229,7 +243,10 @@
               <input id="setTreasury" class="w-full px-4 py-3 text-sm font-mono" placeholder="0x… optional">
               <p class="text-[11px] text-gray-500 mt-1">Optional label only. Not required for team features.</p>
             </div>
-            <button onclick="saveSettings()" id="saveSetBtn" class="px-5 py-2.5 rounded-xl bg-indigo-500 text-white text-sm font-bold">Save settings</button>
+            <div class="flex flex-wrap gap-2">
+              <button onclick="saveSettings()" id="saveSetBtn" class="px-5 py-2.5 rounded-xl bg-indigo-500 text-white text-sm font-bold">Save settings</button>
+              <button onclick="doLeaveWorkspace()" id="leaveBtn" class="px-5 py-2.5 rounded-xl bg-rose-500/15 text-rose-400 border border-rose-500/30 text-sm font-bold">Leave workspace</button>
+            </div>
           </div>
         </div>
       </main>
@@ -256,10 +273,35 @@
       <select id="inviteRole" class="w-full px-4 py-3 text-sm">
         <option value="member">Member</option>
         <option value="admin">Admin</option>
+        <option value="viewer">Viewer (read-only)</option>
       </select>
       <div class="flex gap-2 justify-end">
         <button onclick="hideInviteModal()" class="px-4 py-2 rounded-xl text-sm font-bold text-gray-400">Cancel</button>
         <button onclick="doInvite()" class="px-5 py-2 rounded-xl bg-indigo-500 text-white text-sm font-bold">Invite</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="inviteLinkModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
+    <div class="glass rounded-3xl p-6 w-full max-w-md space-y-4">
+      <h3 class="text-lg font-extrabold">Create invite link</h3>
+      <select id="linkInviteRole" class="w-full px-4 py-3 text-sm">
+        <option value="member">Member</option>
+        <option value="admin">Admin</option>
+        <option value="viewer">Viewer (read-only)</option>
+      </select>
+      <select id="linkInviteDays" class="w-full px-4 py-3 text-sm">
+        <option value="1">Expires in 1 day</option>
+        <option value="7" selected>Expires in 7 days</option>
+        <option value="30">Expires in 30 days</option>
+      </select>
+      <div id="linkResultBox" class="hidden space-y-2">
+        <input id="linkResultInput" class="w-full px-4 py-3 text-xs font-mono" readonly>
+        <button onclick="copyInviteLink()" class="w-full px-4 py-2 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold">Copy link</button>
+      </div>
+      <div class="flex gap-2 justify-end">
+        <button onclick="hideInviteLinkModal()" class="px-4 py-2 rounded-xl text-sm font-bold text-gray-400">Close</button>
+        <button onclick="doCreateInviteLink()" class="px-5 py-2 rounded-xl bg-indigo-500 text-white text-sm font-bold">Generate link</button>
       </div>
     </div>
   </div>
@@ -284,12 +326,15 @@
   const DEFAULT_PERMS = typeof defaultPermissions === "function" ? defaultPermissions() : {
     owner:  Object.fromEntries(MODULES.map(m => [m.id, true])),
     admin:  Object.fromEntries(MODULES.map(m => [m.id, true])),
-    member: Object.fromEntries(MODULES.map(m => [m.id, false]))
+    member: Object.fromEntries(MODULES.map(m => [m.id, false])),
+    viewer: Object.fromEntries(MODULES.map(m => [m.id, false]))
   };
 
   let userAddress = null, signer = null, provider = null, forceDisconnected = false;
   let myWorkspaces = [], currentWs = null, currentMembers = [], myRole = null;
   let permState = JSON.parse(JSON.stringify(DEFAULT_PERMS));
+  let pendingInviteToken = null;
+  let lastGeneratedInviteUrl = "";
 
   function shortAddr(a) { return a ? a.slice(0,6)+"…"+a.slice(-4) : "—"; }
   function showToast(msg, ms=3500) {
@@ -306,6 +351,7 @@
   function isAdmin() { return myRole === "owner" || myRole === "admin"; }
   function hasPerm(moduleId) {
     if (myRole === "owner") return true;
+    if (myRole === "viewer") return false;
     return !!(permState[myRole] && permState[myRole][moduleId]);
   }
 
@@ -320,6 +366,57 @@
     document.querySelector("#themeBtn i").className = "fas fa-sun text-lg text-amber-500";
   }
 
+  function readInviteTokenFromURL() {
+    try {
+      return new URLSearchParams(location.search).get("invite") || null;
+    } catch { return null; }
+  }
+
+  function clearInviteFromURL() {
+    try {
+      const u = new URL(location.href);
+      u.searchParams.delete("invite");
+      history.replaceState({}, "", u.pathname + (u.search || "") + u.hash);
+    } catch {}
+  }
+
+  async function handleInviteFromURL() {
+    const token = pendingInviteToken || readInviteTokenFromURL();
+    if (!token) {
+      document.getElementById("inviteBanner").classList.add("hidden");
+      return;
+    }
+    pendingInviteToken = token;
+    if (!userAddress) {
+      document.getElementById("inviteBanner").classList.remove("hidden");
+      document.getElementById("inviteBannerText").textContent = "Connect the wallet that should join this team.";
+      return;
+    }
+    document.getElementById("inviteBanner").classList.add("hidden");
+    showToast("Joining workspace…");
+    const res = await acceptWorkspaceInvite(token, userAddress);
+    if (res.ok) {
+      showToast("Joined workspace");
+      pendingInviteToken = null;
+      clearInviteFromURL();
+      await loadWorkspaces();
+      if (res.workspace_id) await selectWorkspace(res.workspace_id);
+    } else {
+      const map = {
+        expired: "Invite link expired",
+        already_used: "Invite already used",
+        not_found: "Invite not found",
+        member_failed: "Could not add member",
+        missing: "Missing data"
+      };
+      showToast(map[res.reason] || ("Invite failed: " + (res.reason || "error")));
+      if (res.reason === "expired" || res.reason === "already_used" || res.reason === "not_found") {
+        pendingInviteToken = null;
+        clearInviteFromURL();
+      }
+    }
+  }
+
   async function connectWallet() {
     forceDisconnected = false;
     if (!window.ethereum) return showToast("Install MetaMask");
@@ -328,7 +425,9 @@
       await provider.send("eth_requestAccounts", []);
       signer = await provider.getSigner();
       userAddress = await signer.getAddress();
+      window.userAddress = userAddress;
       setWalletUI(true);
+      await handleInviteFromURL();
       await loadWorkspaces();
     } catch (e) {
       showToast(e.message || "Connect failed");
@@ -338,6 +437,7 @@
   function disconnectWallet() {
     forceDisconnected = true;
     userAddress = null; signer = null; provider = null;
+    window.userAddress = null;
     currentWs = null; myWorkspaces = []; currentMembers = [];
     setWalletUI(false);
   }
@@ -363,7 +463,9 @@
       provider = new ethers.BrowserProvider(window.ethereum);
       signer = await provider.getSigner();
       userAddress = await signer.getAddress();
+      window.userAddress = userAddress;
       setWalletUI(true);
+      await handleInviteFromURL();
       await loadWorkspaces();
     });
   }
@@ -427,6 +529,7 @@
       b.classList.toggle("text-gray-400", !on);
     });
     if (name === "activity") loadTeamActivity();
+    if (name === "members") loadPendingInvites();
   }
 
   function renderAllPanels() {
@@ -465,7 +568,7 @@
           </div>
           <div class="min-w-0 flex-1">
             <div class="font-bold text-sm">${mod.label}</div>
-            <div class="text-[11px] text-gray-500">${allowed ? "Open main page →" : "Locked for your role"}</div>
+            <div class="text-[11px] text-gray-500">${allowed ? "Open main page →" : (myRole === "viewer" ? "Viewer read-only" : "Locked for your role")}</div>
           </div>
           <i class="fas ${allowed ? "fa-external-link-alt text-gray-500" : "fa-lock text-gray-600"} text-xs"></i>
         </div>
@@ -474,7 +577,7 @@
   }
 
   function openModule(moduleId) {
-    if (!hasPerm(moduleId)) return showToast("No permission for this module");
+    if (!hasPerm(moduleId)) return showToast(myRole === "viewer" ? "Viewer cannot execute modules" : "No permission for this module");
     const mod = MODULE_PAGES[moduleId];
     if (!mod) return;
     const params = new URLSearchParams();
@@ -486,13 +589,18 @@
 
   function renderMembers() {
     const box = document.getElementById("membersTable");
-    document.getElementById("inviteBtn").style.display = isAdmin() ? "" : "none";
+    const showInvite = isAdmin();
+    document.getElementById("inviteBtn").style.display = showInvite ? "" : "none";
+    document.getElementById("inviteLinkBtn").style.display = showInvite ? "" : "none";
     if (!currentMembers.length) {
       box.innerHTML = `<p class="text-sm text-gray-500 text-center py-6">No members</p>`;
       return;
     }
     box.innerHTML = currentMembers.map(m => {
-      const roleColor = m.role === "owner" ? "bg-amber-500/20 text-amber-400" : m.role === "admin" ? "bg-indigo-500/20 text-indigo-400" : "bg-white/10 text-gray-400";
+      const roleColor = m.role === "owner" ? "bg-amber-500/20 text-amber-400"
+        : m.role === "admin" ? "bg-indigo-500/20 text-indigo-400"
+        : m.role === "viewer" ? "bg-slate-500/20 text-slate-300"
+        : "bg-white/10 text-gray-400";
       const canManage = isAdmin() && m.role !== "owner" && m.user_address !== userAddress?.toLowerCase();
       return `<div class="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-white/5 border border-white/5">
         <div class="min-w-0">
@@ -504,11 +612,48 @@
           ${canManage ? `<select onchange="changeRole('${m.user_address}', this.value)" class="text-[10px] px-2 py-1 rounded-lg">
             <option value="member" ${m.role==="member"?"selected":""}>Member</option>
             <option value="admin" ${m.role==="admin"?"selected":""}>Admin</option>
+            <option value="viewer" ${m.role==="viewer"?"selected":""}>Viewer</option>
           </select>
           <button onclick="removeMember('${m.user_address}')" class="text-rose-400 p-1.5"><i class="fas fa-trash text-xs"></i></button>` : ""}
         </div>
       </div>`;
     }).join("");
+  }
+
+  async function loadPendingInvites() {
+    const box = document.getElementById("pendingInvitesBox");
+    if (!currentWs || !isAdmin() || typeof listWorkspaceInvites !== "function") {
+      box.classList.add("hidden");
+      return;
+    }
+    const rows = await listWorkspaceInvites(currentWs.id);
+    if (!rows.length) {
+      box.classList.add("hidden");
+      box.innerHTML = "";
+      return;
+    }
+    box.classList.remove("hidden");
+    box.innerHTML = `<div class="text-[11px] font-bold text-gray-500 uppercase mb-2">Open invite links</div>` + rows.map(r => {
+      const url = location.origin + location.pathname + "?invite=" + r.token;
+      const exp = r.expires_at ? new Date(r.expires_at).toLocaleDateString() : "—";
+      return `<div class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-white/5 border border-white/5 text-xs mb-1.5">
+        <div class="min-w-0">
+          <div class="font-bold capitalize">${r.role} · expires ${exp}</div>
+          <div class="font-mono text-[10px] text-gray-500 truncate">${url}</div>
+        </div>
+        <div class="flex gap-1 shrink-0">
+          <button onclick="navigator.clipboard.writeText('${url}');showToast('Copied')" class="px-2 py-1 rounded-lg bg-indigo-500/20 text-indigo-300">Copy</button>
+          <button onclick="revokeInvite('${r.id}')" class="px-2 py-1 rounded-lg text-rose-400">Revoke</button>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  async function revokeInvite(id) {
+    if (!confirm("Revoke this invite link?")) return;
+    const ok = await revokeWorkspaceInvite(id);
+    showToast(ok ? "Revoked" : "Failed");
+    loadPendingInvites();
   }
 
   function renderPermissions() {
@@ -526,7 +671,7 @@
       });
       html += `</tr>`;
     });
-    html += `</tbody></table><p class="text-[11px] text-gray-500 mt-3">Owner always has all modules.</p>`;
+    html += `</tbody></table><p class="text-[11px] text-gray-500 mt-3">Owner always has all modules. Viewer is always read-only.</p>`;
     document.getElementById("permTable").innerHTML = html;
   }
 
@@ -551,7 +696,7 @@
       ? await fetchTeamHistory(addrs, currentWs.id, 50)
       : [];
     if (!rows.length) {
-      box.innerHTML = `<p class="text-sm text-gray-500 text-center py-8">No team activity yet. When members use modules (with db.js history), it shows up here.</p>`;
+      box.innerHTML = `<p class="text-sm text-gray-500 text-center py-8">No team activity yet. When members use modules (with db.js history and ?workspace=), it shows up here.</p>`;
       return;
     }
     box.innerHTML = rows.map(r => {
@@ -578,6 +723,7 @@
     document.getElementById("setDesc").value = currentWs.description || "";
     document.getElementById("setTreasury").value = currentWs.treasury_address || "";
     document.getElementById("saveSetBtn").style.display = can ? "" : "none";
+    document.getElementById("leaveBtn").style.display = myRole !== "owner" ? "" : "none";
     ["setName","setDesc","setTreasury"].forEach(id => {
       document.getElementById(id).disabled = !can;
     });
@@ -597,6 +743,18 @@
       showToast("Settings saved");
       await loadWorkspaces();
     } else showToast("Save failed");
+  }
+
+  async function doLeaveWorkspace() {
+    if (!currentWs || !userAddress) return;
+    if (myRole === "owner") return showToast("Owner cannot leave — transfer ownership first");
+    if (!confirm("Leave this workspace?")) return;
+    const ok = await leaveWorkspace(currentWs.id, userAddress);
+    if (ok) {
+      showToast("Left workspace");
+      currentWs = null;
+      await loadWorkspaces();
+    } else showToast("Failed");
   }
 
   function showCreateModal() {
@@ -647,6 +805,36 @@
     } else showToast("Invite failed");
   }
 
+  function showInviteLinkModal() {
+    document.getElementById("linkResultBox").classList.add("hidden");
+    document.getElementById("linkResultInput").value = "";
+    lastGeneratedInviteUrl = "";
+    document.getElementById("inviteLinkModal").classList.remove("hidden");
+    document.getElementById("inviteLinkModal").classList.add("flex");
+  }
+  function hideInviteLinkModal() {
+    document.getElementById("inviteLinkModal").classList.add("hidden");
+    document.getElementById("inviteLinkModal").classList.remove("flex");
+  }
+  async function doCreateInviteLink() {
+    if (!isAdmin() || !currentWs) return;
+    const role = document.getElementById("linkInviteRole").value;
+    const days = parseInt(document.getElementById("linkInviteDays").value, 10) || 7;
+    showToast("Generating…");
+    const inv = await createWorkspaceInvite(currentWs.id, userAddress, role, days);
+    if (!inv || !inv.token) return showToast("Failed to create invite");
+    lastGeneratedInviteUrl = location.origin + location.pathname + "?invite=" + inv.token;
+    document.getElementById("linkResultInput").value = lastGeneratedInviteUrl;
+    document.getElementById("linkResultBox").classList.remove("hidden");
+    showToast("Invite link ready");
+    loadPendingInvites();
+  }
+  function copyInviteLink() {
+    if (!lastGeneratedInviteUrl) return;
+    navigator.clipboard.writeText(lastGeneratedInviteUrl);
+    showToast("Copied");
+  }
+
   async function changeRole(addr, role) {
     if (!isAdmin() || !currentWs) return;
     const ok = await updateMemberRole(currentWs.id, addr, role);
@@ -669,6 +857,10 @@
   }
 
   (async () => {
+    pendingInviteToken = readInviteTokenFromURL();
+    if (pendingInviteToken && !userAddress) {
+      document.getElementById("inviteBanner").classList.remove("hidden");
+    }
     if (!window.ethereum || forceDisconnected) return;
     try {
       provider = new ethers.BrowserProvider(window.ethereum);
@@ -676,7 +868,9 @@
       if (accs?.length) {
         signer = await provider.getSigner();
         userAddress = await signer.getAddress();
+        window.userAddress = userAddress;
         setWalletUI(true);
+        await handleInviteFromURL();
         await loadWorkspaces();
       }
     } catch {}
