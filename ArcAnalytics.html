@@ -4,10 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ArcSplit Analytics — Enterprise On-Chain Dashboard</title>
+  
+  <!-- Add Supabase before db.js to prevent race conditions -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  
   <script src="db.js"></script>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -145,7 +150,7 @@
         <div class="grid grid-cols-2 gap-3 text-xs"><div><div class="text-gray-500 mb-0.5">Volume</div><div id="mVestVol" class="font-bold text-lime-400">—</div></div><div><div class="text-gray-500 mb-0.5">Schedules</div><div id="mVestSched" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Pushes</div><div id="mVestPush" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Locked</div><div id="mVestLocked" class="font-bold text-amber-400">—</div></div></div>
       </div>
       <div class="glass module-card rounded-3xl p-5 border-l-cyan-500">
-        <div class="flex items-center gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-cyan-500/15 flex items-center justify-center"><i class="fas fa-users-gear text-cyan-400"></i></div><div><div class="font-bold text-sm">Role · Split · Giveaway · Batch</div><div class="text-[10px] text-gray-500">ArcRoleSplitter</div></div></div>
+        <div class="flex items-center gap-3 mb-4"><div class="w-10 h-10 rounded-xl bg-cyan-500/15 flex items-center justify-center"><i class="fas fa-users-gear text-cyan-400"></i></div><div><div class="font-bold text-sm">Role · Split · Giveaway</div><div class="text-[10px] text-gray-500">ArcRoleSplitter</div></div></div>
         <div class="grid grid-cols-2 gap-3 text-xs"><div><div class="text-gray-500 mb-0.5">Volume</div><div id="mRoleVol" class="font-bold text-cyan-400">—</div></div><div><div class="text-gray-500 mb-0.5">Batches</div><div id="mRoleBatches" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Wallets Hit</div><div id="mRoleWallets" class="font-bold">—</div></div><div><div class="text-gray-500 mb-0.5">Giveaways</div><div id="mRoleGive" class="font-bold text-amber-400">—</div></div></div>
       </div>
       <div class="glass module-card rounded-3xl p-5 border-l-amber-500">
@@ -180,7 +185,6 @@
 
     <div class="text-center text-[11px] text-gray-500 pb-6">
       ArcSplit Analytics · Cloud-first + optional on-chain verify<br>
-      
     </div>
   </div>
 
@@ -210,6 +214,7 @@ const ARC_RPCS = [
 ];
 let readProvider = null; 
 
+// Updated Requirements applied here (removing contract address display)
 const TOKEN_MAP = {
   [NATIVE_USDC.toLowerCase()]: { symbol: "USDC", decimals: 6 },
   [ZERO]: { symbol: "USDC", decimals: 18 },
@@ -290,7 +295,6 @@ async function initReadProvider() {
   }
   for (const url of ARC_RPCS) {
     try {
-      // Changed: chainId removed for dynamic resolution
       const p = new ethers.JsonRpcProvider(url, undefined, { staticNetwork: true });
       const n = await Promise.race([
         p.getBlockNumber(),
@@ -354,7 +358,6 @@ function formatUnitsSafe(raw, decimals) {
   catch { return 0; }
 }
 
-// XSS Sanitizer added
 function escapeHTML(str) {
   if (!str) return "—";
   return String(str).replace(/[&<>'"]/g, match => ({
@@ -375,7 +378,6 @@ function pushActivity(obj) {
   if (obj.recipient) data.recipients.add(String(obj.recipient).toLowerCase());
 }
 
-// Timezone fixed to Local timezone mapping
 function dayKey(ts) {
   const d = new Date(ts * 1000);
   return d.getFullYear() + "-" + 
@@ -436,7 +438,6 @@ async function safeGetLogs(filter) {
         continue;
       }
       console.warn("getLogs skip", filter.address, filter.fromBlock, e.message || e);
-      // Added warning for silent fails
       showToast("Warning: RPC limit reached. Some data may be missing.", 5000);
       return [];
     }
@@ -463,12 +464,10 @@ async function getLogsChunked(address, topic0, fromBlock, toBlock, onChunk) {
   return all;
 }
 
-// Optimized Timestamp fetcher (reduces RPC calls by 99% using block estimations)
 async function getBlockTs(bn) {
   if (blockTsCache[bn]) return blockTsCache[bn];
   
   if (latestBlockNum > 0 && latestBlockTimestamp > 0) {
-    // Arc network: ~40,000 blocks per day = ~2.16 seconds per block
     const diff = latestBlockNum - bn;
     const estimatedTs = latestBlockTimestamp - Math.floor(diff * 2.16);
     blockTsCache[bn] = estimatedTs;
@@ -534,7 +533,6 @@ async function fetchOnChainAll() {
     setProgress(1, "Connecting to Arc RPC…");
     const rp = await initReadProvider();
     
-    // Set baseline for timestamp estimation (massive speedup)
     latestBlockNum = await rp.getBlockNumber();
     try {
       const b = await rp.getBlock(latestBlockNum);
@@ -845,7 +843,6 @@ async function refreshDashboard() {
     dataSource = userAddress ? "empty" : "—";
   }
 
-  // نمایش فوری دیتا در UI بدون صبر کردن برای On-chain
   updateUI();
   if (cloudCount > 0) showToast(`Cloud loaded · ${cloudCount} records`, 2000);
 
@@ -878,7 +875,6 @@ async function refreshDashboard() {
   setProgress(5, "Verifying on-chain logs…");
   document.getElementById("rescanBtn").disabled = true;
 
-  // اجرا در بک‌گراند بدون بلاک کردن کاربر
   setTimeout(async () => {
     try {
       scanning = false; 
@@ -1022,7 +1018,6 @@ function renderCharts() {
   const vCtx = document.getElementById("volumeChart").getContext("2d");
   if (volumeChart) volumeChart.destroy();
   const labels = data.timeline.length ? data.timeline.map(t => {
-    // Handling timezone fix for charts
     const parts = t.date.split('-'); 
     return new Date(parts[0], parts[1]-1, parts[2]).toLocaleDateString("en-US", { month: "short", day: "numeric" });
   }) : ["—"];
@@ -1082,7 +1077,6 @@ function renderActivity() {
     other: { i: "fa-exchange-alt", c: "text-sky-400", b: "bg-sky-500/15" }
   };
   
-  // XSS fixed through escapeHTML here
   box.innerHTML = items.map(item => {
     const m = icons[item.module] || icons.other;
     const time = new Date(item.timestamp).toLocaleString();
