@@ -581,10 +581,13 @@ let splitMode = 'manual';
 let telegramLinked = false;
 let telegramUsername = "";
 
-  // ArcRoleSplitterV30 Proxy
+  // ArcRoleSplitterV30 Proxy (impl: 0xAa6A86dEf6F1630B7Ed4fB9f3E8da2DDc71E8159)
   const CONTRACT_ADDRESS = "0xf2073671b726b96DC1c99D001BBF6e60EE1f187F";
   const ARC_CHAIN_ID = 5042002;
+  const TOTAL_BPS = 10000;
+  const HARD_MAX_WALLETS = 2000;
 
+  // ABI matching IArcSplitter + helpers from ArcRoleSplitterV30
   const splitterAbi = [
     {
       "inputs": [
@@ -632,6 +635,22 @@ let telegramUsername = "";
       "name": "splitByAmount",
       "outputs": [],
       "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        { "name": "token", "type": "address" },
+        { "name": "walletsCount", "type": "uint256" },
+        { "name": "isNative", "type": "bool" },
+        { "name": "tokenToNativeRatio", "type": "uint256" },
+        { "name": "currentGasPrice", "type": "uint256" }
+      ],
+      "name": "estimateGasCostBeforeTx",
+      "outputs": [
+        { "name": "estimatedGas", "type": "uint256" },
+        { "name": "maxCostInToken", "type": "uint256" }
+      ],
+      "stateMutability": "view",
       "type": "function"
     }
   ];
@@ -1099,10 +1118,21 @@ function updateTelegramButton() {
   function loadTemplate(type) {
     const list = document.getElementById("recipients-list");
     list.innerHTML = "";
-    if (type === 1) { addRecipient("", 50); addRecipient("", 50); }
-    else if (type === 2) { addRecipient("", ""); addRecipient("", ""); addRecipient("", ""); }
-    else if (type === 3) { addRecipient("", 40); addRecipient("", 60); }
-    setMode('manual');
+    if (type === 1) {
+      addRecipient("", 50);
+      addRecipient("", 50);
+      setMode('manual');
+    } else if (type === 2) {
+      // 33.333333 / 33.333333 / 33.333334 → exact 10000 BPS after rounding
+      addRecipient("", "33.3333");
+      addRecipient("", "33.3333");
+      addRecipient("", "33.3334");
+      setMode('manual');
+    } else if (type === 3) {
+      addRecipient("", 40);
+      addRecipient("", 60);
+      setMode('manual');
+    }
   }
 
   function equalSplit() {
@@ -1198,55 +1228,53 @@ function updateTelegramButton() {
     if (!signer) return showToast("Please connect your wallet first!");
     if (isProcessing) return;
 
-    const rows = document.querySelectorAll('.recipient-row');
+    const rows = Array.from(document.querySelectorAll('.recipient-row'));
     if (rows.length < 1) return showToast("At least 1 recipient is required");
+    if (rows.length > HARD_MAX_WALLETS) return showToast(`Max ${HARD_MAX_WALLETS} recipients allowed by contract`);
 
     const addresses = [];
     const percentages = [];
+    const amountsFloat = [];
     let totalPerc = 0;
 
-    for (let row of rows) {
+    for (const row of rows) {
       const addr = row.querySelector('.address').value.trim();
-      let perc = parseFloat(row.querySelector('.percent').value) || 0;
-      let amount = parseFloat(row.querySelector('.amount').value) || 0;
+      const perc = parseFloat(row.querySelector('.percent').value) || 0;
+      const amount = parseFloat(row.querySelector('.amount').value) || 0;
 
       if (!addr || !ethers.isAddress(addr)) return showToast("Invalid address detected");
+      if (addr.toLowerCase() === CONTRACT_ADDRESS.toLowerCase()) return showToast("Cannot send to the splitter contract itself");
       if (perc <= 0 && amount <= 0) return showToast("Please enter amount or percentage for all recipients");
 
       addresses.push(addr);
       percentages.push(perc);
+      amountsFloat.push(amount);
       totalPerc += perc;
     }
-
-    if (addresses.length < 1) return showToast("At least 1 valid recipient needed");
 
     const totalAmount = parseFloat(document.getElementById("totalAmount").value);
     if (!totalAmount || totalAmount <= 0) return showToast("Enter a valid total amount!");
 
-    const tolerance = 0.000001;
-
-    if (splitMode === 'manual') {
-      if (totalPerc > 100 + tolerance) {
-        return showToast("⚠️ Total percentage is more than 100%! Transaction blocked.", 5000);
-      }
-      if (Math.abs(totalPerc - 100) > tolerance) {
-        if (!confirm(`⚠️ Total percentage is not 100% (${totalPerc.toFixed(6)}%)\n\nDo you want to proceed anyway?`)) {
-          return;
-        }
-      }
-    } else {
-      const lastPerc = percentages[percentages.length - 1];
-      const ideal = 100 / rows.length;
-      const difference = (lastPerc - ideal).toFixed(6);
-
-      if (Math.abs(difference) > 0) {
-        if (!confirm(`⚠️ Due to precise rounding, the last recipient has ${difference}% more than the others.\n\nDo you want to proceed?`)) {
-          return;
-        }
-      }
+    // Contract requires exact TOTAL_BPS (10000). We always force exact sum.
+    // Build sharesBps (uint16) from percentages and correct the last entry.
+    let sharesBps = percentages.map(p => {
+      let bps = Math.round(p * 100);
+      if (bps < 0) bps = 0;
+      if (bps > TOTAL_BPS) bps = TOTAL_BPS;
+      return bps;
+    });
+    let sumBps = sharesBps.reduce((a, b) => a + b, 0);
+    if (sumBps !== TOTAL_BPS && sharesBps.length > 0) {
+      const diff = TOTAL_BPS - sumBps;
+      sharesBps[sharesBps.length - 1] = Math.max(0, sharesBps[sharesBps.length - 1] + diff);
+    }
+    // Final safety check
+    sumBps = sharesBps.reduce((a, b) => a + b, 0);
+    if (sumBps !== TOTAL_BPS) {
+      return showToast(`Cannot normalize percentages to exactly 100% (got ${sumBps / 100}%). Adjust values.`, 5000);
     }
 
-    if (!confirm(`Send ${totalAmount} tokens to ${addresses.length} recipients?`)) return;
+    if (!confirm(`Send ${totalAmount} tokens to ${addresses.length} recipients?\n\nTotal BPS: ${sumBps}/10000`)) return;
 
     isProcessing = true;
     const btn = document.getElementById("sendBtn");
@@ -1257,49 +1285,72 @@ function updateTelegramButton() {
 
     try {
       const tokenAddr = document.getElementById("tokenSelect").value;
+      if (tokenAddr === "custom" || !ethers.isAddress(tokenAddr)) {
+        throw new Error("Invalid token address");
+      }
       const symbol = document.getElementById("tokenSelect").selectedOptions[0].text;
 
       const tokenContract = new ethers.Contract(tokenAddr, [
         "function approve(address,uint256) returns (bool)",
-        "function decimals() view returns (uint8)"
+        "function allowance(address,address) view returns (uint256)",
+        "function decimals() view returns (uint8)",
+        "function balanceOf(address) view returns (uint256)"
       ], signer);
 
       const decimals = await tokenContract.decimals();
-      const totalWei = ethers.parseUnits(totalAmount.toString(), decimals);
+      // Prefer string parsing to avoid float precision issues
+      const totalStr = document.getElementById("totalAmount").value.trim() || totalAmount.toString();
+      const totalWei = ethers.parseUnits(totalStr, decimals);
 
-      await (await tokenContract.approve(CONTRACT_ADDRESS, totalWei)).wait();
+      // Balance check (optional but good UX)
+      const balance = await tokenContract.balanceOf(userAddress);
+      if (balance < totalWei) {
+        throw new Error("Insufficient token balance");
+      }
 
-      // sharesBps: percent * 100 → uint16 (10000 = 100%)
-      let sharesBps = percentages.map(p => Math.round(p * 100));
-      let sumBps = sharesBps.reduce((a, b) => a + b, 0);
-      // adjust last element so total is exactly 10000
-      if (sumBps !== 10000 && sharesBps.length > 0) {
-        sharesBps[sharesBps.length - 1] += (10000 - sumBps);
+      // Approve only if needed
+      const currentAllowance = await tokenContract.allowance(userAddress, CONTRACT_ADDRESS);
+      if (currentAllowance < totalWei) {
+        const approveTx = await tokenContract.approve(CONTRACT_ADDRESS, totalWei);
+        await approveTx.wait();
       }
 
       const deadline = Math.floor(Date.now() / 1000) + 3600; // 1 hour
+      // tokenToNativeRatio = 1e18 means 1:1 (used by gas refund calculator)
+      const tokenToNativeRatio = ethers.parseUnits("1", 18);
+
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
+
+      // Prefer splitByPercentage (matches UI percentage model).
+      // Contract will:
+      //  - pull totalChunkAmount via transferFrom
+      //  - distribute (actualChunk * bps) / 10000
+      //  - give remaining dust of last wallet if sum == 10000
+      //  - refund unspent + handle gas cost via maxGasRefundBps
       const params = {
         token: tokenAddr,
         totalChunkAmount: totalWei,
         wallets: addresses,
         sharesBps: sharesBps,
-        tokenToNativeRatio: ethers.parseUnits("1", 18), // 1:1 default
-        batchId: 0,
+        tokenToNativeRatio: tokenToNativeRatio,
+        batchId: 0,                 // 0 = no batch tracking for direct calls
         deadline: deadline,
-        nonce: 0,
+        nonce: 0,                   // only used for signature path
         baseGas: 0,
-        maxGasPriceLimit: 0
+        maxGasPriceLimit: 0         // 0 → use contract's maxGasPrice
       };
 
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
-      
-      const tx = await contract.splitByPercentage(params, { gasLimit: 800000 });
+      // Gas limit: base + ~45k per recipient (ERC20) + margin
+      const estimatedGasLimit = 120000 + (addresses.length * 55000);
+      const tx = await contract.splitByPercentage(params, {
+        gasLimit: Math.min(Math.max(estimatedGasLimit, 400000), 3000000)
+      });
       await tx.wait();
 
+      // Telegram notification (unchanged)
       if (!window.telegramChatId) {
         window.telegramChatId = localStorage.getItem('telegramChatId');
       }
-
       if (window.telegramChatId) {
         fetch('https://arcsplit-bot.kamkazi-1297.workers.dev/send-tx', {
           method: 'POST',
@@ -1315,7 +1366,7 @@ function updateTelegramButton() {
         .then(r => console.log("Notification sent:", r.status))
         .catch(err => console.error("Notification failed:", err));
       }
-      
+
       successDiv.innerHTML = `Transaction Successful!<br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline font-semibold">View on Explorer: ${tx.hash.substring(0,12)}...</a>`;
       successDiv.classList.remove('hidden');
 
@@ -1337,7 +1388,19 @@ function updateTelegramButton() {
 
     } catch (error) {
       console.error(error);
-      showToast(error.reason || error.message || "Transaction failed");
+      // Map common custom errors from ArcRoleSplitterV30
+      let msg = error.reason || error.shortMessage || error.message || "Transaction failed";
+      if (typeof msg === "string") {
+        if (msg.includes("InvalidTotalBPS")) msg = "Total shares must equal exactly 100% (10000 BPS)";
+        else if (msg.includes("MaxWalletsExceeded")) msg = "Too many recipients (exceeds contract maxWallets)";
+        else if (msg.includes("MismatchedArrays")) msg = "Wallets and shares length mismatch";
+        else if (msg.includes("InvalidAddress")) msg = "Invalid recipient address (zero or contract itself)";
+        else if (msg.includes("InsufficientTotalChunkAmount")) msg = "Insufficient token amount received by contract";
+        else if (msg.includes("TransactionExpired")) msg = "Transaction deadline expired";
+        else if (msg.includes("InvalidMsgValue")) msg = "Do not send native value with ERC20 split";
+        else if (msg.includes("user rejected") || msg.includes("ACTION_REJECTED")) msg = "User rejected the transaction";
+      }
+      showToast(msg, 6000);
     } finally {
       isProcessing = false;
       btn.disabled = false;
