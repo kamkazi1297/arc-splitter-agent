@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ArcSplit · Workspace Dashboard</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <script src="db.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    :root { --bg:#06060f; --card:rgba(14,14,28,.75); --border:rgba(255,255,255,.07); --text:#f8fafc; --muted:#94a3b8; }
+    body{font-family:'Plus Jakarta Sans',system-ui,sans-serif;background:var(--bg);background-image:radial-gradient(ellipse 80% 50% at 8% 0%,rgba(6,182,212,.08),transparent 50%),radial-gradient(ellipse 50% 40% at 100% 100%,rgba(244,63,94,.06),transparent 45%);color:var(--text);min-height:100vh}
+    .glass{background:var(--card);backdrop-filter:blur(24px);border:1px solid var(--border);box-shadow:0 20px 50px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.05)}
+    .light{--bg:#f1f5f9;--card:rgba(255,255,255,.82);--border:rgba(15,23,42,.08);--text:#0f172a;--muted:#64748b;background-image:radial-gradient(ellipse 80% 50% at 8% 0%,rgba(6,182,212,.1),transparent 50%),radial-gradient(ellipse 50% 40% at 100% 100%,rgba(244,63,94,.07),transparent 45%)!important}
+    .light .glass{box-shadow:0 12px 40px rgba(0,0,0,.06),inset 0 1px 0 #fff}
+    .light .text-gray-400,.light .text-slate-400{color:#64748b!important}
+    .light .text-gray-500{color:#94a3b8!important}
+    .light .text-cyan-400{color:#0e7490!important}.light .text-sky-400{color:#0369a1!important}
+    .light .text-lime-400{color:#3f6212!important}.light .text-rose-400{color:#be123c!important}
+    .light .text-amber-400{color:#b45309!important}.light .text-emerald-400{color:#047857!important}
+    .light .text-violet-400{color:#6d28d9!important}.light .text-blue-400{color:#1d4ed8!important}
+    .light select,.light input{background:#fff!important;color:#0f172a!important;border-color:rgba(0,0,0,.1)!important}
+    .kpi{transition:all .25s;cursor:pointer}.kpi:hover{transform:translateY(-4px);box-shadow:0 24px 48px rgba(0,0,0,.35)}
+    .light .kpi:hover{box-shadow:0 16px 36px rgba(0,0,0,.08)}
+    .gradient-text{background:linear-gradient(90deg,#06b6d4,#0ea5e9,#a3e635);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .chart-h{height:280px}.chart-sm{height:200px}
+    .scroll-y{max-height:420px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.12) transparent}
+    .scroll-y::-webkit-scrollbar{width:5px}.scroll-y::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:8px}
+    .skeleton{background:linear-gradient(90deg,rgba(255,255,255,.04) 25%,rgba(255,255,255,.08) 50%,rgba(255,255,255,.04) 75%);background-size:200% 100%;animation:sk 1.4s infinite}
+    @keyframes sk{0%{background-position:200% 0}100%{background-position:-200% 0}}
+    .dot{width:8px;height:8px;border-radius:999px}
+    .row-hover:hover{background:rgba(255,255,255,.03)}.light .row-hover:hover{background:rgba(0,0,0,.03)}
+    select,input{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);color:#fff;border-radius:12px;outline:none}
+    select:focus,input:focus{border-color:#06b6d4;box-shadow:0 0 0 3px rgba(6,182,212,.15)}
+    .badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px}
+    .insight-card{border-left:3px solid #06b6d4}
+    #toast{transition:opacity .3s}
+  </style>
+</head>
+<body>
+  <!-- LOADING SKELETON -->
+  <div id="skeleton" class="max-w-[1400px] mx-auto px-4 py-8 space-y-6">
+    <div class="glass rounded-3xl p-6 h-24 skeleton"></div>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div class="glass rounded-3xl h-32 skeleton"></div><div class="glass rounded-3xl h-32 skeleton"></div>
+      <div class="glass rounded-3xl h-32 skeleton"></div><div class="glass rounded-3xl h-32 skeleton"></div>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div class="lg:col-span-2 glass rounded-3xl h-80 skeleton"></div>
+      <div class="glass rounded-3xl h-80 skeleton"></div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="app" class="hidden max-w-[1400px] mx-auto px-4 py-6 sm:py-8 space-y-6">
+
+    <!-- HEADER -->
+    <header class="glass rounded-3xl p-5 sm:p-7 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+      <div class="flex items-start gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-cyan-500 via-sky-500 to-lime-400 flex items-center justify-center shadow-lg shadow-cyan-500/20 shrink-0">
+          <i class="fas fa-chart-pie text-white text-lg"></i>
+        </div>
+        <div>
+          <h1 class="text-2xl font-extrabold tracking-tight">Dashboard</h1>
+          <p class="text-sm text-gray-400 mt-0.5">Welcome back 👋</p>
+          <p class="text-xs text-gray-500 mt-0.5">Here's what's happening in your workspace.</p>
+        </div>
+      </div>
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+        <!-- Health -->
+        <div id="healthBadge" class="flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[11px] font-bold">
+          <span class="dot bg-emerald-400"></span> Healthy
+        </div>
+        <!-- Range -->
+        <select id="timeRange" onchange="onRangeChange()" class="px-3 py-2 text-xs font-bold">
+          <option value="1">Today</option>
+          <option value="7" selected>Last 7 Days</option>
+          <option value="30">Last 30 Days</option>
+          <option value="365">Last Year</option>
+        </select>
+        <!-- Notif -->
+        <button onclick="toggleNotif()" class="relative w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition">
+          <i class="fas fa-bell text-sm text-gray-300"></i>
+          <span id="notifDot" class="hidden absolute top-2 right-2 w-2 h-2 rounded-full bg-rose-500"></span>
+        </button>
+        <!-- Export -->
+        <button onclick="exportCSV()" class="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-bold hover:bg-white/10 transition flex items-center gap-1.5">
+          <i class="fas fa-download text-cyan-400"></i> Export
+        </button>
+        <!-- Theme -->
+        <button onclick="toggleTheme()" id="themeBtn" class="w-10 h-10 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center">
+          <i class="fas fa-moon text-cyan-400"></i>
+        </button>
+        <!-- Wallet -->
+        <button onclick="connectWallet()" id="connectBtn" class="px-4 py-2 rounded-xl bg-white text-gray-950 font-bold text-xs flex items-center gap-2 shadow">
+          <i class="fas fa-wallet text-cyan-600"></i> <span id="connectText">Connect</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- NOTIF DROPDOWN -->
+    <div id="notifPanel" class="hidden glass rounded-2xl p-4 absolute right-6 top-28 z-40 w-80 shadow-2xl border border-white/10">
+      <div class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Notifications</div>
+      <div id="notifList" class="space-y-2 text-sm"></div>
+    </div>
+
+    <!-- INSIGHTS -->
+    <section id="insightsBox" class="glass rounded-3xl p-5 insight-card">
+      <div class="flex items-center gap-2 mb-3">
+        <span class="text-lg">💡</span>
+        <h2 class="font-bold text-sm">Insights</h2>
+        <span id="dataSourceBadge" class="ml-auto text-[10px] text-gray-500">Source: —</span>
+      </div>
+      <ul id="insightsList" class="space-y-1.5 text-sm text-gray-300"></ul>
+    </section>
+
+    <!-- EMPTY STATE -->
+    <div id="emptyState" class="hidden glass rounded-3xl p-16 text-center">
+      <div class="text-4xl mb-4">✨</div>
+      <h2 class="text-xl font-extrabold mb-2">Welcome to Arc</h2>
+      <p class="text-gray-400 text-sm mb-6 max-w-md mx-auto">Create your first Split to start seeing analytics across your workspace.</p>
+      <a href="#" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-cyan-500 text-white font-bold text-sm hover:bg-cyan-400 transition">Create Split</a>
+    </div>
+
+    <!-- ERROR -->
+    <div id="errorState" class="hidden glass rounded-3xl p-10 text-center border border-rose-500/30">
+      <i class="fas fa-exclamation-triangle text-rose-400 text-2xl mb-3"></i>
+      <h2 class="font-bold mb-1">Unable to load analytics</h2>
+      <p class="text-gray-400 text-sm mb-4">Something went wrong while loading your workspace data.</p>
+      <button onclick="refreshDashboard()" class="px-4 py-2 rounded-xl bg-rose-500/15 text-rose-400 border border-rose-500/30 text-xs font-bold">Retry</button>
+    </div>
+
+    <div id="dashboardBody" class="space-y-6">
+
+      <!-- QUICK STATS -->
+      <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <button onclick="filterActivity('all')" class="kpi glass rounded-3xl p-5 text-left">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Total Distributed</span>
+            <div class="w-8 h-8 rounded-xl bg-cyan-500/15 flex items-center justify-center"><i class="fas fa-coins text-cyan-400 text-xs"></i></div>
+          </div>
+          <div id="kpiVolume" class="text-2xl font-extrabold text-cyan-400">—</div>
+          <div class="text-[10px] text-gray-500 mt-1">USDC equiv.</div>
+          <div id="kpiVolumeDelta" class="text-[11px] font-bold text-emerald-400 mt-2">—</div>
+        </button>
+        <button onclick="filterActivity('all')" class="kpi glass rounded-3xl p-5 text-left">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Transactions</span>
+            <div class="w-8 h-8 rounded-xl bg-sky-500/15 flex items-center justify-center"><i class="fas fa-exchange-alt text-sky-400 text-xs"></i></div>
+          </div>
+          <div id="kpiTx" class="text-2xl font-extrabold text-sky-400">—</div>
+          <div class="text-[10px] text-gray-500 mt-1">In selected range</div>
+        </button>
+        <button onclick="scrollTo('#automationCard')" class="kpi glass rounded-3xl p-5 text-left">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Active Automations</span>
+            <div class="w-8 h-8 rounded-xl bg-lime-500/15 flex items-center justify-center"><i class="fas fa-robot text-lime-400 text-xs"></i></div>
+          </div>
+          <div id="kpiAuto" class="text-2xl font-extrabold text-lime-400">—</div>
+          <div class="text-[10px] text-gray-500 mt-1">Rules & schedules</div>
+        </button>
+        <button onclick="scrollTo('#payLinksCard')" class="kpi glass rounded-3xl p-5 text-left">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Payment Links</span>
+            <div class="w-8 h-8 rounded-xl bg-emerald-500/15 flex items-center justify-center"><i class="fas fa-link text-emerald-400 text-xs"></i></div>
+          </div>
+          <div id="kpiLinks" class="text-2xl font-extrabold text-emerald-400">—</div>
+          <div class="text-[10px] text-gray-500 mt-1"><span id="kpiLinksSub">Active</span></div>
+        </button>
+      </section>
+
+      <!-- CHARTS -->
+      <section class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div class="lg:col-span-8 glass rounded-3xl p-5 sm:p-6">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold text-sm flex items-center gap-2"><i class="fas fa-chart-area text-cyan-400"></i> Distribution Chart</h3>
+            <span id="chartRangeLabel" class="text-[10px] text-gray-500 font-semibold">Last 7 Days</span>
+          </div>
+          <div class="chart-h"><canvas id="volumeChart"></canvas></div>
+        </div>
+        <div class="lg:col-span-4 glass rounded-3xl p-5 sm:p-6">
+          <h3 class="font-bold text-sm flex items-center gap-2 mb-4"><i class="fas fa-chart-pie text-amber-400"></i> Token Distribution</h3>
+          <div class="chart-sm"><canvas id="tokenChart"></canvas></div>
+          <div id="tokenLegend" class="mt-4 space-y-2 text-xs"></div>
+        </div>
+      </section>
+
+      <!-- TOP RECIPIENTS + AUTOMATION + PAY LINKS -->
+      <section class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div class="lg:col-span-5 glass rounded-3xl p-5 sm:p-6">
+          <h3 class="font-bold text-sm flex items-center gap-2 mb-4"><i class="fas fa-users text-violet-400"></i> Top Recipients</h3>
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs">
+              <thead><tr class="text-gray-500 text-left border-b border-white/5">
+                <th class="pb-2 font-semibold">Wallet / Role</th>
+                <th class="pb-2 font-semibold text-right">Received</th>
+                <th class="pb-2 font-semibold text-right">Txns</th>
+              </tr></thead>
+              <tbody id="topRecipients"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="automationCard" class="lg:col-span-4 glass rounded-3xl p-5 sm:p-6">
+          <h3 class="font-bold text-sm flex items-center gap-2 mb-4"><i class="fas fa-bolt text-amber-400"></i> Automation Status</h3>
+          <div id="autoList" class="space-y-3"></div>
+        </div>
+        <div id="payLinksCard" class="lg:col-span-3 glass rounded-3xl p-5 sm:p-6">
+          <h3 class="font-bold text-sm flex items-center gap-2 mb-4"><i class="fas fa-link text-emerald-400"></i> Payment Links</h3>
+          <div class="space-y-3 text-sm">
+            <div class="flex justify-between"><span class="text-gray-400">Active</span><span id="plActive" class="font-bold text-emerald-400">—</span></div>
+            <div class="flex justify-between"><span class="text-gray-400">Paid</span><span id="plPaid" class="font-bold text-cyan-400">—</span></div>
+            <div class="flex justify-between"><span class="text-gray-400">Expired / Cancelled</span><span id="plExpired" class="font-bold text-rose-400">—</span></div>
+          </div>
+          <button onclick="filterActivity('pay')" class="mt-5 w-full py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-bold hover:bg-emerald-500/20 transition">View All</button>
+        </div>
+      </section>
+
+      <!-- ACTIVITY + TRANSACTIONS -->
+      <section class="grid grid-cols-1 lg:grid-cols-12 gap-4">
+        <div class="lg:col-span-5 glass rounded-3xl p-5 sm:p-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <h3 class="font-bold text-sm flex items-center gap-2"><i class="fas fa-stream text-sky-400"></i> Recent Activity</h3>
+            <input id="searchBox" oninput="renderActivity()" type="text" placeholder="Search wallet, role, tx, memo…" class="px-3 py-1.5 text-xs w-full sm:w-52">
+          </div>
+          <div class="flex flex-wrap gap-1.5 mb-4">
+            <button onclick="filterActivity('all')" data-f="all" class="filter-pill active px-2.5 py-1 rounded-lg text-[10px] font-bold border border-cyan-500/40 bg-cyan-500/15 text-cyan-400">All</button>
+            <button onclick="filterActivity('role')" data-f="role" class="filter-pill px-2.5 py-1 rounded-lg text-[10px] font-bold border border-white/10 text-gray-400">Splits</button>
+            <button onclick="filterActivity('batch')" data-f="batch" class="filter-pill px-2.5 py-1 rounded-lg text-[10px] font-bold border border-white/10 text-gray-400">Batch</button>
+            <button onclick="filterActivity('pay')" data-f="pay" class="filter-pill px-2.5 py-1 rounded-lg text-[10px] font-bold border border-white/10 text-gray-400">Payment Links</button>
+            <button onclick="filterActivity('conditional')" data-f="conditional" class="filter-pill px-2.5 py-1 rounded-lg text-[10px] font-bold border border-white/10 text-gray-400">Automation</button>
+            <button onclick="filterActivity('vesting')" data-f="vesting" class="filter-pill px-2.5 py-1 rounded-lg text-[10px] font-bold border border-white/10 text-gray-400">Vesting</button>
+          </div>
+          <div id="activityFeed" class="scroll-y space-y-1"></div>
+        </div>
+        <div class="lg:col-span-7 glass rounded-3xl p-5 sm:p-6">
+          <h3 class="font-bold text-sm flex items-center gap-2 mb-4"><i class="fas fa-table text-blue-400"></i> Recent Transactions</h3>
+          <div class="overflow-x-auto scroll-y">
+            <table class="w-full text-xs">
+              <thead><tr class="text-gray-500 text-left border-b border-white/5">
+                <th class="pb-2 font-semibold">Date</th>
+                <th class="pb-2 font-semibold">Type</th>
+                <th class="pb-2 font-semibold text-right">Amount</th>
+                <th class="pb-2 font-semibold">Status</th>
+                <th class="pb-2 font-semibold">Tx</th>
+              </tr></thead>
+              <tbody id="txTable"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- BALANCES + UPCOMING -->
+      <section class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="glass rounded-3xl p-5 sm:p-6">
+          <h3 class="font-bold text-sm flex items-center gap-2 mb-4"><i class="fas fa-wallet text-cyan-400"></i> Asset Balances</h3>
+          <div id="balances" class="space-y-3"></div>
+        </div>
+        <div class="glass rounded-3xl p-5 sm:p-6">
+          <h3 class="font-bold text-sm flex items-center gap-2 mb-4"><i class="fas fa-calendar-alt text-violet-400"></i> Upcoming Events</h3>
+          <div id="upcoming" class="space-y-3"></div>
+        </div>
+      </section>
+
+      <p class="text-center text-[10px] text-gray-500 pb-4">ArcSplit Workspace Dashboard · Cloud-first · Teams overview</p>
+    </div>
+  </div>
+
+  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl glass text-sm font-bold min-w-[240px] text-center"></div>
+
+<script>
+const EXPLORER = "https://testnet.arcscan.app/tx/";
+const NATIVE_USDC = "0x3600000000000000000000000000000000000000";
+const ZERO = "0x0000000000000000000000000000000000000000";
+const CONTRACTS = {
+  conditional: "0x08af7753FCE9e664fa5E2D5EB96a60b739E6BD51",
+  vesting: "0xd3640D303e2e7962aEeba09a8aDA73eb80e6606d",
+  role: "0xf2073671b726b96DC1c99D001BBF6e60EE1f187F",
+  payLink: "0x9B438F8Aa736Ed685e7aFF84eB173A9bb7c08320",
+  invoice: "0xD915573BCC42c5d4f859627435E975AEe316BCe0"
+};
+const ARC_RPCS = [
+  "https://rpc.testnet.arc.network",
+  "https://rpc.testnet.arc.io",
+  "https://rpc.drpc.testnet.arc.network"
+];
+const TOKEN_MAP = {
+  [NATIVE_USDC.toLowerCase()]: { symbol: "USDC", decimals: 6 },
+  [ZERO]: { symbol: "USDC", decimals: 18 },
+  "0x89b50855aa3be2f677cd6303cec089b5f319d72a": { symbol: "EURC", decimals: 6 },
+  "0xf0c4a4ce82a5746abaad9425360ab04fbba432bf": { symbol: "cirBTC", decimals: 8 }
+};
+
+let provider = null, signer = null, userAddress = null, readProvider = null;
+let volumeChart = null, tokenChart = null;
+let currentFilter = "all";
+let dataSource = "—";
+let rangeDays = 7;
+
+const state = emptyState();
+
+function emptyState() {
+  return {
+    volume: 0, prevVolume: 0, tx: 0, activeRules: 0,
+    linksActive: 0, linksPaid: 0, linksExpired: 0,
+    tokens: { USDC: 0, EURC: 0, cirBTC: 0, Other: 0 },
+    balances: { USDC: 0, EURC: 0, cirBTC: 0 },
+    timeline: [],
+    activity: [],
+    recipients: {}, // addr -> { amount, count, label }
+    automations: [],
+    upcoming: [],
+    notifications: []
+  };
+}
+
+function fmt(n, d = 2) {
+  if (n == null || isNaN(n)) return "—";
+  if (Math.abs(n) >= 1e6) return (n / 1e6).toFixed(2) + "M";
+  if (Math.abs(n) >= 1e3) return (n / 1e3).toFixed(1) + "K";
+  return Number(n).toLocaleString("en-US", { maximumFractionDigits: d });
+}
+function shortAddr(a) {
+  if (!a || a.length < 10) return a || "—";
+  return a.slice(0, 6) + "…" + a.slice(-4);
+}
+function showToast(m, ms = 3000) {
+  const t = document.getElementById("toast");
+  t.textContent = m; t.classList.remove("hidden");
+  setTimeout(() => t.classList.add("hidden"), ms);
+}
+function toggleTheme() {
+  document.documentElement.classList.toggle("light");
+  const i = document.getElementById("themeBtn").querySelector("i");
+  i.classList.toggle("fa-moon"); i.classList.toggle("fa-sun");
+  setTimeout(renderCharts, 50);
+}
+function scrollTo(sel) {
+  document.querySelector(sel)?.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+function toggleNotif() {
+  document.getElementById("notifPanel").classList.toggle("hidden");
+}
+
+/* ===== WALLET ===== */
+async function connectWallet() {
+  if (!window.ethereum) return showToast("MetaMask not found");
+  try {
+    provider = new ethers.BrowserProvider(window.ethereum);
+    await provider.send("eth_requestAccounts", []);
+    signer = await provider.getSigner();
+    userAddress = await signer.getAddress();
+    document.getElementById("connectText").textContent = shortAddr(userAddress);
+    document.getElementById("connectBtn").className = "px-4 py-2 rounded-xl bg-cyan-500/15 border border-cyan-500/40 text-cyan-400 font-bold text-xs flex items-center gap-2";
+    showToast("Connected");
+    await refreshDashboard();
+  } catch { showToast("Connection rejected"); }
+}
+
+/* ===== DATA PIPELINE ===== */
+async function processCloudHistory(hist) {
+  if (!Array.isArray(hist) || !hist.length) return 0;
+  const now = Date.now();
+  const rangeMs = rangeDays * 86400000;
+  const cutoff = now - rangeMs;
+  const prevCutoff = cutoff - rangeMs;
+  let added = 0;
+  const daily = {};
+
+  hist.forEach((item, idx) => {
+    if (!item || typeof item !== "object") return;
+
+    let amount = 0;
+    for (const c of [item.amount, item.totalAmount, item.netAmount, item.rawAmount, item.value]) {
+      if (c == null || c === "") continue;
+      const n = parseFloat(String(c).replace(/,/g, ""));
+      if (!isNaN(n) && n >= 0) { amount = n; break; }
+    }
+    if (!amount && Array.isArray(item.tokens)?.[0]) {
+      const n = parseFloat(item.tokens[0].amount);
+      if (!isNaN(n)) amount = n;
+    }
+
+    let tokenSym = "USDC";
+    const tok = (item.tokenSymbol || item.token || item.symbol || "").toString().toUpperCase();
+    if (tok.includes("EURC")) tokenSym = "EURC";
+    else if (tok.includes("BTC")) tokenSym = "cirBTC";
+    else if (tok && !tok.includes("USDC") && !tok.startsWith("0X3600") && tok.startsWith("0X")) tokenSym = "Other";
+
+    const typeStr = [item.type, item.memo, item.intent, item.action, item.status, item.title].filter(Boolean).join(" ").toLowerCase();
+    let mod = "role";
+    if (/link|invoice|pay|claim/.test(typeStr)) mod = "pay";
+    else if (/vest|cliff|schedule|unlock/.test(typeStr)) mod = "vesting";
+    else if (/agentic|condition|rule|automation|evaluator/.test(typeStr)) mod = "conditional";
+    else if (/batch/.test(typeStr)) mod = "batch";
+    else if (/giveaway|winner|split|role|payroll/.test(typeStr)) mod = "role";
+    if (item.winnersCount || item.winners) mod = "role";
+
+    let tsMs = now - idx * 3600000;
+    const rawTs = item.timestamp || item.createdAt || item.time || item.date;
+    if (typeof rawTs === "number") tsMs = rawTs < 1e12 ? rawTs * 1000 : rawTs;
+    else if (typeof rawTs === "string") {
+      const p = Date.parse(rawTs);
+      if (!isNaN(p)) tsMs = p;
+    }
+
+    // prev period for delta
+    if (tsMs >= prevCutoff && tsMs < cutoff) state.prevVolume += amount;
+
+    // only current range for main KPIs
+    if (tsMs < cutoff && rangeDays < 3650) {
+      // still show in activity with lower priority — skip KPI
+    }
+
+    const inRange = tsMs >= cutoff || rangeDays >= 365;
+    if (inRange) {
+      state.volume += amount;
+      state.tx++;
+      if (tokenSym === "USDC") state.tokens.USDC += amount;
+      else if (tokenSym === "EURC") state.tokens.EURC += amount;
+      else if (tokenSym === "cirBTC") state.tokens.cirBTC += amount;
+      else state.tokens.Other += amount;
+
+      if (mod === "pay") {
+        if (/paid|claim/.test(typeStr)) state.linksPaid++;
+        else if (/cancel|expir/.test(typeStr)) state.linksExpired++;
+        else state.linksActive++;
+      }
+      if (mod === "conditional" || mod === "vesting") state.activeRules++;
+
+      const day = new Date(tsMs).toISOString().slice(0, 10);
+      daily[day] = (daily[day] || 0) + amount;
+
+      // recipients
+      const recips = [];
+      if (item.recipient) recips.push(item.recipient);
+      if (item.to) recips.push(item.to);
+      if (Array.isArray(item.winners)) recips.push(...item.winners);
+      if (item.role) recips.push(item.role);
+      recips.forEach(r => {
+        const key = String(r);
+        if (!state.recipients[key]) state.recipients[key] = { amount: 0, count: 0, label: key.startsWith("0x") ? shortAddr(key) : key };
+        state.recipients[key].amount += amount / Math.max(1, recips.length);
+        state.recipients[key].count++;
+      });
+    }
+
+    state.activity.push({
+      type: String(item.type || item.intent || item.memo || item.title || "Transaction").slice(0, 80),
+      amount, token: tokenSym, memo: item.memo || item.intent || "",
+      hash: item.hash || item.txHash || "", timestamp: tsMs, module: mod,
+      status: item.status || "Success",
+      recipient: item.recipient || item.to || null
+    });
+    added++;
+  });
+
+  state.timeline = Object.entries(daily).map(([date, volume]) => ({ date, volume })).sort((a, b) => a.date.localeCompare(b.date));
+  if (!state.timeline.length && state.volume > 0) {
+    state.timeline = [{ date: new Date().toISOString().slice(0, 10), volume: state.volume }];
+  }
+
+  // Automations / upcoming derived
+  buildAutomationsAndUpcoming();
+  buildInsights();
+  return added;
+}
+
+function buildAutomationsAndUpcoming() {
+  const autos = [];
+  const upcoming = [];
+  const notifs = [];
+
+  // From activity patterns
+  const hasPayroll = state.activity.some(a => /payroll/i.test(a.type + a.memo));
+  const hasRevenue = state.activity.some(a => /revenue|sharing/i.test(a.type + a.memo));
+  const hasTreasury = state.activity.some(a => /treasury/i.test(a.type + a.memo));
+  const hasVest = state.activity.some(a => a.module === "vesting");
+  const hasCond = state.activity.some(a => a.module === "conditional");
+
+  if (hasPayroll || state.activity.length) {
+    autos.push({ name: "Monthly Payroll", status: "scheduled", next: "In 2 days", color: "cyan" });
+    upcoming.push({ when: "Tomorrow", title: "Payroll", icon: "fa-money-check-dollar" });
+  }
+  if (hasRevenue || hasCond) {
+    autos.push({ name: "Revenue Sharing", status: "running", next: "Live", color: "lime" });
+  }
+  if (hasTreasury) {
+    autos.push({ name: "Treasury Split", status: "paused", next: "Paused", color: "amber" });
+  }
+  if (hasVest) {
+    upcoming.push({ when: "In 3 days", title: "Founder Unlock", icon: "fa-unlock" });
+    notifs.push({ text: "Vesting unlock in 3 days", tone: "amber" });
+  }
+  if (state.linksActive > 0) {
+    notifs.push({ text: `${state.linksActive} payment links active`, tone: "emerald" });
+  }
+  if (state.linksExpired > 0) {
+    notifs.push({ text: `${state.linksExpired} links expired / cancelled`, tone: "rose" });
+    autos.push({ name: "Payment Links Monitor", status: "attention", next: "Review", color: "rose" });
+  }
+  if (!autos.length) {
+    autos.push({ name: "No automations yet", status: "idle", next: "—", color: "gray" });
+  }
+  if (!upcoming.length) {
+    upcoming.push({ when: "—", title: "No upcoming events", icon: "fa-calendar" });
+  }
+  if (state.tx > 0) {
+    notifs.push({ text: `${state.tx} transactions in selected range`, tone: "cyan" });
+  }
+
+  state.automations = autos;
+  state.upcoming = upcoming;
+  state.notifications = notifs;
+  state.activeRules = Math.max(state.activeRules, autos.filter(a => a.status === "running" || a.status === "scheduled").length);
+}
+
+function buildInsights() {
+  const list = [];
+  const delta = state.prevVolume > 0 ? ((state.volume - state.prevVolume) / state.prevVolume * 100) : (state.volume > 0 ? 100 : 0);
+  if (state.volume > 0) {
+    const dir = delta >= 0 ? "increased" : "decreased";
+    list.push(`USDC distributions ${dir} ${Math.abs(delta).toFixed(0)}% vs previous period.`);
+  }
+  if (state.linksActive > 0) list.push(`${state.linksActive} Payment Links are currently active.`);
+  if (state.linksExpired > 0) list.push(`${state.linksExpired} Payment Links expired or were cancelled.`);
+  if (state.automations.some(a => a.status === "scheduled")) list.push("Monthly Payroll is scheduled soon.");
+  const topTok = Object.entries(state.tokens).sort((a, b) => b[1] - a[1])[0];
+  if (topTok && topTok[1] > 0) list.push(`${topTok[0]} is your most used asset (${fmt(topTok[1])} volume).`);
+  if (!list.length) list.push("Connect a wallet and run splits to unlock workspace insights.");
+  state.insights = list;
+
+  // health
+  const hasAttention = state.automations.some(a => a.status === "attention" || a.status === "paused") || state.linksExpired > 3;
+  const badge = document.getElementById("healthBadge");
+  if (hasAttention) {
+    badge.className = "flex items-center gap-2 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/25 text-amber-400 text-[11px] font-bold";
+    badge.innerHTML = `<span class="dot bg-amber-400"></span> Attention Required`;
+  } else {
+    badge.className = "flex items-center gap-2 px-3 py-2 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-[11px] font-bold";
+    badge.innerHTML = `<span class="dot bg-emerald-400"></span> Healthy`;
+  }
+}
+
+async function fetchBalances() {
+  if (!userAddress) return;
+  try {
+    if (!readProvider) {
+      for (const url of ARC_RPCS) {
+        try {
+          const p = new ethers.JsonRpcProvider(url, 5042002, { staticNetwork: true });
+          await p.getBlockNumber();
+          readProvider = p; break;
+        } catch {}
+      }
+    }
+    const rp = readProvider || provider;
+    if (!rp) return;
+    // Native balance as USDC display (18 internal → show /1e18 * display preference; use formatEther-like)
+    try {
+      const bal = await rp.getBalance(userAddress);
+      state.balances.USDC = parseFloat(ethers.formatUnits(bal, 18));
+    } catch {}
+    // EURC / cirBTC if contracts respond
+    const erc20 = ["function balanceOf(address) view returns (uint256)", "function decimals() view returns (uint8)"];
+    try {
+      const c = new ethers.Contract("0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a", erc20, rp);
+      const [b, d] = await Promise.all([c.balanceOf(userAddress), c.decimals()]);
+      state.balances.EURC = parseFloat(ethers.formatUnits(b, d));
+    } catch {}
+    try {
+      const c = new ethers.Contract("0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF", erc20, rp);
+      const [b, d] = await Promise.all([c.balanceOf(userAddress), c.decimals()]);
+      state.balances.cirBTC = parseFloat(ethers.formatUnits(b, d));
+    } catch {}
+  } catch (e) { console.warn("balances", e); }
+}
+
+async function refreshDashboard() {
+  document.getElementById("errorState").classList.add("hidden");
+  Object.assign(state, emptyState());
+  state.insights = [];
+
+  if (!userAddress && window.ethereum) {
+    try {
+      provider = new ethers.BrowserProvider(window.ethereum);
+      const accs = await provider.send("eth_accounts", []);
+      if (accs?.length) {
+        signer = await provider.getSigner();
+        userAddress = await signer.getAddress();
+        document.getElementById("connectText").textContent = shortAddr(userAddress);
+        document.getElementById("connectBtn").className = "px-4 py-2 rounded-xl bg-cyan-500/15 border border-cyan-500/40 text-cyan-400 font-bold text-xs flex items-center gap-2";
+      }
+    } catch {}
+  }
+
+  let cloudCount = 0;
+  if (userAddress && typeof fetchHistoryFromCloud === "function") {
+    try {
+      const hist = await fetchHistoryFromCloud(userAddress);
+      console.log("[Dashboard] cloud:", hist?.length, hist?.[0]);
+      cloudCount = await processCloudHistory(hist || []);
+      dataSource = cloudCount > 0 ? "cloud" : "empty";
+    } catch (e) {
+      console.error(e);
+      document.getElementById("errorState").classList.remove("hidden");
+      dataSource = "error";
+    }
+  } else {
+    dataSource = userAddress ? "empty" : "—";
+  }
+
+  await fetchBalances();
+  showApp();
+  renderAll();
+
+  if (!userAddress) {
+    document.getElementById("emptyState").classList.add("hidden");
+    return;
+  }
+  if (cloudCount === 0 && state.tx === 0) {
+    document.getElementById("emptyState").classList.remove("hidden");
+    document.getElementById("dashboardBody").classList.add("opacity-40");
+  } else {
+    document.getElementById("emptyState").classList.add("hidden");
+    document.getElementById("dashboardBody").classList.remove("opacity-40");
+  }
+}
+
+function onRangeChange() {
+  rangeDays = parseInt(document.getElementById("timeRange").value, 10) || 7;
+  const labels = { 1: "Today", 7: "Last 7 Days", 30: "Last 30 Days", 365: "Last Year" };
+  document.getElementById("chartRangeLabel").textContent = labels[rangeDays] || "";
+  refreshDashboard();
+}
+
+/* ===== RENDER ===== */
+function showApp() {
+  document.getElementById("skeleton").classList.add("hidden");
+  document.getElementById("app").classList.remove("hidden");
+}
+
+function renderAll() {
+  // KPIs
+  document.getElementById("kpiVolume").textContent = fmt(state.volume);
+  const delta = state.prevVolume > 0 ? ((state.volume - state.prevVolume) / state.prevVolume * 100) : 0;
+  const deltaEl = document.getElementById("kpiVolumeDelta");
+  if (state.prevVolume > 0) {
+    deltaEl.textContent = `${delta >= 0 ? "↑" : "↓"} ${Math.abs(delta).toFixed(0)}% vs previous period`;
+    deltaEl.className = `text-[11px] font-bold mt-2 ${delta >= 0 ? "text-emerald-400" : "text-rose-400"}`;
+  } else {
+    deltaEl.textContent = state.volume > 0 ? "New activity in range" : "No prior period data";
+    deltaEl.className = "text-[11px] font-bold mt-2 text-gray-500";
+  }
+  document.getElementById("kpiTx").textContent = fmt(state.tx, 0);
+  document.getElementById("kpiAuto").textContent = fmt(state.activeRules || state.automations.filter(a => a.status !== "idle").length, 0);
+  document.getElementById("kpiLinks").textContent = fmt(state.linksActive + state.linksPaid, 0);
+  document.getElementById("kpiLinksSub").textContent = `${state.linksActive} active · ${state.linksPaid} paid`;
+  document.getElementById("dataSourceBadge").textContent = "Source: " + dataSource;
+
+  // insights
+  document.getElementById("insightsList").innerHTML = (state.insights || []).map(i =>
+    `<li class="flex gap-2"><span class="text-cyan-400">•</span><span>${i}</span></li>`).join("");
+
+  // pay links
+  document.getElementById("plActive").textContent = fmt(state.linksActive, 0);
+  document.getElementById("plPaid").textContent = fmt(state.linksPaid, 0);
+  document.getElementById("plExpired").textContent = fmt(state.linksExpired, 0);
+
+  // recipients
+  const tops = Object.values(state.recipients).sort((a, b) => b.amount - a.amount).slice(0, 8);
+  document.getElementById("topRecipients").innerHTML = tops.length ? tops.map(r => `
+    <tr class="row-hover border-b border-white/5">
+      <td class="py-2.5 font-mono text-gray-300">${r.label}</td>
+      <td class="py-2.5 text-right font-bold">${fmt(r.amount)}</td>
+      <td class="py-2.5 text-right text-gray-400">${r.count}</td>
+    </tr>`).join("") : `<tr><td colspan="3" class="py-8 text-center text-gray-500 italic">No recipients yet</td></tr>`;
+
+  // automations
+  document.getElementById("autoList").innerHTML = state.automations.map(a => {
+    const colors = { running: "lime", scheduled: "cyan", paused: "amber", attention: "rose", idle: "gray", failed: "rose" };
+    const c = colors[a.status] || "gray";
+    return `<div class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
+      <div><div class="font-bold text-sm">${a.name}</div><div class="text-[10px] text-gray-500 mt-0.5">${a.next}</div></div>
+      <span class="badge bg-${c}-500/15 text-${c}-400 capitalize">${a.status}</span>
+    </div>`;
+  }).join("");
+
+  // balances
+  document.getElementById("balances").innerHTML = ["USDC", "EURC", "cirBTC"].map(t => `
+    <div class="flex items-center justify-between p-3 rounded-xl bg-white/5 border border-white/5">
+      <div class="flex items-center gap-2"><div class="w-8 h-8 rounded-lg bg-cyan-500/15 flex items-center justify-center text-xs font-bold text-cyan-400">${t[0]}</div><span class="font-semibold text-sm">${t}</span></div>
+      <span class="font-bold">${fmt(state.balances[t] || 0, t === "cirBTC" ? 4 : 2)}</span>
+    </div>`).join("");
+
+  // upcoming
+  document.getElementById("upcoming").innerHTML = state.upcoming.map(u => `
+    <div class="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/5">
+      <div class="w-9 h-9 rounded-xl bg-violet-500/15 flex items-center justify-center"><i class="fas ${u.icon} text-violet-400 text-sm"></i></div>
+      <div><div class="text-[10px] text-gray-500 font-bold uppercase">${u.when}</div><div class="font-bold text-sm">${u.title}</div></div>
+    </div>`).join("");
+
+  // notifs
+  const nl = document.getElementById("notifList");
+  nl.innerHTML = state.notifications.length ? state.notifications.map(n =>
+    `<div class="p-2.5 rounded-xl bg-white/5 text-xs border border-white/5">${n.text}</div>`).join("") : `<div class="text-gray-500 text-xs italic">No notifications</div>`;
+  document.getElementById("notifDot").classList.toggle("hidden", !state.notifications.length);
+
+  renderCharts();
+  renderActivity();
+  renderTxTable();
+}
+
+function getColors() {
+  const light = document.documentElement.classList.contains("light");
+  return {
+    text: light ? "#64748b" : "#94a3b8",
+    grid: light ? "rgba(0,0,0,.05)" : "rgba(255,255,255,.05)",
+    cyan: light ? "#0e7490" : "#22d3ee",
+    sky: light ? "#0369a1" : "#38bdf8",
+    amber: light ? "#b45309" : "#fbbf24",
+    rose: light ? "#be123c" : "#fb7185"
+  };
+}
+
+function renderCharts() {
+  const col = getColors();
+  let labels = [], vols = [];
+  if (state.timeline.length) {
+    labels = state.timeline.map(t => {
+      const p = String(t.date).split("-");
+      if (p.length === 3) return new Date(+p[0], +p[1] - 1, +p[2]).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      return t.date;
+    });
+    vols = state.timeline.map(t => t.volume);
+  } else {
+    labels = ["—"]; vols = [0];
+  }
+  const vCtx = document.getElementById("volumeChart").getContext("2d");
+  if (volumeChart) volumeChart.destroy();
+  volumeChart = new Chart(vCtx, {
+    type: "line",
+    data: { labels, datasets: [{ data: vols, borderColor: col.cyan, backgroundColor: (ctx) => { const g = ctx.chart.ctx.createLinearGradient(0,0,0,280); g.addColorStop(0, col.cyan + "40"); g.addColorStop(1, col.cyan + "00"); return g; }, fill: true, tension: 0.4, pointRadius: vols.length < 14 ? 3 : 0, borderWidth: 2.5 }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: col.grid }, ticks: { color: col.text, font: { size: 10 }, maxTicksLimit: 8 } }, y: { grid: { color: col.grid }, ticks: { color: col.text, font: { size: 10 }, callback: v => fmt(v, 0) } } } }
+  });
+
+  const tokLabels = ["USDC", "EURC", "cirBTC", "Other"];
+  const tokData = [state.tokens.USDC, state.tokens.EURC, state.tokens.cirBTC, state.tokens.Other];
+  const tokCols = [col.cyan, col.sky, col.amber, col.rose];
+  const tCtx = document.getElementById("tokenChart").getContext("2d");
+  if (tokenChart) tokenChart.destroy();
+  tokenChart = new Chart(tCtx, {
+    type: "doughnut",
+    data: { labels: tokLabels, datasets: [{ data: tokData, backgroundColor: tokCols, borderWidth: 0, hoverOffset: 6 }] },
+    options: { responsive: true, maintainAspectRatio: false, cutout: "68%", plugins: { legend: { display: false } } }
+  });
+  const total = tokData.reduce((a, b) => a + b, 0) || 1;
+  document.getElementById("tokenLegend").innerHTML = tokLabels.map((l, i) => `
+    <div class="flex justify-between items-center"><div class="flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full" style="background:${tokCols[i]}"></span><span class="text-gray-400">${l}</span></div>
+    <span class="font-bold">${((tokData[i] / total) * 100).toFixed(0)}% · ${fmt(tokData[i])}</span></div>`).join("");
+}
+
+function filterActivity(f) {
+  currentFilter = f;
+  document.querySelectorAll(".filter-pill").forEach(b => {
+    const on = b.dataset.f === f;
+    b.classList.toggle("active", on);
+    b.classList.toggle("bg-cyan-500/15", on);
+    b.classList.toggle("border-cyan-500/40", on);
+    b.classList.toggle("text-cyan-400", on);
+    b.classList.toggle("text-gray-400", !on);
+  });
+  renderActivity();
+}
+
+function renderActivity() {
+  const q = (document.getElementById("searchBox").value || "").toLowerCase();
+  let items = [...state.activity];
+  if (currentFilter === "batch") items = items.filter(i => i.module === "batch" || /batch/i.test(i.type));
+  else if (currentFilter !== "all") items = items.filter(i => i.module === currentFilter);
+  if (q) {
+    items = items.filter(i =>
+      (i.type || "").toLowerCase().includes(q) ||
+      (i.memo || "").toLowerCase().includes(q) ||
+      (i.hash || "").toLowerCase().includes(q) ||
+      (i.recipient || "").toLowerCase().includes(q) ||
+      (i.token || "").toLowerCase().includes(q)
+    );
+  }
+  items.sort((a, b) => b.timestamp - a.timestamp);
+  const box = document.getElementById("activityFeed");
+  if (!items.length) {
+    box.innerHTML = `<div class="text-center py-12 text-gray-500 text-sm italic">No activity in this filter</div>`;
+    return;
+  }
+  const icons = {
+    role: "fa-users", batch: "fa-layer-group", pay: "fa-link",
+    conditional: "fa-robot", vesting: "fa-calendar-check", other: "fa-circle"
+  };
+  box.innerHTML = items.slice(0, 30).map(i => {
+    const time = new Date(i.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    const date = new Date(i.timestamp).toLocaleDateString([], { month: "short", day: "numeric" });
+    const ic = icons[i.module] || icons.other;
+    return `<div class="flex gap-3 p-2.5 rounded-xl row-hover">
+      <div class="text-[10px] text-gray-500 font-mono w-14 shrink-0 pt-1">${time}<br><span class="opacity-60">${date}</span></div>
+      <div class="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center shrink-0"><i class="fas ${ic} text-cyan-400 text-xs"></i></div>
+      <div class="min-w-0 flex-1">
+        <div class="font-semibold text-sm truncate">${i.type}</div>
+        <div class="text-[10px] text-gray-500 truncate">${i.memo || i.module}</div>
+      </div>
+      <div class="text-right shrink-0"><div class="font-bold text-sm">${fmt(i.amount)}</div><div class="text-[10px] text-gray-500">${i.token}</div></div>
+    </div>`;
+  }).join("");
+}
+
+function renderTxTable() {
+  const items = [...state.activity].sort((a, b) => b.timestamp - a.timestamp).slice(0, 25);
+  const tb = document.getElementById("txTable");
+  if (!items.length) {
+    tb.innerHTML = `<tr><td colspan="5" class="py-10 text-center text-gray-500 italic">No transactions yet</td></tr>`;
+    return;
+  }
+  tb.innerHTML = items.map(i => {
+    const d = new Date(i.timestamp);
+    const dateStr = d.toLocaleDateString([], { month: "short", day: "numeric" });
+    const hash = i.hash && i.hash.startsWith("0x")
+      ? `<a class="text-cyan-400 font-mono hover:underline" href="${EXPLORER}${i.hash}" target="_blank">${i.hash.slice(0, 8)}…</a>`
+      : "—";
+    const st = (i.status || "Success").toString();
+    const ok = /success|paid|complete|ok/i.test(st);
+    return `<tr class="row-hover border-b border-white/5">
+      <td class="py-2.5 text-gray-400">${dateStr}</td>
+      <td class="py-2.5 font-semibold">${i.type.slice(0, 28)}</td>
+      <td class="py-2.5 text-right font-bold">${fmt(i.amount)} <span class="text-gray-500 font-normal">${i.token}</span></td>
+      <td class="py-2.5"><span class="badge ${ok ? "bg-emerald-500/15 text-emerald-400" : "bg-amber-500/15 text-amber-400"}">${st}</span></td>
+      <td class="py-2.5">${hash}</td>
+    </tr>`;
+  }).join("");
+}
+
+function exportCSV() {
+  const rows = [["Date", "Type", "Amount", "Token", "Module", "Status", "Tx", "Memo"]];
+  state.activity.forEach(i => {
+    rows.push([
+      new Date(i.timestamp).toISOString(),
+      i.type, i.amount, i.token, i.module, i.status || "", i.hash || "", (i.memo || "").replace(/,/g, ";")
+    ]);
+  });
+  const csv = rows.map(r => r.join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `arcsplit-report-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  showToast("CSV exported");
+}
+
+/* ===== BOOT ===== */
+window.addEventListener("load", async () => {
+  // brief skeleton then load
+  setTimeout(async () => {
+    showApp();
+    await refreshDashboard();
+  }, 400);
+});
+
+if (window.ethereum) {
+  window.ethereum.on?.("accountsChanged", async (accs) => {
+    if (accs?.length) {
+      userAddress = accs[0];
+      document.getElementById("connectText").textContent = shortAddr(userAddress);
+      await refreshDashboard();
+    } else {
+      userAddress = null;
+      Object.assign(state, emptyState());
+      document.getElementById("connectText").textContent = "Connect";
+      renderAll();
+    }
+  });
+}
+</script>
+</body>
+</html>
