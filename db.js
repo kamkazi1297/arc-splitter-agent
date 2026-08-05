@@ -2,7 +2,7 @@
  * ArcSplit Cloud DB helpers
  * - History API (all pages)
  * - Payment links / invoices
- * - Workspace (teams, members, permissions, team activity)
+ * - Workspace (teams, members, permissions, invites, team activity)
  */
 
 const SUPABASE_URL = 'https://yelauzpxsfjzydffhnhb.supabase.co';
@@ -89,7 +89,6 @@ async function fetchHistoryFromCloud(userAddress) {
   }
 }
 
-/** Team feed: history of all member addresses, optionally prefer workspaceId tag */
 async function fetchTeamHistory(memberAddresses, workspaceId, limit = 60) {
   try {
     const client = await getSupabase();
@@ -213,7 +212,8 @@ function defaultPermissions() {
   return {
     owner: { ...allTrue },
     admin: { ...allTrue },
-    member: { ...allFalse }
+    member: { ...allFalse },
+    viewer: { ...allFalse }
   };
 }
 
@@ -325,10 +325,11 @@ async function inviteWorkspaceMember(workspaceId, inviterAddress, memberAddress,
   try {
     const client = await getSupabase();
     if (!client || !workspaceId || !memberAddress) return false;
+    const safeRole = ['admin', 'member', 'viewer'].includes(role) ? role : 'member';
     const { error } = await client.from('workspace_members').upsert([{
       workspace_id: workspaceId,
       user_address: memberAddress.toLowerCase(),
-      role: role === 'admin' ? 'admin' : 'member',
+      role: safeRole,
       display_name: displayName || '',
       invited_by: (inviterAddress || '').toLowerCase()
     }], { onConflict: 'workspace_id,user_address' });
@@ -368,7 +369,7 @@ async function updateMemberRole(workspaceId, memberAddress, newRole) {
   try {
     const client = await getSupabase();
     if (!client || !workspaceId || !memberAddress) return false;
-    if (!['admin', 'member'].includes(newRole)) return false;
+    if (!['admin', 'member', 'viewer'].includes(newRole)) return false;
     const { error } = await client
       .from('workspace_members')
       .update({ role: newRole })
@@ -418,10 +419,6 @@ async function leaveWorkspace(workspaceId, userAddress) {
   return removeWorkspaceMember(workspaceId, userAddress);
 }
 
-/**
- * Access check for main modules (Phase B).
- * Returns { ok, role, reason, workspace, permissions }
- */
 async function checkWorkspaceAccess(workspaceId, userAddress, moduleId) {
   const result = { ok: false, role: null, reason: '', workspace: null, permissions: null };
   try {
@@ -456,6 +453,11 @@ async function checkWorkspaceAccess(workspaceId, userAddress, moduleId) {
       result.ok = true;
       return result;
     }
+    if (me.role === 'viewer') {
+      result.ok = false;
+      result.reason = 'viewer_readonly';
+      return result;
+    }
     const rolePerms = perms[me.role] || {};
     if (rolePerms[moduleId]) {
       result.ok = true;
@@ -476,6 +478,145 @@ function getWorkspaceIdFromURL() {
     return q.get('workspace') || q.get('ws') || null;
   } catch {
     return null;
+  }
+}
+
+/* ===================== WORKSPACE INVITES ===================== */
+
+function randomInviteToken() {
+  const a = new Uint8Array(24);
+  crypto.getRandomValues(a);
+  return Array.from(a, b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function createWorkspaceInvite(workspaceId, createdBy, role = 'member', expiresInDays = 7) {
+  try {
+    const client = await getSupabase();
+    if (!client || !workspaceId || !createdBy) return null;
+    const token = randomInviteToken();
+    const expires_at = new Date(Date.now() + expiresInDays * 86400000).toISOString();
+    const safeRole = ['admin', 'member', 'viewer'].includes(role) ? role : 'member';
+    const { data, error } = await client.from('workspace_invites').insert([{
+      workspace_id: workspaceId,
+      token,
+      role: safeRole,
+      created_by: createdBy.toLowerCase(),
+      expires_at
+    }]).select().single();
+    if (error) {
+      console.error('createWorkspaceInvite', error);
+      return null;
+    }
+    return data;
+  } catch (e) {
+    console.error('createWorkspaceInvite', e);
+    return null;
+  }
+}
+
+async function fetchInviteByToken(token) {
+  try {
+    const client = await getSupabase();
+    if (!client || !token) return null;
+    const { data, error } = await client
+      .from('workspace_invites')
+      .select('*, workspaces(*)')
+      .eq('token', token)
+      .is('used_at', null)
+      .maybeSingle();
+    if (error) {
+      console.error('fetchInviteByToken', error);
+      return null;
+    }
+    if (!data) return null;
+    if (data.expires_at && new Date(data.expires_at) < new Date()) {
+      return { ...data, expired: true };
+    }
+    return data;
+  } catch (e) {
+    console.error('fetchInviteByToken', e);
+    return null;
+  }
+}
+
+async function acceptWorkspaceInvite(token, userAddress, displayName = '') {
+  try {
+    const client = await getSupabase();
+    if (!client || !token || !userAddress) return { ok: false, reason: 'missing' };
+    const inv = await fetchInviteByToken(token);
+    if (!inv) return { ok: false, reason: 'not_found' };
+    if (inv.expired) return { ok: false, reason: 'expired' };
+    if (inv.used_at) return { ok: false, reason: 'already_used' };
+
+    const addr = userAddress.toLowerCase();
+    const safeRole = inv.role === 'admin' ? 'admin' : inv.role === 'viewer' ? 'viewer' : 'member';
+    const { error: mErr } = await client.from('workspace_members').upsert([{
+      workspace_id: inv.workspace_id,
+      user_address: addr,
+      role: safeRole,
+      display_name: displayName || '',
+      invited_by: inv.created_by
+    }], { onConflict: 'workspace_id,user_address' });
+    if (mErr) {
+      console.error('accept member', mErr);
+      return { ok: false, reason: 'member_failed' };
+    }
+
+    await client.from('workspace_invites').update({
+      used_at: new Date().toISOString(),
+      used_by: addr
+    }).eq('id', inv.id);
+
+    return {
+      ok: true,
+      workspace_id: inv.workspace_id,
+      role: safeRole,
+      workspace: inv.workspaces
+    };
+  } catch (e) {
+    console.error('acceptWorkspaceInvite', e);
+    return { ok: false, reason: 'error' };
+  }
+}
+
+async function listWorkspaceInvites(workspaceId) {
+  try {
+    const client = await getSupabase();
+    if (!client || !workspaceId) return [];
+    const { data, error } = await client
+      .from('workspace_invites')
+      .select('*')
+      .eq('workspace_id', workspaceId)
+      .is('used_at', null)
+      .order('created_at', { ascending: false });
+    if (error) {
+      console.error('listWorkspaceInvites', error);
+      return [];
+    }
+    return data || [];
+  } catch (e) {
+    console.error('listWorkspaceInvites', e);
+    return [];
+  }
+}
+
+async function revokeWorkspaceInvite(inviteId) {
+  try {
+    const client = await getSupabase();
+    if (!client || !inviteId) return false;
+    const { error } = await client
+      .from('workspace_invites')
+      .delete()
+      .eq('id', inviteId)
+      .is('used_at', null);
+    if (error) {
+      console.error('revokeWorkspaceInvite', error);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error('revokeWorkspaceInvite', e);
+    return false;
   }
 }
 
@@ -501,4 +642,9 @@ if (typeof window !== 'undefined') {
   window.getWorkspaceIdFromURL = getWorkspaceIdFromURL;
   window.defaultPermissions = defaultPermissions;
   window.ARC_DEFAULT_MODULE_IDS = DEFAULT_MODULE_IDS;
+  window.createWorkspaceInvite = createWorkspaceInvite;
+  window.fetchInviteByToken = fetchInviteByToken;
+  window.acceptWorkspaceInvite = acceptWorkspaceInvite;
+  window.listWorkspaceInvites = listWorkspaceInvites;
+  window.revokeWorkspaceInvite = revokeWorkspaceInvite;
 }
