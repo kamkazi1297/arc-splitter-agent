@@ -12,7 +12,7 @@
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
     
     :root {
-      --bg-gradient: linear-gradient(135hr, #080816 0%, #12122c 50%, #0a0a18 100%);
+      --bg-gradient: linear-gradient(135deg, #080816 0%, #12122c 50%, #0a0a18 100%);
       --glass-bg: rgba(255, 255, 255, 0.03);
       --glass-border: rgba(255, 255, 255, 0.08);
       --glass-glow: rgba(99, 102, 241, 0.1);
@@ -444,7 +444,7 @@
           <div class="glass border border-white/10 light:border-black/10 p-4 rounded-2xl mb-6 space-y-2 text-xs">
             <div id="valWallet" class="flex items-center gap-2 text-gray-400"><i class="fas fa-circle-xmark text-rose-400"></i> Wallet Connected</div>
             <div id="valTotal" class="flex items-center gap-2 text-gray-400"><i class="fas fa-circle-xmark text-rose-400"></i> Total = 100%</div>
-            <div id="valRecipients" class="flex items-center gap-2 text-gray-400"><i class="fas fa-circle-xmark text-rose-400"></i> 12 Recipients</div>
+            <div id="valRecipients" class="flex items-center gap-2 text-gray-400"><i class="fas fa-circle-xmark text-rose-400"></i> 0 Recipients</div>
             <div id="valBalance" class="flex items-center gap-2 text-gray-400"><i class="fas fa-circle-xmark text-rose-400"></i> Balance Available</div>
           </div>
 
@@ -533,6 +533,44 @@
   </div>
 
 <script>
+const SUPABASE_URL = 'https://yelauzpxsfjzydffhnhb.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InllbGF1enB4c2ZqenlkZmZobmhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzNjEyOTMsImV4cCI6MjEwMDkzNzI5M30.qtLEnhS8Zs34U_inur4e5UIBuKB5AmS_Z0VrT7jFvqM';
+
+if (!window.supabase) {
+  const script = document.createElement('script');
+  script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2';
+  document.head.appendChild(script);
+}
+
+let supabaseClient = null;
+function getSupabase() {
+  if (!supabaseClient && window.supabase) {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  }
+  return supabaseClient;
+}
+
+async function saveHistoryToCloud(userAddress, record) {
+  const client = getSupabase();
+  if (!client || !userAddress) return;
+  const { error } = await client
+    .from('history')
+    .insert([{ user_address: userAddress.toLowerCase(), memo: record.memo, history_data: record }]);
+  if (error) console.error("Error saving to cloud:", error);
+}
+
+async function fetchHistoryFromCloud(userAddress) {
+  const client = getSupabase();
+  if (!client || !userAddress) return [];
+  const { data, error } = await client
+    .from('history')
+    .select('history_data')
+    .eq('user_address', userAddress.toLowerCase())
+    .order('id', { ascending: false });
+  if (error) return [];
+  return data.map(row => row.history_data);
+}
+
  let signer = null;
 let userAddress = null;
 let provider = null;
@@ -543,20 +581,57 @@ let splitMode = 'manual';
 let telegramLinked = false;
 let telegramUsername = "";
 
-  const CONTRACT_ADDRESS = "0x73Da94F0D960Ef8FD49Ed28a94f667aF3C062cB2";
+  // ArcRoleSplitterV30 Proxy
+  const CONTRACT_ADDRESS = "0xf2073671b726b96DC1c99D001BBF6e60EE1f187F";
   const ARC_CHAIN_ID = 5042002;
 
   const splitterAbi = [
     {
       "inputs": [
-        { "name": "token", "type": "address" },
-        { "name": "recipients", "type": "address[]" },
-        { "name": "percentages", "type": "uint256[]" },
-        { "name": "totalAmount", "type": "uint256" }
+        {
+          "components": [
+            { "name": "token", "type": "address" },
+            { "name": "totalChunkAmount", "type": "uint256" },
+            { "name": "wallets", "type": "address[]" },
+            { "name": "sharesBps", "type": "uint16[]" },
+            { "name": "tokenToNativeRatio", "type": "uint256" },
+            { "name": "batchId", "type": "uint256" },
+            { "name": "deadline", "type": "uint256" },
+            { "name": "nonce", "type": "uint256" },
+            { "name": "baseGas", "type": "uint256" },
+            { "name": "maxGasPriceLimit", "type": "uint64" }
+          ],
+          "name": "params",
+          "type": "tuple"
+        }
       ],
-      "name": "splitPayment",
+      "name": "splitByPercentage",
       "outputs": [],
-      "stateMutability": "nonpayable",
+      "stateMutability": "payable",
+      "type": "function"
+    },
+    {
+      "inputs": [
+        {
+          "components": [
+            { "name": "token", "type": "address" },
+            { "name": "totalChunkAmount", "type": "uint256" },
+            { "name": "wallets", "type": "address[]" },
+            { "name": "amounts", "type": "uint256[]" },
+            { "name": "tokenToNativeRatio", "type": "uint256" },
+            { "name": "batchId", "type": "uint256" },
+            { "name": "deadline", "type": "uint256" },
+            { "name": "nonce", "type": "uint256" },
+            { "name": "baseGas", "type": "uint256" },
+            { "name": "maxGasPriceLimit", "type": "uint64" }
+          ],
+          "name": "params",
+          "type": "tuple"
+        }
+      ],
+      "name": "splitByAmount",
+      "outputs": [],
+      "stateMutability": "payable",
       "type": "function"
     }
   ];
@@ -1194,13 +1269,31 @@ function updateTelegramButton() {
 
       await (await tokenContract.approve(CONTRACT_ADDRESS, totalWei)).wait();
 
+      // sharesBps: percent * 100 → uint16 (10000 = 100%)
+      let sharesBps = percentages.map(p => Math.round(p * 100));
+      let sumBps = sharesBps.reduce((a, b) => a + b, 0);
+      // adjust last element so total is exactly 10000
+      if (sumBps !== 10000 && sharesBps.length > 0) {
+        sharesBps[sharesBps.length - 1] += (10000 - sumBps);
+      }
+
+      const deadline = Math.floor(Date.now() / 1000) + 3600; // 1 hour
+      const params = {
+        token: tokenAddr,
+        totalChunkAmount: totalWei,
+        wallets: addresses,
+        sharesBps: sharesBps,
+        tokenToNativeRatio: ethers.parseUnits("1", 18), // 1:1 default
+        batchId: 0,
+        deadline: deadline,
+        nonce: 0,
+        baseGas: 0,
+        maxGasPriceLimit: 0
+      };
+
       const contract = new ethers.Contract(CONTRACT_ADDRESS, splitterAbi, signer);
       
-      let basisPoints = percentages.map(p => Math.round(p * 100));
-      let sum = basisPoints.reduce((a, b) => a + b, 0);
-      basisPoints[basisPoints.length - 1] += (10000 - sum);
-
-      const tx = await contract.splitPayment(tokenAddr, addresses, basisPoints, totalWei, { gasLimit: 800000 });
+      const tx = await contract.splitByPercentage(params, { gasLimit: 800000 });
       await tx.wait();
 
       if (!window.telegramChatId) {
@@ -1226,15 +1319,18 @@ function updateTelegramButton() {
       successDiv.innerHTML = `Transaction Successful!<br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline font-semibold">View on Explorer: ${tx.hash.substring(0,12)}...</a>`;
       successDiv.classList.remove('hidden');
 
-      transactions.unshift({
+      const historyRecord = {
         hash: tx.hash,
         intent: `${totalAmount} ${symbol} → ${addresses.length} recipients`,
         time: new Date().toLocaleDateString(undefined, {month: 'short', day: 'numeric'}) + ' ' + new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
         amount: totalAmount,
         symbol: symbol,
-        recipientsCount: addresses.length
-      });
+        recipientsCount: addresses.length,
+        memo: (document.getElementById('txMemo') && document.getElementById('txMemo').value) || ''
+      };
+      transactions.unshift(historyRecord);
       localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
+      saveHistoryToCloud(userAddress, historyRecord);
       renderHistory();
       await updateBalance();
       showToast("Transaction sent successfully!");
@@ -1348,7 +1444,7 @@ function autoFillFromURL() {
   }
 }
   
-window.addEventListener('load', () => {
+window.addEventListener('load', async () => {
   const savedAddress = localStorage.getItem('userAddress');
   if (savedAddress) {
     userAddress = savedAddress;
@@ -1365,6 +1461,37 @@ window.addEventListener('load', () => {
   addRecipient("", "");
   addRecipient("", "");
   setMode('manual');
+
+  if (userAddress) {
+    const waitForSupabase = () => new Promise(resolve => {
+      if (window.supabase) return resolve();
+      const check = setInterval(() => {
+        if (window.supabase) { clearInterval(check); resolve(); }
+      }, 50);
+      setTimeout(() => { clearInterval(check); resolve(); }, 3000);
+    });
+    await waitForSupabase();
+    const cloudHistory = await fetchHistoryFromCloud(userAddress);
+    if (cloudHistory && cloudHistory.length > 0) {
+      const seen = new Set();
+      const merged = [];
+      cloudHistory.forEach(item => {
+        if (item && item.hash && !seen.has(item.hash)) {
+          seen.add(item.hash);
+          merged.push(item);
+        }
+      });
+      transactions.forEach(item => {
+        if (item && item.hash && !seen.has(item.hash)) {
+          seen.add(item.hash);
+          merged.push(item);
+        }
+      });
+      transactions = merged;
+      localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
+    }
+  }
+
   renderHistory();
   setTimeout(updateAll, 200);
 
