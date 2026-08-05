@@ -35,7 +35,7 @@ async function getSupabase() {
 async function saveHistoryToCloud(userAddress, record) {
   try {
     const client = await getSupabase();
-    if (!client || !userAddress) return;
+    if (!client || !userAddress) return false;
     const { error } = await client
       .from('history')
       .insert([{
@@ -43,9 +43,14 @@ async function saveHistoryToCloud(userAddress, record) {
         memo: record.memo || record.type || '',
         history_data: record
       }]);
-    if (error) console.error('Error saving to cloud:', error);
+    if (error) {
+      console.error('Error saving to cloud:', error);
+      return false;
+    }
+    return true;
   } catch (e) {
     console.error('saveHistoryToCloud', e);
+    return false;
   }
 }
 
@@ -57,7 +62,8 @@ async function fetchHistoryFromCloud(userAddress) {
       .from('history')
       .select('history_data')
       .eq('user_address', userAddress.toLowerCase())
-      .order('id', { ascending: false });
+      .order('id', { ascending: false })
+      .limit(50); // محدود کردن به ۵۰ رکورد آخر برای بهینه‌سازی پرفورمنس
     if (error) {
       console.error('Error fetching history:', error);
       return [];
