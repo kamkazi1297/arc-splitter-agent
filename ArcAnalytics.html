@@ -1335,24 +1335,49 @@ async function refreshDashboard() {
   await fetchBalances();
   await fetchClaimables();
 
-  // Optional: enrich link counts from payment_links table if available
-  if (userAddress && typeof fetchPaymentRecords === "function") {
-    try {
-      const rows = await fetchPaymentRecords(userAddress, { limit: 100 });
-      if (rows && rows.length) {
-        let a = 0, p = 0, e = 0;
-        rows.forEach(r => {
-          const st = (r.status || "").toLowerCase();
-          if (/paid|claimed/i.test(st)) p++;
-          else if (/expir|cancel/i.test(st)) e++;
-          else a++;
-        });
-        // Prefer dedicated table counts when present
-        state.linksActive = a;
-        state.linksPaid = p;
-        state.linksExpired = e;
-      }
-    } catch {}
+  // Enrich link counts from payment_links table, with localStorage fallback (ArcPayLink)
+  {
+    let a = 0, p = 0, e = 0;
+    let found = false;
+
+    if (userAddress && typeof fetchPaymentRecords === "function") {
+      try {
+        const rows = await fetchPaymentRecords(userAddress, { limit: 100 });
+        if (rows && rows.length) {
+          found = true;
+          rows.forEach(r => {
+            const st = (r.status || "").toLowerCase();
+            if (/paid|claimed/i.test(st)) p++;
+            else if (/expir|cancel/i.test(st)) e++;
+            else a++;
+          });
+        }
+      } catch {}
+    }
+
+    // Fallback to localStorage used by ArcPayLink when cloud table is empty
+    if (!found) {
+      try {
+        const localLinks = JSON.parse(localStorage.getItem('arcPaymentLinksV2') || '[]');
+        const localInvs = JSON.parse(localStorage.getItem('arcInvoicesV1') || '[]');
+        const all = [...(Array.isArray(localLinks) ? localLinks : []), ...(Array.isArray(localInvs) ? localInvs : [])];
+        if (all.length) {
+          found = true;
+          all.forEach(r => {
+            const st = (r.status || "").toLowerCase();
+            if (/paid|claimed|complete/i.test(st)) p++;
+            else if (/expir|cancel|overdue/i.test(st)) e++;
+            else a++;
+          });
+        }
+      } catch {}
+    }
+
+    if (found) {
+      state.linksActive = a;
+      state.linksPaid = p;
+      state.linksExpired = e;
+    }
   }
 
   buildAutomationsAndUpcoming();
