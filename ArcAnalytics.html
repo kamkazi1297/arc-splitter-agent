@@ -204,9 +204,14 @@ const ARC_RPCS = [
 let readProvider = null; // dedicated JsonRpcProvider for reads
 
 
+/* Decimals match your frontend (BatchSplit / ArcPayLink / split):
+   Native USDC (0x3600… / address(0)) → 18 (Arc internal)
+   EURC → 6
+   cirBTC → 8
+*/
 const TOKEN_MAP = {
-  [NATIVE_USDC.toLowerCase()]: { symbol: "USDC", decimals: 6 },
-  [ZERO]: { symbol: "USDC", decimals: 6 },
+  [NATIVE_USDC.toLowerCase()]: { symbol: "USDC", decimals: 18 },
+  [ZERO]: { symbol: "USDC", decimals: 18 },
   "0x89b50855aa3be2f677cd6303cec089b5f319d72a": { symbol: "EURC", decimals: 6 },
   "0xf0c4a4ce82a5746abaad9425360ab04fbba432bf": { symbol: "cirBTC", decimals: 8 }
 };
@@ -530,13 +535,13 @@ async function fetchOnChainAll() {
             return { dayVol: amount };
           },
           LinkClaimed: (args, log, ts) => {
-            const amount = formatUnitsSafe(args.amount, 6);
+            const amount = formatUnitsSafe(args.amount, 18);
             data.modules.pay.links.claimed++;
             pushActivity({ type: "Payment Link Claimed", amount, token: "USDC", memo: `→ ${String(args.destination).slice(0, 8)}…`, hash: log.transactionHash, timestamp: ts * 1000, module: "pay", recipient: args.destination });
             return null;
           },
           LinkCancelled: (args, log, ts) => {
-            const amount = formatUnitsSafe(args.amount, 6);
+            const amount = formatUnitsSafe(args.amount, 18);
             data.modules.pay.links.cancelled++;
             pushActivity({ type: "Payment Link Cancelled", amount, token: "USDC", memo: "Refund", hash: log.transactionHash, timestamp: ts * 1000, module: "pay", recipient: args.creator });
             return null;
@@ -560,7 +565,7 @@ async function fetchOnChainAll() {
             return { dayVol: amount };
           },
           InvoicePaid: (args, log, ts) => {
-            const amount = formatUnitsSafe(args.amountPaid, 6);
+            const amount = formatUnitsSafe(args.amountPaid, 18);
             data.modules.pay.invoices.paid++;
             pushActivity({ type: "Invoice Paid", amount, token: "USDC", memo: `Invoice #${args.invoiceId}`, hash: log.transactionHash, timestamp: ts * 1000, module: "pay", recipient: args.payer });
             return null;
