@@ -534,7 +534,7 @@ function emptyState() {
     linksActive: 0, linksPaid: 0, linksExpired: 0,
     activeRules: 0, automations: [], upcoming: [],
     notifications: [], balances: { USDC: 0, EURC: 0, cirBTC: 0 },
-    insights: []
+    insights: [], _pendingBatchCount: 0
   };
 }
 let state = emptyState();
@@ -622,13 +622,49 @@ function parseAmount(v) {
 }
 
 function detectModule(item) {
-  const t = (item.type || item.intent || item.memo || item.appName || item.title || "").toLowerCase();
-  if (/vest|cliff|unlock/i.test(t)) return "vesting";
-  if (/condition|agentic|rule|smart/i.test(t)) return "conditional";
-  if (/batch|multi.?token/i.test(t)) return "batch";
-  if (/pay.?link|invoice|link/i.test(t)) return "pay";
-  if (/role|split|giveaway|equal/i.test(t)) return "role";
+  const app = (item.appName || "").toLowerCase();
+  const t = (item.type || item.intent || item.memo || item.title || item.status || "").toLowerCase();
+  const blob = app + " " + t;
+  if (/vest|cliff|unlock|arcsplitvesting/i.test(blob)) return "vesting";
+  if (/condition|agentic|rule|smart.?condition|registerrule|deposit|withdraw/i.test(blob)) return "conditional";
+  if (/batch|multi.?token|adhoc/i.test(blob)) return "batch";
+  if (/pay.?link|invoice|arcpay|link.?created|link.?claimed/i.test(blob)) return "pay";
+  if (/role|giveaway|equal.?split|splitby|token.?splitter/i.test(blob)) return "role";
   return "other";
+}
+
+function extractTimestamp(item) {
+  let ts = item.timestamp || item.time || item.createdAt || item.date || item.ts;
+  if (typeof ts === "string") {
+    const d = new Date(ts);
+    if (!isNaN(d.getTime())) return d.getTime();
+  }
+  if (typeof ts === "number") return ts < 1e12 ? ts * 1000 : ts;
+  return Date.now();
+}
+
+function extractAmount(item) {
+  return parseAmount(
+    item.amount ?? item.totalAmount ?? item.allocated ?? item.rawAmount ??
+    item.netAmountPushed ?? item.totalDistributed ?? 0
+  );
+}
+
+function extractHash(item) {
+  if (item.hash) return item.hash;
+  if (item.txHash) return item.txHash;
+  if (Array.isArray(item.txHashes) && item.txHashes.length) return item.txHashes[0];
+  return "";
+}
+
+function extractToken(item) {
+  return resolveToken(item.token || item.tokenSymbol || item.symbol || item.tokenAddress || "USDC");
+}
+
+function extractTypeLabel(item) {
+  return String(
+    item.type || item.intent || item.memo || item.title || item.appName || "Transaction"
+  ).slice(0, 80);
 }
 
 async function processCloudHistory(hist) {
@@ -641,20 +677,20 @@ async function processCloudHistory(hist) {
   const daily = {};
   const seen = new Set(state.activity.map(a => a.hash).filter(Boolean));
 
-  hist.forEach(item => {
-    if (!item) return;
-    let tsMs = item.timestamp || item.time || item.createdAt || item.date;
-    if (typeof tsMs === "string") tsMs = new Date(tsMs).getTime();
-    if (typeof tsMs === "number" && tsMs < 1e12) tsMs *= 1000;
-    if (!tsMs || isNaN(tsMs)) tsMs = now;
+  hist.forEach(raw => {
+    // history_data may be nested or the row itself
+    const item = raw?.history_data || raw;
+    if (!item || typeof item !== "object") return;
 
-    const hash = item.hash || item.txHash || "";
+    const tsMs = extractTimestamp(item);
+    const hash = extractHash(item);
     if (hash && seen.has(hash)) return;
     if (hash) seen.add(hash);
 
-    const amount = parseAmount(item.amount || item.totalAmount || item.allocated || 0);
-    const tokenSym = resolveToken(item.token || item.tokenSymbol || item.symbol || "USDC");
+    const amount = extractAmount(item);
+    const tokenSym = extractToken(item);
     const mod = detectModule(item);
+    const status = (item.status || "Success").toString();
 
     if (tsMs >= rangeStart) {
       state.volume += amount;
@@ -666,7 +702,7 @@ async function processCloudHistory(hist) {
       daily[day] = (daily[day] || 0) + amount;
 
       if (mod === "pay") {
-        const st = (item.status || "").toLowerCase();
+        const st = status.toLowerCase();
         if (/paid|claimed|complete/i.test(st)) state.linksPaid++;
         else if (/expir|cancel/i.test(st)) state.linksExpired++;
         else state.linksActive++;
@@ -676,23 +712,30 @@ async function processCloudHistory(hist) {
       state.prevVolume += amount;
     }
 
-    // recipients
+    // Recipients (real only)
     const recips = [];
-    if (item.recipient) recips.push(item.recipient);
-    if (item.winners) recips.push(...(Array.isArray(item.winners) ? item.winners : []));
-    if (item.recipients) {
-      (Array.isArray(item.recipients) ? item.recipients : []).forEach(r => {
+    if (item.recipient && typeof item.recipient === "string") recips.push(item.recipient);
+    if (Array.isArray(item.winners)) recips.push(...item.winners.filter(Boolean));
+    if (Array.isArray(item.recipients)) {
+      item.recipients.forEach(r => {
         if (typeof r === "string") recips.push(r);
-        else if (r?.wallet || r?.address) recips.push(r.wallet || r.address);
+        else if (r?.wallet) recips.push(r.wallet);
+        else if (r?.address) recips.push(r.address);
       });
     }
     if (item.role || item.roleName) recips.push(item.role || item.roleName);
+    if (Array.isArray(item.allocations)) {
+      item.allocations.forEach(a => {
+        if (a?.roleName) recips.push(a.roleName);
+      });
+    }
     recips.forEach(r => {
       const key = String(r);
+      if (!key) return;
       if (!state.recipients[key]) {
         state.recipients[key] = {
           amount: 0, count: 0,
-          label: key.startsWith("0x") ? shortAddr(key) : key.slice(0, 20)
+          label: key.startsWith("0x") ? shortAddr(key) : key.slice(0, 24)
         };
       }
       state.recipients[key].amount += amount / Math.max(1, recips.length);
@@ -700,16 +743,52 @@ async function processCloudHistory(hist) {
     });
 
     state.activity.push({
-      type: String(item.type || item.intent || item.memo || item.title || "Transaction").slice(0, 80),
-      amount, token: tokenSym,
-      memo: item.memo || item.intent || "",
-      hash, timestamp: tsMs, module: mod,
-      status: item.status || "Success",
+      type: extractTypeLabel(item),
+      amount,
+      token: tokenSym,
+      memo: item.memo || item.intent || item.title || "",
+      hash,
+      timestamp: tsMs,
+      module: mod,
+      status,
       recipient: item.recipient || null,
       source: "cloud"
     });
     added++;
   });
+
+  // Also load real pending batches from localStorage (BatchSplit / RoleSplitter)
+  try {
+    const pendingKeys = ["arcPendingBatchesMain", "arcPendingBatches"];
+    pendingKeys.forEach(key => {
+      const raw = localStorage.getItem(key);
+      if (!raw) return;
+      const list = JSON.parse(raw);
+      if (!Array.isArray(list)) return;
+      list.forEach(b => {
+        if (!b) return;
+        const amount = parseAmount(b.rawAmount || b.amount || 0);
+        const tokenSym = resolveToken(b.tokenSymbol || b.token || "USDC");
+        state.activity.push({
+          type: "Pending Batch",
+          amount,
+          token: tokenSym,
+          memo: b.memo || `Pending ${b.currentIndex || 0}/${(b.chunks || []).length} chunks`,
+          hash: (b.txHashes && b.txHashes[0]) || "",
+          timestamp: b.id || Date.now(),
+          module: "batch",
+          status: "Pending",
+          recipient: null,
+          source: "local"
+        });
+        state.notifications = state.notifications || [];
+      });
+      if (list.length > 0) {
+        // will be added in buildAutomations after
+        state._pendingBatchCount = (state._pendingBatchCount || 0) + list.length;
+      }
+    });
+  } catch {}
 
   state.timeline = Object.entries(daily)
     .map(([date, volume]) => ({ date, volume }))
@@ -912,62 +991,50 @@ async function fetchBalances() {
 }
 
 function buildAutomationsAndUpcoming() {
-  // Only real data derived from actual activity / on-chain events
+  // Only real data from cloud + on-chain + local pending batches
   const autos = [];
   const upcoming = [];
   const notifs = [];
 
-  const condCount = state.activity.filter(a => a.module === "conditional").length;
+  const condCount = state.activity.filter(a => a.module === "conditional" && a.status !== "Pending").length;
   const vestCount = state.activity.filter(a => a.module === "vesting").length;
-  const batchCount = state.activity.filter(a => a.module === "batch" || a.module === "role").length;
-  const payCount = state.activity.filter(a => a.module === "pay").length;
+  const batchCount = state.activity.filter(a => (a.module === "batch" || a.module === "role") && a.status !== "Pending").length;
+  const pendingCount = state._pendingBatchCount || state.activity.filter(a => a.status === "Pending").length;
+  const onchainCount = state.activity.filter(a => a.source === "onchain").length;
 
-  // Real automation summary from actual rules / vesting records
   if (condCount > 0) {
-    autos.push({
-      name: "Conditional Rules",
-      status: "running",
-      next: `${condCount} execution(s) in range`
-    });
+    autos.push({ name: "Conditional Rules", status: "running", next: `${condCount} event(s) in range` });
   }
   if (vestCount > 0) {
-    autos.push({
-      name: "Vesting Schedules",
-      status: "running",
-      next: `${vestCount} event(s) in range`
-    });
+    autos.push({ name: "Vesting Schedules", status: "running", next: `${vestCount} event(s) in range` });
   }
   if (batchCount > 0) {
-    autos.push({
-      name: "Batch / Role Splits",
-      status: "running",
-      next: `${batchCount} split(s) in range`
-    });
+    autos.push({ name: "Batch / Role Splits", status: "running", next: `${batchCount} split(s) in range` });
+  }
+  if (pendingCount > 0) {
+    autos.push({ name: "Pending Batches", status: "attention", next: `${pendingCount} incomplete batch(es)` });
   }
   if (!autos.length) {
     autos.push({ name: "No automations detected", status: "idle", next: "—" });
   }
 
-  // Upcoming = only show if we have real pending signals (no invented dates)
+  if (pendingCount > 0) {
+    upcoming.push({ when: "Action needed", title: `${pendingCount} pending batch(es) to resume`, icon: "fa-hourglass-half" });
+  }
   if (state.linksActive > 0) {
-    upcoming.push({
-      when: "Active",
-      title: `${state.linksActive} Payment Link(s) open`,
-      icon: "fa-link"
-    });
+    upcoming.push({ when: "Active", title: `${state.linksActive} Payment Link(s) open`, icon: "fa-link" });
   }
   if (state.activeRules > 0) {
-    upcoming.push({
-      when: "On-chain",
-      title: `${state.activeRules} rule / schedule event(s)`,
-      icon: "fa-robot"
-    });
+    upcoming.push({ when: "On-chain", title: `${state.activeRules} rule / schedule event(s)`, icon: "fa-robot" });
   }
   if (!upcoming.length) {
     upcoming.push({ when: "—", title: "Nothing pending", icon: "fa-calendar" });
   }
 
   // Real notifications only
+  if (pendingCount > 0) {
+    notifs.push({ text: `${pendingCount} incomplete batch(es) waiting to be resumed` });
+  }
   if (state.linksActive > 0) {
     notifs.push({ text: `${state.linksActive} payment link(s) currently active` });
   }
@@ -983,7 +1050,6 @@ function buildAutomationsAndUpcoming() {
   if (vestCount > 0) {
     notifs.push({ text: `${vestCount} vesting event(s) in selected range` });
   }
-  const onchainCount = state.activity.filter(a => a.source === "onchain").length;
   if (onchainCount > 0) {
     notifs.push({ text: `${onchainCount} transaction(s) verified on-chain` });
   }
@@ -1028,11 +1094,13 @@ function buildInsights() {
   }
   state.insights = list;
 
-  // Health badge: only real signals
-  // Attention = expired links > 0 OR zero activity when wallet is connected
-  const hasAttention = state.linksExpired > 0;
+  // Health badge — only real signals
+  const pendingCount = state._pendingBatchCount || state.activity.filter(a => a.status === "Pending").length;
   const badge = document.getElementById("healthBadge");
-  if (hasAttention) {
+  if (pendingCount > 0) {
+    badge.className = "flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold";
+    badge.innerHTML = `<span class="dot bg-amber-400"></span> ${pendingCount} Pending Batch(es)`;
+  } else if (state.linksExpired > 0) {
     badge.className = "flex items-center gap-2 px-3.5 py-2.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold";
     badge.innerHTML = `<span class="dot bg-amber-400"></span> ${state.linksExpired} Expired Link(s)`;
   } else if (userAddress && state.tx === 0 && state.activity.length === 0) {
