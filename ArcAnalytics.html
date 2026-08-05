@@ -100,6 +100,9 @@
           <option value="7">Last 7 days</option>
           <option value="14">Last 14 days</option>
         </select>
+        <label class="flex items-center gap-1.5 text-[10px] text-gray-400 font-semibold cursor-pointer select-none px-2">
+          <input type="checkbox" id="enableOnChain" checked class="rounded accent-cyan-500"> On-chain verify
+        </label>
         <button onclick="refreshDashboard()" id="rescanBtn" class="app-button px-3.5 py-2 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-400 border border-cyan-500/30 rounded-xl text-xs font-bold"><i class="fas fa-sync-alt mr-1"></i> Rescan</button>
       </div>
     </div>
@@ -172,8 +175,8 @@
     </div>
 
     <div class="text-center text-[11px] text-gray-500 pb-6">
-      ArcSplit Analytics · Official Arc RPC (not MetaMask) · Chunk 5 000 · Sequential<br>
-      <span class="text-cyan-400/70">RPC: rpc.testnet.arc.network · Rate-limit safe</span>
+      ArcSplit Analytics · Cloud-first + optional on-chain verify<br>
+      <span class="text-cyan-400/70">USDC 0x3600→6 · address(0)→18 · EURC→6 · cirBTC→8</span>
     </div>
   </div>
 
@@ -204,13 +207,14 @@ const ARC_RPCS = [
 let readProvider = null; // dedicated JsonRpcProvider for reads
 
 
-/* Decimals match your frontend (BatchSplit / ArcPayLink / split):
-   Native USDC (0x3600… / address(0)) → 18 (Arc internal)
-   EURC → 6
-   cirBTC → 8
+/* Decimals per user preference:
+   USDC 0x3600… → 6
+   address(0)   → 18
+   EURC         → 6
+   cirBTC       → 8
 */
 const TOKEN_MAP = {
-  [NATIVE_USDC.toLowerCase()]: { symbol: "USDC", decimals: 18 },
+  [NATIVE_USDC.toLowerCase()]: { symbol: "USDC", decimals: 6 },
   [ZERO]: { symbol: "USDC", decimals: 18 },
   "0x89b50855aa3be2f677cd6303cec089b5f319d72a": { symbol: "EURC", decimals: 6 },
   "0xf0c4a4ce82a5746abaad9425360ab04fbba432bf": { symbol: "cirBTC", decimals: 8 }
@@ -495,10 +499,11 @@ async function scanContract(name, address, abi, eventHandlers, fromBlock, toBloc
 }
 
 async function fetchOnChainAll() {
-  if (!provider || scanning) return false;
+  if (scanning) return false;
   scanning = true;
   document.getElementById("scanStatus").classList.remove("hidden");
   document.getElementById("rescanBtn").disabled = true;
+  // Note: caller may merge — we still reset local scan state here
   data = emptyData();
   blockTsCache = {};
 
@@ -535,13 +540,13 @@ async function fetchOnChainAll() {
             return { dayVol: amount };
           },
           LinkClaimed: (args, log, ts) => {
-            const amount = formatUnitsSafe(args.amount, 18);
+            const amount = formatUnitsSafe(args.amount, 6);
             data.modules.pay.links.claimed++;
             pushActivity({ type: "Payment Link Claimed", amount, token: "USDC", memo: `→ ${String(args.destination).slice(0, 8)}…`, hash: log.transactionHash, timestamp: ts * 1000, module: "pay", recipient: args.destination });
             return null;
           },
           LinkCancelled: (args, log, ts) => {
-            const amount = formatUnitsSafe(args.amount, 18);
+            const amount = formatUnitsSafe(args.amount, 6);
             data.modules.pay.links.cancelled++;
             pushActivity({ type: "Payment Link Cancelled", amount, token: "USDC", memo: "Refund", hash: log.transactionHash, timestamp: ts * 1000, module: "pay", recipient: args.creator });
             return null;
@@ -565,7 +570,7 @@ async function fetchOnChainAll() {
             return { dayVol: amount };
           },
           InvoicePaid: (args, log, ts) => {
-            const amount = formatUnitsSafe(args.amountPaid, 18);
+            const amount = formatUnitsSafe(args.amountPaid, 6);
             data.modules.pay.invoices.paid++;
             pushActivity({ type: "Invoice Paid", amount, token: "USDC", memo: `Invoice #${args.invoiceId}`, hash: log.transactionHash, timestamp: ts * 1000, module: "pay", recipient: args.payer });
             return null;
@@ -777,33 +782,209 @@ function loadDemo() {
 }
 
 /* ===================== REFRESH ===================== */
+async function processCloudHistory(hist) {
+  if (!hist || !hist.length) return 0;
+  let added = 0;
+  const daily = {};
+  hist.forEach(item => {
+    if (!item || typeof item !== "object") return;
+    const amount = parseFloat(item.amount || item.totalAmount || item.netAmount || 0) || 0;
+    const tokRaw = (item.tokenSymbol || item.token || item.symbol || "USDC").toString();
+    const tok = tokRaw.toUpperCase();
+    let tokenSym = "Other";
+    if (tok.includes("USDC") || tok === "0X3600" || tok.startsWith("0X3600")) tokenSym = "USDC";
+    else if (tok.includes("EURC")) tokenSym = "EURC";
+    else if (tok.includes("BTC") || tok.includes("CIRBTC")) tokenSym = "cirBTC";
+    else if (tok.length > 2) tokenSym = tok.slice(0, 8);
+
+    const type = (item.type || item.memo || item.action || "").toString().toLowerCase();
+    let mod = "other";
+    if (type.includes("link") || type.includes("invoice") || type.includes("pay") || type.includes("claim")) mod = "pay";
+    else if (type.includes("vest") || type.includes("cliff") || type.includes("schedule")) mod = "vesting";
+    else if (type.includes("agentic") || type.includes("condition") || type.includes("rule") || type.includes("evaluator")) mod = "conditional";
+    else if (type.includes("role") || type.includes("batch") || type.includes("giveaway") || type.includes("split") || type.includes("payroll")) mod = "role";
+
+    // module stats
+    if (mod === "pay") {
+      if (type.includes("invoice")) {
+        data.modules.pay.invoices.created++;
+        data.modules.pay.invoices.vol += amount;
+        if (type.includes("paid") || type.includes("pay")) data.modules.pay.invoices.paid++;
+        if (type.includes("cancel")) data.modules.pay.invoices.cancelled++;
+        data.invoices++;
+      } else {
+        data.modules.pay.links.created++;
+        data.modules.pay.links.vol += amount;
+        if (type.includes("claim")) data.modules.pay.links.claimed++;
+        if (type.includes("cancel")) data.modules.pay.links.cancelled++;
+        data.links++;
+      }
+    } else if (mod === "vesting") {
+      data.modules.vesting.vol += amount;
+      data.modules.vesting.schedules++;
+      if (type.includes("push") || type.includes("release")) data.modules.vesting.pushes++;
+    } else if (mod === "conditional") {
+      data.modules.conditional.vol += amount;
+      if (type.includes("rule") || type.includes("register")) data.modules.conditional.rules++;
+      else data.modules.conditional.exec++;
+    } else if (mod === "role") {
+      data.modules.role.vol += amount;
+      data.modules.role.batches++;
+      data.batches++;
+      if (type.includes("giveaway")) data.modules.role.giveaways++;
+    }
+
+    data.volume += amount;
+    if (tokenSym === "USDC") data.tokens.USDC += amount;
+    else if (tokenSym === "EURC") data.tokens.EURC += amount;
+    else if (tokenSym === "cirBTC") data.tokens.cirBTC += amount;
+    else data.tokens.Other += amount;
+
+    const ts = item.timestamp || item.createdAt || item.time || Date.now();
+    const tsMs = typeof ts === "number" ? (ts < 1e12 ? ts * 1000 : ts) : Date.now();
+    const day = new Date(tsMs).toISOString().slice(0, 10);
+    daily[day] = (daily[day] || 0) + amount;
+
+    pushActivity({
+      type: item.type || item.memo || "History",
+      amount,
+      token: tokenSym,
+      memo: item.memo || item.note || "",
+      hash: item.hash || item.txHash || "",
+      timestamp: tsMs,
+      module: mod,
+      recipient: item.recipient || item.to || item.user || null
+    });
+    added++;
+  });
+  data.timeline = Object.entries(daily).map(([date, volume]) => ({ date, volume })).sort((a, b) => a.date.localeCompare(b.date));
+  return added;
+}
+
 async function refreshDashboard() {
   if (scanning) return showToast("Scan already running…");
-  if (!provider) {
-    if (window.ethereum) {
-      try {
-        provider = new ethers.BrowserProvider(window.ethereum);
-        const accs = await provider.send("eth_accounts", []);
-        if (accs?.length) {
-          signer = await provider.getSigner();
-          userAddress = await signer.getAddress();
-        }
-      } catch {}
-    }
+  scanning = true;
+  document.getElementById("rescanBtn").disabled = true;
+  document.getElementById("scanStatus").classList.remove("hidden");
+  setProgress(5, "Loading cloud history…");
+
+  // Ensure wallet if available
+  if (!provider && window.ethereum) {
+    try {
+      provider = new ethers.BrowserProvider(window.ethereum);
+      const accs = await provider.send("eth_accounts", []);
+      if (accs?.length) {
+        signer = await provider.getSigner();
+        userAddress = await signer.getAddress();
+      }
+    } catch {}
   }
-  if (provider) {
-    const ok = await fetchOnChainAll();
-    if (ok) {
-      await mergeCloud();
-      updateUI();
-      showToast(`Scan complete · ${data.tx} events`);
-      return;
-    }
-  }
+
   data = emptyData();
-  loadDemo();
+  let cloudCount = 0;
+
+  // ===== 1) PRIMARY: Cloud database =====
+  if (userAddress && typeof fetchHistoryFromCloud === "function") {
+    try {
+      const hist = await fetchHistoryFromCloud(userAddress);
+      cloudCount = await processCloudHistory(hist);
+      if (cloudCount > 0) {
+        dataSource = "cloud";
+        setProgress(40, `Cloud: ${cloudCount} records`);
+      }
+    } catch (e) {
+      console.warn("cloud load", e);
+    }
+  }
+
+  // ===== 2) OPTIONAL: On-chain verify / fill gaps =====
+  const doOnChain = document.getElementById("enableOnChain") ? document.getElementById("enableOnChain").checked : true;
+  if (doOnChain && (provider || true)) {
+    try {
+      setProgress(45, "Verifying on-chain…");
+      // Don't reset data — merge on top of cloud
+      const beforeTx = data.tx;
+      const beforeVol = data.volume;
+      // temporary: run on-chain into a side structure then merge unique hashes
+      const saved = {
+        volume: data.volume, tx: data.tx, activity: [...data.activity],
+        tokens: { ...data.tokens }, modules: JSON.parse(JSON.stringify(data.modules)),
+        links: data.links, invoices: data.invoices, batches: data.batches,
+        recipients: new Set(data.recipients), timeline: [...data.timeline],
+        active: data.active
+      };
+
+      // fetch on-chain (will reset data inside — we restore & merge after)
+      scanning = false; // allow fetchOnChainAll
+      const ok = await fetchOnChainAll();
+      if (ok) {
+        const chainActivity = data.activity;
+        const chainSeen = new Set(saved.activity.map(a => a.hash).filter(Boolean));
+        // restore cloud base
+        data.volume = saved.volume;
+        data.tx = saved.tx;
+        data.activity = saved.activity;
+        data.tokens = saved.tokens;
+        data.modules = saved.modules;
+        data.links = saved.links;
+        data.invoices = saved.invoices;
+        data.batches = saved.batches;
+        data.recipients = saved.recipients;
+        data.timeline = saved.timeline;
+        data.active = saved.active || data.active;
+
+        // merge only NEW on-chain events (by hash)
+        let merged = 0;
+        chainActivity.forEach(ev => {
+          if (ev.hash && chainSeen.has(ev.hash)) return;
+          if (ev.hash) chainSeen.add(ev.hash);
+          data.activity.push(ev);
+          data.tx++;
+          data.volume += ev.amount || 0;
+          if (ev.token === "USDC") data.tokens.USDC += ev.amount || 0;
+          else if (ev.token === "EURC") data.tokens.EURC += ev.amount || 0;
+          else if (ev.token === "cirBTC") data.tokens.cirBTC += ev.amount || 0;
+          else data.tokens.Other += ev.amount || 0;
+          if (ev.recipient) data.recipients.add(String(ev.recipient).toLowerCase());
+          merged++;
+        });
+        // keep on-chain live counters if higher
+        if (data.modules.conditional.active < (saved.modules?.conditional?.active || 0)) {
+          /* keep */
+        }
+        dataSource = cloudCount > 0 ? (merged > 0 ? "cloud + on-chain" : "cloud") : "on-chain";
+        setProgress(95, `Merged ${merged} on-chain events`);
+      } else {
+        // restore if scan failed
+        data.volume = saved.volume;
+        data.tx = saved.tx;
+        data.activity = saved.activity;
+        data.tokens = saved.tokens;
+        data.modules = saved.modules;
+        data.links = saved.links;
+        data.invoices = saved.invoices;
+        data.batches = saved.batches;
+        data.recipients = saved.recipients;
+        data.timeline = saved.timeline;
+        dataSource = cloudCount > 0 ? "cloud" : "demo";
+      }
+    } catch (e) {
+      console.warn("on-chain verify", e);
+      dataSource = cloudCount > 0 ? "cloud" : dataSource;
+    }
+  }
+
+  if (data.tx === 0) {
+    loadDemo();
+    dataSource = "demo";
+  }
+
+  scanning = false;
+  document.getElementById("rescanBtn").disabled = false;
+  document.getElementById("scanStatus").classList.add("hidden");
+  document.getElementById("scanProgressBox").classList.add("hidden");
   updateUI();
-  showToast("Using demo data — connect + Rescan for live chain", 5000);
+  showToast(`${dataSource} · ${data.tx} events · vol ${fmt(data.volume)}`, 4500);
 }
 
 /* ===================== RENDER ===================== */
