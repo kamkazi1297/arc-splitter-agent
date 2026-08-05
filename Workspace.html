@@ -35,7 +35,7 @@
       border: 1px solid rgba(0,0,0,0.08) !important;
       box-shadow: 0 10px 40px rgba(0,0,0,0.04), inset 0 1px 0 #fff !important;
     }
-    .light body, .light h1, .light h2, .light h3, .light label, .light .text-white { color: #0f172a !important; }
+    .light h1, .light h2, .light h3, .light label, .light .text-white { color: #0f172a !important; }
     .light .text-gray-400 { color: #334155 !important; }
     .light .text-gray-300 { color: #1e293b !important; }
     .light .text-gray-500 { color: #475569 !important; }
@@ -43,11 +43,6 @@
     .light .text-emerald-400 { color: #047857 !important; }
     .light .text-rose-400 { color: #be123c !important; }
     .light .text-amber-400 { color: #b45309 !important; }
-    .light .text-sky-400 { color: #0369a1 !important; }
-    .light .text-cyan-400 { color: #0e7490 !important; }
-    .light .text-violet-400 { color: #6d28d9 !important; }
-    .light .text-lime-400 { color: #3f6212 !important; }
-    .light .text-orange-400 { color: #c2410c !important; }
     .light .bg-white\/5 { background-color: rgba(0,0,0,0.04) !important; }
     .light .border-white\/5, .light .border-white\/10 { border-color: rgba(0,0,0,0.08) !important; }
     select, input, textarea {
@@ -60,12 +55,11 @@
     .light select, .light input, .light textarea {
       background: #fff !important; color: #0f172a !important; border: 1px solid rgba(0,0,0,0.12) !important;
     }
-    select option { background-color: #0f172a; color: #f8fafc; padding: 10px 14px; }
+    select option { background-color: #0f172a; color: #f8fafc; }
     .light select option { background-color: #ffffff !important; color: #0f172a !important; }
     .light #toast, .light #toast span, .light #toast i { color: #fff !important; }
     .nav-item.active { background: rgba(99,102,241,0.15); color: #a5b4fc; border-color: rgba(99,102,241,0.35); }
     .light .nav-item.active { background: rgba(99,102,241,0.12); color: #4338ca; }
-    .app-button { transition: all 0.2s; }
     .app-button:active { transform: scale(0.98); }
     .role-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px; text-transform: uppercase; }
     .perm-check { width: 18px; height: 18px; accent-color: #6366f1; }
@@ -85,14 +79,14 @@
         </div>
         <div>
           <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-emerald-400">Workspace</span></h1>
-          <p class="text-sm text-gray-400 mt-0.5 font-medium">Team · permissions · treasury · open main modules</p>
+          <p class="text-sm text-gray-400 mt-0.5 font-medium">Team · roles · permissions · modules · team activity</p>
         </div>
       </div>
       <div class="flex flex-wrap items-center gap-2.5">
         <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition">
           <i class="fas fa-moon text-lg text-indigo-400"></i>
         </button>
-        <button onclick="connectWallet()" id="connectBtn" class="app-button px-5 py-2.5 rounded-2xl bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold text-sm flex items-center gap-2 shadow-lg">
+        <button onclick="connectWallet()" id="connectBtn" class="app-button px-5 py-2.5 rounded-2xl bg-white text-gray-950 font-bold text-sm flex items-center gap-2 shadow-lg">
           <i class="fas fa-wallet text-indigo-600"></i>
           <span id="connectText">Connect Wallet</span>
         </button>
@@ -104,8 +98,8 @@
 
     <div id="noWallet" class="glass rounded-3xl p-14 text-center">
       <div class="text-5xl mb-4">🏢</div>
-      <h2 class="text-2xl font-extrabold mb-2">Connect to manage workspaces</h2>
-      <p class="text-gray-400 text-sm mb-6 max-w-md mx-auto">Organize your team, set permissions, then open the main ArcSplit modules to execute.</p>
+      <h2 class="text-2xl font-extrabold mb-2">Connect to use Workspace</h2>
+      <p class="text-gray-400 text-sm mb-6 max-w-md mx-auto">Create a team, invite wallets, set who can open which module, then run tools from the main pages with your own wallet. No contract required.</p>
       <button onclick="connectWallet()" class="px-6 py-3 rounded-2xl bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-sm shadow-lg shadow-indigo-500/20">
         <i class="fas fa-wallet mr-2"></i> Connect Wallet
       </button>
@@ -124,10 +118,8 @@
           <button onclick="switchPanel('overview')" data-p="overview" class="nav-item active w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold border border-transparent flex items-center gap-2.5"><i class="fas fa-chart-pie w-5 text-center"></i> Overview</button>
           <button onclick="switchPanel('modules')" data-p="modules" class="nav-item w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold text-gray-400 border border-transparent flex items-center gap-2.5 hover:bg-white/5"><i class="fas fa-th-large w-5 text-center"></i> Modules</button>
           <button onclick="switchPanel('members')" data-p="members" class="nav-item w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold text-gray-400 border border-transparent flex items-center gap-2.5 hover:bg-white/5"><i class="fas fa-users w-5 text-center"></i> Members</button>
-          <button onclick="switchPanel('treasury')" data-p="treasury" class="nav-item w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold text-gray-400 border border-transparent flex items-center gap-2.5 hover:bg-white/5"><i class="fas fa-vault w-5 text-center"></i> Treasury</button>
           <button onclick="switchPanel('permissions')" data-p="permissions" class="nav-item w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold text-gray-400 border border-transparent flex items-center gap-2.5 hover:bg-white/5"><i class="fas fa-shield-alt w-5 text-center"></i> Permissions</button>
-          <button onclick="switchPanel('billing')" data-p="billing" class="nav-item w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold text-gray-400 border border-transparent flex items-center gap-2.5 hover:bg-white/5"><i class="fas fa-credit-card w-5 text-center"></i> Billing</button>
-          <button onclick="switchPanel('history')" data-p="history" class="nav-item w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold text-gray-400 border border-transparent flex items-center gap-2.5 hover:bg-white/5"><i class="fas fa-clock-rotate-left w-5 text-center"></i> History</button>
+          <button onclick="switchPanel('activity')" data-p="activity" class="nav-item w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold text-gray-400 border border-transparent flex items-center gap-2.5 hover:bg-white/5"><i class="fas fa-stream w-5 text-center"></i> Team Activity</button>
           <button onclick="switchPanel('settings')" data-p="settings" class="nav-item w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold text-gray-400 border border-transparent flex items-center gap-2.5 hover:bg-white/5"><i class="fas fa-cog w-5 text-center"></i> Settings</button>
         </nav>
       </aside>
@@ -136,11 +128,10 @@
         <div id="emptyWs" class="glass rounded-3xl p-12 text-center hidden">
           <div class="text-4xl mb-3">✨</div>
           <h2 class="text-xl font-extrabold mb-2">No workspace selected</h2>
-          <p class="text-gray-400 text-sm mb-5">Create a workspace, invite members, then open main modules to execute.</p>
+          <p class="text-gray-400 text-sm mb-5">Create one, invite members by wallet, set permissions, open modules.</p>
           <button onclick="showCreateModal()" class="px-5 py-2.5 rounded-2xl bg-indigo-500 text-white font-bold text-sm">Create Workspace</button>
         </div>
 
-        <!-- OVERVIEW -->
         <div id="panel-overview" class="space-y-5 hidden">
           <div class="glass rounded-3xl p-6">
             <div class="flex flex-wrap items-start justify-between gap-4 mb-6">
@@ -148,321 +139,156 @@
                 <h2 id="ovName" class="text-2xl font-extrabold">—</h2>
                 <p id="ovDesc" class="text-sm text-gray-400 mt-1">—</p>
               </div>
-              <div class="flex items-center gap-2">
-                <span id="ovPlan" class="role-badge bg-emerald-500/20 text-emerald-400">Free</span>
-                <span id="ovRole" class="role-badge bg-indigo-500/20 text-indigo-400">—</span>
+              <span id="ovRole" class="role-badge bg-indigo-500/20 text-indigo-300">—</span>
+            </div>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div class="bg-white/5 rounded-2xl p-4 border border-white/5">
+                <div class="text-[10px] text-gray-500 uppercase font-bold">Members</div>
+                <div id="ovMemberCount" class="text-xl font-extrabold mt-1">0</div>
+              </div>
+              <div class="bg-white/5 rounded-2xl p-4 border border-white/5">
+                <div class="text-[10px] text-gray-500 uppercase font-bold">Your role</div>
+                <div id="ovMyRole" class="text-xl font-extrabold mt-1 capitalize">—</div>
+              </div>
+              <div class="bg-white/5 rounded-2xl p-4 border border-white/5">
+                <div class="text-[10px] text-gray-500 uppercase font-bold">Modules open</div>
+                <div id="ovModsOpen" class="text-xl font-extrabold mt-1 text-emerald-400">—</div>
+              </div>
+              <div class="bg-white/5 rounded-2xl p-4 border border-white/5">
+                <div class="text-[10px] text-gray-500 uppercase font-bold">Plan</div>
+                <div id="ovPlan" class="text-xl font-extrabold mt-1">FREE</div>
               </div>
             </div>
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div class="bg-white/5 rounded-2xl p-4 border border-white/5">
-                <div class="text-xs text-gray-500 font-bold mb-1">Treasury USDC</div>
-                <div id="ovTreasuryBal" class="text-xl font-extrabold text-emerald-400">—</div>
-              </div>
-              <div class="bg-white/5 rounded-2xl p-4 border border-white/5">
-                <div class="text-xs text-gray-500 font-bold mb-1">Members</div>
-                <div id="ovMemberCount" class="text-xl font-extrabold text-indigo-400">0</div>
-              </div>
-              <div class="bg-white/5 rounded-2xl p-4 border border-white/5">
-                <div class="text-xs text-gray-500 font-bold mb-1">Your Role</div>
-                <div id="ovMyRole" class="text-xl font-extrabold text-amber-400">—</div>
-              </div>
-              <div class="bg-white/5 rounded-2xl p-4 border border-white/5">
-                <div class="text-xs text-gray-500 font-bold mb-1">Treasury Mode</div>
-                <div id="ovTreasuryMode" class="text-sm font-bold text-gray-300">Wallet</div>
-              </div>
+            <p class="text-xs text-gray-500 mt-5 leading-relaxed">
+              Transactions always use the wallet you connect on each module page.
+              Workspace controls who may open which tool and shows team activity. No contract required.
+            </p>
+          </div>
+          <div class="glass rounded-3xl p-5">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="font-bold text-sm"><i class="fas fa-bolt text-amber-400 mr-2"></i>Quick open</h3>
+              <button onclick="switchPanel('modules')" class="text-xs text-indigo-400 font-bold">All modules →</button>
             </div>
+            <div id="ovQuickMods" class="flex flex-wrap gap-2"></div>
           </div>
         </div>
 
-        <!-- MODULES — open main site pages -->
         <div id="panel-modules" class="space-y-5 hidden">
           <div class="glass rounded-3xl p-6">
-            <h3 class="font-bold text-base flex items-center gap-2 mb-2"><i class="fas fa-th-large text-indigo-400"></i> Open Main Modules</h3>
-            <p class="text-xs text-gray-500 mb-5">Each module opens the main ArcSplit page. <b>Transactions always use the wallet you connect there</b> (your own balance) — not the TeamTreasury contract. Treasury is only for optional team pool (Deposit / Withdraw).</p>
+            <h3 class="font-bold text-base mb-2"><i class="fas fa-th-large text-indigo-400 mr-2"></i> Modules</h3>
+            <p class="text-xs text-gray-500 mb-5">Opens the main page with <code class="text-indigo-300">?workspace=</code>. You always pay from your own wallet. Locked = no permission for your role.</p>
             <div id="modulesGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
           </div>
         </div>
 
-        <!-- MEMBERS -->
         <div id="panel-members" class="space-y-5 hidden">
           <div class="glass rounded-3xl p-6">
             <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
-              <h3 class="font-bold text-base flex items-center gap-2"><i class="fas fa-users text-indigo-400"></i> Members</h3>
-              <button id="inviteBtn" onclick="showInviteModal()" class="px-4 py-2 rounded-xl bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-400 border border-indigo-500/30 text-xs font-bold flex items-center gap-2">
-                <i class="fas fa-user-plus"></i> Invite by Wallet
+              <h3 class="font-bold text-base"><i class="fas fa-users text-sky-400 mr-2"></i> Members</h3>
+              <button id="inviteBtn" onclick="showInviteModal()" class="px-4 py-2 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold">
+                <i class="fas fa-user-plus mr-1"></i> Invite by Wallet
               </button>
             </div>
             <div id="membersTable" class="space-y-2"></div>
           </div>
         </div>
 
-        <!-- TREASURY -->
-        <div id="panel-treasury" class="space-y-5 hidden">
-          <div class="glass rounded-3xl p-6">
-            <h3 class="font-bold text-base flex items-center gap-2 mb-5"><i class="fas fa-vault text-emerald-400"></i> Treasury</h3>
-            <div class="bg-white/5 rounded-2xl p-5 border border-white/5 mb-4">
-              <div class="text-xs text-gray-500 font-bold mb-1">Address</div>
-              <div id="trAddr" class="font-mono text-sm break-all mb-3">—</div>
-              <div id="trMode" class="text-[11px] text-gray-500 mb-3">Mode: —</div>
-              <div class="grid grid-cols-3 gap-3 mb-3">
-                <div><div class="text-[10px] text-gray-500 uppercase">USDC</div><div id="trUsdc" class="font-bold text-emerald-400 text-lg">—</div></div>
-                <div><div class="text-[10px] text-gray-500 uppercase">EURC</div><div id="trEurc" class="font-bold text-emerald-400 text-lg">—</div></div>
-                <div><div class="text-[10px] text-gray-500 uppercase">cirBTC</div><div id="trBtc" class="font-bold text-emerald-400 text-lg">—</div></div>
-              </div>
-              <button type="button" onclick="manualRefreshBalances()" class="text-xs font-bold text-indigo-400 hover:text-indigo-300 flex items-center gap-1.5">
-                <i class="fas fa-sync-alt" id="balRefreshIcon"></i> <span id="balRefreshLabel">Refresh balances</span>
-              </button>
-            </div>
-
-            <div id="trContractActions" class="hidden space-y-3 mb-4">
-              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label class="text-xs font-bold text-gray-400 mb-1.5 block">Token</label>
-                  <select id="trToken" class="w-full px-4 py-3 text-sm">
-                    <option value="native">Native (gas token)</option>
-                    <option value="0x3600000000000000000000000000000000000000">USDC (0x3600… ERC20 if deployed)</option>
-                    <option value="0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a">EURC</option>
-                    <option value="0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF">cirBTC</option>
-                  </select>
-                </div>
-                <div>
-                  <label class="text-xs font-bold text-gray-400 mb-1.5 block">Amount</label>
-                  <input type="number" id="trAmount" class="w-full px-4 py-3 text-sm" placeholder="100" min="0" step="any">
-                </div>
-              </div>
-              <div class="flex flex-wrap gap-2">
-                <button onclick="treasuryDeposit()" class="px-4 py-2.5 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-xs font-bold"><i class="fas fa-arrow-down mr-1"></i> Deposit</button>
-                <button onclick="treasuryWithdraw()" class="px-4 py-2.5 rounded-xl bg-amber-500/15 text-amber-400 border border-amber-500/30 text-xs font-bold"><i class="fas fa-arrow-up mr-1"></i> Withdraw to me</button>
-                <button onclick="treasuryApproveSplitter()" class="px-4 py-2.5 rounded-xl bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 text-xs font-bold"><i class="fas fa-check-double mr-1"></i> Approve Splitter</button>
-                <button onclick="treasuryApproveMax()" class="px-4 py-2.5 rounded-xl bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 text-xs font-bold">Approve Max</button>
-                <button onclick="treasuryRevoke()" class="px-4 py-2.5 rounded-xl bg-rose-500/15 text-rose-400 border border-rose-500/30 text-xs font-bold">Revoke Approval</button>
-                <button onclick="treasurySetSplitter()" class="px-4 py-2.5 rounded-xl bg-white/5 text-gray-300 border border-white/10 text-xs font-bold">Set Splitter</button>
-              </div>
-              <p class="text-[11px] text-gray-500 leading-relaxed">
-                <b>Modules never spend from this contract directly.</b> To use team funds in Split/Batch/…:
-                use <b>Withdraw to me</b>, then open the module and pay from your own wallet.
-                Deposit / Approve are only for holding or future splitter integration.
-              </p>
-            </div>
-
-            <p id="trNoContractHint" class="text-xs text-gray-500">No Treasury Contract set. Paste proxy address in Settings to enable deposit / withdraw / approve.</p>
-          </div>
-        </div>
-
-        <!-- PERMISSIONS -->
         <div id="panel-permissions" class="space-y-5 hidden">
           <div class="glass rounded-3xl p-6">
-            <h3 class="font-bold text-base flex items-center gap-2 mb-2"><i class="fas fa-shield-alt text-indigo-400"></i> Module Permissions</h3>
-            <p class="text-xs text-gray-500 mb-5">Which roles can open each main module from this workspace.</p>
+            <h3 class="font-bold text-base mb-2"><i class="fas fa-shield-alt text-violet-400 mr-2"></i> Permissions</h3>
+            <p class="text-xs text-gray-500 mb-4">Owner always has full access. Saved permissions are enforced in Workspace and on main pages that include workspace-guard.js.</p>
             <div id="permTable" class="overflow-x-auto"></div>
-            <button id="savePermBtn" onclick="savePermissions()" class="mt-5 px-5 py-3 rounded-2xl bg-indigo-500 text-white font-bold text-sm">Save Permissions</button>
+            <button id="savePermBtn" onclick="savePermissions()" class="mt-4 px-5 py-2.5 rounded-xl bg-indigo-500 text-white text-sm font-bold hidden">Save permissions</button>
           </div>
         </div>
 
-        <!-- BILLING -->
-        <div id="panel-billing" class="space-y-5 hidden">
+        <div id="panel-activity" class="space-y-5 hidden">
           <div class="glass rounded-3xl p-6">
-            <h3 class="font-bold text-base flex items-center gap-2 mb-5"><i class="fas fa-credit-card text-indigo-400"></i> Billing Plan</h3>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-              <div id="planFree" class="rounded-2xl p-5 border-2 border-white/10 bg-white/5 cursor-pointer" onclick="selectPlan('free')">
-                <div class="font-extrabold text-lg mb-1">Free</div>
-                <div class="text-2xl font-extrabold text-gray-300 mb-3">$0<span class="text-sm font-medium text-gray-500">/mo</span></div>
-                <ul class="text-xs text-gray-400 space-y-1.5">
-                  <li>✓ Up to 5 members</li>
-                  <li>✓ Module launchers</li>
-                  <li>✓ Treasury view</li>
-                </ul>
-              </div>
-              <div id="planTeam" class="rounded-2xl p-5 border-2 border-white/10 bg-white/5 cursor-pointer" onclick="selectPlan('team')">
-                <div class="font-extrabold text-lg mb-1 text-indigo-400">Team</div>
-                <div class="text-2xl font-extrabold text-indigo-400 mb-3">$29<span class="text-sm font-medium text-gray-500">/mo</span></div>
-                <ul class="text-xs text-gray-400 space-y-1.5">
-                  <li>✓ Unlimited members</li>
-                  <li>✓ Full permissions matrix</li>
-                  <li>✓ Optional Treasury Contract</li>
-                </ul>
-              </div>
+            <div class="flex items-center justify-between mb-4">
+              <h3 class="font-bold text-base"><i class="fas fa-stream text-emerald-400 mr-2"></i> Team Activity</h3>
+              <button onclick="loadTeamActivity()" class="text-xs font-bold text-indigo-400"><i class="fas fa-sync-alt mr-1"></i> Refresh</button>
             </div>
-            <button onclick="savePlan()" id="savePlanBtn" class="px-5 py-3 rounded-2xl bg-indigo-500 text-white font-bold text-sm">Save Plan</button>
+            <p class="text-xs text-gray-500 mb-4">Recent cloud history from all member wallets.</p>
+            <div id="activityList" class="space-y-2 max-h-[480px] overflow-y-auto"></div>
           </div>
         </div>
 
-        <!-- HISTORY -->
-        <div id="panel-history" class="space-y-5 hidden">
-          <div class="glass rounded-3xl p-6">
-            <div class="flex flex-wrap items-center justify-between gap-3 mb-5">
-              <h3 class="font-bold text-base flex items-center gap-2"><i class="fas fa-clock-rotate-left text-indigo-400"></i> Workspace History</h3>
-              <button onclick="loadHistory()" class="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-bold text-gray-400 hover:text-white">
-                <i class="fas fa-sync-alt mr-1"></i> Refresh
-              </button>
-            </div>
-            <p class="text-xs text-gray-500 mb-4">Cloud history for this workspace (treasury actions + records tagged with this workspace id).</p>
-            <div id="historyList" class="space-y-2 max-h-[28rem] overflow-y-auto"></div>
-          </div>
-        </div>
-
-        <!-- SETTINGS -->
         <div id="panel-settings" class="space-y-5 hidden">
-          <div class="glass rounded-3xl p-6">
-            <h3 class="font-bold text-base flex items-center gap-2 mb-5"><i class="fas fa-cog text-indigo-400"></i> Workspace Settings</h3>
-            <div class="space-y-4 max-w-lg">
-              <div>
-                <label class="text-xs font-bold text-gray-400 mb-1.5 block">Workspace Name</label>
-                <input type="text" id="setName" class="w-full px-4 py-3 text-sm" maxlength="60">
-              </div>
-              <div>
-                <label class="text-xs font-bold text-gray-400 mb-1.5 block">Description</label>
-                <textarea id="setDesc" rows="2" class="w-full px-4 py-3 text-sm" maxlength="200"></textarea>
-              </div>
-              <div>
-                <label class="text-xs font-bold text-gray-400 mb-1.5 block">Treasury Wallet (EOA — for balance display)</label>
-                <input type="text" id="setTreasury" class="w-full px-4 py-3 text-sm font-mono" placeholder="0x...">
-              </div>
-              <div>
-                <label class="text-xs font-bold text-gray-400 mb-1.5 block">Treasury Contract (optional — TeamTreasury proxy)</label>
-                <input type="text" id="setContract" class="w-full px-4 py-3 text-sm font-mono" placeholder="0x63b9DC34D18128B71E8AC54fb0DDa25aE3bAA0F2">
-                <p class="text-[10px] text-gray-500 mt-1.5">Proxy: 0x63b9DC34D18128B71E8AC54fb0DDa25aE3bAA0F2 — after initialize + setSplitter, paste &amp; save here.</p>
-              </div>
-              <button id="saveSettingsBtn" onclick="saveSettings()" class="app-button px-5 py-3 rounded-2xl bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-sm">Save Changes</button>
+          <div class="glass rounded-3xl p-6 space-y-4">
+            <h3 class="font-bold text-base mb-1"><i class="fas fa-cog text-gray-400 mr-2"></i> Settings</h3>
+            <div>
+              <label class="text-xs font-bold text-gray-400 mb-1.5 block">Workspace name</label>
+              <input id="setName" class="w-full px-4 py-3 text-sm" placeholder="My team">
             </div>
+            <div>
+              <label class="text-xs font-bold text-gray-400 mb-1.5 block">Description</label>
+              <textarea id="setDesc" rows="2" class="w-full px-4 py-3 text-sm" placeholder="Optional"></textarea>
+            </div>
+            <div>
+              <label class="text-xs font-bold text-gray-400 mb-1.5 block">Display wallet label (optional)</label>
+              <input id="setTreasury" class="w-full px-4 py-3 text-sm font-mono" placeholder="0x… optional">
+              <p class="text-[11px] text-gray-500 mt-1">Optional label only. Not required for team features.</p>
+            </div>
+            <button onclick="saveSettings()" id="saveSetBtn" class="px-5 py-2.5 rounded-xl bg-indigo-500 text-white text-sm font-bold">Save settings</button>
           </div>
         </div>
       </main>
     </div>
   </div>
 
-  <!-- CREATE -->
-  <div id="createModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-    <div class="glass rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-4 border border-white/10">
-      <h3 class="text-lg font-bold">Create Workspace</h3>
-      <div><label class="text-xs font-bold text-gray-400 mb-1.5 block">Name *</label>
-        <input type="text" id="createName" class="w-full px-4 py-3 text-sm" placeholder="My Company" maxlength="60"></div>
-      <div><label class="text-xs font-bold text-gray-400 mb-1.5 block">Description</label>
-        <textarea id="createDesc" rows="2" class="w-full px-4 py-3 text-sm"></textarea></div>
-      <div><label class="text-xs font-bold text-gray-400 mb-1.5 block">Treasury Wallet (optional, defaults to yours)</label>
-        <input type="text" id="createTreasury" class="w-full px-4 py-3 text-sm font-mono" placeholder="0x..."></div>
-      <div class="flex gap-3 pt-2">
-        <button onclick="hideCreateModal()" class="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 text-sm font-bold">Cancel</button>
-        <button onclick="doCreateWorkspace()" class="flex-1 py-3 rounded-xl bg-indigo-500 text-white text-sm font-bold">Create</button>
+  <div id="createModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
+    <div class="glass rounded-3xl p-6 w-full max-w-md space-y-4">
+      <h3 class="text-lg font-extrabold">New Workspace</h3>
+      <input id="createName" class="w-full px-4 py-3 text-sm" placeholder="Team name">
+      <textarea id="createDesc" rows="2" class="w-full px-4 py-3 text-sm" placeholder="Description (optional)"></textarea>
+      <div class="flex gap-2 justify-end">
+        <button onclick="hideCreateModal()" class="px-4 py-2 rounded-xl text-sm font-bold text-gray-400">Cancel</button>
+        <button onclick="doCreateWorkspace()" class="px-5 py-2 rounded-xl bg-indigo-500 text-white text-sm font-bold">Create</button>
       </div>
     </div>
   </div>
 
-  <!-- INVITE -->
-  <div id="inviteModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
-    <div class="glass rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-4 border border-white/10">
-      <h3 class="text-lg font-bold">Invite Member</h3>
-      <div><label class="text-xs font-bold text-gray-400 mb-1.5 block">Wallet Address *</label>
-        <input type="text" id="inviteAddr" class="w-full px-4 py-3 text-sm font-mono" placeholder="0x..."></div>
-      <div><label class="text-xs font-bold text-gray-400 mb-1.5 block">Display Name</label>
-        <input type="text" id="inviteName" class="w-full px-4 py-3 text-sm" placeholder="Alice"></div>
-      <div><label class="text-xs font-bold text-gray-400 mb-1.5 block">Role</label>
-        <select id="inviteRole" class="w-full px-4 py-3 text-sm">
-          <option value="member">Member</option>
-          <option value="admin">Admin</option>
-        </select></div>
-      <div class="flex gap-3 pt-2">
-        <button onclick="hideInviteModal()" class="flex-1 py-3 rounded-xl bg-white/5 border border-white/10 text-sm font-bold">Cancel</button>
-        <button onclick="doInvite()" class="flex-1 py-3 rounded-xl bg-indigo-500 text-white text-sm font-bold">Invite</button>
+  <div id="inviteModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
+    <div class="glass rounded-3xl p-6 w-full max-w-md space-y-4">
+      <h3 class="text-lg font-extrabold">Invite by wallet</h3>
+      <input id="inviteAddr" class="w-full px-4 py-3 text-sm font-mono" placeholder="0x…">
+      <input id="inviteName" class="w-full px-4 py-3 text-sm" placeholder="Display name (optional)">
+      <select id="inviteRole" class="w-full px-4 py-3 text-sm">
+        <option value="member">Member</option>
+        <option value="admin">Admin</option>
+      </select>
+      <div class="flex gap-2 justify-end">
+        <button onclick="hideInviteModal()" class="px-4 py-2 rounded-xl text-sm font-bold text-gray-400">Cancel</button>
+        <button onclick="doInvite()" class="px-5 py-2 rounded-xl bg-indigo-500 text-white text-sm font-bold">Invite</button>
       </div>
     </div>
   </div>
 
-  <div id="toast" class="hidden fixed bottom-8 left-1/2 -translate-x-1/2 bg-gray-900/95 border border-white/10 text-white px-6 py-4 rounded-2xl shadow-2xl z-50 text-sm font-medium backdrop-blur-xl">
-    <span id="toastText"></span>
+  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] px-5 py-3 rounded-2xl bg-slate-900 border border-white/10 shadow-xl text-sm font-bold flex items-center gap-2">
+    <i class="fas fa-info-circle text-indigo-400"></i>
+    <span id="toastText">—</span>
   </div>
 
 <script>
-  /**
-   * Paths to your main module pages.
-   * Adjust filenames if different on your server.
-   */
   const MODULE_PAGES = {
-    split:        { label: "Token Splitter",   file: "split.html",              icon: "fa-cut",           color: "emerald" },
-    batch:        { label: "Batch Split",      file: "BatchSplit.html",         icon: "fa-layer-group",   color: "rose" },
-    roles:        { label: "Role Split",       file: "ArcRoleSplitter.html",    icon: "fa-users-gear",    color: "cyan" },
-    giveaway:     { label: "Giveaway",         file: "giveaway.html",           icon: "fa-gift",          color: "amber" },
-    vesting:      { label: "Vesting",          file: "ArcsplitVesting.html",    icon: "fa-calendar-check",color: "lime" },
-    pay:          { label: "Pay Links",        file: "ArcPayLink.html",         icon: "fa-link",          color: "yellow" },
-    agentic:      { label: "Agentic",          file: "AgenticSplit.html",       icon: "fa-robot",         color: "sky" },
-    conditional:  { label: "Conditional",      file: "smartConditionalsplit.html", icon: "fa-code-branch", color: "orange" }
+    split:       { label: "Split",        file: "split.html",                 icon: "fa-scissors",       color: "indigo" },
+    batch:       { label: "Batch Split",  file: "BatchSplit.html",            icon: "fa-layer-group",    color: "violet" },
+    roles:       { label: "Role Split",   file: "ArcRoleSplitter.html",       icon: "fa-users-gear",     color: "cyan" },
+    giveaway:    { label: "Giveaway",     file: "giveaway.html",              icon: "fa-gift",           color: "amber" },
+    vesting:     { label: "Vesting",      file: "ArcsplitVesting.html",       icon: "fa-calendar-check", color: "lime" },
+    pay:         { label: "Pay Links",    file: "ArcPayLink.html",            icon: "fa-link",           color: "yellow" },
+    agentic:     { label: "Agentic",      file: "AgenticSplit.html",          icon: "fa-robot",          color: "sky" },
+    conditional: { label: "Conditional",  file: "smartConditionalsplit.html", icon: "fa-code-branch",    color: "orange" }
   };
-
   const MODULES = Object.keys(MODULE_PAGES).map(id => ({ id, label: MODULE_PAGES[id].label }));
-  const ROLES = ["owner", "admin", "member"];
-  const DEFAULT_PERMS = {
+  const DEFAULT_PERMS = typeof defaultPermissions === "function" ? defaultPermissions() : {
     owner:  Object.fromEntries(MODULES.map(m => [m.id, true])),
     admin:  Object.fromEntries(MODULES.map(m => [m.id, true])),
     member: Object.fromEntries(MODULES.map(m => [m.id, false]))
   };
 
-  const TOKENS = {
-    USDC: "0x3600000000000000000000000000000000000000",
-    EURC: "0x89B50855Aa3bE2F677cD6303Cec089B5F319D72a",
-    cirBTC: "0xf0C4a4CE82A5746AbAAd9425360Ab04fbBA432BF"
-  };
-  const ERC20_ABI = [
-    "function balanceOf(address) view returns (uint256)",
-    "function decimals() view returns (uint8)",
-    "function approve(address,uint256) returns (bool)",
-    "function allowance(address,address) view returns (uint256)"
-  ];
-  const DEFAULT_TREASURY_PROXY = "0x63b9DC34D18128B71E8AC54fb0DDa25aE3bAA0F2";
-  const DEFAULT_SPLITTER = "0xf2073671b726b96DC1c99D001BBF6e60EE1f187F";
-
-  /* Arc Network Testnet */
-  const ARC_CHAIN_ID = 5042002;
-  const ARC_CHAIN_ID_HEX = "0x4CEF52"; // 5042002
-  const ARC_NETWORK = {
-    chainId: ARC_CHAIN_ID_HEX,
-    chainName: "Arc Network Testnet",
-    nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
-    rpcUrls: ["https://rpc.testnet.arc.network"],
-    blockExplorerUrls: ["https://testnet.arcscan.app"]
-  };
-
-  async function ensureArcNetwork() {
-    if (!window.ethereum) throw new Error("No wallet");
-    const current = await window.ethereum.request({ method: "eth_chainId" });
-    if (current === ARC_CHAIN_ID_HEX || parseInt(current, 16) === ARC_CHAIN_ID) return true;
-    try {
-      await window.ethereum.request({
-        method: "wallet_switchEthereumChain",
-        params: [{ chainId: ARC_CHAIN_ID_HEX }]
-      });
-      return true;
-    } catch (e) {
-      // 4902 = chain not added
-      if (e.code === 4902 || e.code === -32603 || /Unrecognized chain|not been added/i.test(String(e.message || e))) {
-        await window.ethereum.request({
-          method: "wallet_addEthereumChain",
-          params: [ARC_NETWORK]
-        });
-        return true;
-      }
-      throw e;
-    }
-  }
-  const TREASURY_ABI = [
-    "function depositERC20(address token, uint256 amount)",
-    "function depositNative() payable",
-    "function withdrawERC20(address token, address to, uint256 amount)",
-    "function withdrawNative(address to, uint256 amount)",
-    "function approveSplitter(address token, uint256 amount)",
-    "function approveSplitterMax(address token)",
-    "function revokeSplitterApproval(address token)",
-    "function setSplitter(address splitter)",
-    "function splitter() view returns (address)",
-    "function tokenBalance(address token) view returns (uint256)",
-    "function nativeBalance() view returns (uint256)",
-    "function owner() view returns (address)",
-    "function isAdmin(address) view returns (bool)",
-    "function isSpender(address) view returns (bool)"
-  ];
-
   let userAddress = null, signer = null, provider = null, forceDisconnected = false;
   let myWorkspaces = [], currentWs = null, currentMembers = [], myRole = null;
-  let selectedPlan = "free";
   let permState = JSON.parse(JSON.stringify(DEFAULT_PERMS));
 
   function shortAddr(a) { return a ? a.slice(0,6)+"…"+a.slice(-4) : "—"; }
@@ -470,7 +296,8 @@
     const t = document.getElementById("toast");
     document.getElementById("toastText").textContent = msg;
     t.classList.remove("hidden");
-    setTimeout(() => t.classList.add("hidden"), ms);
+    clearTimeout(showToast._t);
+    showToast._t = setTimeout(() => t.classList.add("hidden"), ms);
   }
   function settingsOf(ws) {
     const s = ws?.settings || {};
@@ -481,95 +308,97 @@
     if (myRole === "owner") return true;
     return !!(permState[myRole] && permState[myRole][moduleId]);
   }
-  function treasuryAddress() {
-    const s = settingsOf(currentWs);
-    if (s.treasury_contract && ethers.isAddress(s.treasury_contract)) return s.treasury_contract;
-    return currentWs?.treasury_address || currentWs?.owner_address;
-  }
 
-  /**
-   * Open a main module page.
-   * IMPORTANT: Execution always uses the wallet connected in that page (the member's own wallet).
-   * TeamTreasury is NOT used as the funding source here — only optional workspace id for context.
-   */
-  function openModule(moduleId) {
-    if (!hasPerm(moduleId)) return showToast("No permission for this module");
-    const mod = MODULE_PAGES[moduleId];
-    if (!mod) return;
-    const params = new URLSearchParams();
-    if (currentWs?.id) params.set("workspace", currentWs.id);
-    // do NOT pass treasury as pay-from address — splits must come from the user's own wallet
-    const q = params.toString();
-    const url = mod.file + (q ? "?" + q : "");
-    showToast("Opening " + mod.label + " — use YOUR connected wallet to pay");
-    window.open(url, "_blank");
+  function toggleTheme() {
+    document.body.classList.toggle("light");
+    const dark = !document.body.classList.contains("light");
+    document.querySelector("#themeBtn i").className = dark ? "fas fa-moon text-lg text-indigo-400" : "fas fa-sun text-lg text-amber-500";
+    localStorage.setItem("arcWsTheme", dark ? "dark" : "light");
   }
-
-  function setWalletUI(connected) {
-    const btn = document.getElementById("connectBtn");
-    const text = document.getElementById("connectText");
-    const disc = document.getElementById("disconnectBtn");
-    if (connected && userAddress) {
-      text.textContent = shortAddr(userAddress);
-      btn.className = "app-button px-5 py-2.5 rounded-2xl bg-indigo-500/15 border border-indigo-500/40 text-indigo-400 font-bold text-sm flex items-center gap-2";
-      disc.classList.remove("hidden"); disc.classList.add("flex");
-      document.getElementById("noWallet").classList.add("hidden");
-      document.getElementById("app").classList.remove("hidden");
-    } else {
-      text.textContent = "Connect Wallet";
-      btn.className = "app-button px-5 py-2.5 rounded-2xl bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold text-sm flex items-center gap-2 shadow-lg";
-      disc.classList.add("hidden"); disc.classList.remove("flex");
-      document.getElementById("noWallet").classList.remove("hidden");
-      document.getElementById("app").classList.add("hidden");
-    }
+  if (localStorage.getItem("arcWsTheme") === "light") {
+    document.body.classList.add("light");
+    document.querySelector("#themeBtn i").className = "fas fa-sun text-lg text-amber-500";
   }
 
   async function connectWallet() {
-    if (!window.ethereum) return showToast("No wallet found");
+    forceDisconnected = false;
+    if (!window.ethereum) return showToast("Install MetaMask");
     try {
-      await ensureArcNetwork();
       provider = new ethers.BrowserProvider(window.ethereum);
       await provider.send("eth_requestAccounts", []);
-      // re-bind after possible chain switch
+      signer = await provider.getSigner();
+      userAddress = await signer.getAddress();
+      setWalletUI(true);
+      await loadWorkspaces();
+    } catch (e) {
+      showToast(e.message || "Connect failed");
+    }
+  }
+
+  function disconnectWallet() {
+    forceDisconnected = true;
+    userAddress = null; signer = null; provider = null;
+    currentWs = null; myWorkspaces = []; currentMembers = [];
+    setWalletUI(false);
+  }
+
+  function setWalletUI(on) {
+    document.getElementById("noWallet").classList.toggle("hidden", on);
+    document.getElementById("app").classList.toggle("hidden", !on);
+    document.getElementById("connectBtn").classList.toggle("hidden", on);
+    document.getElementById("disconnectBtn").classList.toggle("hidden", !on);
+    document.getElementById("disconnectBtn").classList.toggle("flex", on);
+    document.getElementById("connectText").textContent = on ? shortAddr(userAddress) : "Connect Wallet";
+    if (!on) {
+      document.getElementById("sideNav").classList.add("hidden");
+      document.getElementById("emptyWs").classList.add("hidden");
+    }
+  }
+
+  if (window.ethereum) {
+    window.ethereum.on?.("accountsChanged", async (accs) => {
+      if (forceDisconnected) return;
+      if (!accs?.length) return disconnectWallet();
+      forceDisconnected = false;
       provider = new ethers.BrowserProvider(window.ethereum);
       signer = await provider.getSigner();
       userAddress = await signer.getAddress();
-      forceDisconnected = false;
       setWalletUI(true);
-      showToast("Connected on Arc Testnet");
       await loadWorkspaces();
-    } catch (e) {
-      console.error(e);
-      showToast(e.message || "Connection rejected");
-    }
-  }
-  function disconnectWallet() {
-    forceDisconnected = true;
-    userAddress = null; signer = null; provider = null; currentWs = null; myWorkspaces = [];
-    setWalletUI(false); showToast("Disconnected");
+    });
   }
 
   async function loadWorkspaces() {
-    if (!userAddress || typeof fetchMyWorkspaces !== "function") return;
+    if (!userAddress) return;
     myWorkspaces = await fetchMyWorkspaces(userAddress);
     renderWsList();
-    if (myWorkspaces.length && !currentWs) selectWorkspace(myWorkspaces[0].id);
-    else if (!myWorkspaces.length) {
+    if (myWorkspaces.length && !currentWs) {
+      await selectWorkspace(myWorkspaces[0].id);
+    } else if (!myWorkspaces.length) {
       currentWs = null;
       document.getElementById("emptyWs").classList.remove("hidden");
       document.getElementById("sideNav").classList.add("hidden");
-      ["overview","modules","members","treasury","permissions","billing","history","settings"].forEach(p => document.getElementById("panel-"+p).classList.add("hidden"));
+      ["overview","modules","members","permissions","activity","settings"].forEach(p => {
+        document.getElementById("panel-"+p)?.classList.add("hidden");
+      });
+    } else if (currentWs) {
+      await selectWorkspace(currentWs.id);
     }
   }
 
   function renderWsList() {
     const box = document.getElementById("wsList");
-    if (!myWorkspaces.length) { box.innerHTML = `<p class="text-xs text-gray-500 px-3 py-2">No workspaces yet</p>`; return; }
-    box.innerHTML = myWorkspaces.map(w => `
-      <button onclick="selectWorkspace('${w.id}')" class="w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold transition border ${currentWs && currentWs.id === w.id ? 'bg-indigo-500/15 border-indigo-500/40 text-indigo-300' : 'border-transparent text-gray-300 hover:bg-white/5'}">
-        <div class="truncate">${w.name}</div>
-        <div class="text-[10px] text-gray-500 font-medium capitalize">${w.my_role || ''} · ${(settingsOf(w).plan || 'free')}</div>
-      </button>`).join("");
+    if (!myWorkspaces.length) {
+      box.innerHTML = `<p class="text-xs text-gray-500 px-3 py-2">No workspaces yet</p>`;
+      return;
+    }
+    box.innerHTML = myWorkspaces.map(w => {
+      const active = currentWs?.id === w.id;
+      return `<button onclick="selectWorkspace('${w.id}')" class="w-full text-left px-3 py-2.5 rounded-xl text-sm font-bold border ${active ? "bg-indigo-500/20 border-indigo-500/40 text-indigo-200" : "border-transparent hover:bg-white/5 text-gray-300"}">
+        <div class="truncate">${w.name || "Untitled"}</div>
+        <div class="text-[10px] font-medium text-gray-500 capitalize">${w.my_role || ""} · Free</div>
+      </button>`;
+    }).join("");
   }
 
   async function selectWorkspace(id) {
@@ -578,33 +407,34 @@
     myRole = currentWs.my_role || (currentWs.owner_address === userAddress?.toLowerCase() ? "owner" : "member");
     currentMembers = await fetchWorkspaceMembers(id);
     const s = settingsOf(currentWs);
-    permState = s.permissions ? { ...JSON.parse(JSON.stringify(DEFAULT_PERMS)), ...s.permissions } : JSON.parse(JSON.stringify(DEFAULT_PERMS));
-    selectedPlan = s.plan || "free";
+    permState = s.permissions
+      ? { ...JSON.parse(JSON.stringify(DEFAULT_PERMS)), ...s.permissions }
+      : JSON.parse(JSON.stringify(DEFAULT_PERMS));
     document.getElementById("emptyWs").classList.add("hidden");
     document.getElementById("sideNav").classList.remove("hidden");
     renderWsList();
     switchPanel("overview");
     renderAllPanels();
-    startBalanceAutoRefresh();
   }
 
   function switchPanel(name) {
-    ["overview","modules","members","treasury","permissions","billing","history","settings"].forEach(p => {
-      document.getElementById("panel-"+p).classList.toggle("hidden", p !== name);
+    ["overview","modules","members","permissions","activity","settings"].forEach(p => {
+      document.getElementById("panel-"+p)?.classList.toggle("hidden", p !== name);
     });
     document.querySelectorAll(".nav-item").forEach(b => {
       const on = b.dataset.p === name;
       b.classList.toggle("active", on);
       b.classList.toggle("text-gray-400", !on);
     });
-    if (name === "history") loadHistory();
-    if (name === "treasury" || name === "overview") {
-      loadBalances(treasuryAddress(), 3).then(applyBalancesToUI).catch(() => {});
-    }
+    if (name === "activity") loadTeamActivity();
   }
 
   function renderAllPanels() {
-    renderOverview(); renderModules(); renderMembers(); renderTreasury(); renderPermissions(); renderBilling(); renderSettings(); loadHistory();
+    renderOverview();
+    renderModules();
+    renderMembers();
+    renderPermissions();
+    renderSettings();
   }
 
   function renderOverview() {
@@ -614,622 +444,243 @@
     document.getElementById("ovRole").textContent = myRole;
     document.getElementById("ovMyRole").textContent = myRole;
     document.getElementById("ovMemberCount").textContent = currentMembers.length;
-    document.getElementById("ovPlan").textContent = (selectedPlan || "free").toUpperCase();
-    const s = settingsOf(currentWs);
-    document.getElementById("ovTreasuryMode").textContent = s.treasury_contract ? "Contract" : "Wallet";
-    loadBalances(treasuryAddress()).then(b => {
-      document.getElementById("ovTreasuryBal").textContent = (b.USDC||0).toFixed(2);
-    });
+    document.getElementById("ovPlan").textContent = (settingsOf(currentWs).plan || "free").toUpperCase();
+    const openCount = MODULES.filter(m => hasPerm(m.id)).length;
+    document.getElementById("ovModsOpen").textContent = openCount + "/" + MODULES.length;
+    document.getElementById("ovQuickMods").innerHTML = MODULES.filter(m => hasPerm(m.id)).slice(0, 4).map(m => {
+      const mod = MODULE_PAGES[m.id];
+      return `<button onclick="openModule('${m.id}')" class="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-bold hover:border-indigo-500/40">
+        <i class="fas ${mod.icon} text-${mod.color}-400 mr-1.5"></i>${mod.label}
+      </button>`;
+    }).join("") || `<span class="text-xs text-gray-500">No modules allowed for your role</span>`;
   }
 
   function renderModules() {
-    const grid = document.getElementById("modulesGrid");
-    grid.innerHTML = Object.entries(MODULE_PAGES).map(([id, mod]) => {
+    document.getElementById("modulesGrid").innerHTML = Object.entries(MODULE_PAGES).map(([id, mod]) => {
       const allowed = hasPerm(id);
-      return `
-        <button onclick="openModule('${id}')" class="module-card ${allowed ? '' : 'locked'} text-left p-4 rounded-2xl bg-white/5 border border-white/10 hover:border-${mod.color}-500/40 transition">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 rounded-xl bg-${mod.color}-500/15 flex items-center justify-center">
-              <i class="fas ${mod.icon} text-${mod.color}-400"></i>
-            </div>
-            <div class="min-w-0 flex-1">
-              <div class="font-bold text-sm">${mod.label}</div>
-              <div class="text-[11px] text-gray-500">${allowed ? "Open main page →" : "Locked for your role"}</div>
-            </div>
-            <i class="fas ${allowed ? "fa-external-link-alt text-gray-500" : "fa-lock text-gray-600"} text-xs"></i>
+      return `<button onclick="openModule('${id}')" class="module-card ${allowed ? "" : "locked"} text-left p-4 rounded-2xl bg-white/5 border border-white/10">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-${mod.color}-500/15 flex items-center justify-center">
+            <i class="fas ${mod.icon} text-${mod.color}-400"></i>
           </div>
-        </button>`;
+          <div class="min-w-0 flex-1">
+            <div class="font-bold text-sm">${mod.label}</div>
+            <div class="text-[11px] text-gray-500">${allowed ? "Open main page →" : "Locked for your role"}</div>
+          </div>
+          <i class="fas ${allowed ? "fa-external-link-alt text-gray-500" : "fa-lock text-gray-600"} text-xs"></i>
+        </div>
+      </button>`;
     }).join("");
+  }
+
+  function openModule(moduleId) {
+    if (!hasPerm(moduleId)) return showToast("No permission for this module");
+    const mod = MODULE_PAGES[moduleId];
+    if (!mod) return;
+    const params = new URLSearchParams();
+    if (currentWs?.id) params.set("workspace", currentWs.id);
+    const url = mod.file + (params.toString() ? "?" + params.toString() : "");
+    showToast("Opening " + mod.label + " — pay with YOUR wallet");
+    window.open(url, "_blank");
   }
 
   function renderMembers() {
     const box = document.getElementById("membersTable");
     document.getElementById("inviteBtn").style.display = isAdmin() ? "" : "none";
-    if (!currentMembers.length) { box.innerHTML = `<p class="text-sm text-gray-500 text-center py-6">No members</p>`; return; }
+    if (!currentMembers.length) {
+      box.innerHTML = `<p class="text-sm text-gray-500 text-center py-6">No members</p>`;
+      return;
+    }
     box.innerHTML = currentMembers.map(m => {
       const roleColor = m.role === "owner" ? "bg-amber-500/20 text-amber-400" : m.role === "admin" ? "bg-indigo-500/20 text-indigo-400" : "bg-white/10 text-gray-400";
       const canManage = isAdmin() && m.role !== "owner" && m.user_address !== userAddress?.toLowerCase();
       return `<div class="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-white/5 border border-white/5">
-        <div class="min-w-0"><div class="font-bold text-sm truncate">${m.display_name || shortAddr(m.user_address)}</div>
-        <div class="text-[11px] text-gray-500 font-mono truncate">${m.user_address}</div></div>
+        <div class="min-w-0">
+          <div class="font-bold text-sm truncate">${m.display_name || shortAddr(m.user_address)}</div>
+          <div class="text-[11px] text-gray-500 font-mono truncate">${m.user_address}</div>
+        </div>
         <div class="flex items-center gap-2 shrink-0">
           <span class="role-badge ${roleColor}">${m.role}</span>
           ${canManage ? `<select onchange="changeRole('${m.user_address}', this.value)" class="text-[10px] px-2 py-1 rounded-lg">
-            <option value="member" ${m.role==='member'?'selected':''}>Member</option>
-            <option value="admin" ${m.role==='admin'?'selected':''}>Admin</option>
+            <option value="member" ${m.role==="member"?"selected":""}>Member</option>
+            <option value="admin" ${m.role==="admin"?"selected":""}>Admin</option>
           </select>
           <button onclick="removeMember('${m.user_address}')" class="text-rose-400 p-1.5"><i class="fas fa-trash text-xs"></i></button>` : ""}
-        </div></div>`;
+        </div>
+      </div>`;
     }).join("");
   }
 
-  let balRefreshTimer = null;
-  let balRefreshing = false;
-
-  function getReadProvider() {
-    try {
-      if (provider) return provider;
-      if (window.ethereum) return new ethers.BrowserProvider(window.ethereum);
-    } catch {}
-    return new ethers.JsonRpcProvider(ARC_NETWORK.rpcUrls[0]);
-  }
-
-  async function loadBalances(addr, retries = 3) {
-    const out = { USDC: 0, EURC: 0, cirBTC: 0 };
-    if (!addr || !ethers.isAddress(addr)) return out;
-    const cAddr = contractAddr();
-    const useContract = cAddr && addr.toLowerCase() === cAddr.toLowerCase();
-
-    for (let attempt = 0; attempt < retries; attempt++) {
-      try {
-        const p = getReadProvider();
-        if (useContract) {
-          const tc = new ethers.Contract(cAddr, TREASURY_ABI, p);
-          // Native (on Arc Testnet native = USDC)
-          try {
-            let nBal;
-            try { nBal = await tc.nativeBalance(); } catch { nBal = await p.getBalance(cAddr); }
-            out.USDC = parseFloat(ethers.formatUnits(nBal, 18));
-          } catch {}
-          // ERC20s via tokenBalance or balanceOf
-          for (const [sym, tokenAddr] of Object.entries(TOKENS)) {
-            if (sym === "USDC") continue;
-            try {
-              let bal, dec = 6;
-              try {
-                bal = await tc.tokenBalance(tokenAddr);
-              } catch {
-                const erc = new ethers.Contract(tokenAddr, ERC20_ABI, p);
-                bal = await erc.balanceOf(cAddr);
-              }
-              try {
-                const erc = new ethers.Contract(tokenAddr, ERC20_ABI, p);
-                dec = Number(await erc.decimals());
-              } catch {}
-              out[sym] = parseFloat(ethers.formatUnits(bal, dec));
-            } catch {}
-          }
-          // Also try USDC as ERC20 at 0x3600… if native was 0 but token has balance
-          try {
-            const usdcTok = TOKENS.USDC;
-            let uBal;
-            try { uBal = await tc.tokenBalance(usdcTok); } catch {
-              const erc = new ethers.Contract(usdcTok, ERC20_ABI, p);
-              uBal = await erc.balanceOf(cAddr);
-            }
-            const uNum = parseFloat(ethers.formatUnits(uBal, 18));
-            if (uNum > out.USDC) out.USDC = uNum;
-          } catch {}
-        } else {
-          // Wallet / EOA mode
-          try {
-            const nBal = await p.getBalance(addr);
-            out.USDC = parseFloat(ethers.formatUnits(nBal, 18));
-          } catch {}
-          for (const [sym, tokenAddr] of Object.entries(TOKENS)) {
-            if (sym === "USDC") continue;
-            try {
-              const c = new ethers.Contract(tokenAddr, ERC20_ABI, p);
-              const [bal, dec] = await Promise.all([c.balanceOf(addr), c.decimals()]);
-              out[sym] = parseFloat(ethers.formatUnits(bal, dec));
-            } catch {}
-          }
-        }
-        return out;
-      } catch (e) {
-        console.warn("loadBalances attempt", attempt + 1, e);
-        if (attempt < retries - 1) await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
-      }
-    }
-    return out;
-  }
-
-  function applyBalancesToUI(b) {
-    const usdc = document.getElementById("trUsdc");
-    const eurc = document.getElementById("trEurc");
-    const btc = document.getElementById("trBtc");
-    const ov = document.getElementById("ovTreasuryBal");
-    if (usdc) usdc.textContent = (b.USDC || 0).toFixed(4);
-    if (eurc) eurc.textContent = (b.EURC || 0).toFixed(4);
-    if (btc) btc.textContent = (b.cirBTC || 0).toFixed(6);
-    if (ov) ov.textContent = (b.USDC || 0).toFixed(2);
-  }
-
-  function contractAddr() {
-    const s = settingsOf(currentWs);
-    if (s.treasury_contract && ethers.isAddress(s.treasury_contract)) return s.treasury_contract;
-    return null;
-  }
-
-  async function renderTreasury() {
-    if (!currentWs) return;
-    const addr = treasuryAddress();
-    const cAddr = contractAddr();
-    document.getElementById("trAddr").textContent = addr || "—";
-    document.getElementById("trMode").textContent = cAddr ? "Mode: TeamTreasury Contract" : "Mode: Wallet (display only)";
-    document.getElementById("trContractActions").classList.toggle("hidden", !cAddr);
-    document.getElementById("trNoContractHint").classList.toggle("hidden", !!cAddr);
-    const b = await loadBalances(addr, 3);
-    applyBalancesToUI(b);
-  }
-
-  /** After a TX: poll until balance changes or max tries */
-  async function refreshBalancesWithRetry(prev = null, maxTries = 8) {
-    if (balRefreshing) return;
-    balRefreshing = true;
-    const addr = treasuryAddress();
-    try {
-      for (let i = 0; i < maxTries; i++) {
-        const b = await loadBalances(addr, 2);
-        applyBalancesToUI(b);
-        if (!prev) break;
-        const changed =
-          Math.abs((b.USDC || 0) - (prev.USDC || 0)) > 1e-8 ||
-          Math.abs((b.EURC || 0) - (prev.EURC || 0)) > 1e-8 ||
-          Math.abs((b.cirBTC || 0) - (prev.cirBTC || 0)) > 1e-8;
-        if (changed) break;
-        await new Promise(r => setTimeout(r, 1200));
-      }
-    } finally {
-      balRefreshing = false;
-    }
-  }
-
-  function startBalanceAutoRefresh() {
-    stopBalanceAutoRefresh();
-    balRefreshTimer = setInterval(() => {
-      if (!currentWs) return;
-      const panel = document.getElementById("panel-treasury");
-      const ov = document.getElementById("panel-overview");
-      if ((panel && !panel.classList.contains("hidden")) || (ov && !ov.classList.contains("hidden"))) {
-        loadBalances(treasuryAddress(), 2).then(applyBalancesToUI).catch(() => {});
-      }
-    }, 10000);
-  }
-
-  function stopBalanceAutoRefresh() {
-    if (balRefreshTimer) { clearInterval(balRefreshTimer); balRefreshTimer = null; }
-  }
-
-  async function manualRefreshBalances() {
-    const icon = document.getElementById("balRefreshIcon");
-    const label = document.getElementById("balRefreshLabel");
-    if (icon) icon.classList.add("fa-spin");
-    if (label) label.textContent = "Updating…";
-    try {
-      await refreshBalancesWithRetry(null, 5);
-      if (label) label.textContent = "Updated";
-      setTimeout(() => { if (label) label.textContent = "Refresh balances"; }, 1500);
-    } catch {
-      if (label) label.textContent = "Refresh balances";
-    } finally {
-      if (icon) icon.classList.remove("fa-spin");
-    }
-  }
-
-  async function tokenDecimals(token) {
-    try {
-      const c = new ethers.Contract(token, ERC20_ABI, provider || signer);
-      return Number(await c.decimals());
-    } catch {
-      return token.toLowerCase().startsWith("0x3600") ? 18 : 6;
-    }
-  }
-
-  async function treasuryDeposit() {
-    const cAddr = contractAddr();
-    if (!cAddr || !signer) return showToast("Contract + wallet required");
-    if (!ethers.isAddress(cAddr)) return showToast("Invalid contract address");
-    try { await ensureArcNetwork(); provider = new ethers.BrowserProvider(window.ethereum); signer = await provider.getSigner(); }
-    catch (e) { return showToast(e.message || "Switch to Arc Testnet"); }
-
-    const token = document.getElementById("trToken").value;
-    const amountStr = document.getElementById("trAmount").value;
-    if (!amountStr || Number(amountStr) <= 0) return showToast("Enter amount");
-
-    try {
-      // Preflight: code + initialize
-      const code = await signer.provider.getCode(cAddr);
-      if (!code || code === "0x") return showToast("No contract code at proxy address");
-
-      const tc = new ethers.Contract(cAddr, TREASURY_ABI, signer);
-      try {
-        const own = await tc.owner();
-        if (!own || own === ethers.ZeroAddress) {
-          return showToast("Proxy not initialized — call initialize(owner) in Remix first");
-        }
-      } catch {
-        return showToast("Proxy not initialized or wrong ABI — call initialize(owner) on proxy");
-      }
-
-      const prevBal = await loadBalances(treasuryAddress(), 1);
-      if (token === "native") {
-        const wei = ethers.parseEther(amountStr);
-        if (wei === 0n) return showToast("Amount too small");
-        showToast("Depositing native…");
-        const tx = await tc.depositNative({ value: wei });
-        await tx.wait();
-        await logWsHistory({ type: "Treasury Deposit", amount: amountStr, token: "NATIVE", hash: tx.hash });
-      } else {
-        const dec = await tokenDecimals(token);
-        const wei = ethers.parseUnits(amountStr, dec);
-        if (wei === 0n) return showToast("Amount too small");
-        const erc = new ethers.Contract(token, ERC20_ABI, signer);
-        try {
-          const bal = await erc.balanceOf(userAddress);
-          if (bal < wei) return showToast("Insufficient token balance");
-        } catch {}
-        showToast("Approving token…");
-        const aTx = await erc.approve(cAddr, wei);
-        await aTx.wait();
-        showToast("Depositing ERC20…");
-        const tx = await tc.depositERC20(token, wei);
-        await tx.wait();
-        await logWsHistory({ type: "Treasury Deposit", amount: amountStr, token, hash: tx.hash });
-      }
-      showToast("Deposit OK — updating balances…");
-      await refreshBalancesWithRetry(prevBal, 10);
-      renderOverview(); loadHistory();
-    } catch (e) {
-      console.error(e);
-      let msg = e.reason || e.shortMessage || e.message || "Deposit failed";
-      if (/Internal JSON-RPC|missing revert data|CALL_EXCEPTION/i.test(String(msg))) {
-        msg = "TX reverted — check: 1) initialize done 2) token address valid 3) balance/allowance";
-      }
-      showToast(msg);
-    }
-  }
-
-  async function treasuryWithdraw() {
-    const cAddr = contractAddr();
-    if (!cAddr || !signer) return showToast("Contract + wallet required");
-    if (!isAdmin()) return showToast("Owner/Admin only");
-    try { await ensureArcNetwork(); provider = new ethers.BrowserProvider(window.ethereum); signer = await provider.getSigner(); }
-    catch (e) { return showToast(e.message || "Switch to Arc Testnet"); }
-    const token = document.getElementById("trToken").value;
-    const amountStr = document.getElementById("trAmount").value;
-    if (!amountStr || Number(amountStr) <= 0) return showToast("Enter amount");
-    try {
-      const prev = await loadBalances(treasuryAddress(), 1);
-      const tc = new ethers.Contract(cAddr, TREASURY_ABI, signer);
-      showToast("Withdrawing…");
-      let tx;
-      if (token === "native") {
-        const wei = ethers.parseEther(amountStr);
-        tx = await tc.withdrawNative(userAddress, wei);
-      } else {
-        const dec = await tokenDecimals(token);
-        const wei = ethers.parseUnits(amountStr, dec);
-        tx = await tc.withdrawERC20(token, userAddress, wei);
-      }
-      await tx.wait();
-      await logWsHistory({ type: "Treasury Withdraw", amount: amountStr, token: token === "native" ? "NATIVE" : token, memo: "Withdraw to " + shortAddr(userAddress), hash: tx.hash });
-      showToast("Withdraw OK — updating balances…");
-      await refreshBalancesWithRetry(prev, 10);
-      renderOverview(); loadHistory();
-    } catch (e) {
-      console.error(e);
-      showToast(e.reason || e.shortMessage || "Withdraw failed");
-    }
-  }
-
-  async function treasuryApproveSplitter() {
-    const cAddr = contractAddr();
-    if (!cAddr || !signer) return showToast("Contract + wallet required");
-    try { await ensureArcNetwork(); provider = new ethers.BrowserProvider(window.ethereum); signer = await provider.getSigner(); }
-    catch (e) { return showToast(e.message || "Switch to Arc Testnet"); }
-    const token = document.getElementById("trToken").value;
-    if (token === "native") return showToast("Approve is for ERC20 only — pick EURC/cirBTC/USDC token");
-    const amountStr = document.getElementById("trAmount").value;
-    if (!amountStr || Number(amountStr) <= 0) return showToast("Enter amount");
-    try {
-      const dec = await tokenDecimals(token);
-      const wei = ethers.parseUnits(amountStr, dec);
-      const tc = new ethers.Contract(cAddr, TREASURY_ABI, signer);
-      try { await tc.splitter(); } catch { return showToast("Call Set Splitter first"); }
-      const sp = await tc.splitter();
-      if (!sp || sp === ethers.ZeroAddress) return showToast("Call Set Splitter first");
-      showToast("Approving splitter…");
-      await (await tc.approveSplitter(token, wei)).wait();
-      showToast("Splitter approved");
-      await logWsHistory({ type: "Approve Splitter", amount: amountStr, token });
-    } catch (e) {
-      console.error(e);
-      showToast(e.reason || e.shortMessage || "Approve failed — is splitter set?");
-    }
-  }
-
-  async function treasuryApproveMax() {
-    const cAddr = contractAddr();
-    if (!cAddr || !signer) return showToast("Contract + wallet required");
-    try { await ensureArcNetwork(); provider = new ethers.BrowserProvider(window.ethereum); signer = await provider.getSigner(); }
-    catch (e) { return showToast(e.message || "Switch to Arc Testnet"); }
-    const token = document.getElementById("trToken").value;
-    if (token === "native") return showToast("Approve is for ERC20 only");
-    try {
-      const tc = new ethers.Contract(cAddr, TREASURY_ABI, signer);
-      const sp = await tc.splitter();
-      if (!sp || sp === ethers.ZeroAddress) return showToast("Call Set Splitter first");
-      showToast("Approve max…");
-      await (await tc.approveSplitterMax(token)).wait();
-      showToast("Max approval set");
-      await logWsHistory({ type: "Approve Splitter Max", token });
-    } catch (e) {
-      console.error(e);
-      showToast(e.reason || e.shortMessage || "Approve max failed");
-    }
-  }
-
-  async function treasuryRevoke() {
-    const cAddr = contractAddr();
-    if (!cAddr || !signer) return showToast("Contract + wallet required");
-    if (!isAdmin()) return showToast("Owner/Admin only");
-    const token = document.getElementById("trToken").value;
-    try {
-      const tc = new ethers.Contract(cAddr, TREASURY_ABI, signer);
-      await (await tc.revokeSplitterApproval(token)).wait();
-      showToast("Approval revoked");
-      await logWsHistory({ type: "Revoke Splitter Approval", token });
-    } catch (e) {
-      console.error(e);
-      showToast(e.reason || e.shortMessage || "Revoke failed");
-    }
-  }
-
-  async function treasurySetSplitter() {
-    const cAddr = contractAddr();
-    if (!cAddr || !signer) return showToast("Contract + wallet required");
-    try {
-      await ensureArcNetwork();
-      provider = new ethers.BrowserProvider(window.ethereum);
-      signer = await provider.getSigner();
-      const tc = new ethers.Contract(cAddr, TREASURY_ABI, signer);
-      showToast("Setting splitter…");
-      await (await tc.setSplitter(DEFAULT_SPLITTER)).wait();
-      showToast("Splitter set to " + shortAddr(DEFAULT_SPLITTER));
-      await logWsHistory({ type: "Set Splitter", memo: DEFAULT_SPLITTER });
-    } catch (e) {
-      console.error(e);
-      showToast(e.reason || e.shortMessage || "setSplitter failed (owner only)");
-    }
-  }
-
   function renderPermissions() {
-    const canEdit = isAdmin();
-    document.getElementById("savePermBtn").style.display = canEdit ? "" : "none";
-    let html = `<table class="w-full text-left text-sm"><thead><tr class="text-xs text-gray-500 uppercase">
-      <th class="p-2">Module</th>${ROLES.map(r => `<th class="p-2 text-center">${r}</th>`).join("")}</tr></thead><tbody>`;
-    MODULES.forEach(mod => {
-      html += `<tr class="border-t border-white/5"><td class="p-2 font-bold">${mod.label}</td>`;
-      ROLES.forEach(role => {
-        const checked = permState[role]?.[mod.id] ? "checked" : "";
-        const disabled = role === "owner" || !canEdit ? "disabled" : "";
-        html += `<td class="p-2 text-center"><input type="checkbox" class="perm-check" data-role="${role}" data-mod="${mod.id}" ${checked} ${disabled}></td>`;
+    const canEdit = myRole === "owner";
+    document.getElementById("savePermBtn").classList.toggle("hidden", !canEdit);
+    const roles = ["admin", "member"];
+    let html = `<table class="w-full text-sm"><thead><tr class="text-left text-[11px] text-gray-500"><th class="py-2 pr-3">Module</th>`;
+    roles.forEach(r => { html += `<th class="py-2 px-2 text-center capitalize">${r}</th>`; });
+    html += `</tr></thead><tbody>`;
+    MODULES.forEach(m => {
+      html += `<tr class="border-t border-white/5"><td class="py-2.5 pr-3 font-bold">${m.label}</td>`;
+      roles.forEach(r => {
+        const checked = !!(permState[r] && permState[r][m.id]);
+        html += `<td class="py-2.5 px-2 text-center"><input type="checkbox" class="perm-check" ${checked?"checked":""} ${canEdit?"":"disabled"} onchange="permState['${r}']['${m.id}']=this.checked"></td>`;
       });
       html += `</tr>`;
     });
-    html += `</tbody></table>`;
+    html += `</tbody></table><p class="text-[11px] text-gray-500 mt-3">Owner always has all modules.</p>`;
     document.getElementById("permTable").innerHTML = html;
   }
 
-  function renderBilling() {
-    selectedPlan = settingsOf(currentWs).plan || "free";
-    document.getElementById("planFree").className = `rounded-2xl p-5 border-2 cursor-pointer ${selectedPlan==='free' ? 'border-indigo-500 bg-indigo-500/10' : 'border-white/10 bg-white/5'}`;
-    document.getElementById("planTeam").className = `rounded-2xl p-5 border-2 cursor-pointer ${selectedPlan==='team' ? 'border-indigo-500 bg-indigo-500/10' : 'border-white/10 bg-white/5'}`;
-    document.getElementById("savePlanBtn").style.display = isAdmin() ? "" : "none";
+  async function savePermissions() {
+    if (myRole !== "owner" || !currentWs) return showToast("Owner only");
+    const s = settingsOf(currentWs);
+    s.permissions = permState;
+    const ok = await updateWorkspace(currentWs.id, { settings: s });
+    if (ok) {
+      currentWs.settings = s;
+      showToast("Permissions saved");
+      renderModules(); renderOverview();
+    } else showToast("Save failed");
   }
-  function selectPlan(p) {
-    if (!isAdmin()) return showToast("Only owner/admin");
-    selectedPlan = p; renderBilling();
-  }
-  async function savePlan() {
-    if (!isAdmin()) return;
-    const s = settingsOf(currentWs); s.plan = selectedPlan;
-    if (!(await updateWorkspace(currentWs.id, { settings: s }))) return showToast("Failed");
-    showToast("Plan saved"); await loadWorkspaces(); selectWorkspace(currentWs.id);
+
+  async function loadTeamActivity() {
+    const box = document.getElementById("activityList");
+    if (!currentWs) return;
+    box.innerHTML = `<p class="text-sm text-gray-500 text-center py-6">Loading…</p>`;
+    const addrs = currentMembers.map(m => m.user_address);
+    const rows = typeof fetchTeamHistory === "function"
+      ? await fetchTeamHistory(addrs, currentWs.id, 50)
+      : [];
+    if (!rows.length) {
+      box.innerHTML = `<p class="text-sm text-gray-500 text-center py-8">No team activity yet. When members use modules (with db.js history), it shows up here.</p>`;
+      return;
+    }
+    box.innerHTML = rows.map(r => {
+      const who = shortAddr(r.user);
+      const typ = r.type || r.appName || "Activity";
+      const amt = r.amount != null ? `${r.amount} ${r.token || ""}` : "";
+      const ts = r.timestamp ? new Date(r.timestamp).toLocaleString() : "";
+      const hash = r.hash || r.txHash || "";
+      return `<div class="p-3 rounded-2xl bg-white/5 border border-white/5">
+        <div class="flex justify-between gap-2">
+          <div class="font-bold text-sm">${typ}</div>
+          <div class="text-[11px] text-gray-500">${ts}</div>
+        </div>
+        <div class="text-xs text-gray-400 mt-1">${who}${amt ? " · " + amt : ""}${r.status ? " · " + r.status : ""}</div>
+        ${hash ? `<div class="text-[10px] font-mono text-gray-600 mt-1 truncate">${hash}</div>` : ""}
+      </div>`;
+    }).join("");
   }
 
   function renderSettings() {
     if (!currentWs) return;
-    const s = settingsOf(currentWs);
+    const can = isAdmin();
     document.getElementById("setName").value = currentWs.name || "";
     document.getElementById("setDesc").value = currentWs.description || "";
     document.getElementById("setTreasury").value = currentWs.treasury_address || "";
-    document.getElementById("setContract").value = s.treasury_contract || "";
-    const canEdit = isAdmin();
-    ["setName","setDesc","setTreasury","setContract"].forEach(id => document.getElementById(id).disabled = !canEdit);
-    document.getElementById("saveSettingsBtn").style.display = canEdit ? "" : "none";
+    document.getElementById("saveSetBtn").style.display = can ? "" : "none";
+    ["setName","setDesc","setTreasury"].forEach(id => {
+      document.getElementById(id).disabled = !can;
+    });
   }
 
-  async function savePermissions() {
-    if (!isAdmin()) return;
-    document.querySelectorAll("#permTable input[data-role]").forEach(inp => {
-      const role = inp.dataset.role, mod = inp.dataset.mod;
-      if (!permState[role]) permState[role] = {};
-      permState[role][mod] = inp.checked;
-    });
-    permState.owner = DEFAULT_PERMS.owner;
-    const s = settingsOf(currentWs); s.permissions = permState;
-    if (!(await updateWorkspace(currentWs.id, { settings: s }))) return showToast("Save failed");
-    showToast("Permissions saved");
-    renderModules();
-  }
-
-  function showCreateModal() { document.getElementById("createModal").classList.remove("hidden"); }
-  function hideCreateModal() { document.getElementById("createModal").classList.add("hidden"); }
-  async function doCreateWorkspace() {
-    const name = document.getElementById("createName").value.trim();
-    if (!name || !userAddress) return showToast("Name + wallet required");
-    const treasury = document.getElementById("createTreasury").value.trim() || null;
-    if (treasury && !ethers.isAddress(treasury)) return showToast("Invalid treasury");
-    const ws = await createWorkspace(userAddress, {
-      name, description: document.getElementById("createDesc").value.trim(), treasuryAddress: treasury
-    });
-    if (!ws) return showToast("Create failed");
-    await updateWorkspace(ws.id, { settings: { plan: "free", permissions: DEFAULT_PERMS, treasury_contract: null } });
-    showToast("Workspace created"); hideCreateModal();
-    await loadWorkspaces(); selectWorkspace(ws.id);
-  }
-  function showInviteModal() {
-    if (!isAdmin()) return showToast("Admin only");
-    document.getElementById("inviteModal").classList.remove("hidden");
-  }
-  function hideInviteModal() { document.getElementById("inviteModal").classList.add("hidden"); }
-  async function doInvite() {
-    const addr = document.getElementById("inviteAddr").value.trim();
-    if (!ethers.isAddress(addr)) return showToast("Invalid address");
-    const ok = await inviteWorkspaceMember(currentWs.id, userAddress, addr, document.getElementById("inviteRole").value, document.getElementById("inviteName").value.trim());
-    if (!ok) return showToast("Invite failed");
-    showToast("Invited"); hideInviteModal();
-    currentMembers = await fetchWorkspaceMembers(currentWs.id);
-    renderMembers(); renderOverview();
-  }
-  async function removeMember(addr) {
-    if (!confirm("Remove member?")) return;
-    await removeWorkspaceMember(currentWs.id, addr);
-    currentMembers = await fetchWorkspaceMembers(currentWs.id);
-    renderMembers(); renderOverview();
-  }
-  async function changeRole(addr, role) {
-    await updateMemberRole(currentWs.id, addr, role);
-    currentMembers = await fetchWorkspaceMembers(currentWs.id);
-    renderMembers();
-  }
   async function saveSettings() {
-    if (!isAdmin()) return;
+    if (!isAdmin() || !currentWs) return showToast("Admin only");
     const name = document.getElementById("setName").value.trim();
     if (!name) return showToast("Name required");
+    const description = document.getElementById("setDesc").value;
     const treasury = document.getElementById("setTreasury").value.trim();
-    const contract = document.getElementById("setContract").value.trim();
-    if (treasury && !ethers.isAddress(treasury)) return showToast("Invalid treasury wallet");
-    if (contract && !ethers.isAddress(contract)) return showToast("Invalid contract");
-    const s = settingsOf(currentWs);
-    s.treasury_contract = contract || null;
+    if (treasury && !ethers.isAddress(treasury)) return showToast("Invalid address");
     const ok = await updateWorkspace(currentWs.id, {
-      name, description: document.getElementById("setDesc").value.trim(),
-      treasury_address: treasury || null, settings: s
+      name, description, treasury_address: treasury || null
     });
-    if (!ok) return showToast("Save failed");
-    showToast("Settings saved");
-    await loadWorkspaces(); selectWorkspace(currentWs.id);
+    if (ok) {
+      showToast("Settings saved");
+      await loadWorkspaces();
+    } else showToast("Save failed");
   }
 
+  function showCreateModal() {
+    document.getElementById("createModal").classList.remove("hidden");
+    document.getElementById("createModal").classList.add("flex");
+  }
+  function hideCreateModal() {
+    document.getElementById("createModal").classList.add("hidden");
+    document.getElementById("createModal").classList.remove("flex");
+  }
+  async function doCreateWorkspace() {
+    const name = document.getElementById("createName").value.trim();
+    if (!name) return showToast("Enter a name");
+    const description = document.getElementById("createDesc").value.trim();
+    showToast("Creating…");
+    const ws = await createWorkspace(userAddress, { name, description });
+    if (!ws) return showToast("Create failed");
+    hideCreateModal();
+    document.getElementById("createName").value = "";
+    document.getElementById("createDesc").value = "";
+    showToast("Workspace created");
+    await loadWorkspaces();
+    await selectWorkspace(ws.id);
+  }
 
-  async function logWsHistory(record) {
-    if (!userAddress || typeof saveHistoryToCloud !== "function") return;
+  function showInviteModal() {
+    document.getElementById("inviteModal").classList.remove("hidden");
+    document.getElementById("inviteModal").classList.add("flex");
+  }
+  function hideInviteModal() {
+    document.getElementById("inviteModal").classList.add("hidden");
+    document.getElementById("inviteModal").classList.remove("flex");
+  }
+  async function doInvite() {
+    if (!isAdmin() || !currentWs) return;
+    const addr = document.getElementById("inviteAddr").value.trim();
+    const name = document.getElementById("inviteName").value.trim();
+    const role = document.getElementById("inviteRole").value;
+    if (!ethers.isAddress(addr)) return showToast("Invalid address");
+    const ok = await inviteWorkspaceMember(currentWs.id, userAddress, addr, role, name);
+    if (ok) {
+      showToast("Invited");
+      hideInviteModal();
+      document.getElementById("inviteAddr").value = "";
+      document.getElementById("inviteName").value = "";
+      currentMembers = await fetchWorkspaceMembers(currentWs.id);
+      renderMembers(); renderOverview();
+    } else showToast("Invite failed");
+  }
+
+  async function changeRole(addr, role) {
+    if (!isAdmin() || !currentWs) return;
+    const ok = await updateMemberRole(currentWs.id, addr, role);
+    if (ok) {
+      currentMembers = await fetchWorkspaceMembers(currentWs.id);
+      renderMembers();
+      showToast("Role updated");
+    } else showToast("Failed");
+  }
+
+  async function removeMember(addr) {
+    if (!isAdmin() || !currentWs) return;
+    if (!confirm("Remove this member?")) return;
+    const ok = await removeWorkspaceMember(currentWs.id, addr);
+    if (ok) {
+      currentMembers = await fetchWorkspaceMembers(currentWs.id);
+      renderMembers(); renderOverview();
+      showToast("Removed");
+    } else showToast("Failed");
+  }
+
+  (async () => {
+    if (!window.ethereum || forceDisconnected) return;
     try {
-      await saveHistoryToCloud(userAddress, {
-        appName: "Workspace",
-        workspaceId: currentWs?.id || null,
-        workspaceName: currentWs?.name || "",
-        timestamp: new Date().toISOString(),
-        ...record
-      });
-    } catch (e) { console.warn("logWsHistory", e); }
-  }
-
-  async function loadHistory() {
-    const box = document.getElementById("historyList");
-    if (!box) return;
-    if (!userAddress || !currentWs) {
-      box.innerHTML = `<p class="text-sm text-gray-500 text-center py-8">Connect and select a workspace</p>`;
-      return;
-    }
-    box.innerHTML = `<p class="text-sm text-gray-500 text-center py-6">Loading…</p>`;
-    try {
-      let rows = [];
-      if (typeof fetchHistoryFromCloud === "function") {
-        rows = await fetchHistoryFromCloud(userAddress);
+      provider = new ethers.BrowserProvider(window.ethereum);
+      const accs = await provider.send("eth_accounts", []);
+      if (accs?.length) {
+        signer = await provider.getSigner();
+        userAddress = await signer.getAddress();
+        setWalletUI(true);
+        await loadWorkspaces();
       }
-      const wid = currentWs.id;
-      const filtered = (rows || []).filter(r => {
-        if (!r) return false;
-        if (r.workspaceId && r.workspaceId === wid) return true;
-        if (r.appName === "Workspace" && r.workspaceId === wid) return true;
-        // also show generic workspace-tagged
-        return false;
-      });
-      // newest first already from API; keep order
-      if (!filtered.length) {
-        box.innerHTML = `<p class="text-sm text-gray-500 text-center py-8">No history for this workspace yet</p>`;
-        return;
-      }
-      box.innerHTML = filtered.slice(0, 50).map(r => {
-        const type = r.type || r.memo || r.appName || "Activity";
-        const amount = r.amount != null ? r.amount : "";
-        const token = r.token || "";
-        const time = r.timestamp ? new Date(r.timestamp).toLocaleString() : "";
-        const hash = r.hash || r.txHash || "";
-        const extra = r.memo && r.memo !== type ? r.memo : "";
-        return `<div class="p-3.5 rounded-2xl bg-white/5 border border-white/5">
-          <div class="flex items-start justify-between gap-3">
-            <div class="min-w-0">
-              <div class="font-bold text-sm">${type}</div>
-              <div class="text-[11px] text-gray-500 mt-0.5">${extra || (amount !== "" ? amount + " " + token : "")}</div>
-              ${hash ? `<div class="text-[10px] font-mono text-gray-600 mt-1 truncate">${hash}</div>` : ""}
-            </div>
-            <div class="text-[10px] text-gray-500 shrink-0 text-right">${time}</div>
-          </div>
-        </div>`;
-      }).join("");
-    } catch (e) {
-      console.error(e);
-      box.innerHTML = `<p class="text-sm text-rose-400 text-center py-6">Failed to load history</p>`;
-    }
-  }
-
-  function toggleTheme() {
-    document.documentElement.classList.toggle("light");
-    const icon = document.getElementById("themeBtn").querySelector("i");
-    if (document.documentElement.classList.contains("light")) {
-      icon.className = "fas fa-sun text-lg text-amber-500"; localStorage.setItem("theme", "light");
-    } else {
-      icon.className = "fas fa-moon text-lg text-indigo-400"; localStorage.setItem("theme", "dark");
-    }
-  }
-
-  window.addEventListener("load", async () => {
-    if (localStorage.getItem("theme") === "light") {
-      document.documentElement.classList.add("light");
-      document.getElementById("themeBtn").querySelector("i").className = "fas fa-sun text-lg text-amber-500";
-    }
-    if (window.ethereum && !forceDisconnected) {
-      try {
-        const accounts = await window.ethereum.request({ method: "eth_accounts" });
-        if (accounts?.length) await connectWallet();
-      } catch {}
-    }
-  });
-  if (window.ethereum) {
-    window.ethereum.on?.("accountsChanged", async (accs) => {
-      if (accs?.length) { forceDisconnected = false; userAddress = accs[0]; setWalletUI(true); await loadWorkspaces(); }
-      else disconnectWallet();
-    });
-    window.ethereum.on?.("chainChanged", () => {
-      // reload provider binding after network switch
-      window.location.reload();
-    });
-  }
+    } catch {}
+  })();
 </script>
 </body>
 </html>
