@@ -9,63 +9,162 @@
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
   <script src="db.js"></script>
-  <style>
+      <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-    body {
-      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+    
+    body { 
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif; 
       background: #070711;
-      background-image:
-        radial-gradient(circle at 10% 20%, rgba(99,102,241,0.10) 0%, transparent 40%),
-        radial-gradient(circle at 90% 80%, rgba(16,185,129,0.08) 0%, transparent 40%);
-      color: #f8fafc; min-height: 100vh;
+      background-image: 
+        radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.10) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 50% 50%, rgba(34, 211, 238, 0.05) 0%, transparent 50%);
+      color: #f8fafc;
+      min-height: 100vh;
+      overflow-x: hidden;
     }
+    
     .glass {
-      background: rgba(18,18,38,0.65);
-      backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-      border: 1px solid rgba(255,255,255,0.07);
-      box-shadow: 0 20px 50px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.08);
+      background: rgba(18, 18, 38, 0.65);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
-    .light {
-      background: #f8fafc !important;
-      background-image: radial-gradient(circle at 10% 20%, rgba(99,102,241,0.12) 0%, transparent 40%) !important;
-      color: #0f172a !important;
+    
+    /* Light mode on <html> like Split — body stays dark; glass & text adapt */
+    .light body {
+      color: #000000 !important;
     }
+
     .light .glass {
-      background: rgba(255,255,255,0.55) !important;
-      border: 1px solid rgba(0,0,0,0.08) !important;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.04), inset 0 1px 0 #fff !important;
+      background: rgba(255, 255, 255, 0.45) !important;
+      backdrop-filter: blur(24px) !important;
+      -webkit-backdrop-filter: blur(24px) !important;
+      border: 1px solid rgba(255, 255, 255, 0.8) !important;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.03), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
+      color: #000000 !important;
     }
-    .light h1, .light h2, .light h3, .light label, .light .text-white { color: #0f172a !important; }
-    .light .text-gray-400 { color: #334155 !important; }
-    .light .text-gray-300 { color: #1e293b !important; }
-    .light .text-gray-500 { color: #475569 !important; }
-    .light .text-indigo-400 { color: #4338ca !important; }
-    .light .text-emerald-400 { color: #047857 !important; }
-    .light .text-rose-400 { color: #be123c !important; }
-    .light .text-amber-400 { color: #b45309 !important; }
-    .light .bg-white\/5 { background-color: rgba(0,0,0,0.04) !important; }
-    .light .border-white\/5, .light .border-white\/10 { border-color: rgba(0,0,0,0.08) !important; }
+
+    .light h1, .light h2, .light h3, .light label, .light .text-white {
+      color: #000000 !important;
+    }
+    .light p, .light span, .light div, .light button, .light a, .light td, .light th {
+      color: inherit;
+    }
+    .light .text-gray-400 { color: #1e293b !important; }
+    .light .text-gray-300 { color: #0f172a !important; }
+    .light .text-gray-200 { color: #000000 !important; }
+    .light .text-gray-500 { color: #1e293b !important; }
+
+    .light .text-indigo-400 { color: #312e81 !important; }
+    .light .text-indigo-300 { color: #1e1b4b !important; }
+    .light .text-indigo-200 { color: #1e1b4b !important; }
+    .light .text-emerald-400 { color: #064e3b !important; }
+    .light .text-emerald-300 { color: #022c22 !important; }
+    .light .text-emerald-200 { color: #022c22 !important; }
+    .light .text-cyan-400 { color: #164e63 !important; }
+    .light .text-sky-400 { color: #0c4a6e !important; }
+    .light .text-rose-400 { color: #9f1239 !important; }
+    .light .text-amber-400 { color: #92400e !important; }
+    .light .text-violet-400 { color: #5b21b6 !important; }
+    .light .text-sky-300 { color: #0c4a6e !important; }
+    .light .text-slate-300 { color: #0f172a !important; }
+    .light .text-slate-400 { color: #1e293b !important; }
+
+    .light .font-extrabold { color: #000000 !important; }
+    .light .font-bold { color: #000000 !important; }
+    .light .font-semibold, .light .font-medium { color: #0f172a !important; }
+    
+    /* Nav inactive & muted stay readable but dark */
+    .light .nav-item:not(.active) { color: #1e293b !important; }
+    .light .nav-item.active { color: #312e81 !important; }
+
     select, input, textarea {
-      background-color: rgba(255,255,255,0.04); color: #f8fafc;
-      border: 1px solid rgba(255,255,255,0.12); border-radius: 14px; font-weight: 600;
+      background-color: rgba(255, 255, 255, 0.03);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      font-weight: 600;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    select:hover, input:hover, textarea:hover {
+      border-color: rgba(255, 255, 255, 0.2);
     }
     select:focus, input:focus, textarea:focus {
-      border-color: #6366f1; box-shadow: 0 0 0 4px rgba(99,102,241,0.15); outline: none;
+      border-color: #6366f1;
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15);
+      outline: none;
     }
+
     .light select, .light input, .light textarea {
-      background: #fff !important; color: #0f172a !important; border: 1px solid rgba(0,0,0,0.12) !important;
+      background-color: rgba(255, 255, 255, 0.6) !important;
+      color: #000000 !important;
+      border: 1px solid rgba(0, 0, 0, 0.06) !important;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02) !important;
     }
-    select option { background-color: #0f172a; color: #f8fafc; }
-    .light select option { background-color: #ffffff !important; color: #0f172a !important; }
-    .light #toast, .light #toast span, .light #toast i { color: #fff !important; }
-    .nav-item.active { background: rgba(99,102,241,0.15); color: #a5b4fc; border-color: rgba(99,102,241,0.35); }
-    .light .nav-item.active { background: rgba(99,102,241,0.12); color: #4338ca; }
-    .app-button:active { transform: scale(0.98); }
+    .light select:focus, .light input:focus, .light textarea:focus {
+      background-color: #ffffff !important;
+      border-color: #6366f1 !important;
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.15) !important;
+    }
+
+    select option {
+      background-color: #0f172a;
+      color: white;
+      padding: 14px 18px;
+    }
+    .light select option {
+      background-color: #ffffff !important;
+      color: #000000 !important;
+    }
+
+    .light .bg-white\/\[0\.02\], .light .bg-white\/\[0\.01\] { 
+      background-color: rgba(255, 255, 255, 0.6) !important; 
+      border-color: rgba(255, 255, 255, 0.8) !important;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.02);
+    }
+    .light .bg-white\/5 { 
+      background-color: rgba(0, 0, 0, 0.04) !important; 
+    }
+    .light .border-white\/5, .light .border-white\/10, .light .border-white\/15 { 
+      border-color: rgba(0, 0, 0, 0.06) !important; 
+    }
+    .light .bg-white\/10 {
+      background-color: rgba(0, 0, 0, 0.08) !important;
+    }
+
+    .light #toast, .light #toast span, .light #toast i {
+      color: #ffffff !important;
+    }
+
+    .nav-item.active { 
+      background: rgba(99, 102, 241, 0.15); 
+      color: #a5b4fc; 
+      border-color: rgba(99, 102, 241, 0.35); 
+    }
+    .light .nav-item.active { 
+      background: rgba(99, 102, 241, 0.12); 
+      color: #4338ca; 
+      border-color: rgba(99, 102, 241, 0.3);
+    }
+
+    .app-button {
+      position: relative;
+      overflow: hidden;
+      transition: all 0.25s ease;
+    }
+    .app-button:active {
+      transform: scale(0.98);
+    }
+
     .role-badge { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 999px; text-transform: uppercase; }
     .perm-check { width: 18px; height: 18px; accent-color: #6366f1; }
     .module-card { transition: all 0.2s; }
     .module-card:hover { transform: translateY(-2px); }
     .module-card.locked { opacity: 0.45; pointer-events: none; }
+
+    .light .pitch-black-text { color: #000000 !important; }
   </style>
 </head>
 <body class="text-white min-h-screen selection:bg-indigo-500 selection:text-white">
@@ -424,14 +523,14 @@
   }
 
   function toggleTheme() {
-    document.body.classList.toggle("light");
-    const dark = !document.body.classList.contains("light");
-    document.querySelector("#themeBtn i").className = dark ? "fas fa-moon text-lg text-indigo-400" : "fas fa-sun text-lg text-amber-500";
+    document.documentElement.classList.toggle("light");
+    const dark = !document.documentElement.classList.contains("light");
+    document.querySelector("#themeBtn i").className = dark ? "fas fa-moon text-lg text-indigo-400" : "fas fa-sun text-lg text-amber-400";
     localStorage.setItem("arcWsTheme", dark ? "dark" : "light");
   }
   if (localStorage.getItem("arcWsTheme") === "light") {
-    document.body.classList.add("light");
-    document.querySelector("#themeBtn i").className = "fas fa-sun text-lg text-amber-500";
+    document.documentElement.classList.add("light");
+    document.querySelector("#themeBtn i").className = "fas fa-sun text-lg text-amber-400";
   }
 
   function readInviteTokenFromURL() {
@@ -585,521 +684,3 @@
     currentMembers = await fetchWorkspaceMembers(id);
     const s = settingsOf(currentWs);
     permState = mergePermissions(s.permissions);
-    document.getElementById("emptyWs").classList.add("hidden");
-    document.getElementById("sideNav").classList.remove("hidden");
-    renderWsList();
-    switchPanel("overview");
-    renderAllPanels();
-  }
-
-  function switchPanel(name) {
-    ["overview","modules","members","permissions","activity","settings"].forEach(p => {
-      document.getElementById("panel-"+p)?.classList.toggle("hidden", p !== name);
-    });
-    document.querySelectorAll(".nav-item").forEach(b => {
-      const on = b.dataset.p === name;
-      b.classList.toggle("active", on);
-      b.classList.toggle("text-gray-400", !on);
-    });
-    if (name === "activity") loadTeamActivity();
-    if (name === "members") loadPendingInvites();
-  }
-
-  function renderAllPanels() {
-    renderOverview();
-    renderModules();
-    renderMembers();
-    renderPermissions();
-    renderSettings();
-  }
-
-  function renderOverview() {
-    if (!currentWs) return;
-    document.getElementById("ovName").textContent = currentWs.name;
-    document.getElementById("ovDesc").textContent = currentWs.description || "No description";
-    document.getElementById("ovRole").textContent = myRole;
-    document.getElementById("ovMyRole").textContent = myRole;
-    document.getElementById("ovMemberCount").textContent = currentMembers.length;
-    document.getElementById("ovPlan").textContent = (settingsOf(currentWs).plan || "free").toUpperCase();
-    const openCount = MODULES.filter(m => hasPerm(m.id)).length;
-    document.getElementById("ovModsOpen").textContent = openCount + "/" + MODULES.length;
-    document.getElementById("ovQuickMods").innerHTML = MODULES.filter(m => hasPerm(m.id)).slice(0, 4).map(m => {
-      const mod = MODULE_PAGES[m.id];
-      return `<button onclick="openModule('${m.id}')" class="px-3 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-bold hover:border-indigo-500/40">
-        <i class="fas ${mod.icon} text-${mod.color}-400 mr-1.5"></i>${mod.label}
-      </button>`;
-    }).join("") || `<span class="text-xs text-gray-500">No modules allowed for your role</span>`;
-  }
-
-  function renderModules() {
-    document.getElementById("modulesGrid").innerHTML = Object.entries(MODULE_PAGES).map(([id, mod]) => {
-      const allowed = hasPerm(id);
-      return `<button onclick="openModule('${id}')" class="module-card ${allowed ? "" : "locked"} text-left p-4 rounded-2xl bg-white/5 border border-white/10">
-        <div class="flex items-center gap-3">
-          <div class="w-10 h-10 rounded-xl bg-${mod.color}-500/15 flex items-center justify-center">
-            <i class="fas ${mod.icon} text-${mod.color}-400"></i>
-          </div>
-          <div class="min-w-0 flex-1">
-            <div class="font-bold text-sm">${mod.label}</div>
-            <div class="text-[11px] text-gray-500">${allowed ? "Open main page →" : (myRole === "viewer" ? "Viewer read-only" : "Locked for your role")}</div>
-          </div>
-          <i class="fas ${allowed ? "fa-external-link-alt text-gray-500" : "fa-lock text-gray-600"} text-xs"></i>
-        </div>
-      </button>`;
-    }).join("");
-  }
-
-  function openModule(moduleId) {
-    if (!hasPerm(moduleId)) return showToast(myRole === "viewer" ? "Viewer cannot execute modules" : "No permission for this module");
-    const mod = MODULE_PAGES[moduleId];
-    if (!mod) return;
-    const params = new URLSearchParams();
-    if (currentWs?.id) params.set("workspace", currentWs.id);
-    const url = mod.file + (params.toString() ? "?" + params.toString() : "");
-    showToast("Opening " + mod.label + " — pay with YOUR wallet");
-    window.open(url, "_blank");
-  }
-
-  function renderMembers() {
-    const box = document.getElementById("membersTable");
-    const showInvite = isAdmin();
-    document.getElementById("inviteBtn").style.display = showInvite ? "" : "none";
-    document.getElementById("inviteLinkBtn").style.display = showInvite ? "" : "none";
-    if (!currentMembers.length) {
-      box.innerHTML = `<p class="text-sm text-gray-500 text-center py-6">No members</p>`;
-      return;
-    }
-    box.innerHTML = currentMembers.map(m => {
-      const roleColor = m.role === "owner" ? "bg-amber-500/20 text-amber-400"
-        : m.role === "admin" ? "bg-indigo-500/20 text-indigo-400"
-        : m.role === "viewer" ? "bg-slate-500/20 text-slate-300"
-        : "bg-white/10 text-gray-400";
-      const canManage = isAdmin() && m.role !== "owner" && m.user_address !== userAddress?.toLowerCase();
-      return `<div class="flex items-center justify-between gap-3 p-3.5 rounded-2xl bg-white/5 border border-white/5">
-        <div class="min-w-0">
-          <div class="font-bold text-sm truncate">${m.display_name || shortAddr(m.user_address)}</div>
-          <div class="text-[11px] text-gray-500 font-mono truncate">${m.user_address}</div>
-        </div>
-        <div class="flex items-center gap-2 shrink-0">
-          <span class="role-badge ${roleColor}">${m.role}</span>
-          ${canManage ? `<select onchange="changeRole('${m.user_address}', this.value)" class="text-[10px] px-2 py-1 rounded-lg">
-            <option value="member" ${m.role==="member"?"selected":""}>Member</option>
-            <option value="admin" ${m.role==="admin"?"selected":""}>Admin</option>
-            <option value="viewer" ${m.role==="viewer"?"selected":""}>Viewer</option>
-          </select>
-          <button onclick="removeMember('${m.user_address}')" class="text-rose-400 p-1.5"><i class="fas fa-trash text-xs"></i></button>` : ""}
-        </div>
-      </div>`;
-    }).join("");
-  }
-
-  async function loadPendingInvites() {
-    const box = document.getElementById("pendingInvitesBox");
-    if (!currentWs || !isAdmin() || typeof listWorkspaceInvites !== "function") {
-      box.classList.add("hidden");
-      return;
-    }
-    const rows = await listWorkspaceInvites(currentWs.id);
-    if (!rows.length) {
-      box.classList.add("hidden");
-      box.innerHTML = "";
-      return;
-    }
-    box.classList.remove("hidden");
-    box.innerHTML = `<div class="text-[11px] font-bold text-gray-500 uppercase mb-2">Open invite links</div>` + rows.map(r => {
-      const url = location.origin + location.pathname + "?invite=" + r.token;
-      const exp = r.expires_at ? new Date(r.expires_at).toLocaleDateString() : "—";
-      return `<div class="flex items-center justify-between gap-2 p-2.5 rounded-xl bg-white/5 border border-white/5 text-xs mb-1.5">
-        <div class="min-w-0">
-          <div class="font-bold capitalize">${r.role} · expires ${exp}</div>
-          <div class="font-mono text-[10px] text-gray-500 truncate">${url}</div>
-        </div>
-        <div class="flex gap-1 shrink-0">
-          <button onclick="navigator.clipboard.writeText('${url}');showToast('Copied')" class="px-2 py-1 rounded-lg bg-indigo-500/20 text-indigo-300">Copy</button>
-          <button onclick="revokeInvite('${r.id}')" class="px-2 py-1 rounded-lg text-rose-400">Revoke</button>
-        </div>
-      </div>`;
-    }).join("");
-  }
-
-  async function revokeInvite(id) {
-    if (!confirm("Revoke this invite link?")) return;
-    const ok = await revokeWorkspaceInvite(id);
-    showToast(ok ? "Revoked" : "Failed");
-    loadPendingInvites();
-  }
-
-  function renderPermissions() {
-    const canEdit = myRole === "owner";
-    document.getElementById("savePermBtn").classList.toggle("hidden", !canEdit);
-    const roles = ["admin", "member"];
-    let html = `<table class="w-full text-sm"><thead><tr class="text-left text-[11px] text-gray-500"><th class="py-2 pr-3">Module</th>`;
-    roles.forEach(r => { html += `<th class="py-2 px-2 text-center capitalize">${r}</th>`; });
-    html += `</tr></thead><tbody>`;
-    MODULES.forEach(m => {
-      html += `<tr class="border-t border-white/5"><td class="py-2.5 pr-3 font-bold">${m.label}</td>`;
-      roles.forEach(r => {
-        const checked = !!(permState[r] && permState[r][m.id]);
-        html += `<td class="py-2.5 px-2 text-center"><input type="checkbox" class="perm-check" ${checked?"checked":""} ${canEdit?"":"disabled"} onchange="permState['${r}']['${m.id}']=this.checked"></td>`;
-      });
-      html += `</tr>`;
-    });
-    html += `</tbody></table><p class="text-[11px] text-gray-500 mt-3">Owner always has all modules. Viewer is always read-only.</p>`;
-    document.getElementById("permTable").innerHTML = html;
-  }
-
-  async function savePermissions() {
-    if (myRole !== "owner" || !currentWs) return showToast("Owner only");
-    const s = settingsOf(currentWs);
-    s.permissions = permState;
-    const ok = await updateWorkspace(currentWs.id, { settings: s });
-    if (ok) {
-      currentWs.settings = s;
-      showToast("Permissions saved");
-      renderModules(); renderOverview();
-    } else showToast("Save failed");
-  }
-
-  let _activityCache = [];
-  let _adCurrentHash = "";
-  let activityMode = "tagged"; // "tagged" | "all"
-
-  function esc(s) {
-    return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
-  }
-
-  function setActivityMode(mode) {
-    activityMode = mode === "all" ? "all" : "tagged";
-    const t = document.getElementById("actModeTagged");
-    const a = document.getElementById("actModeAll");
-    const hint = document.getElementById("activityHint");
-    if (t && a) {
-      if (activityMode === "tagged") {
-        t.className = "px-3 py-1.5 rounded-xl text-xs font-bold border border-indigo-500/50 bg-indigo-500/20 text-indigo-200";
-        a.className = "px-3 py-1.5 rounded-xl text-xs font-bold border border-white/10 text-gray-400 hover:bg-white/5";
-        if (hint) hint.textContent = "Only actions opened from Modules under this workspace.";
-      } else {
-        a.className = "px-3 py-1.5 rounded-xl text-xs font-bold border border-indigo-500/50 bg-indigo-500/20 text-indigo-200";
-        t.className = "px-3 py-1.5 rounded-xl text-xs font-bold border border-white/10 text-gray-400 hover:bg-white/5";
-        if (hint) hint.textContent = "All cloud activity from member wallets since they joined this workspace (includes personal use of tools).";
-      }
-    }
-    loadTeamActivity();
-  }
-
-  async function loadTeamActivity() {
-    const box = document.getElementById("activityList");
-    if (!currentWs || !box) return;
-    box.innerHTML = `<p class="text-sm text-gray-500 text-center py-6">Loading…</p>`;
-    const addrs = currentMembers.map(m => m.user_address);
-    const joinMap = {};
-    currentMembers.forEach(m => {
-      const a = String(m.user_address || "").toLowerCase();
-      if (a && m.joined_at) joinMap[a] = m.joined_at;
-    });
-    const rows = typeof fetchTeamHistory === "function"
-      ? await fetchTeamHistory(addrs, currentWs.id, 60, activityMode, joinMap)
-      : [];
-    _activityCache = rows || [];
-    if (!rows.length) {
-      box.innerHTML = activityMode === "tagged"
-        ? `<p class="text-sm text-gray-500 text-center py-8">No tagged team work yet. Open tools from Modules so activity is linked to this workspace.</p>`
-        : `<p class="text-sm text-gray-500 text-center py-8">No member activity found since join dates.</p>`;
-      return;
-    }
-    box.innerHTML = rows.map((r, idx) => {
-      const who = shortAddr(r.user || r.user_address);
-      const typ = r.type || r.appName || "Activity";
-      const amt = r.amount != null ? `${r.amount} ${r.token || r.symbol || ""}` : "";
-      const ts = r.timestamp ? new Date(r.timestamp).toLocaleString() : "";
-      const hash = r.hash || r.txHash || "";
-      let badge = "";
-      if (activityMode === "all" && r._untagged) {
-        badge = r._otherWorkspace
-          ? ' <span class="text-[10px] text-gray-500 font-semibold">other ws</span>'
-          : ' <span class="text-[10px] text-amber-400 font-semibold">personal</span>';
-      }
-      return `<button type="button" onclick="showActivityDetail(${idx})" class="w-full text-left p-3 rounded-2xl bg-white/5 border border-white/5 hover:border-indigo-500/40 hover:bg-white/[0.07] transition cursor-pointer">
-        <div class="flex justify-between gap-2">
-          <div class="font-bold text-sm">${esc(typ)}${badge}</div>
-          <div class="text-[11px] text-gray-500 shrink-0">${esc(ts)}</div>
-        </div>
-        <div class="text-xs text-gray-400 mt-1">${esc(who)}${amt ? " · " + esc(amt) : ""}${r.status ? " · " + esc(r.status) : ""}</div>
-        ${hash ? `<div class="text-[10px] font-mono text-gray-600 mt-1 truncate">${esc(hash)}</div>` : ""}
-        <div class="text-[10px] text-indigo-400 mt-1.5 font-semibold"><i class="fas fa-info-circle mr-1"></i>Click for full details</div>
-      </button>`;
-    }).join("");
-  }
-
-  function showActivityDetail(idx) {
-    const r = _activityCache[idx];
-    if (!r) return;
-    const typ = r.type || r.appName || "Activity";
-    const ts = r.timestamp ? new Date(r.timestamp).toLocaleString() : "—";
-    const hash = r.hash || r.txHash || "";
-    _adCurrentHash = hash;
-
-    document.getElementById("adType").textContent = typ;
-    document.getElementById("adTime").textContent = ts;
-
-    const rows = [
-      ["Status", r.status || "—"],
-      ["Member wallet", r.user || r.user_address || "—"],
-      ["Amount", r.amount != null ? `${r.amount} ${r.token || r.symbol || ""}`.trim() : "—"],
-      ["Token", r.token || r.symbol || "—"],
-      ["App / module", r.appName || r.module || "—"],
-      ["Intent / memo", r.intent || r.memo || "—"],
-      ["Recipients", r.recipientsCount != null ? String(r.recipientsCount) : (r.recipient || "—")],
-      ["Workspace", r.workspaceId || currentWs?.id || "—"],
-      ["Tagged", r._untagged ? "No (personal history)" : "Yes"],
-      ["Tx hash", hash || "—"]
-    ];
-
-    // include any extra keys from history_data
-    const skip = new Set(["type","appName","status","user","user_address","amount","token","symbol","intent","memo","recipientsCount","recipient","workspaceId","hash","txHash","timestamp","time","_untagged","module"]);
-    Object.keys(r).forEach(k => {
-      if (skip.has(k)) return;
-      const v = r[k];
-      if (v == null || typeof v === "object") return;
-      rows.push([k, String(v)]);
-    });
-
-    document.getElementById("adBody").innerHTML = rows.map(([k, v]) => `
-      <div class="flex justify-between gap-3 py-2 border-b border-white/5">
-        <span class="text-gray-500 text-xs font-bold uppercase shrink-0">${esc(k)}</span>
-        <span class="text-right font-mono text-xs break-all">${esc(v)}</span>
-      </div>`).join("");
-
-    const exp = document.getElementById("adExplorer");
-    const copyBtn = document.getElementById("adCopyHashBtn");
-    if (hash && String(hash).startsWith("0x")) {
-      exp.href = "https://testnet.arcscan.app/tx/" + hash;
-      exp.classList.remove("hidden");
-      copyBtn.classList.remove("hidden");
-    } else {
-      exp.classList.add("hidden");
-      copyBtn.classList.add("hidden");
-    }
-
-    const m = document.getElementById("activityDetailModal");
-    m.classList.remove("hidden");
-    m.classList.add("flex");
-  }
-
-  function hideActivityDetail() {
-    const m = document.getElementById("activityDetailModal");
-    m.classList.add("hidden");
-    m.classList.remove("flex");
-  }
-
-  function copyAdHash() {
-    if (!_adCurrentHash) return;
-    navigator.clipboard.writeText(_adCurrentHash);
-    showToast("Hash copied");
-  }
-
-  function renderSettings() {
-    if (!currentWs) return;
-    const can = isAdmin();
-    document.getElementById("setName").value = currentWs.name || "";
-    document.getElementById("setDesc").value = currentWs.description || "";
-    document.getElementById("setTreasury").value = currentWs.treasury_address || "";
-    document.getElementById("saveSetBtn").style.display = can ? "" : "none";
-    document.getElementById("leaveBtn").style.display = myRole !== "owner" ? "" : "none";
-    ["setName","setDesc","setTreasury"].forEach(id => {
-      document.getElementById(id).disabled = !can;
-    });
-    const plan = (settingsOf(currentWs).plan || "free").toUpperCase();
-    document.getElementById("setPlanBadge").textContent = plan;
-
-    const tBox = document.getElementById("transferBox");
-    if (myRole === "owner") {
-      tBox.classList.remove("hidden");
-      const sel = document.getElementById("transferSelect");
-      const candidates = currentMembers.filter(m =>
-        m.role !== "owner" && (m.user_address || "").toLowerCase() !== (userAddress || "").toLowerCase()
-      );
-      sel.innerHTML = candidates.length
-        ? candidates.map(m => `<option value="${esc(m.user_address)}">${esc(m.display_name || shortAddr(m.user_address))} · ${esc(m.role)}</option>`).join("")
-        : `<option value="">No other members</option>`;
-    } else {
-      tBox.classList.add("hidden");
-    }
-  }
-
-  async function doTransferOwnership() {
-    if (myRole !== "owner" || !currentWs || !userAddress) return showToast("Owner only");
-    const next = document.getElementById("transferSelect").value;
-    if (!next || !ethers.isAddress(next)) return showToast("Select a member");
-    if (!confirm("Transfer ownership to " + shortAddr(next) + "? You will become admin.")) return;
-    showToast("Transferring…");
-    if (typeof transferWorkspaceOwnership !== "function") {
-      return showToast("Update db.js (transferWorkspaceOwnership missing)");
-    }
-    const res = await transferWorkspaceOwnership(currentWs.id, userAddress, next);
-    if (!res || !res.ok) {
-      const map = {
-        not_owner: "You are not the owner",
-        not_member: "Target is not a member",
-        already_owner: "Already owner",
-        promote_failed: "Could not promote member (DB/RLS)",
-        demote_failed: "Promoted but demote failed",
-        workspace_update_failed: "Roles ok; owner_address update failed",
-        same_address: "Same wallet"
-      };
-      return showToast(map[res?.reason] || ("Transfer failed: " + (res?.reason || res?.detail || "error")));
-    }
-    showToast("Ownership transferred");
-    currentWs = null;
-    await loadWorkspaces();
-  }
-
-  async function saveSettings() {
-    if (!isAdmin() || !currentWs) return showToast("Admin only");
-    const name = document.getElementById("setName").value.trim();
-    if (!name) return showToast("Name required");
-    const description = document.getElementById("setDesc").value;
-    const treasury = document.getElementById("setTreasury").value.trim();
-    if (treasury && !ethers.isAddress(treasury)) return showToast("Invalid address");
-    const ok = await updateWorkspace(currentWs.id, {
-      name, description, treasury_address: treasury || null
-    });
-    if (ok) {
-      showToast("Settings saved");
-      await loadWorkspaces();
-    } else showToast("Save failed");
-  }
-
-  async function doLeaveWorkspace() {
-    if (!currentWs || !userAddress) return;
-    if (myRole === "owner") return showToast("Owner cannot leave — transfer ownership first");
-    if (!confirm("Leave this workspace?")) return;
-    const ok = await leaveWorkspace(currentWs.id, userAddress);
-    if (ok) {
-      showToast("Left workspace");
-      currentWs = null;
-      await loadWorkspaces();
-    } else showToast("Failed");
-  }
-
-  function showCreateModal() {
-    document.getElementById("createModal").classList.remove("hidden");
-    document.getElementById("createModal").classList.add("flex");
-  }
-  function hideCreateModal() {
-    document.getElementById("createModal").classList.add("hidden");
-    document.getElementById("createModal").classList.remove("flex");
-  }
-  async function doCreateWorkspace() {
-    const name = document.getElementById("createName").value.trim();
-    if (!name) return showToast("Enter a name");
-    const description = document.getElementById("createDesc").value.trim();
-    showToast("Creating…");
-    const ws = await createWorkspace(userAddress, { name, description });
-    if (!ws) return showToast("Create failed");
-    hideCreateModal();
-    document.getElementById("createName").value = "";
-    document.getElementById("createDesc").value = "";
-    showToast("Workspace created");
-    await loadWorkspaces();
-    await selectWorkspace(ws.id);
-  }
-
-  function showInviteModal() {
-    document.getElementById("inviteModal").classList.remove("hidden");
-    document.getElementById("inviteModal").classList.add("flex");
-  }
-  function hideInviteModal() {
-    document.getElementById("inviteModal").classList.add("hidden");
-    document.getElementById("inviteModal").classList.remove("flex");
-  }
-  async function doInvite() {
-    if (!isAdmin() || !currentWs) return;
-    const addr = document.getElementById("inviteAddr").value.trim();
-    const name = document.getElementById("inviteName").value.trim();
-    const role = document.getElementById("inviteRole").value;
-    if (!ethers.isAddress(addr)) return showToast("Invalid address");
-    const ok = await inviteWorkspaceMember(currentWs.id, userAddress, addr, role, name);
-    if (ok) {
-      showToast("Invited");
-      hideInviteModal();
-      document.getElementById("inviteAddr").value = "";
-      document.getElementById("inviteName").value = "";
-      currentMembers = await fetchWorkspaceMembers(currentWs.id);
-      renderMembers(); renderOverview();
-    } else showToast("Invite failed");
-  }
-
-  function showInviteLinkModal() {
-    document.getElementById("linkResultBox").classList.add("hidden");
-    document.getElementById("linkResultInput").value = "";
-    lastGeneratedInviteUrl = "";
-    document.getElementById("inviteLinkModal").classList.remove("hidden");
-    document.getElementById("inviteLinkModal").classList.add("flex");
-  }
-  function hideInviteLinkModal() {
-    document.getElementById("inviteLinkModal").classList.add("hidden");
-    document.getElementById("inviteLinkModal").classList.remove("flex");
-  }
-  async function doCreateInviteLink() {
-    if (!isAdmin() || !currentWs) return;
-    const role = document.getElementById("linkInviteRole").value;
-    const days = parseInt(document.getElementById("linkInviteDays").value, 10) || 7;
-    showToast("Generating…");
-    const inv = await createWorkspaceInvite(currentWs.id, userAddress, role, days);
-    if (!inv || !inv.token) return showToast("Failed to create invite");
-    lastGeneratedInviteUrl = location.origin + location.pathname + "?invite=" + inv.token;
-    document.getElementById("linkResultInput").value = lastGeneratedInviteUrl;
-    document.getElementById("linkResultBox").classList.remove("hidden");
-    showToast("Invite link ready");
-    loadPendingInvites();
-  }
-  function copyInviteLink() {
-    if (!lastGeneratedInviteUrl) return;
-    navigator.clipboard.writeText(lastGeneratedInviteUrl);
-    showToast("Copied");
-  }
-
-  async function changeRole(addr, role) {
-    if (!isAdmin() || !currentWs) return;
-    const ok = await updateMemberRole(currentWs.id, addr, role);
-    if (ok) {
-      currentMembers = await fetchWorkspaceMembers(currentWs.id);
-      renderMembers();
-      showToast("Role updated");
-    } else showToast("Failed");
-  }
-
-  async function removeMember(addr) {
-    if (!isAdmin() || !currentWs) return;
-    if (!confirm("Remove this member?")) return;
-    const ok = await removeWorkspaceMember(currentWs.id, addr);
-    if (ok) {
-      currentMembers = await fetchWorkspaceMembers(currentWs.id);
-      renderMembers(); renderOverview();
-      showToast("Removed");
-    } else showToast("Failed");
-  }
-
-  (async () => {
-    pendingInviteToken = readInviteTokenFromURL();
-    if (pendingInviteToken && !userAddress) {
-      document.getElementById("inviteBanner").classList.remove("hidden");
-    }
-    if (!window.ethereum || forceDisconnected) return;
-    try {
-      provider = new ethers.BrowserProvider(window.ethereum);
-      const accs = await provider.send("eth_accounts", []);
-      if (accs?.length) {
-        signer = await provider.getSigner();
-        userAddress = await signer.getAddress();
-        window.userAddress = userAddress;
-        setWalletUI(true);
-        await handleInviteFromURL();
-        await loadWorkspaces();
-      }
-    } catch {}
-  })();
-</script>
-</body>
-</html>
