@@ -878,18 +878,25 @@
     if (!next || !ethers.isAddress(next)) return showToast("Select a member");
     if (!confirm("Transfer ownership to " + shortAddr(next) + "? You will become admin.")) return;
     showToast("Transferring…");
-    // 1) set new owner role
-    let ok = await updateMemberRole(currentWs.id, next, "owner");
-    if (!ok) return showToast("Failed to set new owner role");
-    // 2) demote self to admin
-    ok = await updateMemberRole(currentWs.id, userAddress, "admin");
-    if (!ok) return showToast("New owner set, but could not demote you — check members");
-    // 3) update workspace owner_address
-    ok = await updateWorkspace(currentWs.id, { owner_address: next.toLowerCase() });
-    if (!ok) showToast("Roles updated; owner_address field may need manual fix");
-    else showToast("Ownership transferred");
+    if (typeof transferWorkspaceOwnership !== "function") {
+      return showToast("Update db.js (transferWorkspaceOwnership missing)");
+    }
+    const res = await transferWorkspaceOwnership(currentWs.id, userAddress, next);
+    if (!res || !res.ok) {
+      const map = {
+        not_owner: "You are not the owner",
+        not_member: "Target is not a member",
+        already_owner: "Already owner",
+        promote_failed: "Could not promote member (DB/RLS)",
+        demote_failed: "Promoted but demote failed",
+        workspace_update_failed: "Roles ok; owner_address update failed",
+        same_address: "Same wallet"
+      };
+      return showToast(map[res?.reason] || ("Transfer failed: " + (res?.reason || res?.detail || "error")));
+    }
+    showToast("Ownership transferred");
+    currentWs = null;
     await loadWorkspaces();
-    await selectWorkspace(currentWs.id);
   }
 
   async function saveSettings() {
