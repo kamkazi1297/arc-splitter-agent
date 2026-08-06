@@ -80,30 +80,34 @@ async function fetchHistoryFromCloud(userAddress) {
     const client = await getSupabase();
     if (!client || !userAddress) return [];
     const addr = userAddress.toLowerCase();
+    // Prefer exact match (addresses are stored lowercased by saveHistoryToCloud)
     let { data, error } = await client
       .from('history')
-      .select('history_data, user_address, id, created_at')
-      .ilike('user_address', addr)
+      .select('history_data, user_address, id, memo')
+      .eq('user_address', addr)
       .order('id', { ascending: false })
       .limit(80);
     if (error) {
+      console.warn('fetchHistory eq failed, fallback', error.message || error);
       const fb = await client
         .from('history')
-        .select('history_data, user_address, id, created_at')
+        .select('history_data, user_address, id, memo')
         .order('id', { ascending: false })
         .limit(150);
+      if (fb.error) {
+        console.error('Error fetching history:', fb.error);
+        return [];
+      }
       data = (fb.data || []).filter(r =>
         String(r.user_address || '').toLowerCase() === addr
       );
-      error = fb.error;
-    }
-    if (error) {
-      console.error('Error fetching history:', error);
-      return [];
+      error = null;
     }
     return (data || []).map(row => {
-      const h = row.history_data || {};
-      if (!h.timestamp && row.created_at) h.timestamp = row.created_at;
+      const h = (row.history_data && typeof row.history_data === 'object')
+        ? { ...row.history_data }
+        : {};
+      if (!h.timestamp) h.timestamp = new Date().toISOString();
       if (!h.user && row.user_address) h.user = row.user_address;
       return h;
     }).filter(Boolean);
@@ -125,7 +129,7 @@ async function fetchTeamHistory(memberAddresses, workspaceId, limit = 60) {
     // Plain fetch — no PostgREST or/ilike/json filters (those were causing HTTP 400)
     const { data, error } = await client
       .from('history')
-      .select('history_data, user_address, id, created_at')
+      .select('history_data, user_address, id, memo')
       .order('id', { ascending: false })
       .limit(250);
 
@@ -142,7 +146,7 @@ async function fetchTeamHistory(memberAddresses, workspaceId, limit = 60) {
         ...h,
         user: h.user || row.user_address,
         user_address: row.user_address,
-        timestamp: h.timestamp || row.created_at,
+        timestamp: h.timestamp || null,
         _id: row.id
       };
     });
