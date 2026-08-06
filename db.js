@@ -465,6 +465,84 @@ async function updateMemberRole(workspaceId, memberAddress, newRole) {
   }
 }
 
+/**
+ * Transfer workspace ownership to an existing member.
+ * - newOwner becomes role owner
+ * - currentOwner becomes admin
+ * - workspaces.owner_address updated
+ */
+async function transferWorkspaceOwnership(workspaceId, currentOwnerAddress, newOwnerAddress) {
+  try {
+    const client = await getSupabase();
+    if (!client || !workspaceId || !currentOwnerAddress || !newOwnerAddress) return { ok: false, reason: 'missing' };
+    const cur = currentOwnerAddress.toLowerCase();
+    const next = newOwnerAddress.toLowerCase();
+    if (cur === next) return { ok: false, reason: 'same_address' };
+
+    // verify current is owner
+    const { data: curRow, error: e1 } = await client
+      .from('workspace_members')
+      .select('role')
+      .eq('workspace_id', workspaceId)
+      .eq('user_address', cur)
+      .maybeSingle();
+    if (e1 || !curRow || curRow.role !== 'owner') {
+      console.error('transferWorkspaceOwnership cur', e1);
+      return { ok: false, reason: 'not_owner' };
+    }
+
+    // verify new is member (not already owner)
+    const { data: nextRow, error: e2 } = await client
+      .from('workspace_members')
+      .select('role')
+      .eq('workspace_id', workspaceId)
+      .eq('user_address', next)
+      .maybeSingle();
+    if (e2 || !nextRow) {
+      console.error('transferWorkspaceOwnership next', e2);
+      return { ok: false, reason: 'not_member' };
+    }
+    if (nextRow.role === 'owner') return { ok: false, reason: 'already_owner' };
+
+    // promote new owner (no neq owner filter — explicit update)
+    const { error: e3 } = await client
+      .from('workspace_members')
+      .update({ role: 'owner' })
+      .eq('workspace_id', workspaceId)
+      .eq('user_address', next);
+    if (e3) {
+      console.error('transfer promote', e3);
+      return { ok: false, reason: 'promote_failed', detail: e3.message };
+    }
+
+    // demote old owner to admin
+    const { error: e4 } = await client
+      .from('workspace_members')
+      .update({ role: 'admin' })
+      .eq('workspace_id', workspaceId)
+      .eq('user_address', cur);
+    if (e4) {
+      console.error('transfer demote', e4);
+      return { ok: false, reason: 'demote_failed', detail: e4.message };
+    }
+
+    // update workspace owner_address
+    const { error: e5 } = await client
+      .from('workspaces')
+      .update({ owner_address: next, updated_at: new Date().toISOString() })
+      .eq('id', workspaceId);
+    if (e5) {
+      console.error('transfer owner_address', e5);
+      return { ok: false, reason: 'workspace_update_failed', detail: e5.message };
+    }
+
+    return { ok: true };
+  } catch (e) {
+    console.error('transferWorkspaceOwnership', e);
+    return { ok: false, reason: 'exception', detail: String(e.message || e) };
+  }
+}
+
 async function updateWorkspace(workspaceId, patch) {
   try {
     const client = await getSupabase();
@@ -763,6 +841,7 @@ if (typeof window !== 'undefined') {
   window.inviteWorkspaceMember = inviteWorkspaceMember;
   window.removeWorkspaceMember = removeWorkspaceMember;
   window.updateMemberRole = updateMemberRole;
+  window.transferWorkspaceOwnership = transferWorkspaceOwnership;
   window.updateWorkspace = updateWorkspace;
   window.leaveWorkspace = leaveWorkspace;
   window.checkWorkspaceAccess = checkWorkspaceAccess;
