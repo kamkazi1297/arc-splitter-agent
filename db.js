@@ -877,6 +877,107 @@ async function revokeWorkspaceInvite(inviteId) {
   }
 }
 
+/* ===================== USER ROLES / MODULE DATA ===================== */
+/**
+ * Stores roles list in the history table as a special record
+ * (no new Supabase table required). Latest record wins on load.
+ */
+async function saveUserRoles(userAddress, roles) {
+  try {
+    if (!userAddress || !Array.isArray(roles)) return false;
+    return await saveHistoryToCloud(userAddress, {
+      appName: 'Roles',
+      type: 'roles_config',
+      roles: roles,
+      memo: 'Roles configuration',
+      timestamp: new Date().toISOString(),
+      status: 'Config'
+    });
+  } catch (e) {
+    console.error('saveUserRoles', e);
+    return false;
+  }
+}
+
+async function fetchUserRoles(userAddress) {
+  try {
+    if (!userAddress) return null;
+    const client = await getSupabase();
+    if (!client) return null;
+    const addr = userAddress.toLowerCase();
+    const { data, error } = await client
+      .from('history')
+      .select('history_data, id')
+      .eq('user_address', addr)
+      .order('id', { ascending: false })
+      .limit(200);
+    if (error) {
+      console.error('fetchUserRoles', error);
+      return null;
+    }
+    for (const row of (data || [])) {
+      const h = row.history_data;
+      if (!h || typeof h !== 'object') continue;
+      const typ = String(h.type || '').toLowerCase();
+      if (typ === 'roles_config' && Array.isArray(h.roles)) return h.roles;
+      if (h.appName === 'Roles' && Array.isArray(h.roles) && typ !== 'rolesplit') return h.roles;
+    }
+    return null;
+  } catch (e) {
+    console.error('fetchUserRoles', e);
+    return null;
+  }
+}
+
+/** Generic key/value used by Pay and other pages (stored via history). */
+async function saveToCloudDB(key, data) {
+  try {
+    const addr = (typeof window !== 'undefined' && window.userAddress) || null;
+    if (!addr) return false;
+    return await saveHistoryToCloud(addr, {
+      appName: 'ModuleData',
+      type: 'module_data',
+      moduleKey: String(key || ''),
+      data: data,
+      memo: `module_data:${key}`,
+      timestamp: new Date().toISOString(),
+      status: 'Config'
+    });
+  } catch (e) {
+    console.error('saveToCloudDB', e);
+    return false;
+  }
+}
+
+async function loadFromCloudDB(key) {
+  try {
+    const addr = (typeof window !== 'undefined' && window.userAddress) || null;
+    if (!addr) return null;
+    const client = await getSupabase();
+    if (!client) return null;
+    const { data, error } = await client
+      .from('history')
+      .select('history_data, id')
+      .eq('user_address', addr.toLowerCase())
+      .order('id', { ascending: false })
+      .limit(200);
+    if (error) return null;
+    const want = String(key || '').toLowerCase();
+    for (const row of (data || [])) {
+      const h = row.history_data;
+      if (!h || typeof h !== 'object') continue;
+      if (String(h.type || '').toLowerCase() === 'module_data' &&
+          String(h.moduleKey || '').toLowerCase() === want) {
+        return h.data;
+      }
+    }
+    return null;
+  } catch (e) {
+    console.error('loadFromCloudDB', e);
+    return null;
+  }
+}
+
 /* Expose on window */
 if (typeof window !== 'undefined') {
   window.getSupabase = getSupabase;
@@ -906,4 +1007,10 @@ if (typeof window !== 'undefined') {
   window.acceptWorkspaceInvite = acceptWorkspaceInvite;
   window.listWorkspaceInvites = listWorkspaceInvites;
   window.revokeWorkspaceInvite = revokeWorkspaceInvite;
+  // Roles + generic module data (added, nothing removed)
+  window.saveUserRoles = saveUserRoles;
+  window.fetchUserRoles = fetchUserRoles;
+  window.saveToCloudDB = saveToCloudDB;
+  window.loadFromCloudDB = loadFromCloudDB;
 }
+
