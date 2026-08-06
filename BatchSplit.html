@@ -1159,6 +1159,17 @@ async function resumeBatchTx(batchId) {
   }
 }
 
+const HISTORY_KEY = "arcSplitHistory_batch";
+const MODULE = "batch";
+let cachedBatchHistory = [];
+
+function isBatchItem(item) {
+  if (!item) return false;
+  const app = String(item.appName || item.module || "").toLowerCase();
+  const typ = String(item.type || "").toLowerCase();
+  return app === MODULE || typ === MODULE || app === "batch" || typ === "batch";
+}
+
 async function saveToHistory(record) {
   const enriched = {
     ...record,
@@ -1173,21 +1184,44 @@ async function saveToHistory(record) {
   if (userAddress && typeof saveHistoryToCloud === 'function') {
     await saveHistoryToCloud(userAddress, enriched);
   }
-  const history = JSON.parse(localStorage.getItem("arcSplitHistoryMain") || "[]");
+  const history = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
   history.unshift(enriched);
-  localStorage.setItem("arcSplitHistoryMain", JSON.stringify(history));
+  if (history.length > 100) history.length = 100;
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
 }
 
 async function renderHistoryTable() {
   let history = [];
-  
+
   if (userAddress && typeof fetchHistoryFromCloud === 'function') {
-    history = await fetchHistoryFromCloud(userAddress);
+    try {
+      const allCloud = await fetchHistoryFromCloud(userAddress);
+      history = (allCloud || []).filter(isBatchItem);
+    } catch (e) {
+      console.error(e);
+      history = [];
+    }
   }
-  
-  if (!history || history.length === 0) {
-    history = JSON.parse(localStorage.getItem("arcSplitHistoryMain") || "[]");
-  }
+
+  // merge local (module-specific)
+  try {
+    const local = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
+    if (Array.isArray(local) && local.length) {
+      const hashes = new Set(history.map(h => (h.hash || (h.txHashes && h.txHashes[0]) || "")).filter(Boolean));
+      local.filter(isBatchItem).forEach(h => {
+        const key = h.hash || (h.txHashes && h.txHashes[0]) || "";
+        if (key && !hashes.has(key)) {
+          hashes.add(key);
+          history.push(h);
+        } else if (!key) {
+          history.push(h);
+        }
+      });
+    }
+  } catch {}
+
+  history.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
+  cachedBatchHistory = history;
 
   const container = document.getElementById("historyTableContainer");
 
@@ -1229,9 +1263,9 @@ async function renderHistoryTable() {
 }
 
 function viewDetails(idx) {
-  const history = JSON.parse(localStorage.getItem("arcSplitHistoryMain") || "[]");
-  const h = history[idx];
-  
+  const h = cachedBatchHistory[idx];
+  if (!h) return;
+
   let txLinks = "";
   if (h.txHashes && h.txHashes.length > 0) {
     txLinks = `<div class="font-bold preserve-dark-color mt-3 mb-2">Transactions (ArcScan):</div>`;
@@ -1241,15 +1275,15 @@ function viewDetails(idx) {
   }
 
   document.getElementById("detailsContent").innerHTML = `
-    <div class="font-bold text-sm text-rose-400 mb-2">${h.memo}</div>
+    <div class="font-bold text-sm text-rose-400 mb-2">${h.memo || ''}</div>
     <div class="font-bold preserve-dark-color mb-1">Tokens Processed:</div>
-    ${h.tokens.map(t => '<div class="text-gray-400 light:text-slate-600 preserve-dark-muted">' + t.amount + ' Token</div>').join('')}
+    ${(h.tokens || []).map(t => '<div class="text-gray-400 light:text-slate-600 preserve-dark-muted">' + (t.amount || '') + ' Token</div>').join('')}
     
     ${txLinks}
 
     <div class="font-bold preserve-dark-color mt-4 mb-1">Recipients:</div>
     <div class="space-y-1">
-      ${h.recipients.map(r => '<div class="text-gray-400 light:text-slate-600 font-mono preserve-dark-muted">' + r.wallet + ' <span class="text-gray-500 light:text-slate-400 preserve-dark-muted">(' + r.percentage + '%)</span></div>').join('')}
+      ${(h.recipients || []).map(r => '<div class="text-gray-400 light:text-slate-600 font-mono preserve-dark-muted">' + (r.wallet || '') + ' <span class="text-gray-500 light:text-slate-400 preserve-dark-muted">(' + (r.percentage || '') + '%)</span></div>').join('')}
     </div>
   `;
   document.getElementById("detailsModal").classList.remove("hidden");
@@ -1258,15 +1292,20 @@ function viewDetails(idx) {
 function hideDetailsModal() { document.getElementById("detailsModal").classList.add("hidden"); }
 
 function duplicateBatch(idx) {
-  const history = JSON.parse(localStorage.getItem("arcSplitHistoryMain") || "[]");
-  tokenRows = history[idx].tokens; recipientRows = history[idx].recipients;
+  const h = cachedBatchHistory[idx];
+  if (!h) return;
+  tokenRows = h.tokens || [];
+  recipientRows = h.recipients || [];
   renderTokens(); renderRecipients(); switchView('splitter');
   showToast("Loaded from history!");
 }
 
 function clearHistory() {
-  if (confirm("Clear all history?")) {
-    localStorage.removeItem("arcSplitHistoryMain"); renderHistoryTable(); showToast("History cleared");
+  if (confirm("Clear all local batch history?")) {
+    localStorage.removeItem(HISTORY_KEY);
+    cachedBatchHistory = [];
+    renderHistoryTable();
+    showToast("History cleared");
   }
 }
 
