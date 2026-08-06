@@ -1,201 +1,661 @@
 <!DOCTYPE html>
-<html lang="fa" dir="ltr">
+<html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ArcSplit - Programmable Money Tools</title>
+  <title>ArcSplit · Hub</title>
+  <script src="db.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-    
-    body { font-family: 'Inter', sans-serif; }
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 
-    .glass {
-      background: rgba(255,255,255,0.08);
-      backdrop-filter: blur(20px);
-      border: 1px solid rgba(255,255,255,0.1);
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      background: #070711;
+      background-image:
+        radial-gradient(circle at 12% 18%, rgba(6, 182, 212, 0.12) 0%, transparent 42%),
+        radial-gradient(circle at 88% 78%, rgba(244, 63, 94, 0.10) 0%, transparent 42%),
+        radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.06) 0%, transparent 55%);
+      color: #f8fafc;
+      min-height: 100vh;
+      overflow-x: hidden;
     }
 
-    /* ==================== LIGHT MODE ==================== */
-    .light body {
-      background: linear-gradient(to bottom right, #f1f5f9, #cbd5e1);
+    .glass {
+      background: rgba(18, 18, 38, 0.65);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    .light {
+      background: #f8fafc !important;
+      background-image:
+        radial-gradient(circle at 12% 18%, rgba(6, 182, 212, 0.12) 0%, transparent 42%),
+        radial-gradient(circle at 88% 78%, rgba(244, 63, 94, 0.10) 0%, transparent 42%),
+        radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 55%) !important;
+      color: #0f172a !important;
     }
 
     .light .glass {
-      background: rgba(241, 245, 249, 0.95);
-      border-color: rgba(148, 163, 184, 0.5);
-      box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+      background: rgba(255, 255, 255, 0.55) !important;
+      border: 1px solid rgba(0, 0, 0, 0.08) !important;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
     }
 
-    .light h1, 
-    .light h2, 
-    .light h3,
-    .light .text-4xl {
-      color: #0f172a !important;
+    .light h1, .light h2, .light h3, .light .text-white { color: #0f172a !important; }
+    .light .text-gray-400 { color: #334155 !important; }
+    .light .text-gray-300 { color: #1e293b !important; }
+    .light .text-gray-500 { color: #475569 !important; }
+
+    .module-card {
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    .module-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      background: radial-gradient(circle at 30% 20%, var(--glow, rgba(6,182,212,0.15)), transparent 60%);
+      pointer-events: none;
+    }
+    .module-card:hover {
+      transform: translateY(-6px);
+      border-color: rgba(255, 255, 255, 0.18);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+    }
+    .module-card:hover::before { opacity: 1; }
+    .light .module-card:hover {
+      border-color: rgba(0, 0, 0, 0.12);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08);
     }
 
-    .light .subtitle,
-    .light p.text-xl {
-      color: #1e2937 !important;
+    .app-button {
+      position: relative;
+      overflow: hidden;
+      transition: all 0.25s ease;
+    }
+    .app-button:active { transform: scale(0.98); }
+
+    .fade-up {
+      animation: fadeUp 0.55s ease forwards;
+      opacity: 0;
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(18px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
-    .light .feature-text {
-      color: #334155 !important;
+    .hero-glow {
+      background: linear-gradient(135deg, rgba(6,182,212,0.18), rgba(244,63,94,0.12), rgba(99,102,241,0.14));
+      filter: blur(60px);
     }
 
-    .light .text-gray-400,
-    .light .text-gray-500 {
-      color: #475569 !important;
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 999px;
     }
 
-    /* دکمه سوئیچ تم در حالت لایت */
-    .light #themeBtn {
-      background-color: rgba(15, 23, 42, 0.1) !important;
-      border: 1px solid rgba(15, 23, 42, 0.2) !important;
-      color: #0f172a !important;
+    .activity-row:hover {
+      background: rgba(255, 255, 255, 0.04);
+    }
+    .light .activity-row:hover {
+      background: rgba(0, 0, 0, 0.03);
     }
 
-    .light #themeBtn:hover {
-      background-color: rgba(15, 23, 42, 0.15) !important;
+    .light #toast, .light #toast span, .light #toast i { color: #ffffff !important; }
+
+    .scroll-thin {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.15) transparent;
     }
+    .light .scroll-thin { scrollbar-color: rgba(0,0,0,0.15) transparent; }
   </style>
 </head>
-<body class="bg-gradient-to-br from-[#0b0b1f] to-[#1a1a2e] text-white min-h-screen transition-all duration-500">
+<body class="text-white min-h-screen selection:bg-cyan-500 selection:text-black">
 
-  <div class="max-w-5xl mx-auto px-6 py-16">
-    <!-- Header -->
-    <div class="flex justify-between items-center mb-16">
-      <div class="flex items-center gap-4">
-        <div class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-cyan-500 rounded-2xl flex items-center justify-center text-2xl font-bold text-white">A</div>
+  <div class="max-w-[1280px] mx-auto px-4 py-6 sm:py-8 space-y-8 relative">
+
+    <!-- soft glow behind hero -->
+    <div class="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[90%] h-64 hero-glow opacity-60 -z-10"></div>
+
+    <!-- ================= HEADER ================= -->
+    <header class="glass rounded-3xl p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-4 fade-up" style="animation-delay:0.05s">
+      <div class="flex items-center gap-3 sm:gap-4">
+        <img src="logo-white.svg" alt="ArcSplit" class="w-11 h-11 sm:w-12 sm:h-12 object-contain block light:hidden">
+        <img src="trace-raw.svg" alt="ArcSplit" class="w-11 h-11 sm:w-12 sm:h-12 object-contain hidden light:block" onerror="this.src='logo-white.svg'">
         <div>
-          <h1 class="text-4xl font-bold tracking-tight logo-text">ArcSplit</h1>
-          <p class="subtitle text-gray-400 text-sm">Programmable Money Tools</p>
+          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">
+            ArcSplit
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-400 to-rose-400">Hub</span>
+          </h1>
+          <p class="text-xs sm:text-sm text-gray-400 font-medium mt-0.5">Professional on-chain distribution suite</p>
         </div>
       </div>
 
-      <button onclick="toggleTheme()" id="themeBtn"
-              class="px-5 py-3 bg-white/10 hover:bg-white/20 rounded-2xl transition-all">
-        <i class="fas fa-moon text-xl"></i>
-      </button>
+      <div class="flex flex-wrap items-center gap-2.5">
+        <a href="Workspace.html" class="app-button px-4 py-2.5 rounded-2xl bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30 text-xs font-bold flex items-center gap-2 transition">
+          <i class="fas fa-building"></i> Workspace
+        </a>
+        <a href="ArcAnalytics.html" class="app-button px-4 py-2.5 rounded-2xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/25 text-xs font-bold flex items-center gap-2 transition">
+          <i class="fas fa-chart-line"></i> Dashboard
+        </a>
+        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition" aria-label="Toggle theme">
+          <i class="fas fa-moon text-lg text-cyan-400"></i>
+        </button>
+        <button onclick="connectWallet()" id="connectBtn" class="app-button px-5 py-2.5 rounded-2xl bg-white text-gray-950 font-bold text-sm flex items-center gap-2 shadow-lg">
+          <i class="fas fa-wallet text-cyan-600"></i>
+          <span id="connectText">Connect Wallet</span>
+        </button>
+        <button onclick="disconnectWallet()" id="disconnectBtn" class="hidden w-11 h-11 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 transition" title="Disconnect">
+          <i class="fas fa-power-off"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- ================= HERO ================= -->
+    <section class="glass rounded-3xl p-7 sm:p-10 relative overflow-hidden fade-up" style="animation-delay:0.1s">
+      <div class="relative z-10 max-w-2xl">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/25 text-cyan-300 text-[11px] font-bold mb-4">
+          <span class="status-dot bg-cyan-400 animate-pulse"></span>
+          Arc Testnet · Live
+        </div>
+        <h2 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight mb-3">
+          Split. Schedule.<br>
+          <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-rose-400">Automate on-chain.</span>
+        </h2>
+        <p class="text-sm sm:text-base text-gray-400 leading-relaxed mb-6 max-w-xl">
+          One suite for token distribution, role-based payroll, vesting, giveaways, payment links, and smart conditional releases — all powered by Arc.
+        </p>
+        <div class="flex flex-wrap gap-3">
+          <a href="split.html" class="app-button px-6 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-sky-500 hover:brightness-110 text-gray-950 font-bold text-sm shadow-lg shadow-cyan-500/25 flex items-center gap-2">
+            <i class="fas fa-bolt"></i> Start Splitting
+          </a>
+          <a href="Workspace.html" class="app-button px-6 py-3.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 font-bold text-sm flex items-center gap-2">
+            <i class="fas fa-users"></i> Open Workspace
+          </a>
+        </div>
+      </div>
+      <!-- decorative orbs -->
+      <div class="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none"></div>
+      <div class="absolute -right-8 bottom-0 w-48 h-48 rounded-full bg-rose-500/10 blur-3xl pointer-events-none"></div>
+    </section>
+
+    <!-- ================= STATUS STRIP ================= -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 fade-up" style="animation-delay:0.15s">
+      <div class="glass rounded-2xl px-5 py-4 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center">
+          <i class="fas fa-network-wired text-emerald-400"></i>
+        </div>
+        <div>
+          <div class="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Network</div>
+          <div id="netLabel" class="text-sm font-bold">Arc Testnet</div>
+        </div>
+      </div>
+      <div class="glass rounded-2xl px-5 py-4 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-cyan-500/15 flex items-center justify-center">
+          <i class="fas fa-wallet text-cyan-400"></i>
+        </div>
+        <div>
+          <div class="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Wallet</div>
+          <div id="walletLabel" class="text-sm font-bold truncate max-w-[160px]">Not connected</div>
+        </div>
+      </div>
+      <div class="glass rounded-2xl px-5 py-4 flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-indigo-500/15 flex items-center justify-center">
+          <i class="fas fa-building text-indigo-400"></i>
+        </div>
+        <div class="min-w-0">
+          <div class="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Workspace</div>
+          <div id="wsLabel" class="text-sm font-bold truncate">Personal</div>
+        </div>
+      </div>
     </div>
 
-    <div class="text-center mb-16">
-      <h2 class="text-5xl font-bold mb-4 glow">Choose Your Tool</h2>
-      <p class="subtitle text-xl max-w-2xl mx-auto">
-        Professional tools to split and distribute tokens on Arc Testnet
-      </p>
-    </div>
+    <!-- ================= MODULES ================= -->
+    <section class="space-y-4 fade-up" style="animation-delay:0.2s">
+      <div class="flex items-end justify-between gap-3 px-1">
+        <div>
+          <h3 class="text-lg font-extrabold">Modules</h3>
+          <p class="text-xs text-gray-500 mt-0.5">Pick a tool and open it under your current workspace</p>
+        </div>
+        <span class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">8 tools</span>
+      </div>
 
-    <div class="grid md:grid-cols-2 gap-8">
-      <!-- Token Splitter -->
-      <a href="split.html" class="glass card block rounded-3xl overflow-hidden group">
-        <div class="h-2 bg-gradient-to-r from-emerald-400 to-cyan-400"></div>
-        <div class="p-10">
-          <div class="flex justify-between items-start mb-8">
-            <div class="text-6xl">🔀</div>
-            <span class="px-4 py-2 bg-emerald-500/20 text-emerald-400 text-sm font-medium rounded-full">Pro</span>
-          </div>
-          
-          <h3 class="text-3xl font-bold mb-3">Token Splitter Pro</h3>
-          <p class="feature-text leading-relaxed mb-8 text-lg">
-            Split tokens with custom percentages, real-time preview, 
-            quick templates, and advanced distribution controls.
-          </p>
-          
-          <div class="space-y-3 text-sm feature-text">
-            <div class="flex items-center gap-3">
-              <i class="fas fa-check text-emerald-500"></i>
-              <span>Custom percentage splits</span>
-            </div>
-            <div class="flex items-center gap-3">
-              <i class="fas fa-check text-emerald-500"></i>
-              <span>Quick templates & auto mode</span>
-            </div>
-            <div class="flex items-center gap-3">
-              <i class="fas fa-check text-emerald-500"></i>
-              <span>Telegram integration & notifications</span>
-            </div>
-            <div class="flex items-center gap-3">
-              <i class="fas fa-check text-emerald-500"></i>
-              <span>Import / Export & history</span>
-            </div>
-          </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4" id="modulesGrid">
+        <!-- cards injected by JS for workspace-aware links -->
+      </div>
+    </section>
 
-          <div class="mt-10 flex items-center justify-between text-emerald-600 font-medium">
-            <span>Launch Token Splitter</span>
-            <i class="fas fa-arrow-right text-xl group-hover:translate-x-2 transition"></i>
+    <!-- ================= ACTIVITY + QUICK ================= -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 fade-up" style="animation-delay:0.28s">
+
+      <!-- Recent Activity -->
+      <section class="lg:col-span-7 glass rounded-3xl p-5 sm:p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="font-bold text-base flex items-center gap-2">
+            <i class="fas fa-stream text-emerald-400"></i> Recent Activity
+          </h3>
+          <button onclick="loadActivity()" class="text-xs font-bold text-cyan-400 hover:underline">
+            <i class="fas fa-sync-alt mr-1"></i> Refresh
+          </button>
+        </div>
+        <div id="activityList" class="space-y-2 max-h-80 overflow-y-auto scroll-thin">
+          <p class="text-sm text-gray-500 text-center py-10">Connect wallet to load activity.</p>
+        </div>
+      </section>
+
+      <!-- Quick actions -->
+      <section class="lg:col-span-5 space-y-4">
+        <div class="glass rounded-3xl p-5 sm:p-6">
+          <h3 class="font-bold text-base mb-4 flex items-center gap-2">
+            <i class="fas fa-rocket text-amber-400"></i> Quick Start
+          </h3>
+          <div class="space-y-2.5">
+            <a data-mod="split" href="split.html" class="quick-link flex items-center gap-3 p-3.5 rounded-2xl bg-white/5 border border-white/5 hover:border-cyan-500/40 hover:bg-white/[0.07] transition">
+              <div class="w-9 h-9 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-400"><i class="fas fa-scissors"></i></div>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-bold">Token Split</div>
+                <div class="text-[11px] text-gray-500">Send to many wallets at once</div>
+              </div>
+              <i class="fas fa-chevron-right text-gray-600 text-xs"></i>
+            </a>
+            <a data-mod="roles" href="roles.html" class="quick-link flex items-center gap-3 p-3.5 rounded-2xl bg-white/5 border border-white/5 hover:border-cyan-500/40 hover:bg-white/[0.07] transition">
+              <div class="w-9 h-9 rounded-xl bg-cyan-500/15 flex items-center justify-center text-cyan-400"><i class="fas fa-users-gear"></i></div>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-bold">Role Split</div>
+                <div class="text-[11px] text-gray-500">Payroll by team roles</div>
+              </div>
+              <i class="fas fa-chevron-right text-gray-600 text-xs"></i>
+            </a>
+            <a data-mod="pay" href="pay.html" class="quick-link flex items-center gap-3 p-3.5 rounded-2xl bg-white/5 border border-white/5 hover:border-yellow-500/40 hover:bg-white/[0.07] transition">
+              <div class="w-9 h-9 rounded-xl bg-yellow-500/15 flex items-center justify-center text-yellow-400"><i class="fas fa-link"></i></div>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-bold">Payment Link</div>
+                <div class="text-[11px] text-gray-500">Create claimable links & invoices</div>
+              </div>
+              <i class="fas fa-chevron-right text-gray-600 text-xs"></i>
+            </a>
+            <a data-mod="vesting" href="vesting.html" class="quick-link flex items-center gap-3 p-3.5 rounded-2xl bg-white/5 border border-white/5 hover:border-lime-500/40 hover:bg-white/[0.07] transition">
+              <div class="w-9 h-9 rounded-xl bg-lime-500/15 flex items-center justify-center text-lime-400"><i class="fas fa-calendar-check"></i></div>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-bold">Vesting</div>
+                <div class="text-[11px] text-gray-500">Cliff & schedule releases</div>
+              </div>
+              <i class="fas fa-chevron-right text-gray-600 text-xs"></i>
+            </a>
           </div>
         </div>
-      </a>
 
-      <!-- Giveaway Tool -->
-      <a href="giveaway.html" class="glass card block rounded-3xl overflow-hidden group">
-        <div class="h-2 bg-gradient-to-r from-pink-500 to-rose-500"></div>
-        <div class="p-10">
-          <div class="flex justify-between items-start mb-8">
-            <div class="text-6xl">🎉</div>
-            <span class="px-4 py-2 bg-pink-500/20 text-pink-400 text-sm font-medium rounded-full">Giveaway</span>
-          </div>
-          
-          <h3 class="text-3xl font-bold mb-3">Giveaway Tool</h3>
-          <p class="feature-text leading-relaxed mb-8 text-lg">
-            Create fair giveaways with random winner selection, 
-            AI-powered wallet extractor, and instant equal distribution.
+        <div class="glass rounded-3xl p-5 sm:p-6">
+          <h3 class="font-bold text-sm mb-3 flex items-center gap-2">
+            <i class="fas fa-info-circle text-sky-400"></i> About ArcSplit
+          </h3>
+          <p class="text-xs text-gray-400 leading-relaxed">
+            ArcSplit is a modular suite for on-chain token distribution on Arc Network.
+            Connect a wallet, optionally join a workspace, and run tools with shared history and team permissions.
           </p>
-          
-          <div class="space-y-3 text-sm feature-text">
-            <div class="flex items-center gap-3">
-              <i class="fas fa-check text-pink-500"></i>
-              <span>Random winner selection</span>
-            </div>
-            <div class="flex items-center gap-3">
-              <i class="fas fa-check text-pink-500"></i>
-              <span>AI Wallet Extractor from comments</span>
-            </div>
-            <div class="flex items-center gap-3">
-              <i class="fas fa-check text-pink-500"></i>
-              <span>Shareable links & JSON export</span>
-            </div>
-            <div class="flex items-center gap-3">
-              <i class="fas fa-check text-pink-500"></i>
-              <span>Confetti animation & live results</span>
-            </div>
-          </div>
-
-          <div class="mt-10 flex items-center justify-between text-pink-600 font-medium">
-            <span>Launch Giveaway Tool</span>
-            <i class="fas fa-arrow-right text-xl group-hover:translate-x-2 transition"></i>
-          </div>
         </div>
-      </a>
+      </section>
     </div>
 
-    <p class="text-center text-gray-500 mt-16 text-sm">
-      Built for Arc Testnet • Powered by USDC & Circle
-    </p>
+    <!-- ================= FOOTER ================= -->
+    <footer class="text-center text-xs text-gray-500 py-4 fade-up" style="animation-delay:0.35s">
+      <div class="flex flex-wrap items-center justify-center gap-3 mb-2">
+        <a href="Workspace.html" class="hover:text-cyan-400 transition">Workspace</a>
+        <span class="opacity-30">·</span>
+        <a href="ArcAnalytics.html" class="hover:text-cyan-400 transition">Dashboard</a>
+        <span class="opacity-30">·</span>
+        <span>Arc Testnet</span>
+      </div>
+      <div>© ArcSplit · Built for professional on-chain teams</div>
+    </footer>
   </div>
 
-  <script>
-    function toggleTheme() {
-      const html = document.documentElement;
-      const isLight = html.classList.toggle('light');
-      
-      const icon = document.getElementById("themeBtn").querySelector("i");
-      if (isLight) {
-        icon.classList.replace("fa-moon", "fa-sun");
-        localStorage.setItem('theme', 'light');
-      } else {
-        icon.classList.replace("fa-sun", "fa-moon");
-        localStorage.setItem('theme', 'dark');
-      }
-    }
+  <!-- Toast -->
+  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#121228] border border-white/15 text-white px-5 py-3 rounded-2xl shadow-2xl z-50 text-xs backdrop-blur-xl">
+    <span id="toastText"></span>
+  </div>
 
-    // Load saved theme
+<script>
+  const MODULES = [
+    {
+      id: 'split',
+      href: 'split.html',
+      title: 'Token Split',
+      desc: 'Split any token to many wallets with percentage or amount.',
+      icon: 'fa-scissors',
+      accent: 'emerald',
+      glow: 'rgba(16,185,129,0.18)',
+      tag: 'Core'
+    },
+    {
+      id: 'batch',
+      href: 'batch.html',
+      title: 'Batch Split',
+      desc: 'Multi-token distributions in sequential batches.',
+      icon: 'fa-layer-group',
+      accent: 'rose',
+      glow: 'rgba(244,63,94,0.18)',
+      tag: 'Pro'
+    },
+    {
+      id: 'roles',
+      href: 'roles.html',
+      title: 'Role Engine',
+      desc: 'Define team roles and split by role allocations.',
+      icon: 'fa-users-gear',
+      accent: 'cyan',
+      glow: 'rgba(6,182,212,0.18)',
+      tag: 'Team'
+    },
+    {
+      id: 'giveaway',
+      href: 'giveaway.html',
+      title: 'Giveaway',
+      desc: 'Pick winners and send equal shares on-chain.',
+      icon: 'fa-gift',
+      accent: 'amber',
+      glow: 'rgba(245,158,11,0.18)',
+      tag: 'Fun'
+    },
+    {
+      id: 'vesting',
+      href: 'vesting.html',
+      title: 'Vesting',
+      desc: 'Cliff + vesting schedules with calendar view.',
+      icon: 'fa-calendar-check',
+      accent: 'lime',
+      glow: 'rgba(163,230,53,0.16)',
+      tag: 'Schedule'
+    },
+    {
+      id: 'pay',
+      href: 'pay.html',
+      title: 'Arc Pay',
+      desc: 'Payment links and smart invoices.',
+      icon: 'fa-link',
+      accent: 'yellow',
+      glow: 'rgba(234,179,8,0.16)',
+      tag: 'Pay'
+    },
+    {
+      id: 'conditional',
+      href: 'conditional.html',
+      title: 'Conditional',
+      desc: 'No-code rules: time, balance, price, NFT gates.',
+      icon: 'fa-microchip',
+      accent: 'blue',
+      glow: 'rgba(59,130,246,0.18)',
+      tag: 'Smart'
+    },
+    {
+      id: 'agentic',
+      href: 'agentic.html',
+      title: 'Agentic',
+      desc: 'Push-based rules with relayer-ready execution.',
+      icon: 'fa-robot',
+      accent: 'sky',
+      glow: 'rgba(14,165,233,0.18)',
+      tag: 'Auto'
+    }
+  ];
+
+  const ACCENT = {
+    emerald: { bg: 'bg-emerald-500/15', text: 'text-emerald-400', border: 'border-emerald-500/25' },
+    rose:    { bg: 'bg-rose-500/15',    text: 'text-rose-400',    border: 'border-rose-500/25' },
+    cyan:    { bg: 'bg-cyan-500/15',    text: 'text-cyan-400',    border: 'border-cyan-500/25' },
+    amber:   { bg: 'bg-amber-500/15',   text: 'text-amber-400',   border: 'border-amber-500/25' },
+    lime:    { bg: 'bg-lime-500/15',    text: 'text-lime-400',    border: 'border-lime-500/25' },
+    yellow:  { bg: 'bg-yellow-500/15',  text: 'text-yellow-400',  border: 'border-yellow-500/25' },
+    blue:    { bg: 'bg-blue-500/15',    text: 'text-blue-400',    border: 'border-blue-500/25' },
+    sky:     { bg: 'bg-sky-500/15',     text: 'text-sky-400',     border: 'border-sky-500/25' }
+  };
+
+  let provider = null;
+  let signer = null;
+  let userAddress = null;
+  let workspaceId = null;
+
+  function showToast(msg, ms = 3500) {
+    const t = document.getElementById('toast');
+    document.getElementById('toastText').textContent = msg;
+    t.classList.remove('hidden');
+    clearTimeout(window.__toastTimer);
+    window.__toastTimer = setTimeout(() => t.classList.add('hidden'), ms);
+  }
+
+  function shortAddr(a) {
+    if (!a) return '—';
+    return a.slice(0, 6) + '…' + a.slice(-4);
+  }
+
+  function getWsParam() {
+    try {
+      return new URLSearchParams(location.search).get('workspace')
+        || new URLSearchParams(location.search).get('ws')
+        || window.ARC_WORKSPACE_ID
+        || null;
+    } catch { return null; }
+  }
+
+  function withWorkspace(href) {
+    if (!workspaceId) return href;
+    const u = new URL(href, location.href);
+    u.searchParams.set('workspace', workspaceId);
+    return u.pathname.split('/').pop() + u.search;
+  }
+
+  function renderModules() {
+    const grid = document.getElementById('modulesGrid');
+    grid.innerHTML = MODULES.map((m, i) => {
+      const a = ACCENT[m.accent] || ACCENT.cyan;
+      const href = withWorkspace(m.href);
+      return `
+        <a href="${href}" class="module-card glass rounded-3xl p-5 block group"
+           style="--glow:${m.glow}; animation: fadeUp 0.5s ease forwards; animation-delay:${0.05 + i * 0.04}s; opacity:0">
+          <div class="flex items-start justify-between mb-4">
+            <div class="w-12 h-12 rounded-2xl ${a.bg} ${a.text} flex items-center justify-center text-lg border ${a.border}">
+              <i class="fas ${m.icon}"></i>
+            </div>
+            <span class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/5 text-gray-400 border border-white/10">${m.tag}</span>
+          </div>
+          <h4 class="font-extrabold text-base mb-1.5 group-hover:text-cyan-300 transition-colors">${m.title}</h4>
+          <p class="text-xs text-gray-400 leading-relaxed mb-4">${m.desc}</p>
+          <div class="flex items-center gap-1.5 text-[11px] font-bold ${a.text}">
+            Open <i class="fas fa-arrow-right text-[9px] group-hover:translate-x-1 transition-transform"></i>
+          </div>
+        </a>`;
+    }).join('');
+
+    // update quick links with workspace
+    document.querySelectorAll('.quick-link').forEach(el => {
+      const mod = el.getAttribute('data-mod');
+      const found = MODULES.find(m => m.id === mod);
+      if (found) el.href = withWorkspace(found.href);
+    });
+  }
+
+  function setWalletUI(connected) {
+    const btn = document.getElementById('connectBtn');
+    const disc = document.getElementById('disconnectBtn');
+    const txt = document.getElementById('connectText');
+    const label = document.getElementById('walletLabel');
+    if (connected && userAddress) {
+      txt.textContent = shortAddr(userAddress);
+      disc.classList.remove('hidden');
+      disc.classList.add('flex');
+      label.textContent = shortAddr(userAddress);
+      btn.classList.add('ring-2', 'ring-cyan-500/30');
+    } else {
+      txt.textContent = 'Connect Wallet';
+      disc.classList.add('hidden');
+      disc.classList.remove('flex');
+      label.textContent = 'Not connected';
+      btn.classList.remove('ring-2', 'ring-cyan-500/30');
+    }
+  }
+
+  async function connectWallet() {
+    if (!window.ethereum) return showToast('MetaMask / Web3 wallet not found');
+    try {
+      provider = new ethers.BrowserProvider(window.ethereum);
+      await provider.send('eth_requestAccounts', []);
+      signer = await provider.getSigner();
+      userAddress = await signer.getAddress();
+      window.userAddress = userAddress;
+      setWalletUI(true);
+      showToast('Wallet connected');
+      loadActivity();
+      loadWorkspaceLabel();
+    } catch (e) {
+      console.error(e);
+      showToast('Connection rejected');
+    }
+  }
+
+  function disconnectWallet() {
+    userAddress = null;
+    window.userAddress = null;
+    signer = null;
+    setWalletUI(false);
+    document.getElementById('activityList').innerHTML =
+      `<p class="text-sm text-gray-500 text-center py-10">Connect wallet to load activity.</p>`;
+    showToast('Disconnected');
+  }
+
+  async function loadWorkspaceLabel() {
+    const el = document.getElementById('wsLabel');
+    workspaceId = getWsParam();
+    if (!workspaceId) {
+      el.textContent = 'Personal';
+      return;
+    }
+    if (typeof fetchWorkspace === 'function') {
+      try {
+        const ws = await fetchWorkspace(workspaceId);
+        el.textContent = ws?.name || shortAddr(workspaceId);
+        return;
+      } catch {}
+    }
+    el.textContent = shortAddr(workspaceId);
+  }
+
+  function moduleIcon(app) {
+    const s = String(app || '').toLowerCase();
+    if (s.includes('role')) return 'fa-users-gear';
+    if (s.includes('batch')) return 'fa-layer-group';
+    if (s.includes('give')) return 'fa-gift';
+    if (s.includes('vest')) return 'fa-calendar-check';
+    if (s.includes('pay') || s.includes('invoice') || s.includes('link')) return 'fa-link';
+    if (s.includes('cond')) return 'fa-microchip';
+    if (s.includes('agent')) return 'fa-robot';
+    return 'fa-scissors';
+  }
+
+  async function loadActivity() {
+    const box = document.getElementById('activityList');
+    if (!userAddress) {
+      box.innerHTML = `<p class="text-sm text-gray-500 text-center py-10">Connect wallet to load activity.</p>`;
+      return;
+    }
+    box.innerHTML = `<p class="text-sm text-cyan-400 text-center py-8"><i class="fas fa-spinner fa-spin mr-2"></i>Loading…</p>`;
+    try {
+      if (typeof fetchHistoryFromCloud !== 'function') {
+        box.innerHTML = `<p class="text-sm text-gray-500 text-center py-10">Cloud history unavailable.</p>`;
+        return;
+      }
+      let rows = await fetchHistoryFromCloud(userAddress);
+      // hide pure config records
+      rows = (rows || []).filter(r => {
+        const t = String(r.type || '').toLowerCase();
+        return t !== 'roles_config' && t !== 'module_data' && t !== 'config';
+      }).slice(0, 12);
+
+      if (!rows.length) {
+        box.innerHTML = `<p class="text-sm text-gray-500 text-center py-10">No activity yet — run your first split.</p>`;
+        return;
+      }
+
+      box.innerHTML = rows.map(r => {
+        const typ = r.type || r.appName || 'Activity';
+        const amt = r.amount != null ? `${r.amount} ${r.token || r.symbol || ''}`.trim() : '';
+        const ts = r.timestamp ? new Date(r.timestamp).toLocaleString() : (r.time || r.date || '');
+        const hash = r.hash || r.txHash || '';
+        const icon = moduleIcon(r.appName || r.type);
+        return `
+          <div class="activity-row flex items-center gap-3 p-3 rounded-2xl border border-white/5">
+            <div class="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center shrink-0">
+              <i class="fas ${icon} text-cyan-400 text-sm"></i>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="text-sm font-bold truncate">${typ}</div>
+              <div class="text-[11px] text-gray-500 truncate">${ts}${amt ? ' · ' + amt : ''}</div>
+            </div>
+            ${hash && String(hash).startsWith('0x')
+              ? `<a href="https://testnet.arcscan.app/tx/${hash}" target="_blank" rel="noopener" class="text-[10px] font-bold text-cyan-400 hover:underline shrink-0">Tx ↗</a>`
+              : ''}
+          </div>`;
+      }).join('');
+    } catch (e) {
+      console.error(e);
+      box.innerHTML = `<p class="text-sm text-rose-400 text-center py-10">Failed to load activity.</p>`;
+    }
+  }
+
+  function toggleTheme() {
+    document.documentElement.classList.toggle('light');
+    const icon = document.querySelector('#themeBtn i');
+    if (document.documentElement.classList.contains('light')) {
+      icon.className = 'fas fa-sun text-lg text-amber-500';
+      localStorage.setItem('theme', 'light');
+    } else {
+      icon.className = 'fas fa-moon text-lg text-cyan-400';
+      localStorage.setItem('theme', 'dark');
+    }
+  }
+
+  // boot
+  (async () => {
     if (localStorage.getItem('theme') === 'light') {
       document.documentElement.classList.add('light');
-      document.getElementById("themeBtn").querySelector("i").classList.replace("fa-moon", "fa-sun");
+      document.querySelector('#themeBtn i').className = 'fas fa-sun text-lg text-amber-500';
     }
-  </script>
+
+    workspaceId = getWsParam();
+    renderModules();
+    await loadWorkspaceLabel();
+
+    if (window.ethereum) {
+      try {
+        provider = new ethers.BrowserProvider(window.ethereum);
+        const accs = await provider.send('eth_accounts', []);
+        if (accs?.length) {
+          signer = await provider.getSigner();
+          userAddress = await signer.getAddress();
+          window.userAddress = userAddress;
+          setWalletUI(true);
+          loadActivity();
+        }
+      } catch {}
+
+      window.ethereum.on?.('accountsChanged', (accs) => {
+        if (accs?.length) {
+          userAddress = accs[0];
+          window.userAddress = userAddress;
+          setWalletUI(true);
+          loadActivity();
+        } else {
+          disconnectWallet();
+        }
+      });
+    }
+  })();
+</script>
 </body>
 </html>
