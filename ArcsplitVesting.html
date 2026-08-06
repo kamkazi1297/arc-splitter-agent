@@ -588,7 +588,16 @@
   // (SUPABASE_URL / KEY are NOT in this page)
   // -----------------------------------------------------
   let provider, signer, userAddress;
+  const HISTORY_KEY = "arcsplit_history_vesting";
+  const MODULE = "vesting";
   let historyTransactions = [];
+
+  function isVestingItem(item) {
+    if (!item) return false;
+    const app = String(item.appName || item.module || "").toLowerCase();
+    const typ = String(item.type || "").toLowerCase();
+    return app === MODULE || typ === MODULE || app === "vesting" || typ === "vesting";
+  }
   
   // Updated to Proxy Address based on the new smart contract deployment
   const VESTING_CONTRACT_ADDRESS = "0xd3640D303e2e7962aEeba09a8aDA73eb80e6606d";
@@ -681,17 +690,34 @@
         
         await fetchRealTokenBalanceWithRetry();
         
-        // Fetch History from Cloud
+        // Fetch History from Cloud — only Vesting records
         let cloudHistory = [];
         if (typeof fetchHistoryFromCloud === "function") {
-          cloudHistory = await fetchHistoryFromCloud(userAddress);
+          try {
+            const allCloud = await fetchHistoryFromCloud(userAddress);
+            cloudHistory = (allCloud || []).filter(isVestingItem);
+          } catch (e) {
+            console.error(e);
+            cloudHistory = [];
+          }
         }
-        if (cloudHistory && cloudHistory.length > 0) {
-            historyTransactions = cloudHistory;
-        } else {
-            // Fallback to local storage if cloud is empty
-            historyTransactions = JSON.parse(localStorage.getItem('arcsplit_history') || '[]');
-        }
+        // Merge with module-specific local storage
+        let localHistory = [];
+        try {
+          localHistory = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]").filter(isVestingItem);
+        } catch {}
+        const seen = new Set();
+        const merged = [];
+        cloudHistory.forEach(item => {
+          const key = item.hash || item.timestamp || JSON.stringify(item);
+          if (!seen.has(key)) { seen.add(key); merged.push(item); }
+        });
+        localHistory.forEach(item => {
+          const key = item.hash || item.timestamp || JSON.stringify(item);
+          if (!seen.has(key)) { seen.add(key); merged.push(item); }
+        });
+        historyTransactions = merged;
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(historyTransactions));
         renderHistoryList();
 
         if (!isAuto) showToast("Wallet connected successfully!");
@@ -1315,7 +1341,7 @@
       };
 
       historyTransactions.unshift(newRecord);
-      localStorage.setItem('arcsplit_history', JSON.stringify(historyTransactions));
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(historyTransactions));
       renderHistoryList();
       renderCalendarView();
       
@@ -1369,7 +1395,7 @@
 
   function clearHistory() {
     historyTransactions = [];
-    localStorage.removeItem('arcsplit_history');
+    localStorage.removeItem(HISTORY_KEY);
     renderHistoryList();
     renderCalendarView();
     showToast("History cleared locally.");
