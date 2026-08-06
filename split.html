@@ -1631,22 +1631,40 @@ window.addEventListener('load', async () => {
       setTimeout(() => { clearInterval(check); resolve(); }, 3000);
     });
     await waitForSupabase();
+
+    const MODULE = "split";
     const cloudHistory = await fetchHistoryFromCloud(userAddress);
+
     if (cloudHistory && cloudHistory.length > 0) {
+      // فقط تاریخچه‌های مربوط به Split
+      const filteredCloud = cloudHistory.filter(item => {
+        const app = (item.appName || item.module || "").toLowerCase();
+        const typ = (item.type || "").toLowerCase();
+        return app === MODULE || typ === MODULE || app.includes(MODULE) || typ.includes(MODULE);
+      });
+
       const seen = new Set();
       const merged = [];
-      cloudHistory.forEach(item => {
+
+      filteredCloud.forEach(item => {
         if (item && item.hash && !seen.has(item.hash)) {
           seen.add(item.hash);
           merged.push(item);
         }
       });
+
+      // تاریخچه‌های لوکال هم فقط Split باشن
       transactions.forEach(item => {
         if (item && item.hash && !seen.has(item.hash)) {
-          seen.add(item.hash);
-          merged.push(item);
+          const app = (item.appName || item.module || "").toLowerCase();
+          const typ = (item.type || "").toLowerCase();
+          if (app === MODULE || typ === MODULE || app.includes(MODULE) || typ.includes(MODULE)) {
+            seen.add(item.hash);
+            merged.push(item);
+          }
         }
       });
+
       transactions = merged;
       localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
     }
