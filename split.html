@@ -794,28 +794,69 @@ function updateTelegramButton() {
     document.getElementById("connectModal").classList.add("hidden");
   }
 
-    async function connectMetaMask() {
+  const ARC_CHAIN_ID_HEX = "0x4cef52"; // 5042002
+  const ARC_NETWORK_PARAMS = {
+    chainId: ARC_CHAIN_ID_HEX,
+    chainName: "Arc Network Testnet",
+    nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
+    rpcUrls: ["https://rpc.testnet.arc.network"],
+    blockExplorerUrls: ["https://testnet.arcscan.app"]
+  };
+
+  /** Switch (or add) Arc Testnet automatically. Returns true if on Arc. */
+  async function ensureArcNetwork() {
+    if (!window.ethereum) return false;
+    try {
+      const chainId = await window.ethereum.request({ method: "eth_chainId" });
+      if (chainId === ARC_CHAIN_ID_HEX || parseInt(chainId, 16) === ARC_CHAIN_ID) return true;
+
+      try {
+        await window.ethereum.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: ARC_CHAIN_ID_HEX }]
+        });
+      } catch (switchError) {
+        if (switchError.code === 4902 || switchError.code === -32603) {
+          await window.ethereum.request({
+            method: "wallet_addEthereumChain",
+            params: [ARC_NETWORK_PARAMS]
+          });
+        } else {
+          throw switchError;
+        }
+      }
+      return true;
+    } catch (err) {
+      console.warn("ensureArcNetwork failed", err);
+      showToast("Please switch wallet to Arc Network Testnet (Chain ID 5042002)", 6000);
+      return false;
+    }
+  }
+
+  async function connectMetaMask() {
     hideConnectModal();
     if (!window.ethereum) return showToast("MetaMask not found!");
 
     try {
+      const onArc = await ensureArcNetwork();
+      if (!onArc) return;
+
       provider = new ethers.BrowserProvider(window.ethereum);
       const network = await provider.getNetwork();
-      
       if (network.chainId !== BigInt(ARC_CHAIN_ID)) {
         showToast("Please switch to <b>Arc Testnet</b> (Chain ID: 5042002)", 6000);
         return;
       }
 
-      const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
       userAddress = accounts[0];
       window.userAddress = userAddress;
 
-      localStorage.setItem('userAddress', userAddress);
+      localStorage.setItem("userAddress", userAddress);
 
       signer = await provider.getSigner();
 
-      if (typeof refreshWorkspaceGuard === 'function') refreshWorkspaceGuard();
+      if (typeof refreshWorkspaceGuard === "function") refreshWorkspaceGuard();
       updateConnectButton();
       showToast("Wallet connected successfully");
       await updateBalance();
