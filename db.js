@@ -116,69 +116,70 @@ async function fetchHistoryFromCloud(userAddress) {
 async function fetchTeamHistory(memberAddresses, workspaceId, limit = 60) {
   try {
     const client = await getSupabase();
-    if (!client || !memberAddresses?.length) return [];
-    const addrs = [...new Set(memberAddresses.map(a => String(a).toLowerCase()).filter(Boolean))];
-    if (!addrs.length) return [];
+    if (!client) return [];
 
-    // Case-insensitive match: history may store mixed-case addresses
-    const orFilter = addrs.map(a => `user_address.ilike.${a}`).join(',');
-    let query = client
+    const addrs = new Set(
+      (memberAddresses || []).map(a => String(a).toLowerCase()).filter(Boolean)
+    );
+
+    // Plain fetch — no PostgREST or/ilike/json filters (those were causing HTTP 400)
+    const { data, error } = await client
       .from('history')
       .select('history_data, user_address, id, created_at')
       .order('id', { ascending: false })
-      .limit(Math.min(limit * 5, 300));
-    if (orFilter) query = query.or(orFilter);
+      .limit(250);
 
-    const { data, error } = await query;
     if (error) {
       console.error('fetchTeamHistory', error);
-      // Fallback without or-filter
-      const fb = await client
-        .from('history')
-        .select('history_data, user_address, id, created_at')
-        .order('id', { ascending: false })
-        .limit(300);
-      if (fb.error) return [];
-      const set = new Set(addrs);
-      var raw = (fb.data || []).filter(row =>
-        set.has(String(row.user_address || '').toLowerCase())
-      );
-    } else {
-      var raw = data || [];
+      return [];
     }
 
-    const rows = raw.map(row => {
+    let rows = (data || []).map(row => {
       const h = (row.history_data && typeof row.history_data === 'object')
         ? row.history_data
         : {};
       return {
         ...h,
         user: h.user || row.user_address,
+        user_address: row.user_address,
         timestamp: h.timestamp || row.created_at,
         _id: row.id
       };
     });
 
-    if (!workspaceId) return rows.slice(0, limit);
+    // Keep only team members (case-insensitive)
+    if (addrs.size) {
+      rows = rows.filter(r =>
+        addrs.has(String(r.user || r.user_address || '').toLowerCase())
+      );
+    }
 
-    const wid = String(workspaceId);
-    const tagged = rows.filter(r =>
-      String(r.workspaceId || r.workspace_id || '') === wid
-    );
-    if (tagged.length) return tagged.slice(0, limit);
+    if (workspaceId) {
+      const wid = String(workspaceId);
+      const tagged = rows.filter(r =>
+        String(r.workspaceId || r.workspace_id || '') === wid
+      );
+      if (tagged.length) return tagged.slice(0, limit);
 
-    // Fallback: any recent activity from team members (personal / untagged)
-    return rows.slice(0, limit).map(r => ({
-      ...r,
-      _untagged: !(r.workspaceId || r.workspace_id)
-    }));
+      // Fallback: member rows not tagged to a different workspace
+      rows = rows
+        .filter(r => {
+          const w = r.workspaceId || r.workspace_id;
+          return !w || String(w) === wid;
+        })
+        .map(r => ({
+          ...r,
+          _untagged: !(r.workspaceId || r.workspace_id)
+        }));
+    }
+
+    return rows.slice(0, limit);
   } catch (e) {
     console.error('fetchTeamHistory', e);
     return [];
   }
 }
 
-/* ===================== PAYMENT LINKS / INVOICES ===================== */
 
 async function savePaymentRecord(userAddress, record) {
   try {
