@@ -688,6 +688,7 @@
         await provider.send("eth_requestAccounts", []);
         signer = await provider.getSigner();
         userAddress = await signer.getAddress();
+        window.userAddress = userAddress;
         contract = new ethers.Contract(CONTRACT_ADDRESS, SPLITTER_ABI, signer);
         
         const shortAddr = userAddress.substring(0, 6) + "..." + userAddress.substring(userAddress.length - 4);
@@ -702,9 +703,20 @@
         
         await updateTokenInfo(); 
         document.getElementById('ruleNonce').value = Math.floor(Math.random() * 1000000);
+        if (typeof window.refreshWorkspaceGuard === 'function') window.refreshWorkspaceGuard();
         
         window.ethereum.on('chainChanged', () => window.location.reload());
-        window.ethereum.on('accountsChanged', () => window.location.reload());
+        window.ethereum.on('accountsChanged', async (accs) => {
+          if (accs && accs.length) {
+            userAddress = accs[0];
+            window.userAddress = userAddress;
+            if (typeof window.refreshWorkspaceGuard === 'function') window.refreshWorkspaceGuard();
+          } else {
+            userAddress = null;
+            window.userAddress = null;
+          }
+          window.location.reload();
+        });
       } catch (err) {
         console.warn("Connection failed or user rejected.", err);
       }
@@ -714,7 +726,7 @@
   }
 
   function disconnectWallet() {
-    userAddress = null; signer = null; contract = null;
+    userAddress = null; window.userAddress = null; signer = null; contract = null;
     const btn = document.getElementById('connectBtn');
     btn.className = "app-button w-full px-6 py-4 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg hover:bg-sky-50 light:hover:bg-slate-800";
     document.getElementById('connectText').innerHTML = `Connect Wallet`;
@@ -826,6 +838,7 @@
           amount: amt,
           token: tokenSymbol,
           hash: tx.hash,
+          status: 'Success',
           timestamp: new Date().toISOString(),
           memo: `Deposited ${amt} ${tokenSymbol}`
         });
@@ -862,6 +875,7 @@
           amount: amt,
           token: tokenSymbol,
           hash: tx.hash,
+          status: 'Success',
           timestamp: new Date().toISOString(),
           memo: `Withdrew ${amt} ${tokenSymbol}`
         });
@@ -996,12 +1010,13 @@
       if (typeof saveHistoryToCloud === 'function') {
         await saveHistoryToCloud(userAddress, {
           appName: APP_IDENTIFIER,
-          type: isBatch ? 'Batch Rule' : 'New Rule',
+          type: isBatch ? 'Agentic Batch' : 'Agentic',
           amount: totalAmount,
           token: document.querySelector('.sponsorBalanceSymbol').textContent,
           recipient: isBatch ? 'Multiple' : recipients[0],
           conditionsCount: conditions.length,
           hash: tx.hash,
+          status: 'Success',
           timestamp: new Date().toISOString(),
           memo: isBatch ? `Batch rules created for ${recipients.length} wallets` : `Rule created for ${recipients[0].substring(0,6)}...`
         });
