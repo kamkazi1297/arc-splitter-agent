@@ -326,13 +326,34 @@ async function inviteWorkspaceMember(workspaceId, inviterAddress, memberAddress,
     const client = await getSupabase();
     if (!client || !workspaceId || !memberAddress) return false;
     const safeRole = ['admin', 'member', 'viewer'].includes(role) ? role : 'member';
-    const { error } = await client.from('workspace_members').upsert([{
+    const addr = memberAddress.toLowerCase();
+    const rank = { owner: 4, admin: 3, member: 2, viewer: 1 };
+
+    const { data: existing } = await client
+      .from('workspace_members')
+      .select('role, display_name')
+      .eq('workspace_id', workspaceId)
+      .eq('user_address', addr)
+      .maybeSingle();
+
+    if (existing) {
+      if (existing.role === 'owner') return false; // never change owner via invite
+      const keep = (rank[existing.role] || 0) >= (rank[safeRole] || 0) ? existing.role : safeRole;
+      if (keep === existing.role) return true; // already same or higher
+      const { error } = await client.from('workspace_members').update({
+        role: keep,
+        display_name: displayName || existing.display_name || ''
+      }).eq('workspace_id', workspaceId).eq('user_address', addr);
+      return !error;
+    }
+
+    const { error } = await client.from('workspace_members').insert([{
       workspace_id: workspaceId,
-      user_address: memberAddress.toLowerCase(),
+      user_address: addr,
       role: safeRole,
       display_name: displayName || '',
       invited_by: (inviterAddress || '').toLowerCase()
-    }], { onConflict: 'workspace_id,user_address' });
+    }]);
     if (error) {
       console.error('inviteWorkspaceMember', error);
       return false;
@@ -549,14 +570,63 @@ async function acceptWorkspaceInvite(token, userAddress, displayName = '') {
     if (inv.used_at) return { ok: false, reason: 'already_used' };
 
     const addr = userAddress.toLowerCase();
-    const safeRole = inv.role === 'admin' ? 'admin' : inv.role === 'viewer' ? 'viewer' : 'member';
-    const { error: mErr } = await client.from('workspace_members').upsert([{
+    const inviteRole = inv.role === 'admin' ? 'admin' : inv.role === 'viewer' ? 'viewer' : 'member';
+    const rank = { owner: 4, admin: 3, member: 2, viewer: 1 };
+
+    // If already a member, never downgrade (and never touch owner)
+    const { data: existing } = await client
+      .from('workspace_members')
+      .select('role, display_name')
+      .eq('workspace_id', inv.workspace_id)
+      .eq('user_address', addr)
+      .maybeSingle();
+
+    if (existing) {
+      // Already in workspace — keep current role; do not consume invite for self-test if owner
+      if (existing.role === 'owner') {
+        return {
+          ok: false,
+          reason: 'already_owner',
+          workspace_id: inv.workspace_id,
+          role: 'owner',
+          workspace: inv.workspaces
+        };
+      }
+      const keepRole = (rank[existing.role] || 0) >= (rank[inviteRole] || 0)
+        ? existing.role
+        : inviteRole;
+
+      // Only update if upgrading; otherwise leave as-is
+      if (keepRole !== existing.role) {
+        await client.from('workspace_members').update({
+          role: keepRole,
+          display_name: displayName || existing.display_name || ''
+        }).eq('workspace_id', inv.workspace_id).eq('user_address', addr);
+      }
+
+      // Mark invite used only when a real join/upgrade happens for non-owner
+      await client.from('workspace_invites').update({
+        used_at: new Date().toISOString(),
+        used_by: addr
+      }).eq('id', inv.id);
+
+      return {
+        ok: true,
+        workspace_id: inv.workspace_id,
+        role: keepRole,
+        already_member: true,
+        workspace: inv.workspaces
+      };
+    }
+
+    // New member
+    const { error: mErr } = await client.from('workspace_members').insert([{
       workspace_id: inv.workspace_id,
       user_address: addr,
-      role: safeRole,
+      role: inviteRole,
       display_name: displayName || '',
       invited_by: inv.created_by
-    }], { onConflict: 'workspace_id,user_address' });
+    }]);
     if (mErr) {
       console.error('accept member', mErr);
       return { ok: false, reason: 'member_failed' };
@@ -570,7 +640,7 @@ async function acceptWorkspaceInvite(token, userAddress, displayName = '') {
     return {
       ok: true,
       workspace_id: inv.workspace_id,
-      role: safeRole,
+      role: inviteRole,
       workspace: inv.workspaces
     };
   } catch (e) {
