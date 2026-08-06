@@ -353,6 +353,26 @@
                 <span class="text-[11px] text-gray-500">Billing / paid plans can be added later</span>
               </div>
             </div>
+
+            <div class="pt-3 border-t border-white/5 space-y-3">
+              <div class="text-xs font-bold text-gray-400 uppercase tracking-wider">Activity privacy</div>
+              <p class="text-[11px] text-gray-500 leading-relaxed">
+                <b>Team work</b> (from Modules) is always visible to everyone in the workspace.
+                <b>All member activity</b> needs the owner to enable it, and each member must opt in to share their personal tool use.
+              </p>
+              <label id="privacyOwnerRow" class="hidden flex items-start gap-2.5 cursor-pointer text-sm">
+                <input type="checkbox" id="setAllowAllActivity" class="mt-0.5 accent-indigo-500 w-4 h-4 rounded shrink-0">
+                <span><span class="font-bold">Owner:</span> Allow “All member activity” for this workspace</span>
+              </label>
+              <label id="privacyShareRow" class="flex items-start gap-2.5 cursor-pointer text-sm">
+                <input type="checkbox" id="setShareMyActivity" class="mt-0.5 accent-indigo-500 w-4 h-4 rounded shrink-0">
+                <span><span class="font-bold">My preference:</span> Share my personal tool activity with this team</span>
+              </label>
+              <button type="button" onclick="saveActivityPrivacy()" class="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-bold hover:bg-white/10">
+                Save privacy
+              </button>
+            </div>
+
             <div class="flex flex-wrap gap-2">
               <button onclick="saveSettings()" id="saveSetBtn" class="px-5 py-2.5 rounded-xl bg-indigo-500 text-white text-sm font-bold">Save settings</button>
               <button onclick="doLeaveWorkspace()" id="leaveBtn" class="px-5 py-2.5 rounded-xl bg-rose-500/15 text-rose-400 border border-rose-500/30 text-sm font-bold">Leave workspace</button>
@@ -867,7 +887,28 @@
     return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   }
 
+  function privacySettings() {
+    const s = settingsOf(currentWs || {});
+    return {
+      allowAll: !!s.allowAllMemberActivity,
+      shareMap: (s.shareAllActivity && typeof s.shareAllActivity === "object") ? s.shareAllActivity : {}
+    };
+  }
+
+  function memberSharesActivity(addr) {
+    const a = String(addr || "").toLowerCase();
+    return !!privacySettings().shareMap[a];
+  }
+
+  function canUseAllActivityView() {
+    return privacySettings().allowAll;
+  }
+
   function setActivityMode(mode) {
+    if (mode === "all" && !canUseAllActivityView()) {
+      showToast("Owner has not enabled “All member activity” for this workspace");
+      mode = "tagged";
+    }
     activityMode = mode === "all" ? "all" : "tagged";
     const t = document.getElementById("actModeTagged");
     const a = document.getElementById("actModeAll");
@@ -876,11 +917,20 @@
       if (activityMode === "tagged") {
         t.className = "px-3 py-1.5 rounded-xl text-xs font-bold border border-indigo-500/50 bg-indigo-500/20 text-indigo-200";
         a.className = "px-3 py-1.5 rounded-xl text-xs font-bold border border-white/10 text-gray-400 hover:bg-white/5";
-        if (hint) hint.textContent = "Only actions opened from Modules under this workspace.";
+        if (hint) hint.textContent = "Team work from Modules — visible to everyone in this workspace.";
       } else {
         a.className = "px-3 py-1.5 rounded-xl text-xs font-bold border border-indigo-500/50 bg-indigo-500/20 text-indigo-200";
         t.className = "px-3 py-1.5 rounded-xl text-xs font-bold border border-white/10 text-gray-400 hover:bg-white/5";
-        if (hint) hint.textContent = "All cloud activity from member wallets since they joined this workspace (includes personal use of tools).";
+        if (hint) hint.textContent = "Personal tool activity only from members who opted in (Settings → Share my personal activity).";
+      }
+    }
+    // Dim the All button if feature disabled
+    if (a) {
+      if (!canUseAllActivityView()) {
+        a.className = "px-3 py-1.5 rounded-xl text-xs font-bold border border-white/10 text-gray-600 opacity-60";
+        a.title = "Owner must enable this in Settings";
+      } else {
+        a.title = "";
       }
     }
     loadTeamActivity();
@@ -890,12 +940,36 @@
     const box = document.getElementById("activityList");
     if (!currentWs || !box) return;
     box.innerHTML = `<p class="text-sm text-gray-500 text-center py-6">Loading…</p>`;
-    const addrs = currentMembers.map(m => m.user_address);
+
+    // Refresh All-button state
+    const aBtn = document.getElementById("actModeAll");
+    if (aBtn && !canUseAllActivityView()) {
+      if (activityMode === "all") activityMode = "tagged";
+      aBtn.className = "px-3 py-1.5 rounded-xl text-xs font-bold border border-white/10 text-gray-600 opacity-60";
+    }
+
+    let addrs = currentMembers.map(m => m.user_address);
     const joinMap = {};
     currentMembers.forEach(m => {
       const a = String(m.user_address || "").toLowerCase();
       if (a && m.joined_at) joinMap[a] = m.joined_at;
     });
+
+    // All mode: only members who opted in to share personal activity
+    if (activityMode === "all") {
+      if (!canUseAllActivityView()) {
+        box.innerHTML = `<p class="text-sm text-gray-500 text-center py-8">“All member activity” is off. Only the owner can enable it in Settings.</p>`;
+        _activityCache = [];
+        return;
+      }
+      addrs = addrs.filter(addr => memberSharesActivity(addr));
+      if (!addrs.length) {
+        box.innerHTML = `<p class="text-sm text-gray-500 text-center py-8">No members have opted in to share personal activity yet. Each member can enable it under Settings → Activity privacy.</p>`;
+        _activityCache = [];
+        return;
+      }
+    }
+
     const rows = typeof fetchTeamHistory === "function"
       ? await fetchTeamHistory(addrs, currentWs.id, 60, activityMode, joinMap)
       : [];
@@ -903,7 +977,7 @@
     if (!rows.length) {
       box.innerHTML = activityMode === "tagged"
         ? `<p class="text-sm text-gray-500 text-center py-8">No tagged team work yet. Open tools from Modules so activity is linked to this workspace.</p>`
-        : `<p class="text-sm text-gray-500 text-center py-8">No member activity found since join dates.</p>`;
+        : `<p class="text-sm text-gray-500 text-center py-8">No shared personal activity found for opted-in members.</p>`;
       return;
     }
     box.innerHTML = rows.map((r, idx) => {
@@ -1008,8 +1082,22 @@
     ["setName","setDesc","setTreasury"].forEach(id => {
       document.getElementById(id).disabled = !can;
     });
-    const plan = (settingsOf(currentWs).plan || "free").toUpperCase();
+    const s = settingsOf(currentWs);
+    const plan = (s.plan || "free").toUpperCase();
     document.getElementById("setPlanBadge").textContent = plan;
+
+    // Privacy UI
+    const ownerRow = document.getElementById("privacyOwnerRow");
+    const allowEl = document.getElementById("setAllowAllActivity");
+    const shareEl = document.getElementById("setShareMyActivity");
+    if (ownerRow) {
+      ownerRow.classList.toggle("hidden", myRole !== "owner");
+      if (allowEl) allowEl.checked = !!s.allowAllMemberActivity;
+    }
+    if (shareEl && userAddress) {
+      const map = (s.shareAllActivity && typeof s.shareAllActivity === "object") ? s.shareAllActivity : {};
+      shareEl.checked = !!map[String(userAddress).toLowerCase()];
+    }
 
     const tBox = document.getElementById("transferBox");
     if (myRole === "owner") {
@@ -1024,6 +1112,41 @@
     } else {
       tBox.classList.add("hidden");
     }
+  }
+
+  async function saveActivityPrivacy() {
+    if (!currentWs || !userAddress) return;
+    const s = settingsOf(currentWs);
+
+    // Owner: enable/disable All member activity for the workspace
+    if (myRole === "owner") {
+      const allow = document.getElementById("setAllowAllActivity")?.checked;
+      s.allowAllMemberActivity = !!allow;
+      const okWs = await updateWorkspace(currentWs.id, { settings: s });
+      if (!okWs) return showToast("Could not save owner privacy setting");
+      currentWs.settings = s;
+    }
+
+    // Every member (including owner): personal opt-in
+    const share = document.getElementById("setShareMyActivity")?.checked;
+    if (typeof setMemberActivityShare === "function") {
+      const ok = await setMemberActivityShare(currentWs.id, userAddress, !!share);
+      if (!ok) return showToast("Could not save your share preference");
+    } else {
+      if (!s.shareAllActivity) s.shareAllActivity = {};
+      s.shareAllActivity[String(userAddress).toLowerCase()] = !!share;
+      await updateWorkspace(currentWs.id, { settings: s });
+    }
+
+    // Refresh local workspace settings
+    const fresh = await fetchWorkspace(currentWs.id);
+    if (fresh) {
+      currentWs.settings = fresh.settings;
+      const idx = myWorkspaces.findIndex(w => w.id === currentWs.id);
+      if (idx >= 0) myWorkspaces[idx] = { ...myWorkspaces[idx], settings: fresh.settings };
+    }
+    showToast("Privacy saved");
+    if (activityMode === "all") loadTeamActivity();
   }
 
   async function doTransferOwnership() {
