@@ -45,12 +45,24 @@ async function saveHistoryToCloud(userAddress, record) {
   try {
     const client = await getSupabase();
     if (!client || !userAddress) return false;
+    const r = { ...(record || {}) };
+    // Auto-tag workspace from guard / URL so Team Activity can find it
+    if (!r.workspaceId && !r.workspace_id) {
+      try {
+        const wid = (typeof window !== 'undefined' && window.ARC_WORKSPACE_ID)
+          || (typeof location !== 'undefined' && new URLSearchParams(location.search).get('workspace'))
+          || null;
+        if (wid) r.workspaceId = wid;
+      } catch {}
+    }
+    if (!r.timestamp) r.timestamp = new Date().toISOString();
+    if (!r.status) r.status = 'Success';
     const { error } = await client
       .from('history')
       .insert([{
         user_address: userAddress.toLowerCase(),
-        memo: record.memo || record.type || '',
-        history_data: record
+        memo: r.memo || r.type || r.appName || '',
+        history_data: r
       }]);
     if (error) {
       console.error('Error saving to cloud:', error);
@@ -93,19 +105,22 @@ async function fetchTeamHistory(memberAddresses, workspaceId, limit = 60) {
   try {
     const client = await getSupabase();
     if (!client || !memberAddresses?.length) return [];
-    const addrs = [...new Set(memberAddresses.map(a => String(a).toLowerCase()))];
+    const addrs = [...new Set(memberAddresses.map(a => String(a).toLowerCase()).filter(Boolean))];
+    if (!addrs.length) return [];
     const { data, error } = await client
       .from('history')
       .select('history_data, user_address, id, created_at')
       .in('user_address', addrs)
       .order('id', { ascending: false })
-      .limit(Math.min(limit * 3, 200));
+      .limit(Math.min(limit * 5, 300));
     if (error) {
       console.error('fetchTeamHistory', error);
       return [];
     }
-    let rows = (data || []).map(row => {
-      const h = row.history_data || {};
+    const rows = (data || []).map(row => {
+      const h = (row.history_data && typeof row.history_data === 'object')
+        ? row.history_data
+        : {};
       return {
         ...h,
         user: h.user || row.user_address,
@@ -113,13 +128,19 @@ async function fetchTeamHistory(memberAddresses, workspaceId, limit = 60) {
         _id: row.id
       };
     });
-    if (workspaceId) {
-      const tagged = rows.filter(r =>
-        String(r.workspaceId || r.workspace_id || '') === String(workspaceId)
-      );
-      if (tagged.length) rows = tagged;
-    }
-    return rows.slice(0, limit);
+
+    if (!workspaceId) return rows.slice(0, limit);
+
+    const wid = String(workspaceId);
+    const tagged = rows.filter(r =>
+      String(r.workspaceId || r.workspace_id || '') === wid
+    );
+    if (tagged.length) return tagged.slice(0, limit);
+
+    // Fallback: recent activity of members without a workspace tag
+    // (so Team Activity is not empty before all pages tag correctly)
+    const untagged = rows.filter(r => !r.workspaceId && !r.workspace_id);
+    return untagged.slice(0, limit).map(r => ({ ...r, _untagged: true }));
   } catch (e) {
     console.error('fetchTeamHistory', e);
     return [];
