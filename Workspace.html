@@ -390,9 +390,32 @@
     return typeof s === "string" ? JSON.parse(s || "{}") : (s || {});
   }
   function isAdmin() { return myRole === "owner" || myRole === "admin"; }
+  function mergePermissions(saved) {
+    // Deep-merge so newly added modules (e.g. analytics) inherit defaults
+    const base = JSON.parse(JSON.stringify(DEFAULT_PERMS));
+    if (!saved || typeof saved !== "object") return base;
+    for (const role of Object.keys(base)) {
+      if (saved[role] && typeof saved[role] === "object") {
+        base[role] = { ...base[role], ...saved[role] };
+      }
+    }
+    // admin: any module missing in saved → true (full access by default)
+    if (base.admin) {
+      MODULES.forEach(m => {
+        if (base.admin[m.id] === undefined) base.admin[m.id] = true;
+      });
+    }
+    return base;
+  }
+
   function hasPerm(moduleId) {
     if (myRole === "owner") return true;
     if (myRole === "viewer") return false;
+    // admin defaults open if key missing
+    if (myRole === "admin") {
+      if (permState.admin && permState.admin[moduleId] === false) return false;
+      return true;
+    }
     return !!(permState[myRole] && permState[myRole][moduleId]);
   }
 
@@ -557,9 +580,7 @@
     myRole = currentWs.my_role || (currentWs.owner_address === userAddress?.toLowerCase() ? "owner" : "member");
     currentMembers = await fetchWorkspaceMembers(id);
     const s = settingsOf(currentWs);
-    permState = s.permissions
-      ? { ...JSON.parse(JSON.stringify(DEFAULT_PERMS)), ...s.permissions }
-      : JSON.parse(JSON.stringify(DEFAULT_PERMS));
+    permState = mergePermissions(s.permissions);
     document.getElementById("emptyWs").classList.add("hidden");
     document.getElementById("sideNav").classList.remove("hidden");
     renderWsList();
