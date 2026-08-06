@@ -545,9 +545,17 @@
   let provider = null;
   let signer = null;
   let userAddress = null;
+  const MODULE = "roles";
   let historyList = [];
   let selectedRoleForAnalyticsName = rolesData.length > 0 ? rolesData[0].name : null;
   let editingRoleIndex = null;
+
+  function isRolesItem(item) {
+    if (!item) return false;
+    const app = String(item.appName || item.module || "").toLowerCase();
+    const typ = String(item.type || "").toLowerCase();
+    return app === MODULE || typ === MODULE || app === "roles" || typ === "roles" || typ === "rolesplit" || app.includes("role");
+  }
 
   function saveRolesToStorage() {
     localStorage.setItem('arcRolesData', JSON.stringify(rolesData));
@@ -650,7 +658,13 @@
       showToast("Wallet Connected Successfully via Web3!");
       if (typeof refreshWorkspaceGuard === "function") refreshWorkspaceGuard();
       
-      historyList = await fetchHistoryFromCloud(userAddress);
+      try {
+        const allCloud = await fetchHistoryFromCloud(userAddress);
+        historyList = (allCloud || []).filter(isRolesItem);
+      } catch (e) {
+        console.error(e);
+        historyList = [];
+      }
       if(!document.getElementById('viewHistory').classList.contains('hidden')) {
           renderHistory();
       }
@@ -1431,7 +1445,13 @@
     await checkAutoConnect();
 
     if (userAddress) {
-      historyList = await fetchHistoryFromCloud(userAddress);
+      try {
+        const allCloud = await fetchHistoryFromCloud(userAddress);
+        historyList = (allCloud || []).filter(isRolesItem);
+      } catch (e) {
+        console.error(e);
+        historyList = [];
+      }
     } else {
       historyList = [];
     }
