@@ -184,7 +184,7 @@
         <div id="panel-modules" class="space-y-5 hidden">
           <div class="glass rounded-3xl p-6">
             <h3 class="font-bold text-base mb-2"><i class="fas fa-th-large text-indigo-400 mr-2"></i> Modules</h3>
-            <p class="text-xs text-gray-500 mb-5">Opens the main page with <code class="text-indigo-300">?workspace=</code>. You always pay from your own wallet. Locked = no permission for your role.</p>
+            <p class="text-xs text-gray-500 mb-5">Open any tool below to run it under this workspace. Transactions are always signed and paid from your connected wallet. Cards marked locked are unavailable for your role.</p>
             <div id="modulesGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-3"></div>
           </div>
         </div>
@@ -218,11 +218,15 @@
 
         <div id="panel-activity" class="space-y-5 hidden">
           <div class="glass rounded-3xl p-6">
-            <div class="flex items-center justify-between mb-4">
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
               <h3 class="font-bold text-base"><i class="fas fa-stream text-emerald-400 mr-2"></i> Team Activity</h3>
               <button onclick="loadTeamActivity()" class="text-xs font-bold text-indigo-400"><i class="fas fa-sync-alt mr-1"></i> Refresh</button>
             </div>
-            <p class="text-xs text-gray-500 mb-4">Recent cloud history from all member wallets (tagged with this workspace when opened via Modules).</p>
+            <div class="flex flex-wrap gap-2 mb-3">
+              <button type="button" id="actModeTagged" onclick="setActivityMode('tagged')" class="px-3 py-1.5 rounded-xl text-xs font-bold border border-indigo-500/50 bg-indigo-500/20 text-indigo-200">Team work</button>
+              <button type="button" id="actModeAll" onclick="setActivityMode('all')" class="px-3 py-1.5 rounded-xl text-xs font-bold border border-white/10 text-gray-400 hover:bg-white/5">All member activity</button>
+            </div>
+            <p id="activityHint" class="text-xs text-gray-500 mb-4">Only actions opened from Modules under this workspace.</p>
             <div id="activityList" class="space-y-2 max-h-[480px] overflow-y-auto"></div>
           </div>
         </div>
@@ -758,36 +762,66 @@
 
   let _activityCache = [];
   let _adCurrentHash = "";
+  let activityMode = "tagged"; // "tagged" | "all"
 
   function esc(s) {
     return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   }
 
+  function setActivityMode(mode) {
+    activityMode = mode === "all" ? "all" : "tagged";
+    const t = document.getElementById("actModeTagged");
+    const a = document.getElementById("actModeAll");
+    const hint = document.getElementById("activityHint");
+    if (t && a) {
+      if (activityMode === "tagged") {
+        t.className = "px-3 py-1.5 rounded-xl text-xs font-bold border border-indigo-500/50 bg-indigo-500/20 text-indigo-200";
+        a.className = "px-3 py-1.5 rounded-xl text-xs font-bold border border-white/10 text-gray-400 hover:bg-white/5";
+        if (hint) hint.textContent = "Only actions opened from Modules under this workspace.";
+      } else {
+        a.className = "px-3 py-1.5 rounded-xl text-xs font-bold border border-indigo-500/50 bg-indigo-500/20 text-indigo-200";
+        t.className = "px-3 py-1.5 rounded-xl text-xs font-bold border border-white/10 text-gray-400 hover:bg-white/5";
+        if (hint) hint.textContent = "All cloud activity from member wallets since they joined this workspace (includes personal use of tools).";
+      }
+    }
+    loadTeamActivity();
+  }
+
   async function loadTeamActivity() {
     const box = document.getElementById("activityList");
-    if (!currentWs) return;
+    if (!currentWs || !box) return;
     box.innerHTML = `<p class="text-sm text-gray-500 text-center py-6">Loading…</p>`;
     const addrs = currentMembers.map(m => m.user_address);
+    const joinMap = {};
+    currentMembers.forEach(m => {
+      const a = String(m.user_address || "").toLowerCase();
+      if (a && m.joined_at) joinMap[a] = m.joined_at;
+    });
     const rows = typeof fetchTeamHistory === "function"
-      ? await fetchTeamHistory(addrs, currentWs.id, 50)
+      ? await fetchTeamHistory(addrs, currentWs.id, 60, activityMode, joinMap)
       : [];
     _activityCache = rows || [];
     if (!rows.length) {
-      box.innerHTML = `<p class="text-sm text-gray-500 text-center py-8">No team activity yet. When members use modules (with db.js history and ?workspace=), it shows up here.</p>`;
+      box.innerHTML = activityMode === "tagged"
+        ? `<p class="text-sm text-gray-500 text-center py-8">No tagged team work yet. Open tools from Modules so activity is linked to this workspace.</p>`
+        : `<p class="text-sm text-gray-500 text-center py-8">No member activity found since join dates.</p>`;
       return;
     }
-    const hasUntagged = rows.some(r => r._untagged);
-    box.innerHTML = (hasUntagged
-      ? `<p class="text-[11px] text-amber-400/90 mb-3 px-1">Showing recent member activity without workspace tag. New actions opened from Modules will tag this workspace.</p>`
-      : "") + rows.map((r, idx) => {
+    box.innerHTML = rows.map((r, idx) => {
       const who = shortAddr(r.user || r.user_address);
       const typ = r.type || r.appName || "Activity";
       const amt = r.amount != null ? `${r.amount} ${r.token || r.symbol || ""}` : "";
       const ts = r.timestamp ? new Date(r.timestamp).toLocaleString() : "";
       const hash = r.hash || r.txHash || "";
+      let badge = "";
+      if (activityMode === "all" && r._untagged) {
+        badge = r._otherWorkspace
+          ? ' <span class="text-[10px] text-gray-500 font-semibold">other ws</span>'
+          : ' <span class="text-[10px] text-amber-400 font-semibold">personal</span>';
+      }
       return `<button type="button" onclick="showActivityDetail(${idx})" class="w-full text-left p-3 rounded-2xl bg-white/5 border border-white/5 hover:border-indigo-500/40 hover:bg-white/[0.07] transition cursor-pointer">
         <div class="flex justify-between gap-2">
-          <div class="font-bold text-sm">${esc(typ)}${r._untagged ? ' <span class="text-[10px] text-amber-400 font-semibold">personal</span>' : ''}</div>
+          <div class="font-bold text-sm">${esc(typ)}${badge}</div>
           <div class="text-[11px] text-gray-500 shrink-0">${esc(ts)}</div>
         </div>
         <div class="text-xs text-gray-400 mt-1">${esc(who)}${amt ? " · " + esc(amt) : ""}${r.status ? " · " + esc(r.status) : ""}</div>
