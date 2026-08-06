@@ -586,6 +586,44 @@
   
   // Updated to Proxy Address based on the new smart contract deployment
   const VESTING_CONTRACT_ADDRESS = "0xd3640D303e2e7962aEeba09a8aDA73eb80e6606d";
+
+  const ARC_CHAIN_ID = 5042002;
+  const ARC_CHAIN_ID_HEX = "0x4cef52";
+  const ARC_NETWORK_PARAMS = {
+    chainId: ARC_CHAIN_ID_HEX,
+    chainName: "Arc Testnet",
+    nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 6 },
+    rpcUrls: ["https://rpc.testnet.arc.network"],
+    blockExplorerUrls: ["https://testnet.arcscan.app"]
+  };
+
+  async function ensureArcNetwork() {
+    if (!window.ethereum) return false;
+    try {
+      const chainId = await window.ethereum.request({ method: "eth_chainId" });
+      if (parseInt(chainId, 16) === ARC_CHAIN_ID) return true;
+      try {
+        await window.ethereum.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: ARC_CHAIN_ID_HEX }]
+        });
+        return true;
+      } catch (switchErr) {
+        if (switchErr.code === 4902 || (switchErr.message || "").includes("Unrecognized")) {
+          await window.ethereum.request({
+            method: "wallet_addEthereumChain",
+            params: [ARC_NETWORK_PARAMS]
+          });
+          return true;
+        }
+        throw switchErr;
+      }
+    } catch (e) {
+      console.warn("ensureArcNetwork", e);
+      if (typeof showToast === "function") showToast("Please switch wallet to Arc Testnet");
+      return false;
+    }
+  }
   
   // Updated ABI logic for ArcVestingSplitter
   const VESTING_CONTRACT_ABI = [
@@ -620,22 +658,7 @@
   async function connectWallet(isAuto = false) {
     if (window.ethereum) {
       try {
-        // Network Switcher Check for Arc Testnet
-        const targetNetworkId = '0x4cef52';
-       
-        const chainId = await window.ethereum.request({ method: 'eth_chainId' });
-        
-        if (chainId !== targetNetworkId) {
-            try {
-                await window.ethereum.request({
-                    method: 'wallet_switchEthereumChain',
-                    params: [{ chainId: targetNetworkId }],
-                });
-            } catch (switchError) {
-                console.log("Please add Arc Testnet to your wallet.");
-                showToast("Please add Arc Testnet to your wallet.");
-            }
-        }
+        await ensureArcNetwork();
 
         provider = new ethers.BrowserProvider(window.ethereum);
         if (!isAuto) {
