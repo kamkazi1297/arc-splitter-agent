@@ -552,8 +552,10 @@
 
   function isRolesItem(item) {
     if (!item) return false;
-    const app = String(item.appName || item.module || "").toLowerCase();
     const typ = String(item.type || "").toLowerCase();
+    // never show config records in History tab
+    if (typ === "roles_config" || typ === "module_data") return false;
+    const app = String(item.appName || item.module || "").toLowerCase();
     return app === MODULE || typ === MODULE || app === "roles" || typ === "roles" || typ === "rolesplit" || app.includes("role");
   }
 
@@ -561,7 +563,61 @@
     localStorage.setItem('arcRolesData', JSON.stringify(rolesData));
   }
 
+  async function saveRolesToCloudAndLocal() {
+    saveRolesToStorage();
+    if (userAddress && typeof saveUserRoles === "function") {
+      try {
+        await saveUserRoles(userAddress, rolesData);
+      } catch (e) {
+        console.error("saveUserRoles failed", e);
+      }
+    }
+  }
+
+  async function loadRolesFromCloudOrLocal() {
+    const defaults = [
+      { name: "Founder", wallets: [], description: "Core Leadership", color: "blue" },
+      { name: "Developer", wallets: [], description: "Engineering Team", color: "cyan" },
+      { name: "Treasury", wallets: [], description: "DAO Reserving", color: "purple" }
+    ];
+    let local = null;
+    try {
+      local = JSON.parse(localStorage.getItem('arcRolesData') || 'null');
+    } catch {}
+
+    // 1) try cloud
+    if (userAddress && typeof fetchUserRoles === "function") {
+      try {
+        const cloudRoles = await fetchUserRoles(userAddress);
+        if (cloudRoles && Array.isArray(cloudRoles) && cloudRoles.length > 0) {
+          rolesData = cloudRoles;
+          saveRolesToStorage();
+          return;
+        }
+        // cloud empty but local has data → push local to cloud (first-time migrate)
+        if (local && Array.isArray(local) && local.length > 0) {
+          rolesData = local;
+          if (typeof saveUserRoles === "function") {
+            try { await saveUserRoles(userAddress, rolesData); } catch {}
+          }
+          return;
+        }
+      } catch (e) {
+        console.error("fetchUserRoles failed", e);
+      }
+    }
+    // 2) fallback local
+    if (local && Array.isArray(local) && local.length > 0) {
+      rolesData = local;
+      return;
+    }
+    // 3) defaults
+    rolesData = defaults;
+  }
+
+
   function initTelegramWebApp() {
+
     if (window.Telegram && window.Telegram.WebApp) {
       const tg = window.Telegram.WebApp;
       tg.ready();
@@ -658,6 +714,12 @@
       showToast("Wallet Connected Successfully via Web3!");
       if (typeof refreshWorkspaceGuard === "function") refreshWorkspaceGuard();
       
+      // Load roles from cloud for this wallet
+      await loadRolesFromCloudOrLocal();
+      renderRolesTable();
+      renderRoleSplitRows();
+      updateRoleSplitPreview();
+
       try {
         const allCloud = await fetchHistoryFromCloud(userAddress);
         historyList = (allCloud || []).filter(isRolesItem);
@@ -677,6 +739,7 @@
       showToast("Wallet connection rejected or failed.");
     }
   }
+
 
   async function switchNetworkToArc() {
     await ensureArcNetwork();
@@ -926,7 +989,7 @@
       showToast(`Role "${name}" created successfully.`);
     }
 
-    saveRolesToStorage();
+    saveRolesToCloudAndLocal();
     setTimeout(() => {
       hideRoleModal();
       renderRolesTable();
@@ -936,7 +999,7 @@
   function deleteRole(idx) {
     if (confirm(`Delete role ${rolesData[idx].name}?`)) {
       rolesData.splice(idx, 1);
-      saveRolesToStorage();
+      saveRolesToCloudAndLocal();
       renderRolesTable();
       showToast("Role removed.");
     }
@@ -959,11 +1022,12 @@
         }
       }
     });
-    saveRolesToStorage();
+    saveRolesToCloudAndLocal();
     hideImportModal();
     renderRolesTable();
     showToast("Team imported successfully.");
   }
+
 
   function renderRoleSplitRows() {
     const container = document.getElementById("roleSplitRows");
@@ -1435,14 +1499,10 @@
 
   window.onload = async () => {
     initTelegramWebApp();
-    
-    rolesData = JSON.parse(localStorage.getItem('arcRolesData')) || [
-      { name: "Founder", wallets: [], description: "Core Leadership", color: "blue" },
-      { name: "Developer", wallets: [], description: "Engineering Team", color: "cyan" },
-      { name: "Treasury", wallets: [], description: "DAO Reserving", color: "purple" }
-    ];
 
+    // First connect wallet (so userAddress is set), then load roles from cloud
     await checkAutoConnect();
+    await loadRolesFromCloudOrLocal();
 
     if (userAddress) {
       try {
@@ -1456,9 +1516,11 @@
       historyList = [];
     }
 
+    renderRolesTable();
     renderRoleSplitRows();
     updateRoleSplitPreview();
   };
+
 </script>
 </body>
 </html>
