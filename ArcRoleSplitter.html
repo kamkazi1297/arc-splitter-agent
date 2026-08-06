@@ -537,12 +537,14 @@
         if (accounts.length > 0) {
           provider = new ethers.BrowserProvider(window.ethereum);
           userAddress = accounts[0];
+          window.userAddress = userAddress;
           signer = await provider.getSigner();
 
           const shortAddr = userAddress.substring(0, 6) + '...' + userAddress.substring(userAddress.length - 4);
           document.getElementById("connectBtn").innerHTML = `<i class="fas fa-wallet text-cyan-400"></i> <span class="font-bold">${shortAddr}</span> <i class="fas fa-power-off text-rose-400 ml-1 text-[10px]"></i>`;
           document.getElementById("contractStatusText").textContent = "Connected to Arc Network";
           
+          if (typeof refreshWorkspaceGuard === "function") refreshWorkspaceGuard();
           setupWalletListeners();
           updateWalletBalance();
           renderPendingBatches();
@@ -561,10 +563,14 @@
     window.ethereum.on('accountsChanged', (accounts) => {
       if (accounts.length === 0) {
         userAddress = null;
+        window.userAddress = null;
         signer = null;
         document.getElementById("connectBtn").innerHTML = `<i class="fas fa-wallet text-cyan-500"></i> <span>Connect Wallet</span>`;
         document.getElementById("userBalanceDisplay").textContent = "0.00";
       } else {
+        userAddress = accounts[0];
+        window.userAddress = userAddress;
+        if (typeof refreshWorkspaceGuard === "function") refreshWorkspaceGuard();
         checkAutoConnect();
       }
     });
@@ -577,6 +583,7 @@
   async function toggleConnection() {
     if (userAddress) {
       userAddress = null;
+      window.userAddress = null;
       signer = null;
       document.getElementById("connectBtn").innerHTML = `<i class="fas fa-wallet text-cyan-500"></i> <span id="connectText">Connect Wallet</span>`;
       document.getElementById("userBalanceDisplay").textContent = "0.00";
@@ -597,12 +604,14 @@
       }
       const accounts = await provider.send("eth_requestAccounts", []);
       userAddress = accounts[0];
+      window.userAddress = userAddress;
       signer = await provider.getSigner();
 
       const shortAddr = userAddress.substring(0, 6) + '...' + userAddress.substring(userAddress.length - 4);
       document.getElementById("connectBtn").innerHTML = `<i class="fas fa-wallet text-cyan-400"></i> <span class="font-bold">${shortAddr}</span> <i class="fas fa-power-off text-rose-400 ml-1 text-[10px]"></i>`;
       document.getElementById("contractStatusText").textContent = "Connected to Arc Network";
       showToast("Wallet Connected Successfully via Web3!");
+      if (typeof refreshWorkspaceGuard === "function") refreshWorkspaceGuard();
       
       historyList = await fetchHistoryFromCloud(userAddress);
       if(!document.getElementById('viewHistory').classList.contains('hidden')) {
@@ -1330,18 +1339,23 @@
     
         if (data.currentIndex >= data.chunks.length) {
           const newHistoryRecord = {
+            type: "RoleSplit",
+            appName: "Roles",
             amount: data.rawAmount,
             token: data.tokenSymbol,
             rolesCount: data.totalWallets,
             date: new Date().toLocaleString(),
             hash: receipt.hash,
             status: "Success",
+            timestamp: new Date().toISOString(),
             allocations: data.allocations,
             memo: `Role split of ${data.rawAmount} ${data.tokenSymbol}` 
           };
           
           historyList.unshift(newHistoryRecord);
-          await saveHistoryToCloud(userAddress, newHistoryRecord);
+          if (typeof saveHistoryToCloud === "function") {
+            await saveHistoryToCloud(userAddress, newHistoryRecord);
+          }
         }
       }
 
