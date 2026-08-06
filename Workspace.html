@@ -357,16 +357,12 @@
             <div class="pt-3 border-t border-white/5 space-y-3">
               <div class="text-xs font-bold text-gray-400 uppercase tracking-wider">Activity privacy</div>
               <p class="text-[11px] text-gray-500 leading-relaxed">
-                <b>Team work</b> (from Modules) is always visible to everyone in the workspace.
-                <b>All member activity</b> needs the owner to enable it, and each member must opt in to share their personal tool use.
+                <b>Team work</b> is always visible to the team.
+                Tick below to share your <b>personal</b> tool activity with the owner (and anyone granted “View personal activity” under Permissions).
               </p>
-              <label id="privacyOwnerRow" class="hidden flex items-start gap-2.5 cursor-pointer text-sm">
-                <input type="checkbox" id="setAllowAllActivity" class="mt-0.5 accent-indigo-500 w-4 h-4 rounded shrink-0">
-                <span><span class="font-bold">Owner:</span> Allow “All member activity” for this workspace</span>
-              </label>
               <label id="privacyShareRow" class="flex items-start gap-2.5 cursor-pointer text-sm">
                 <input type="checkbox" id="setShareMyActivity" class="mt-0.5 accent-indigo-500 w-4 h-4 rounded shrink-0">
-                <span><span class="font-bold">My preference:</span> Share my personal tool activity with this team</span>
+                <span><span class="font-bold">Share my personal tool activity</span> with this workspace</span>
               </label>
               <button type="button" onclick="saveActivityPrivacy()" class="px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-bold hover:bg-white/10">
                 Save privacy
@@ -487,12 +483,27 @@
     analytics:   { label: "Analytics",    file: "ArcAnalytics.html",          icon: "fa-chart-pie",      color: "cyan" }
   };
   const MODULES = Object.keys(MODULE_PAGES).map(id => ({ id, label: MODULE_PAGES[id].label }));
-  const DEFAULT_PERMS = typeof defaultPermissions === "function" ? defaultPermissions() : {
-    owner:  Object.fromEntries(MODULES.map(m => [m.id, true])),
-    admin:  Object.fromEntries(MODULES.map(m => [m.id, true])),
-    member: Object.fromEntries(MODULES.map(m => [m.id, false])),
-    viewer: Object.fromEntries(MODULES.map(m => [m.id, false]))
-  };
+  // Non-module permission rows (shown in Permissions table)
+  const EXTRA_PERMS = [
+    { id: "viewPersonalActivity", label: "View personal activity" }
+  ];
+  function buildDefaultPerms() {
+    const fromDb = typeof defaultPermissions === "function" ? defaultPermissions() : null;
+    const base = fromDb ? JSON.parse(JSON.stringify(fromDb)) : {
+      owner:  Object.fromEntries(MODULES.map(m => [m.id, true])),
+      admin:  Object.fromEntries(MODULES.map(m => [m.id, true])),
+      member: Object.fromEntries(MODULES.map(m => [m.id, false])),
+      viewer: Object.fromEntries(MODULES.map(m => [m.id, false]))
+    };
+    ["owner", "admin", "member", "viewer"].forEach(r => {
+      if (!base[r]) base[r] = {};
+      if (base[r].viewPersonalActivity === undefined) {
+        base[r].viewPersonalActivity = (r === "owner" || r === "admin");
+      }
+    });
+    return base;
+  }
+  const DEFAULT_PERMS = buildDefaultPerms();
 
   let userAddress = null, signer = null, provider = null, forceDisconnected = false;
   let myWorkspaces = [], currentWs = null, currentMembers = [], myRole = null;
@@ -514,7 +525,6 @@
   }
   function isAdmin() { return myRole === "owner" || myRole === "admin"; }
   function mergePermissions(saved) {
-    // Deep-merge so newly added modules (e.g. analytics) inherit defaults
     const base = JSON.parse(JSON.stringify(DEFAULT_PERMS));
     if (!saved || typeof saved !== "object") return base;
     for (const role of Object.keys(base)) {
@@ -522,11 +532,11 @@
         base[role] = { ...base[role], ...saved[role] };
       }
     }
-    // admin: any module missing in saved → true (full access by default)
     if (base.admin) {
       MODULES.forEach(m => {
         if (base.admin[m.id] === undefined) base.admin[m.id] = true;
       });
+      if (base.admin.viewPersonalActivity === undefined) base.admin.viewPersonalActivity = true;
     }
     return base;
   }
@@ -534,12 +544,18 @@
   function hasPerm(moduleId) {
     if (myRole === "owner") return true;
     if (myRole === "viewer") return false;
-    // admin defaults open if key missing
     if (myRole === "admin") {
       if (permState.admin && permState.admin[moduleId] === false) return false;
       return true;
     }
     return !!(permState[myRole] && permState[myRole][moduleId]);
+  }
+
+  /** Who may open “All member activity” and see opted-in personal history */
+  function canViewPersonalActivity() {
+    if (myRole === "owner") return true;
+    if (!myRole || !permState[myRole]) return false;
+    return !!permState[myRole].viewPersonalActivity;
   }
 
   function toggleTheme() {
@@ -852,18 +868,32 @@
     const canEdit = myRole === "owner";
     document.getElementById("savePermBtn").classList.toggle("hidden", !canEdit);
     const roles = ["admin", "member"];
-    let html = `<table class="w-full text-sm"><thead><tr class="text-left text-[11px] text-gray-500"><th class="py-2 pr-3">Module</th>`;
+    let html = `<table class="w-full text-sm"><thead><tr class="text-left text-[11px] text-gray-500"><th class="py-2 pr-3">Permission</th>`;
     roles.forEach(r => { html += `<th class="py-2 px-2 text-center capitalize">${r}</th>`; });
     html += `</tr></thead><tbody>`;
+    // Modules
     MODULES.forEach(m => {
       html += `<tr class="border-t border-white/5"><td class="py-2.5 pr-3 font-bold">${m.label}</td>`;
       roles.forEach(r => {
+        if (!permState[r]) permState[r] = {};
         const checked = !!(permState[r] && permState[r][m.id]);
         html += `<td class="py-2.5 px-2 text-center"><input type="checkbox" class="perm-check" ${checked?"checked":""} ${canEdit?"":"disabled"} onchange="permState['${r}']['${m.id}']=this.checked"></td>`;
       });
       html += `</tr>`;
     });
-    html += `</tbody></table><p class="text-[11px] text-gray-500 mt-3">Owner always has all modules. Viewer is always read-only.</p>`;
+    // Extra: view personal activity
+    html += `<tr class="border-t border-white/10"><td colspan="${roles.length + 1}" class="pt-4 pb-1 text-[10px] font-bold uppercase text-gray-500 tracking-wider">Privacy</td></tr>`;
+    EXTRA_PERMS.forEach(m => {
+      html += `<tr class="border-t border-white/5"><td class="py-2.5 pr-3 font-bold">${m.label}<div class="text-[10px] font-medium text-gray-500 mt-0.5">See opted-in personal tool activity (tab 2)</div></td>`;
+      roles.forEach(r => {
+        if (!permState[r]) permState[r] = {};
+        const checked = !!permState[r][m.id];
+        html += `<td class="py-2.5 px-2 text-center"><input type="checkbox" class="perm-check" ${checked?"checked":""} ${canEdit?"":"disabled"} onchange="permState['${r}']['${m.id}']=this.checked"></td>`;
+      });
+      html += `</tr>`;
+    });
+    html += `</tbody></table>
+      <p class="text-[11px] text-gray-500 mt-3">Owner always has full access. Viewer cannot execute modules. Personal activity only shows for members who opted in under Settings.</p>`;
     document.getElementById("permTable").innerHTML = html;
   }
 
@@ -887,26 +917,15 @@
     return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
   }
 
-  function privacySettings() {
-    const s = settingsOf(currentWs || {});
-    return {
-      allowAll: !!s.allowAllMemberActivity,
-      shareMap: (s.shareAllActivity && typeof s.shareAllActivity === "object") ? s.shareAllActivity : {}
-    };
-  }
-
   function memberSharesActivity(addr) {
-    const a = String(addr || "").toLowerCase();
-    return !!privacySettings().shareMap[a];
-  }
-
-  function canUseAllActivityView() {
-    return privacySettings().allowAll;
+    const s = settingsOf(currentWs || {});
+    const map = (s.shareAllActivity && typeof s.shareAllActivity === "object") ? s.shareAllActivity : {};
+    return !!map[String(addr || "").toLowerCase()];
   }
 
   function setActivityMode(mode) {
-    if (mode === "all" && !canUseAllActivityView()) {
-      showToast("Owner has not enabled “All member activity” for this workspace");
+    if (mode === "all" && !canViewPersonalActivity()) {
+      showToast("No permission to view personal activity. Owner can grant it under Permissions.");
       mode = "tagged";
     }
     activityMode = mode === "all" ? "all" : "tagged";
@@ -921,14 +940,13 @@
       } else {
         a.className = "px-3 py-1.5 rounded-xl text-xs font-bold border border-indigo-500/50 bg-indigo-500/20 text-indigo-200";
         t.className = "px-3 py-1.5 rounded-xl text-xs font-bold border border-white/10 text-gray-400 hover:bg-white/5";
-        if (hint) hint.textContent = "Personal tool activity only from members who opted in (Settings → Share my personal activity).";
+        if (hint) hint.textContent = "Personal activity of members who opted in (Settings). Only roles with “View personal activity” permission can open this tab.";
       }
     }
-    // Dim the All button if feature disabled
     if (a) {
-      if (!canUseAllActivityView()) {
+      if (!canViewPersonalActivity()) {
         a.className = "px-3 py-1.5 rounded-xl text-xs font-bold border border-white/10 text-gray-600 opacity-60";
-        a.title = "Owner must enable this in Settings";
+        a.title = "No permission — ask owner (Permissions → View personal activity)";
       } else {
         a.title = "";
       }
@@ -941,9 +959,8 @@
     if (!currentWs || !box) return;
     box.innerHTML = `<p class="text-sm text-gray-500 text-center py-6">Loading…</p>`;
 
-    // Refresh All-button state
     const aBtn = document.getElementById("actModeAll");
-    if (aBtn && !canUseAllActivityView()) {
+    if (aBtn && !canViewPersonalActivity()) {
       if (activityMode === "all") activityMode = "tagged";
       aBtn.className = "px-3 py-1.5 rounded-xl text-xs font-bold border border-white/10 text-gray-600 opacity-60";
     }
@@ -955,16 +972,16 @@
       if (a && m.joined_at) joinMap[a] = m.joined_at;
     });
 
-    // All mode: only members who opted in to share personal activity
     if (activityMode === "all") {
-      if (!canUseAllActivityView()) {
-        box.innerHTML = `<p class="text-sm text-gray-500 text-center py-8">“All member activity” is off. Only the owner can enable it in Settings.</p>`;
+      if (!canViewPersonalActivity()) {
+        box.innerHTML = `<p class="text-sm text-gray-500 text-center py-8">You don’t have permission to view personal activity. Owner can enable it under Permissions → View personal activity.</p>`;
         _activityCache = [];
         return;
       }
+      // Only members who opted in to share
       addrs = addrs.filter(addr => memberSharesActivity(addr));
       if (!addrs.length) {
-        box.innerHTML = `<p class="text-sm text-gray-500 text-center py-8">No members have opted in to share personal activity yet. Each member can enable it under Settings → Activity privacy.</p>`;
+        box.innerHTML = `<p class="text-sm text-gray-500 text-center py-8">No members have shared personal activity yet. Each member opts in under Settings → Share my personal tool activity.</p>`;
         _activityCache = [];
         return;
       }
@@ -977,7 +994,7 @@
     if (!rows.length) {
       box.innerHTML = activityMode === "tagged"
         ? `<p class="text-sm text-gray-500 text-center py-8">No tagged team work yet. Open tools from Modules so activity is linked to this workspace.</p>`
-        : `<p class="text-sm text-gray-500 text-center py-8">No shared personal activity found for opted-in members.</p>`;
+        : `<p class="text-sm text-gray-500 text-center py-8">No personal activity found for opted-in members.</p>`;
       return;
     }
     box.innerHTML = rows.map((r, idx) => {
@@ -1086,14 +1103,8 @@
     const plan = (s.plan || "free").toUpperCase();
     document.getElementById("setPlanBadge").textContent = plan;
 
-    // Privacy UI
-    const ownerRow = document.getElementById("privacyOwnerRow");
-    const allowEl = document.getElementById("setAllowAllActivity");
+    // Privacy: member opt-in only
     const shareEl = document.getElementById("setShareMyActivity");
-    if (ownerRow) {
-      ownerRow.classList.toggle("hidden", myRole !== "owner");
-      if (allowEl) allowEl.checked = !!s.allowAllMemberActivity;
-    }
     if (shareEl && userAddress) {
       const map = (s.shareAllActivity && typeof s.shareAllActivity === "object") ? s.shareAllActivity : {};
       shareEl.checked = !!map[String(userAddress).toLowerCase()];
@@ -1116,36 +1127,26 @@
 
   async function saveActivityPrivacy() {
     if (!currentWs || !userAddress) return;
-    const s = settingsOf(currentWs);
-
-    // Owner: enable/disable All member activity for the workspace
-    if (myRole === "owner") {
-      const allow = document.getElementById("setAllowAllActivity")?.checked;
-      s.allowAllMemberActivity = !!allow;
-      const okWs = await updateWorkspace(currentWs.id, { settings: s });
-      if (!okWs) return showToast("Could not save owner privacy setting");
-      currentWs.settings = s;
-    }
-
-    // Every member (including owner): personal opt-in
     const share = document.getElementById("setShareMyActivity")?.checked;
+
     if (typeof setMemberActivityShare === "function") {
       const ok = await setMemberActivityShare(currentWs.id, userAddress, !!share);
       if (!ok) return showToast("Could not save your share preference");
     } else {
+      const s = settingsOf(currentWs);
       if (!s.shareAllActivity) s.shareAllActivity = {};
       s.shareAllActivity[String(userAddress).toLowerCase()] = !!share;
-      await updateWorkspace(currentWs.id, { settings: s });
+      const ok = await updateWorkspace(currentWs.id, { settings: s });
+      if (!ok) return showToast("Could not save");
     }
 
-    // Refresh local workspace settings
     const fresh = await fetchWorkspace(currentWs.id);
     if (fresh) {
       currentWs.settings = fresh.settings;
       const idx = myWorkspaces.findIndex(w => w.id === currentWs.id);
       if (idx >= 0) myWorkspaces[idx] = { ...myWorkspaces[idx], settings: fresh.settings };
     }
-    showToast("Privacy saved");
+    showToast(share ? "Your personal activity is shared with permitted roles" : "Your personal activity is private");
     if (activityMode === "all") loadTeamActivity();
   }
 
