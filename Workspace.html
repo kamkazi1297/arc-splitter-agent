@@ -706,7 +706,10 @@
       box.innerHTML = `<p class="text-sm text-gray-500 text-center py-8">No team activity yet. When members use modules (with db.js history and ?workspace=), it shows up here.</p>`;
       return;
     }
-    box.innerHTML = rows.map(r => {
+    const hasUntagged = rows.some(r => r._untagged);
+    box.innerHTML = (hasUntagged
+      ? `<p class="text-[11px] text-amber-400/90 mb-3 px-1">Showing recent member activity without workspace tag. New actions opened from Modules will tag this workspace.</p>`
+      : "") + rows.map(r => {
       const who = shortAddr(r.user);
       const typ = r.type || r.appName || "Activity";
       const amt = r.amount != null ? `${r.amount} ${r.token || ""}` : "";
@@ -714,7 +717,7 @@
       const hash = r.hash || r.txHash || "";
       return `<div class="p-3 rounded-2xl bg-white/5 border border-white/5">
         <div class="flex justify-between gap-2">
-          <div class="font-bold text-sm">${typ}</div>
+          <div class="font-bold text-sm">${typ}${r._untagged ? ' <span class="text-[10px] text-amber-400 font-semibold">personal</span>' : ''}</div>
           <div class="text-[11px] text-gray-500">${ts}</div>
         </div>
         <div class="text-xs text-gray-400 mt-1">${who}${amt ? " · " + amt : ""}${r.status ? " · " + r.status : ""}</div>
