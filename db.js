@@ -117,7 +117,12 @@ async function fetchHistoryFromCloud(userAddress) {
   }
 }
 
-async function fetchTeamHistory(memberAddresses, workspaceId, limit = 60) {
+/**
+ * mode: "tagged" = only history with this workspaceId
+ * mode: "all"    = all member history since each member's joined_at (if known)
+ * joinMap: optional { "0xabc...": "2026-08-01T12:00:00.000Z" }
+ */
+async function fetchTeamHistory(memberAddresses, workspaceId, limit = 60, mode = "tagged", joinMap = null) {
   try {
     const client = await getSupabase();
     if (!client) return [];
@@ -125,23 +130,22 @@ async function fetchTeamHistory(memberAddresses, workspaceId, limit = 60) {
     const addrs = new Set(
       (memberAddresses || []).map(a => String(a).toLowerCase()).filter(Boolean)
     );
+    const join = joinMap && typeof joinMap === "object" ? joinMap : {};
 
-    // Plain fetch — no PostgREST or/ilike/json filters (those were causing HTTP 400)
+    // Plain fetch — avoid complex PostgREST filters (HTTP 400 on some projects)
     const { data, error } = await client
-      .from('history')
-      .select('history_data, user_address, id, memo')
-      .order('id', { ascending: false })
-      .limit(250);
+      .from("history")
+      .select("history_data, user_address, id, memo")
+      .order("id", { ascending: false })
+      .limit(mode === "all" ? 400 : 250);
 
     if (error) {
-      console.error('fetchTeamHistory', error);
+      console.error("fetchTeamHistory", error);
       return [];
     }
 
     let rows = (data || []).map(row => {
-      const h = (row.history_data && typeof row.history_data === 'object')
-        ? row.history_data
-        : {};
+      const h = row.history_data && typeof row.history_data === "object" ? row.history_data : {};
       return {
         ...h,
         user: h.user || row.user_address,
@@ -151,35 +155,48 @@ async function fetchTeamHistory(memberAddresses, workspaceId, limit = 60) {
       };
     });
 
-    // Keep only team members (case-insensitive)
+    // Members only
     if (addrs.size) {
       rows = rows.filter(r =>
-        addrs.has(String(r.user || r.user_address || '').toLowerCase())
+        addrs.has(String(r.user || r.user_address || "").toLowerCase())
       );
     }
 
-    if (workspaceId) {
-      const wid = String(workspaceId);
-      const tagged = rows.filter(r =>
-        String(r.workspaceId || r.workspace_id || '') === wid
-      );
-      if (tagged.length) return tagged.slice(0, limit);
+    const wid = workspaceId ? String(workspaceId) : "";
 
-      // Fallback: member rows not tagged to a different workspace
-      rows = rows
-        .filter(r => {
-          const w = r.workspaceId || r.workspace_id;
-          return !w || String(w) === wid;
-        })
-        .map(r => ({
+    if (mode === "tagged") {
+      if (!wid) return rows.slice(0, limit);
+      return rows
+        .filter(r => String(r.workspaceId || r.workspace_id || "") === wid)
+        .slice(0, limit);
+    }
+
+    // mode === "all": since join date per member (when available)
+    rows = rows
+      .filter(r => {
+        const addr = String(r.user || r.user_address || "").toLowerCase();
+        const joined = join[addr];
+        if (!joined) return true; // no join date → keep
+        if (!r.timestamp) return true;
+        try {
+          return new Date(r.timestamp).getTime() >= new Date(joined).getTime();
+        } catch {
+          return true;
+        }
+      })
+      .map(r => {
+        const taggedHere = wid && String(r.workspaceId || r.workspace_id || "") === wid;
+        const otherWs = r.workspaceId || r.workspace_id;
+        return {
           ...r,
-          _untagged: !(r.workspaceId || r.workspace_id)
-        }));
-    }
+          _untagged: !taggedHere,
+          _otherWorkspace: !!(otherWs && String(otherWs) !== wid)
+        };
+      });
 
     return rows.slice(0, limit);
   } catch (e) {
-    console.error('fetchTeamHistory', e);
+    console.error("fetchTeamHistory", e);
     return [];
   }
 }
