@@ -811,6 +811,7 @@
     try {
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
       userAddress = accounts[0];
+      window.userAddress = userAddress;
 
       provider = new ethers.BrowserProvider(window.ethereum);
       const network = await provider.getNetwork();
@@ -836,6 +837,7 @@
       document.getElementById("disconnectBtn").classList.remove("hidden");
       document.getElementById("disconnectBtn").classList.add("flex");
 
+      if (typeof refreshWorkspaceGuard === "function") refreshWorkspaceGuard();
       notify("Success", "Wallet Connected Successfully", "fa-check-circle");
       await loadUserBalance();
       updatePreview();
@@ -851,6 +853,7 @@
   function disconnectWallet() {
     signer = null;
     userAddress = null;
+    window.userAddress = null;
     provider = null;
     rawBalance = 0n;
 
@@ -1114,6 +1117,20 @@
           });
         } catch (e) {}
       }
+      if (typeof saveHistoryToCloud === "function" && userAddress) {
+        try {
+          await saveHistoryToCloud(userAddress, {
+            type: "PayLink",
+            appName: "Pay",
+            amount: newLink.amount,
+            token: newLink.token,
+            hash: newLink.txHash,
+            status: "Success",
+            timestamp: new Date().toISOString(),
+            memo: newLink.title || "Payment Link"
+          });
+        } catch (e) {}
+      }
 
       showSuccessModal(newLink, 'link');
       renderHistory();
@@ -1242,6 +1259,20 @@
             txHash: newInvoice.txHash || "",
             url: newInvoice.url || "",
             expiration: newInvoice.expiration || null
+          });
+        } catch (e) {}
+      }
+      if (typeof saveHistoryToCloud === "function" && userAddress) {
+        try {
+          await saveHistoryToCloud(userAddress, {
+            type: "Invoice",
+            appName: "Pay",
+            amount: newInvoice.amount,
+            token: newInvoice.token,
+            hash: newInvoice.txHash,
+            status: "Success",
+            timestamp: new Date().toISOString(),
+            memo: newInvoice.title || "Invoice"
           });
         } catch (e) {}
       }
@@ -1616,6 +1647,20 @@
       icon.classList.remove("fa-sun", "text-yellow-500");
       icon.classList.add("fa-moon", "text-yellow-400");
     }
+  }
+
+
+  if (window.ethereum && window.ethereum.on) {
+    window.ethereum.on("accountsChanged", (accs) => {
+      if (!accs || !accs.length) {
+        disconnectWallet();
+        return;
+      }
+      userAddress = accs[0];
+      window.userAddress = userAddress;
+      if (typeof refreshWorkspaceGuard === "function") refreshWorkspaceGuard();
+      connectWallet();
+    });
   }
 
   setInterval(() => {
