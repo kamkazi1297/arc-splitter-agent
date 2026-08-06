@@ -482,14 +482,43 @@
 <script>
   // Smart Contract & Network Configuration
   const CONTRACT_ADDRESS = "0xf2073671b726b96DC1c99D001BBF6e60EE1f187F";
-  const ARC_TESTNET_CHAIN_ID_HEX = "5042002";
-  const ARC_TESTNET_PARAMS = {
-    chainId: "5042002",
+  const ARC_CHAIN_ID = 5042002;
+  const ARC_CHAIN_ID_HEX = "0x4cef52";
+  const ARC_NETWORK_PARAMS = {
+    chainId: ARC_CHAIN_ID_HEX,
     chainName: "Arc Testnet",
-    nativeCurrency: { name: "Arc", symbol: "ARC", decimals: 6 },
+    nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 6 },
     rpcUrls: ["https://rpc.testnet.arc.network"],
     blockExplorerUrls: ["https://testnet.arcscan.app"]
   };
+
+  async function ensureArcNetwork() {
+    if (!window.ethereum) return false;
+    try {
+      const chainId = await window.ethereum.request({ method: "eth_chainId" });
+      if (parseInt(chainId, 16) === ARC_CHAIN_ID) return true;
+      try {
+        await window.ethereum.request({
+          method: "wallet_switchEthereumChain",
+          params: [{ chainId: ARC_CHAIN_ID_HEX }]
+        });
+        return true;
+      } catch (switchErr) {
+        if (switchErr.code === 4902 || (switchErr.message || "").includes("Unrecognized")) {
+          await window.ethereum.request({
+            method: "wallet_addEthereumChain",
+            params: [ARC_NETWORK_PARAMS]
+          });
+          return true;
+        }
+        throw switchErr;
+      }
+    } catch (e) {
+      console.warn("ensureArcNetwork", e);
+      if (typeof showToast === "function") showToast("Please switch wallet to Arc Testnet");
+      return false;
+    }
+  }
 
   const CONTRACT_ABI = [
     "function splitByPercentage(tuple(address token, uint256 totalChunkAmount, address[] wallets, uint16[] sharesBps, uint256 tokenToNativeRatio, uint256 batchId, uint256 deadline, uint256 nonce, uint256 baseGas, uint64 maxGasPriceLimit) params) external payable",
@@ -533,6 +562,7 @@
   async function checkAutoConnect() {
     if (window.ethereum) {
       try {
+        await ensureArcNetwork();
         const accounts = await window.ethereum.request({ method: 'eth_accounts' });
         if (accounts.length > 0) {
           provider = new ethers.BrowserProvider(window.ethereum);
@@ -599,6 +629,7 @@
       return showToast("MetaMask or Web3 Wallet not found! Please install it.");
     }
     try {
+      await ensureArcNetwork();
       if (!provider) {
           provider = new ethers.BrowserProvider(window.ethereum);
       }
@@ -628,26 +659,7 @@
   }
 
   async function switchNetworkToArc() {
-    if (!window.ethereum) return;
-    try {
-      await window.ethereum.request({
-        method: "wallet_switchEthereumChain",
-        params: [{ chainId: ARC_TESTNET_PARAMS.chainId }]
-      });
-    } catch (switchError) {
-      if (switchError.code === 4902) {
-        try {
-          await window.ethereum.request({
-            method: "wallet_addEthereumChain",
-            params: [ARC_TESTNET_PARAMS]
-          });
-        } catch (addError) {
-          showToast("Failed to add Arc Testnet to wallet.");
-        }
-      } else {
-        showToast("Failed to switch network.");
-      }
-    }
+    await ensureArcNetwork();
   }
 
   async function updateWalletBalance() {
