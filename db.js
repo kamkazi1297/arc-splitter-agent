@@ -79,12 +79,24 @@ async function fetchHistoryFromCloud(userAddress) {
   try {
     const client = await getSupabase();
     if (!client || !userAddress) return [];
-    const { data, error } = await client
+    const addr = userAddress.toLowerCase();
+    let { data, error } = await client
       .from('history')
       .select('history_data, user_address, id, created_at')
-      .eq('user_address', userAddress.toLowerCase())
+      .ilike('user_address', addr)
       .order('id', { ascending: false })
       .limit(80);
+    if (error) {
+      const fb = await client
+        .from('history')
+        .select('history_data, user_address, id, created_at')
+        .order('id', { ascending: false })
+        .limit(150);
+      data = (fb.data || []).filter(r =>
+        String(r.user_address || '').toLowerCase() === addr
+      );
+      error = fb.error;
+    }
     if (error) {
       console.error('Error fetching history:', error);
       return [];
@@ -107,17 +119,35 @@ async function fetchTeamHistory(memberAddresses, workspaceId, limit = 60) {
     if (!client || !memberAddresses?.length) return [];
     const addrs = [...new Set(memberAddresses.map(a => String(a).toLowerCase()).filter(Boolean))];
     if (!addrs.length) return [];
-    const { data, error } = await client
+
+    // Case-insensitive match: history may store mixed-case addresses
+    const orFilter = addrs.map(a => `user_address.ilike.${a}`).join(',');
+    let query = client
       .from('history')
       .select('history_data, user_address, id, created_at')
-      .in('user_address', addrs)
       .order('id', { ascending: false })
       .limit(Math.min(limit * 5, 300));
+    if (orFilter) query = query.or(orFilter);
+
+    const { data, error } = await query;
     if (error) {
       console.error('fetchTeamHistory', error);
-      return [];
+      // Fallback without or-filter
+      const fb = await client
+        .from('history')
+        .select('history_data, user_address, id, created_at')
+        .order('id', { ascending: false })
+        .limit(300);
+      if (fb.error) return [];
+      const set = new Set(addrs);
+      var raw = (fb.data || []).filter(row =>
+        set.has(String(row.user_address || '').toLowerCase())
+      );
+    } else {
+      var raw = data || [];
     }
-    const rows = (data || []).map(row => {
+
+    const rows = raw.map(row => {
       const h = (row.history_data && typeof row.history_data === 'object')
         ? row.history_data
         : {};
@@ -137,10 +167,11 @@ async function fetchTeamHistory(memberAddresses, workspaceId, limit = 60) {
     );
     if (tagged.length) return tagged.slice(0, limit);
 
-    // Fallback: recent activity of members without a workspace tag
-    // (so Team Activity is not empty before all pages tag correctly)
-    const untagged = rows.filter(r => !r.workspaceId && !r.workspace_id);
-    return untagged.slice(0, limit).map(r => ({ ...r, _untagged: true }));
+    // Fallback: any recent activity from team members (personal / untagged)
+    return rows.slice(0, limit).map(r => ({
+      ...r,
+      _untagged: !(r.workspaceId || r.workspace_id)
+    }));
   } catch (e) {
     console.error('fetchTeamHistory', e);
     return [];
