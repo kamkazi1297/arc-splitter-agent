@@ -588,6 +588,41 @@ async function updateWorkspace(workspaceId, patch) {
   }
 }
 
+/** Member opts in/out of sharing full personal activity with the team (only their own address). */
+async function setMemberActivityShare(workspaceId, userAddress, share) {
+  try {
+    const client = await getSupabase();
+    if (!client || !workspaceId || !userAddress) return false;
+    const { data: ws, error: rErr } = await client
+      .from('workspaces')
+      .select('settings')
+      .eq('id', workspaceId)
+      .maybeSingle();
+    if (rErr || !ws) {
+      console.error('setMemberActivityShare read', rErr);
+      return false;
+    }
+    let s = ws.settings || {};
+    if (typeof s === 'string') {
+      try { s = JSON.parse(s || '{}'); } catch { s = {}; }
+    }
+    if (!s.shareAllActivity || typeof s.shareAllActivity !== 'object') s.shareAllActivity = {};
+    s.shareAllActivity[String(userAddress).toLowerCase()] = !!share;
+    const { error } = await client
+      .from('workspaces')
+      .update({ settings: s, updated_at: new Date().toISOString() })
+      .eq('id', workspaceId);
+    if (error) {
+      console.error('setMemberActivityShare', error);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error('setMemberActivityShare', e);
+    return false;
+  }
+}
+
 async function leaveWorkspace(workspaceId, userAddress) {
   return removeWorkspaceMember(workspaceId, userAddress);
 }
@@ -860,6 +895,7 @@ if (typeof window !== 'undefined') {
   window.updateMemberRole = updateMemberRole;
   window.transferWorkspaceOwnership = transferWorkspaceOwnership;
   window.updateWorkspace = updateWorkspace;
+  window.setMemberActivityShare = setMemberActivityShare;
   window.leaveWorkspace = leaveWorkspace;
   window.checkWorkspaceAccess = checkWorkspaceAccess;
   window.getWorkspaceIdFromURL = getWorkspaceIdFromURL;
