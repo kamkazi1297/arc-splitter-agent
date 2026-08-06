@@ -564,7 +564,8 @@
  let signer = null;
 let userAddress = null;
 let provider = null;
-let transactions = JSON.parse(localStorage.getItem('arcTxHistory') || '[]');
+const HISTORY_KEY = 'arcTxHistory_split';
+let transactions = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
 let isProcessing = false;
 let splitMode = 'manual';
 
@@ -1472,7 +1473,7 @@ function updateTelegramButton() {
         memo: (document.getElementById('txMemo') && document.getElementById('txMemo').value) || ''
       };
       transactions.unshift(historyRecord);
-      localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(transactions));
       if (typeof saveHistoryToCloud === 'function') {
         try { await saveHistoryToCloud(userAddress, historyRecord); }
         catch (e) { console.error('cloud history', e); }
@@ -1622,6 +1623,19 @@ window.addEventListener('load', async () => {
   addRecipient("", "");
   setMode('manual');
 
+  // همیشه فقط تاریخچه مربوط به Split را نگه دار
+  const MODULE = "split";
+  function isSplitItem(item) {
+    if (!item) return false;
+    const app = String(item.appName || item.module || "").toLowerCase();
+    const typ = String(item.type || "").toLowerCase();
+    return app === MODULE || typ === MODULE || app === "split" || typ === "split";
+  }
+
+  // اول لوکال را فیلتر کن
+  transactions = (transactions || []).filter(isSplitItem);
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(transactions));
+
   if (userAddress) {
     const waitForSupabase = () => new Promise(resolve => {
       if (window.supabase) return resolve();
@@ -1632,42 +1646,28 @@ window.addEventListener('load', async () => {
     });
     await waitForSupabase();
 
-    const MODULE = "split";
     const cloudHistory = await fetchHistoryFromCloud(userAddress);
+    const filteredCloud = (cloudHistory || []).filter(isSplitItem);
 
-    if (cloudHistory && cloudHistory.length > 0) {
-      // فقط تاریخچه‌های مربوط به Split
-      const filteredCloud = cloudHistory.filter(item => {
-        const app = (item.appName || item.module || "").toLowerCase();
-        const typ = (item.type || "").toLowerCase();
-        return app === MODULE || typ === MODULE || app.includes(MODULE) || typ.includes(MODULE);
-      });
+    const seen = new Set();
+    const merged = [];
 
-      const seen = new Set();
-      const merged = [];
+    filteredCloud.forEach(item => {
+      if (item && item.hash && !seen.has(item.hash)) {
+        seen.add(item.hash);
+        merged.push(item);
+      }
+    });
 
-      filteredCloud.forEach(item => {
-        if (item && item.hash && !seen.has(item.hash)) {
-          seen.add(item.hash);
-          merged.push(item);
-        }
-      });
+    transactions.forEach(item => {
+      if (item && item.hash && !seen.has(item.hash)) {
+        seen.add(item.hash);
+        merged.push(item);
+      }
+    });
 
-      // تاریخچه‌های لوکال هم فقط Split باشن
-      transactions.forEach(item => {
-        if (item && item.hash && !seen.has(item.hash)) {
-          const app = (item.appName || item.module || "").toLowerCase();
-          const typ = (item.type || "").toLowerCase();
-          if (app === MODULE || typ === MODULE || app.includes(MODULE) || typ.includes(MODULE)) {
-            seen.add(item.hash);
-            merged.push(item);
-          }
-        }
-      });
-
-      transactions = merged;
-      localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
-    }
+    transactions = merged;
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(transactions));
   }
 
   renderHistory();
