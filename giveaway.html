@@ -1011,6 +1011,16 @@ function copyShareableLink() {
 }
 
 // ==================== HISTORY (Supabase via db.js) ====================
+const HISTORY_KEY = "arcsplit_history_giveaway";
+const MODULE = "giveaway";
+
+function isGiveawayItem(item) {
+  if (!item) return false;
+  const app = String(item.appName || item.module || "").toLowerCase();
+  const typ = String(item.type || "").toLowerCase();
+  return app === MODULE || typ === MODULE || app === "giveaway" || typ === "giveaway";
+}
+
 let cachedHistory = [];
 
 async function renderHistory() {
@@ -1034,21 +1044,26 @@ async function renderHistory() {
   }
 
   try {
-    cachedHistory = await fetchHistoryFromCloud(userAddress);
+    const allCloud = await fetchHistoryFromCloud(userAddress);
+    cachedHistory = (allCloud || []).filter(isGiveawayItem);
   } catch (e) {
     console.error(e);
     cachedHistory = [];
   }
 
-  // Also merge local fallback
+  // Also merge local fallback (module-specific key)
   try {
-    const local = JSON.parse(localStorage.getItem("arcsplit_history_local") || "[]");
+    const local = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
     if (Array.isArray(local) && local.length) {
-      const hashes = new Set(cachedHistory.map(h => h.txHash).filter(Boolean));
-      local.forEach(h => {
-        if (h.txHash && !hashes.has(h.txHash)) cachedHistory.push(h);
+      const hashes = new Set(cachedHistory.map(h => (h.txHash || h.hash)).filter(Boolean));
+      local.filter(isGiveawayItem).forEach(h => {
+        const key = h.txHash || h.hash;
+        if (key && !hashes.has(key)) {
+          hashes.add(key);
+          cachedHistory.push(h);
+        }
       });
-      cachedHistory.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+      cachedHistory.sort((a, b) => new Date(b.timestamp || 0) - new Date(a.timestamp || 0));
     }
   } catch {}
 
@@ -1062,19 +1077,20 @@ async function renderHistory() {
 
   container.innerHTML = cachedHistory.map((h, idx) => {
     const date = new Date(h.timestamp || Date.now()).toLocaleString();
-    const shortTx = h.txHash ? `${h.txHash.slice(0, 10)}...${h.txHash.slice(-6)}` : "—";
+    const tx = h.txHash || h.hash || "";
+    const shortTx = tx ? `${tx.slice(0, 10)}...${tx.slice(-6)}` : "—";
     return `
       <div class="history-item glass border border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 mb-1">
-            <span class="text-amber-400 font-bold text-sm">${h.totalAmount} ${h.tokenSymbol || "TOKEN"}</span>
-            <span class="text-xs text-gray-400">→ ${h.winnersCount || (h.winners || []).length} winners</span>
+            <span class="text-amber-400 font-bold text-sm">${h.totalAmount || h.amount || ""} ${h.tokenSymbol || h.token || "TOKEN"}</span>
+            <span class="text-xs text-gray-400">→ ${h.winnersCount || (h.winners || []).length || 0} winners</span>
           </div>
           <div class="text-xs text-gray-400 font-mono truncate">${shortTx}</div>
           <div class="text-[10px] text-gray-500 mt-1">${date}${h.memo ? " • " + h.memo : ""}</div>
         </div>
         <div class="flex gap-2 shrink-0">
-          ${h.txHash ? `<a href="${EXPLORER_TX}${h.txHash}" target="_blank" class="app-button px-3 py-1.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-xs font-semibold">Explorer</a>` : ""}
+          ${tx ? `<a href="${EXPLORER_TX}${tx}" target="_blank" class="app-button px-3 py-1.5 bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-lg text-xs font-semibold">Explorer</a>` : ""}
         </div>
       </div>
     `;
@@ -1082,8 +1098,8 @@ async function renderHistory() {
 }
 
 function clearAllHistory() {
-  if (!confirm("Clear local history cache? ")) return;
-  localStorage.removeItem("arcsplit_history_local");
+  if (!confirm("Clear local history cache?")) return;
+  localStorage.removeItem(HISTORY_KEY);
   cachedHistory = [];
   renderHistory();
   showToast("Local history cache cleared");
@@ -1095,7 +1111,7 @@ function exportHistory() {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "arcsplit-history-backup.json";
+  a.download = "arcsplit-giveaway-history.json";
   a.click();
   showToast("History exported");
 }
@@ -1112,7 +1128,7 @@ function importHistory() {
         const data = JSON.parse(ev.target.result);
         const list = data.history || (Array.isArray(data) ? data : null);
         if (!list) return showToast("Invalid file");
-        localStorage.setItem("arcsplit_history_local", JSON.stringify(list));
+        localStorage.setItem(HISTORY_KEY, JSON.stringify(list.filter(isGiveawayItem)));
         renderHistory();
         showToast("History imported to local cache");
       } catch {
@@ -1125,12 +1141,12 @@ function importHistory() {
 }
 
 async function persistHistoryRecord(record) {
-  // local fallback
+  // local fallback (module-specific)
   try {
-    const local = JSON.parse(localStorage.getItem("arcsplit_history_local") || "[]");
+    const local = JSON.parse(localStorage.getItem(HISTORY_KEY) || "[]");
     local.unshift(record);
     if (local.length > 100) local.length = 100;
-    localStorage.setItem("arcsplit_history_local", JSON.stringify(local));
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(local));
   } catch {}
 
   // cloud (Supabase)
