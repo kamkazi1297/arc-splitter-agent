@@ -609,6 +609,7 @@ async function connectWallet() {
     await provider.send("eth_requestAccounts", []);
     signer = await provider.getSigner();
     userAddress = await signer.getAddress();
+    window.userAddress = userAddress;
     forceDisconnected = false;
     setWalletUI(true);
     showToast("Wallet connected");
@@ -621,6 +622,7 @@ async function connectWallet() {
 function disconnectWallet() {
   forceDisconnected = true;
   userAddress = null;
+  window.userAddress = null;
   signer = null;
   provider = null;
   setWalletUI(false);
@@ -1311,6 +1313,7 @@ async function refreshDashboard() {
       if (accs?.length) {
         signer = await provider.getSigner();
         userAddress = await signer.getAddress();
+        window.userAddress = userAddress;
         setWalletUI(true);
       }
     } catch {}
@@ -1719,10 +1722,12 @@ if (window.ethereum) {
     if (accs?.length) {
       forceDisconnected = false;
       userAddress = accs[0];
+      window.userAddress = userAddress;
       setWalletUI(true);
       await refreshDashboard();
     } else {
       userAddress = null;
+      window.userAddress = null;
       signer = null;
       Object.assign(state, emptyState());
       setWalletUI(false);
