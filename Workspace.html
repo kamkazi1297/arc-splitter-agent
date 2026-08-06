@@ -243,10 +243,26 @@
               <input id="setTreasury" class="w-full px-4 py-3 text-sm font-mono" placeholder="0x… optional">
               <p class="text-[11px] text-gray-500 mt-1">Optional label only. Not required for team features.</p>
             </div>
+            <div>
+              <label class="text-xs font-bold text-gray-400 mb-1.5 block">Plan</label>
+              <div class="flex items-center gap-2">
+                <span id="setPlanBadge" class="role-badge bg-emerald-500/20 text-emerald-300">FREE</span>
+                <span class="text-[11px] text-gray-500">Billing / paid plans can be added later</span>
+              </div>
+            </div>
             <div class="flex flex-wrap gap-2">
               <button onclick="saveSettings()" id="saveSetBtn" class="px-5 py-2.5 rounded-xl bg-indigo-500 text-white text-sm font-bold">Save settings</button>
               <button onclick="doLeaveWorkspace()" id="leaveBtn" class="px-5 py-2.5 rounded-xl bg-rose-500/15 text-rose-400 border border-rose-500/30 text-sm font-bold">Leave workspace</button>
             </div>
+          </div>
+
+          <div id="transferBox" class="glass rounded-3xl p-6 space-y-4 hidden">
+            <h3 class="font-bold text-base"><i class="fas fa-crown text-amber-400 mr-2"></i> Transfer ownership</h3>
+            <p class="text-xs text-gray-500">Owner only. New owner must already be a member. You become admin after transfer.</p>
+            <select id="transferSelect" class="w-full px-4 py-3 text-sm"></select>
+            <button onclick="doTransferOwnership()" class="px-5 py-2.5 rounded-xl bg-amber-500/20 text-amber-300 border border-amber-500/30 text-sm font-bold">
+              Transfer ownership
+            </button>
           </div>
         </div>
       </main>
@@ -306,6 +322,30 @@
     </div>
   </div>
 
+
+  <!-- Activity detail modal -->
+  <div id="activityDetailModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/60 p-4">
+    <div class="glass rounded-3xl p-6 w-full max-w-lg space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex items-start justify-between gap-3">
+        <div>
+          <h3 class="text-lg font-extrabold" id="adType">Transaction</h3>
+          <p class="text-xs text-gray-500 mt-1" id="adTime">—</p>
+        </div>
+        <button onclick="hideActivityDetail()" class="w-9 h-9 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+      <div id="adBody" class="space-y-3 text-sm"></div>
+      <div class="flex flex-wrap gap-2 pt-2">
+        <a id="adExplorer" href="#" target="_blank" rel="noopener" class="hidden px-4 py-2 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold">
+          <i class="fas fa-external-link-alt mr-1"></i> View on Explorer
+        </a>
+        <button onclick="copyAdHash()" id="adCopyHashBtn" class="hidden px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-bold">Copy hash</button>
+        <button onclick="hideActivityDetail()" class="px-4 py-2 rounded-xl text-xs font-bold text-gray-400 ml-auto">Close</button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] px-5 py-3 rounded-2xl bg-slate-900 border border-white/10 shadow-xl text-sm font-bold flex items-center gap-2">
     <i class="fas fa-info-circle text-indigo-400"></i>
     <span id="toastText">—</span>
@@ -320,7 +360,8 @@
     vesting:     { label: "Vesting",      file: "ArcsplitVesting.html",       icon: "fa-calendar-check", color: "lime" },
     pay:         { label: "Pay Links",    file: "ArcPayLink.html",            icon: "fa-link",           color: "yellow" },
     agentic:     { label: "Agentic",      file: "AgenticSplit.html",          icon: "fa-robot",          color: "sky" },
-    conditional: { label: "Conditional",  file: "smartConditionalsplit.html", icon: "fa-code-branch",    color: "orange" }
+    conditional: { label: "Conditional",  file: "smartConditionalsplit.html", icon: "fa-code-branch",    color: "orange" },
+    analytics:   { label: "Analytics",    file: "ArcAnalytics.html",          icon: "fa-chart-pie",      color: "cyan" }
   };
   const MODULES = Object.keys(MODULE_PAGES).map(id => ({ id, label: MODULE_PAGES[id].label }));
   const DEFAULT_PERMS = typeof defaultPermissions === "function" ? defaultPermissions() : {
@@ -694,6 +735,13 @@
     } else showToast("Save failed");
   }
 
+  let _activityCache = [];
+  let _adCurrentHash = "";
+
+  function esc(s) {
+    return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+
   async function loadTeamActivity() {
     const box = document.getElementById("activityList");
     if (!currentWs) return;
@@ -702,6 +750,7 @@
     const rows = typeof fetchTeamHistory === "function"
       ? await fetchTeamHistory(addrs, currentWs.id, 50)
       : [];
+    _activityCache = rows || [];
     if (!rows.length) {
       box.innerHTML = `<p class="text-sm text-gray-500 text-center py-8">No team activity yet. When members use modules (with db.js history and ?workspace=), it shows up here.</p>`;
       return;
@@ -709,21 +758,89 @@
     const hasUntagged = rows.some(r => r._untagged);
     box.innerHTML = (hasUntagged
       ? `<p class="text-[11px] text-amber-400/90 mb-3 px-1">Showing recent member activity without workspace tag. New actions opened from Modules will tag this workspace.</p>`
-      : "") + rows.map(r => {
-      const who = shortAddr(r.user);
+      : "") + rows.map((r, idx) => {
+      const who = shortAddr(r.user || r.user_address);
       const typ = r.type || r.appName || "Activity";
-      const amt = r.amount != null ? `${r.amount} ${r.token || ""}` : "";
+      const amt = r.amount != null ? `${r.amount} ${r.token || r.symbol || ""}` : "";
       const ts = r.timestamp ? new Date(r.timestamp).toLocaleString() : "";
       const hash = r.hash || r.txHash || "";
-      return `<div class="p-3 rounded-2xl bg-white/5 border border-white/5">
+      return `<button type="button" onclick="showActivityDetail(${idx})" class="w-full text-left p-3 rounded-2xl bg-white/5 border border-white/5 hover:border-indigo-500/40 hover:bg-white/[0.07] transition cursor-pointer">
         <div class="flex justify-between gap-2">
-          <div class="font-bold text-sm">${typ}${r._untagged ? ' <span class="text-[10px] text-amber-400 font-semibold">personal</span>' : ''}</div>
-          <div class="text-[11px] text-gray-500">${ts}</div>
+          <div class="font-bold text-sm">${esc(typ)}${r._untagged ? ' <span class="text-[10px] text-amber-400 font-semibold">personal</span>' : ''}</div>
+          <div class="text-[11px] text-gray-500 shrink-0">${esc(ts)}</div>
         </div>
-        <div class="text-xs text-gray-400 mt-1">${who}${amt ? " · " + amt : ""}${r.status ? " · " + r.status : ""}</div>
-        ${hash ? `<div class="text-[10px] font-mono text-gray-600 mt-1 truncate">${hash}</div>` : ""}
-      </div>`;
+        <div class="text-xs text-gray-400 mt-1">${esc(who)}${amt ? " · " + esc(amt) : ""}${r.status ? " · " + esc(r.status) : ""}</div>
+        ${hash ? `<div class="text-[10px] font-mono text-gray-600 mt-1 truncate">${esc(hash)}</div>` : ""}
+        <div class="text-[10px] text-indigo-400 mt-1.5 font-semibold"><i class="fas fa-info-circle mr-1"></i>Click for full details</div>
+      </button>`;
     }).join("");
+  }
+
+  function showActivityDetail(idx) {
+    const r = _activityCache[idx];
+    if (!r) return;
+    const typ = r.type || r.appName || "Activity";
+    const ts = r.timestamp ? new Date(r.timestamp).toLocaleString() : "—";
+    const hash = r.hash || r.txHash || "";
+    _adCurrentHash = hash;
+
+    document.getElementById("adType").textContent = typ;
+    document.getElementById("adTime").textContent = ts;
+
+    const rows = [
+      ["Status", r.status || "—"],
+      ["Member wallet", r.user || r.user_address || "—"],
+      ["Amount", r.amount != null ? `${r.amount} ${r.token || r.symbol || ""}`.trim() : "—"],
+      ["Token", r.token || r.symbol || "—"],
+      ["App / module", r.appName || r.module || "—"],
+      ["Intent / memo", r.intent || r.memo || "—"],
+      ["Recipients", r.recipientsCount != null ? String(r.recipientsCount) : (r.recipient || "—")],
+      ["Workspace", r.workspaceId || currentWs?.id || "—"],
+      ["Tagged", r._untagged ? "No (personal history)" : "Yes"],
+      ["Tx hash", hash || "—"]
+    ];
+
+    // include any extra keys from history_data
+    const skip = new Set(["type","appName","status","user","user_address","amount","token","symbol","intent","memo","recipientsCount","recipient","workspaceId","hash","txHash","timestamp","time","_untagged","module"]);
+    Object.keys(r).forEach(k => {
+      if (skip.has(k)) return;
+      const v = r[k];
+      if (v == null || typeof v === "object") return;
+      rows.push([k, String(v)]);
+    });
+
+    document.getElementById("adBody").innerHTML = rows.map(([k, v]) => `
+      <div class="flex justify-between gap-3 py-2 border-b border-white/5">
+        <span class="text-gray-500 text-xs font-bold uppercase shrink-0">${esc(k)}</span>
+        <span class="text-right font-mono text-xs break-all">${esc(v)}</span>
+      </div>`).join("");
+
+    const exp = document.getElementById("adExplorer");
+    const copyBtn = document.getElementById("adCopyHashBtn");
+    if (hash && String(hash).startsWith("0x")) {
+      exp.href = "https://testnet.arcscan.app/tx/" + hash;
+      exp.classList.remove("hidden");
+      copyBtn.classList.remove("hidden");
+    } else {
+      exp.classList.add("hidden");
+      copyBtn.classList.add("hidden");
+    }
+
+    const m = document.getElementById("activityDetailModal");
+    m.classList.remove("hidden");
+    m.classList.add("flex");
+  }
+
+  function hideActivityDetail() {
+    const m = document.getElementById("activityDetailModal");
+    m.classList.add("hidden");
+    m.classList.remove("flex");
+  }
+
+  function copyAdHash() {
+    if (!_adCurrentHash) return;
+    navigator.clipboard.writeText(_adCurrentHash);
+    showToast("Hash copied");
   }
 
   function renderSettings() {
@@ -737,6 +854,42 @@
     ["setName","setDesc","setTreasury"].forEach(id => {
       document.getElementById(id).disabled = !can;
     });
+    const plan = (settingsOf(currentWs).plan || "free").toUpperCase();
+    document.getElementById("setPlanBadge").textContent = plan;
+
+    const tBox = document.getElementById("transferBox");
+    if (myRole === "owner") {
+      tBox.classList.remove("hidden");
+      const sel = document.getElementById("transferSelect");
+      const candidates = currentMembers.filter(m =>
+        m.role !== "owner" && (m.user_address || "").toLowerCase() !== (userAddress || "").toLowerCase()
+      );
+      sel.innerHTML = candidates.length
+        ? candidates.map(m => `<option value="${esc(m.user_address)}">${esc(m.display_name || shortAddr(m.user_address))} · ${esc(m.role)}</option>`).join("")
+        : `<option value="">No other members</option>`;
+    } else {
+      tBox.classList.add("hidden");
+    }
+  }
+
+  async function doTransferOwnership() {
+    if (myRole !== "owner" || !currentWs || !userAddress) return showToast("Owner only");
+    const next = document.getElementById("transferSelect").value;
+    if (!next || !ethers.isAddress(next)) return showToast("Select a member");
+    if (!confirm("Transfer ownership to " + shortAddr(next) + "? You will become admin.")) return;
+    showToast("Transferring…");
+    // 1) set new owner role
+    let ok = await updateMemberRole(currentWs.id, next, "owner");
+    if (!ok) return showToast("Failed to set new owner role");
+    // 2) demote self to admin
+    ok = await updateMemberRole(currentWs.id, userAddress, "admin");
+    if (!ok) return showToast("New owner set, but could not demote you — check members");
+    // 3) update workspace owner_address
+    ok = await updateWorkspace(currentWs.id, { owner_address: next.toLowerCase() });
+    if (!ok) showToast("Roles updated; owner_address field may need manual fix");
+    else showToast("Ownership transferred");
+    await loadWorkspaces();
+    await selectWorkspace(currentWs.id);
   }
 
   async function saveSettings() {
