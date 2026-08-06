@@ -1411,7 +1411,8 @@ function updateTelegramButton() {
       transactions.unshift(historyRecord);
       localStorage.setItem('arcTxHistory', JSON.stringify(transactions));
       if (typeof saveHistoryToCloud === 'function') {
-        saveHistoryToCloud(userAddress, historyRecord);
+        try { await saveHistoryToCloud(userAddress, historyRecord); }
+        catch (e) { console.error('cloud history', e); }
       }
       renderHistory();
       await updateBalance();
