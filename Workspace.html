@@ -396,7 +396,8 @@
     showToast("Joining workspace…");
     const res = await acceptWorkspaceInvite(token, userAddress);
     if (res.ok) {
-      showToast("Joined workspace");
+      if (res.already_member) showToast("Already a member — role kept: " + (res.role || ""));
+      else showToast("Joined as " + (res.role || "member"));
       pendingInviteToken = null;
       clearInviteFromURL();
       await loadWorkspaces();
@@ -407,10 +408,16 @@
         already_used: "Invite already used",
         not_found: "Invite not found",
         member_failed: "Could not add member",
-        missing: "Missing data"
+        missing: "Missing data",
+        already_owner: "You are the owner — invite ignored, role unchanged"
       };
       showToast(map[res.reason] || ("Invite failed: " + (res.reason || "error")));
-      if (res.reason === "expired" || res.reason === "already_used" || res.reason === "not_found") {
+      if (res.reason === "already_owner" && res.workspace_id) {
+        pendingInviteToken = null;
+        clearInviteFromURL();
+        await loadWorkspaces();
+        await selectWorkspace(res.workspace_id);
+      } else if (res.reason === "expired" || res.reason === "already_used" || res.reason === "not_found") {
         pendingInviteToken = null;
         clearInviteFromURL();
       }
