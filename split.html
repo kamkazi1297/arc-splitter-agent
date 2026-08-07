@@ -321,20 +321,11 @@
       </div>
     </div>
 
-    <!-- Action Connect Hub -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mb-8">
-      <button onclick="showConnectModal()" id="connectBtn" class="app-button px-6 py-4 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl flex items-center justify-center gap-2.5 hover:bg-emerald-50 light:hover:bg-slate-800 transition-all">
+    <!-- Action Connect -->
+    <div class="mb-8">
+      <button onclick="showConnectModal()" id="connectBtn" class="app-button w-full sm:w-auto px-6 py-4 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl flex items-center justify-center gap-2.5 hover:bg-emerald-50 light:hover:bg-slate-800 transition-all">
         <i class="fas fa-wallet text-emerald-600 light:text-emerald-400"></i> 
         <span id="connectText">Connect Wallet</span>
-      </button>
-
-      <button onclick="connectTelegram()" id="telegramBtn" 
-        class="app-button px-6 py-4 bg-gradient-to-r from-[#229ED9] to-[#1a8ac4] hover:brightness-110 text-white font-semibold rounded-2xl flex items-center justify-center gap-3 transition-all shadow-lg shadow-sky-500/10 group">
-        <i class="fab fa-telegram-plane text-2xl group-hover:scale-110 transition-transform"></i> 
-        <div class="text-left flex-1">
-          <div id="telegramMainText" class="font-bold text-sm leading-tight">Connect Telegram</div>
-          <div id="telegramSubText" class="text-[11px] text-sky-100 opacity-80 -mt-0.5">Fast split & notifications</div>
-        </div>
       </button>
     </div>
 
@@ -574,8 +565,7 @@ let transactions = JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
 let isProcessing = false;
 let splitMode = 'manual';
 
-let telegramLinked = false;
-let telegramUsername = "";
+  // Telegram link is managed on Hub — here only silent chatId for notifications
 
   // ArcRoleSplitterV30 Proxy (impl: 0xAa6A86dEf6F1630B7Ed4fB9f3E8da2DDc71E8159)
   const CONTRACT_ADDRESS = "0xf2073671b726b96DC1c99D001BBF6e60EE1f187F";
@@ -669,17 +659,14 @@ let telegramUsername = "";
 
   function loadSavedConnections() {
     const savedWallet = localStorage.getItem('userAddress');
-    const savedTelegram = localStorage.getItem('telegramUsername');
     if (savedWallet) {
       userAddress = savedWallet;
       window.userAddress = userAddress;
       updateConnectButton();
     }
-    if (savedTelegram) {
-      telegramLinked = true;
-      telegramUsername = savedTelegram;
-      updateTelegramButton();
-    }
+    // chatId kept in localStorage for bot notifications (linked on Hub)
+    const chatId = localStorage.getItem('telegramChatId');
+    if (chatId) window.telegramChatId = chatId;
   }
 
   function updateConnectButton() {
@@ -694,37 +681,6 @@ let telegramUsername = "";
   }
 
   
-function updateTelegramButton() {
-  const btn = document.getElementById("telegramBtn");
-  if (!btn) return;
-
-  if (telegramLinked && telegramUsername) {
-    btn.innerHTML = `
-      <i class="fab fa-telegram-plane text-2xl text-sky-300"></i> 
-      <div class="text-left flex-1">
-        <div class="font-bold text-sky-200 text-sm leading-tight">${telegramUsername}</div>
-        <div class="text-[11px] text-sky-300 opacity-90">Connected • Notifications ON</div>
-      </div>
-      <i onclick="event.stopImmediatePropagation(); disconnectTelegram();" 
-         class="fas fa-times text-sm opacity-60 hover:opacity-100 ml-2 p-1"></i>
-    `;
-    btn.style.background = "linear-gradient(90deg, rgba(34, 158, 217, 0.2), rgba(26, 138, 196, 0.3))";
-    btn.style.border = "1px solid rgba(34, 158, 217, 0.4)";
-    btn.onclick = null;
-  } else {
-    btn.innerHTML = `
-      <i class="fab fa-telegram-plane text-2xl"></i> 
-      <div class="text-left flex-1">
-        <div id="telegramMainText" class="font-bold text-sm leading-tight">Connect Telegram</div>
-        <div id="telegramSubText" class="text-[11px] text-sky-100 opacity-80 -mt-0.5">Receive notifications & fast split</div>
-      </div>
-    `;
-    btn.style.background = "linear-gradient(90deg, #229ED9, #1a8ac4)";
-    btn.style.border = "none";
-    btn.onclick = connectTelegram;
-  }
-}
-
   const BOT_API = "https://arcsplit-bot.kamkazi-1297.workers.dev";
 
   async function saveWalletToBot(chatId) {
@@ -748,6 +704,8 @@ function updateTelegramButton() {
         chatId: String(chatId),
         walletAddress: userAddress
       };
+      const uname = localStorage.getItem('telegramUsername');
+      if (uname) body.username = uname;
       if (workspaceId) {
         body.workspaceId = workspaceId;
         body.workspaceName = workspaceId;
@@ -784,22 +742,6 @@ function updateTelegramButton() {
       .catch((err) => console.error("Bot notify failed:", err));
   }
 
-  
-  function disconnectTelegram() {
-  if (confirm("Disconnect Telegram account?")) {
-    telegramLinked = false;
-    telegramUsername = "";
-    window.telegramChatId = null;
-    
-    localStorage.removeItem('telegramLinked');
-    localStorage.removeItem('telegramUsername');
-    localStorage.removeItem('telegramChatId');
-    
-    updateTelegramButton();
-    showToast("Telegram disconnected");
-  }
-}
-
   async function restoreWalletConnection() {
   if (!window.ethereum || !userAddress) return;
 
@@ -815,20 +757,6 @@ function updateTelegramButton() {
   } catch (e) {
     console.log("Could not auto-restore signer, user needs to reconnect manually");
   }
-}
-
-  function connectTelegram() {
-  if (!userAddress) {
-    return showToast("Please connect your wallet first!", 4000);
-  }
-
-  const botUsername = "ArcSplitPro_bot";
-  const timestamp = Date.now();
-  
-  const link = `https://t.me/${botUsername}?start=connect_${userAddress}_${timestamp}`;
-  
-  window.open(link, "_blank");
-  showToast("Opening Telegram...");
 }
   
   function showToast(msg, duration = 5000) {
@@ -1575,28 +1503,23 @@ function autoFillFromURL() {
     const telegramConnect = urlParams.get('telegram_connect');
     const usernameParam = urlParams.get('username');
 
-    if (telegramConnect === 'true' || window.location.search.includes('connect_')) {
-      telegramLinked = true;
-
+    // Silent Telegram link (managed on Hub) — store chatId for TX notifications
+    if (chatIdParam) {
+      window.telegramChatId = chatIdParam;
+      localStorage.setItem('telegramChatId', chatIdParam);
       if (usernameParam) {
-        telegramUsername = decodeURIComponent(usernameParam);
-      } else {
-        telegramUsername = localStorage.getItem('telegramUsername') || "Telegram User";
+        localStorage.setItem('telegramUsername', decodeURIComponent(usernameParam).replace(/^@/, ''));
       }
-
-      localStorage.setItem('telegramLinked', 'true');
-      localStorage.setItem('telegramUsername', telegramUsername);
-
-      if (chatIdParam) {
-        window.telegramChatId = chatIdParam;
-        localStorage.setItem('telegramChatId', chatIdParam);
-      }
-
-      updateTelegramButton();
-      showToast("✅ Telegram connected successfully!", 4000);
-
-      if (userAddress && chatIdParam) {
+      if (userAddress) {
         saveWalletToBot(chatIdParam);
+      }
+    } else if (telegramConnect === 'true' || window.location.search.includes('connect_')) {
+      // legacy deep-links still store chatId if present
+      const legacyChat = chatIdParam || localStorage.getItem('telegramChatId');
+      if (legacyChat) {
+        window.telegramChatId = legacyChat;
+        localStorage.setItem('telegramChatId', legacyChat);
+        if (userAddress) saveWalletToBot(legacyChat);
       }
     }
 
@@ -1650,11 +1573,8 @@ window.addEventListener('load', async () => {
     if (typeof refreshWorkspaceGuard === 'function') refreshWorkspaceGuard();
   }
 
-  telegramUsername = localStorage.getItem('telegramUsername') || "";
-  telegramLinked = localStorage.getItem('telegramLinked') === 'true';
-  if (telegramLinked) {
-    updateTelegramButton();
-  }
+  const savedChat = localStorage.getItem('telegramChatId');
+  if (savedChat) window.telegramChatId = savedChat;
 
   addRecipient("", "");
   addRecipient("", "");
