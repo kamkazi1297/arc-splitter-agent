@@ -725,28 +725,64 @@ function updateTelegramButton() {
   }
 }
 
+  const BOT_API = "https://arcsplit-bot.kamkazi-1297.workers.dev";
+
   async function saveWalletToBot(chatId) {
-  if (!userAddress || !chatId) {
-    console.log("Missing userAddress or chatId");
-    return;
-  }
-  
-  try {
-    const response = await fetch('https://arcsplit-bot.kamkazi-1297.workers.dev/save-connection', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chatId: chatId,
+    if (!userAddress || !chatId) {
+      console.log("Missing userAddress or chatId");
+      return;
+    }
+    try {
+      window.telegramChatId = String(chatId);
+      localStorage.setItem("telegramChatId", String(chatId));
+
+      let workspaceId = null;
+      try {
+        workspaceId =
+          new URLSearchParams(location.search).get("workspace") ||
+          window.ARC_WORKSPACE_ID ||
+          null;
+      } catch {}
+
+      const body = {
+        chatId: String(chatId),
         walletAddress: userAddress
-      })
-    });
-    
-    console.log("Save response:", await response.text());
-    console.log("✅ Wallet address sent to bot KV");
-  } catch (e) {
-    console.error("Failed to save wallet to bot:", e);
+      };
+      if (workspaceId) {
+        body.workspaceId = workspaceId;
+        body.workspaceName = workspaceId;
+      }
+
+      const response = await fetch(BOT_API + "/save-connection", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      console.log("Save response:", await response.text());
+    } catch (e) {
+      console.error("Failed to save wallet to bot:", e);
+    }
   }
-}
+
+  function notifyBotTx({ txHash, amount, token, recipientsCount, module }) {
+    const chatId = window.telegramChatId || localStorage.getItem("telegramChatId");
+    if (!chatId || !txHash) return;
+    fetch(BOT_API + "/send-tx", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chatId,
+        txHash,
+        amount: amount != null ? String(amount) : "?",
+        token: token || "",
+        recipientsCount: recipientsCount != null ? recipientsCount : "?",
+        module: module || "Split",
+        walletAddress: userAddress || ""
+      })
+    })
+      .then((r) => console.log("Bot notify:", r.status))
+      .catch((err) => console.error("Bot notify failed:", err));
+  }
 
   
   function disconnectTelegram() {
@@ -888,6 +924,10 @@ function updateTelegramButton() {
       updateConnectButton();
       showToast("Wallet connected successfully");
       await updateBalance();
+
+      // If user came from Telegram bot, link wallet ↔ chatId
+      const tgChat = window.telegramChatId || localStorage.getItem("telegramChatId");
+      if (tgChat) saveWalletToBot(tgChat);
 
     } catch (e) {
       console.error(e);
@@ -1440,25 +1480,14 @@ function updateTelegramButton() {
       });
       await tx.wait();
 
-      // Telegram notification (unchanged)
-      if (!window.telegramChatId) {
-        window.telegramChatId = localStorage.getItem('telegramChatId');
-      }
-      if (window.telegramChatId) {
-        fetch('https://arcsplit-bot.kamkazi-1297.workers.dev/send-tx', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            chatId: window.telegramChatId,
-            txHash: tx.hash,
-            amount: totalAmount,
-            token: symbol,
-            recipientsCount: addresses.length
-          })
-        })
-        .then(r => console.log("Notification sent:", r.status))
-        .catch(err => console.error("Notification failed:", err));
-      }
+      // Telegram notification
+      notifyBotTx({
+        txHash: tx.hash,
+        amount: totalAmount,
+        token: symbol,
+        recipientsCount: addresses.length,
+        module: "Split"
+      });
 
       successDiv.innerHTML = `Transaction Successful!<br><a href="https://testnet.arcscan.app/tx/${tx.hash}" target="_blank" class="underline font-semibold">View on Explorer: ${tx.hash.substring(0,12)}...</a>`;
       successDiv.classList.remove('hidden');
@@ -1548,18 +1577,21 @@ function autoFillFromURL() {
 
     if (telegramConnect === 'true' || window.location.search.includes('connect_')) {
       telegramLinked = true;
-      
+
       if (usernameParam) {
         telegramUsername = decodeURIComponent(usernameParam);
       } else {
-        telegramUsername = usernameParam 
-  ? decodeURIComponent(usernameParam) 
-  : (localStorage.getItem('telegramUsername') || "Telegram User");
+        telegramUsername = localStorage.getItem('telegramUsername') || "Telegram User";
       }
-      
+
       localStorage.setItem('telegramLinked', 'true');
       localStorage.setItem('telegramUsername', telegramUsername);
-      
+
+      if (chatIdParam) {
+        window.telegramChatId = chatIdParam;
+        localStorage.setItem('telegramChatId', chatIdParam);
+      }
+
       updateTelegramButton();
       showToast("✅ Telegram connected successfully!", 4000);
 
