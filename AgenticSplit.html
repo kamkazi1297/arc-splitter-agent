@@ -1070,6 +1070,26 @@
           memo: isBatch ? `Batch rules created for ${recipients.length} wallets` : `Rule created for ${recipients[0].substring(0,6)}...`
         });
       }
+
+      // Telegram bot notification
+      try {
+        const chatId = window.telegramChatId || localStorage.getItem('telegramChatId');
+        if (chatId && tx.hash) {
+          fetch('https://arcsplit-bot.kamkazi-1297.workers.dev/send-tx', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chatId,
+              txHash: tx.hash,
+              amount: totalAmount,
+              token: document.querySelector('.sponsorBalanceSymbol').textContent || '',
+              recipientsCount: recipients.length,
+              module: 'Agentic',
+              walletAddress: userAddress || ''
+            })
+          }).catch(() => {});
+        }
+      } catch {}
     } catch(e) {
       console.error(e);
       showToast("Transaction failed. Check console.");
