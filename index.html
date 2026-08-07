@@ -162,9 +162,9 @@
           <button onclick="linkTelegram()" id="tgLinkBtn" class="app-button px-4 py-2.5 rounded-2xl bg-[#229ED9]/15 hover:bg-[#229ED9]/25 text-[#5ac8fa] border border-[#229ED9]/30 text-xs font-bold flex items-center gap-2 transition" title="Link Telegram account">
             <i class="fab fa-telegram-plane"></i> Link Telegram
           </button>
-          <div id="tgLinkedBadge" class="hidden items-center gap-1.5 px-3 py-2 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-bold">
+          <div id="tgLinkedBadge" class="hidden items-center gap-1.5 px-3 py-2 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-bold max-w-[180px]">
             <i class="fab fa-telegram-plane"></i>
-            <span>Telegram · Linked</span>
+            <span id="tgLinkedLabel" class="truncate">Telegram</span>
           </div>
           <button onclick="unlinkTelegram()" id="tgUnlinkBtn" class="hidden w-9 h-9 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 transition" title="Unlink Telegram">
             <i class="fas fa-unlink text-xs"></i>
@@ -366,16 +366,27 @@
     return window.telegramChatId || localStorage.getItem('telegramChatId') || null;
   }
 
-  function setTelegramChatId(id) {
+  function getTelegramUsername() {
+    return window.telegramUsername || localStorage.getItem('telegramUsername') || '';
+  }
+
+  function setTelegramChatId(id, username) {
     if (!id) return;
     window.telegramChatId = String(id);
     localStorage.setItem('telegramChatId', String(id));
+    if (username) {
+      const u = String(username).replace(/^@/, '');
+      window.telegramUsername = u;
+      localStorage.setItem('telegramUsername', u);
+    }
     updateTelegramUI();
   }
 
   function clearTelegramChatId() {
     window.telegramChatId = null;
+    window.telegramUsername = null;
     localStorage.removeItem('telegramChatId');
+    localStorage.removeItem('telegramUsername');
     updateTelegramUI();
   }
 
@@ -384,8 +395,15 @@
     const linkBtn = document.getElementById('tgLinkBtn');
     const badge = document.getElementById('tgLinkedBadge');
     const unlinkBtn = document.getElementById('tgUnlinkBtn');
+    const label = document.getElementById('tgLinkedLabel');
     if (!linkBtn || !badge || !unlinkBtn) return;
+
     if (linked) {
+      const uname = getTelegramUsername();
+      if (label) {
+        label.textContent = uname ? ('@' + uname) : 'Telegram linked';
+        label.title = uname ? ('@' + uname) : 'Telegram linked';
+      }
       linkBtn.classList.add('hidden');
       badge.classList.remove('hidden');
       badge.classList.add('flex');
@@ -401,13 +419,13 @@
   }
 
   function linkTelegram() {
-    // Open bot so user can /start or Connect — after connect bot returns with chatId in URL
+    // Opens bot with ONLY Connect flow (not full menu)
     window.open(`${BOT_TELEGRAM}?start=connect`, '_blank', 'noopener');
-    showToast('Open bot → tap Start / Connect, then return here');
+    showToast('In Telegram: tap Connect My Wallet');
   }
 
   async function unlinkTelegram() {
-    if (!confirm('Unlink Telegram from this browser? You will stop receiving TX notifications.')) return;
+    if (!confirm('Unlink Telegram? You will stop receiving TX notifications.')) return;
     const chatId = getTelegramChatId();
     const wallet = userAddress || null;
     clearTelegramChatId();
@@ -442,6 +460,7 @@
         body: JSON.stringify({
           chatId,
           walletAddress: userAddress,
+          username: getTelegramUsername() || undefined,
           workspaceId: workspaceId || undefined,
           workspaceName: workspaceName || undefined
         })
@@ -455,19 +474,21 @@
     try {
       const params = new URLSearchParams(window.location.search);
       const chatId = params.get('chatId') || params.get('telegram_chat_id');
-      const action = params.get('action') || params.get('telegram_connect');
+      const username = params.get('username') || params.get('tg_username') || '';
       if (chatId) {
-        setTelegramChatId(chatId);
-        // clean URL without losing path
+        setTelegramChatId(chatId, username);
         const clean = new URL(window.location.href);
         clean.searchParams.delete('chatId');
         clean.searchParams.delete('telegram_chat_id');
         clean.searchParams.delete('action');
         clean.searchParams.delete('telegram_connect');
+        clean.searchParams.delete('username');
+        clean.searchParams.delete('tg_username');
         window.history.replaceState({}, '', clean.pathname + (clean.search || '') + clean.hash);
-        showToast('Telegram linked successfully');
+        showToast(username ? ('Linked @' + String(username).replace(/^@/, '')) : 'Telegram linked');
       } else if (localStorage.getItem('telegramChatId')) {
         window.telegramChatId = localStorage.getItem('telegramChatId');
+        window.telegramUsername = localStorage.getItem('telegramUsername') || '';
       }
       updateTelegramUI();
     } catch (e) {
