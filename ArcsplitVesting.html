@@ -1361,6 +1361,26 @@
         await saveHistoryToCloud(userAddress, newRecord);
       }
 
+      // Telegram bot notification
+      try {
+        const chatId = window.telegramChatId || localStorage.getItem('telegramChatId');
+        if (chatId && tx.hash) {
+          fetch('https://arcsplit-bot.kamkazi-1297.workers.dev/send-tx', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chatId,
+              txHash: tx.hash,
+              amount: totalAmtToSave,
+              token: tokenSymbol || '',
+              recipientsCount: validRecipients.length,
+              module: 'Vesting',
+              walletAddress: userAddress || ''
+            })
+          }).catch(() => {});
+        }
+      } catch {}
+
     } catch (error) {
       console.error("Contract Execution Error:", error);
       showToast("Transaction failed. Check balance, gas, or token approval.");
