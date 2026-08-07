@@ -1138,6 +1138,27 @@ async function resumeBatchTx(batchId) {
       recipients: data.originalRecipients
     });
 
+    // Telegram bot notification
+    try {
+      const chatId = window.telegramChatId || localStorage.getItem('telegramChatId');
+      const lastHash = (data.txHashes && data.txHashes[data.txHashes.length - 1]) || '';
+      if (chatId && lastHash) {
+        fetch('https://arcsplit-bot.kamkazi-1297.workers.dev/send-tx', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chatId,
+            txHash: lastHash,
+            amount: data.rawAmount,
+            token: data.tokenSymbol || '',
+            recipientsCount: data.totalWallets,
+            module: 'Batch',
+            walletAddress: userAddress || ''
+          })
+        }).catch(() => {});
+      }
+    } catch {}
+
     confetti({ particleCount: 200, spread: 80, origin: { y: 0.6 } });
     fetchAndRenderBalancesWithRetry();
     
