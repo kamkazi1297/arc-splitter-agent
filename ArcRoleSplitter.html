@@ -1452,6 +1452,26 @@
           if (typeof saveHistoryToCloud === "function") {
             await saveHistoryToCloud(userAddress, newHistoryRecord);
           }
+
+          // Telegram bot notification
+          try {
+            const chatId = window.telegramChatId || localStorage.getItem('telegramChatId');
+            if (chatId && receipt.hash) {
+              fetch('https://arcsplit-bot.kamkazi-1297.workers.dev/send-tx', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  chatId,
+                  txHash: receipt.hash,
+                  amount: data.rawAmount,
+                  token: data.tokenSymbol || '',
+                  recipientsCount: data.totalWallets,
+                  module: 'Roles',
+                  walletAddress: userAddress || ''
+                })
+              }).catch(() => {});
+            }
+          } catch {}
         }
       }
 
