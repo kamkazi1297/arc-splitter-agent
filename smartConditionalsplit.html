@@ -1099,6 +1099,26 @@
       btn.innerHTML = ogHtml;
       btn.disabled = false;
 
+      // Telegram bot notification (if linked)
+      try {
+        const chatId = window.telegramChatId || localStorage.getItem('telegramChatId');
+        if (chatId && tx.hash) {
+          fetch('https://arcsplit-bot.kamkazi-1297.workers.dev/send-tx', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chatId,
+              txHash: tx.hash,
+              amount: amt,
+              token: document.querySelector('.sponsorBalanceSymbol').textContent || 'USDC',
+              recipientsCount: 1,
+              module: 'Conditional',
+              walletAddress: userAddress || ''
+            })
+          }).catch(() => {});
+        }
+      } catch {}
+
       if (typeof saveHistoryToCloud === 'function') {
         await saveHistoryToCloud(userAddress, {
           appName: APP_IDENTIFIER,
