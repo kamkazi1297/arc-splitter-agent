@@ -764,6 +764,22 @@
     renderWsList();
     switchPanel("overview");
     renderAllPanels();
+
+    // Sync active workspace to Telegram bot (if linked)
+    try {
+      const chatId = window.telegramChatId || localStorage.getItem("telegramChatId");
+      if (chatId && currentWs.id) {
+        fetch("https://arcsplit-bot.kamkazi-1297.workers.dev/save-workspace", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            chatId,
+            workspaceId: currentWs.id,
+            workspaceName: currentWs.name || currentWs.id
+          })
+        }).catch(() => {});
+      }
+    } catch {}
   }
 
   function switchPanel(name) {
