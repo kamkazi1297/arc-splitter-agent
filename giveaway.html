@@ -1268,6 +1268,26 @@ async function sendGiveawaySplit() {
     };
     await persistHistoryRecord(historyRecord);
 
+    // Telegram bot notification
+    try {
+      const chatId = window.telegramChatId || localStorage.getItem('telegramChatId');
+      if (chatId && tx.hash) {
+        fetch('https://arcsplit-bot.kamkazi-1297.workers.dev/send-tx', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            chatId,
+            txHash: tx.hash,
+            amount: totalAmount,
+            token: symbol,
+            recipientsCount: addresses.length,
+            module: 'Giveaway',
+            walletAddress: userAddress || ''
+          })
+        }).catch(() => {});
+      }
+    } catch {}
+
     const successDiv = document.getElementById("successMessage");
     successDiv.innerHTML = `Transaction Successful!<br><a href="${EXPLORER_TX}${tx.hash}" target="_blank" class="underline font-semibold">View on Explorer: ${tx.hash.substring(0, 12)}...</a>`;
     successDiv.classList.remove("hidden");
