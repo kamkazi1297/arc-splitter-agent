@@ -278,7 +278,7 @@
         </div>
       </div>
       
-      <div class="flex items-center gap-3">
+      <div class="flex items-center gap-2 sm:gap-3 flex-wrap justify-end">
         <!-- Navigation Tabs -->
         <div class="flex bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 rounded-2xl p-1 text-xs">
           <button onclick="switchTab('splitter')" id="tabSplitter" class="px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400">Splitter</button>
@@ -287,6 +287,14 @@
 
         <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/10 light:hover:bg-black/10 border border-white/10 light:border-black/10 rounded-2xl transition-all shadow-lg">
           <i class="fas fa-moon text-lg text-emerald-400"></i>
+        </button>
+
+        <button onclick="showConnectModal()" id="connectBtn" class="app-button px-4 sm:px-5 py-2.5 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-emerald-50 light:hover:bg-slate-800 transition-all text-xs sm:text-sm">
+          <i class="fas fa-wallet text-emerald-600 light:text-emerald-400"></i>
+          <span id="connectText">Connect Wallet</span>
+        </button>
+        <button onclick="disconnectWallet()" id="disconnectBtn" class="hidden w-11 h-11 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 transition" title="Disconnect Wallet">
+          <i class="fas fa-power-off"></i>
         </button>
       </div>
     </div>
@@ -319,14 +327,6 @@
         <span class="w-6 h-6 rounded-full bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 flex items-center justify-center text-xs">○</span>
         <span>Execute</span>
       </div>
-    </div>
-
-    <!-- Action Connect -->
-    <div class="mb-8">
-      <button onclick="showConnectModal()" id="connectBtn" class="app-button w-full sm:w-auto px-6 py-4 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl flex items-center justify-center gap-2.5 hover:bg-emerald-50 light:hover:bg-slate-800 transition-all">
-        <i class="fas fa-wallet text-emerald-600 light:text-emerald-400"></i> 
-        <span id="connectText">Connect Wallet</span>
-      </button>
     </div>
 
     <!-- Status Boxes -->
@@ -671,11 +671,25 @@ let splitMode = 'manual';
 
   function updateConnectButton() {
     const btn = document.getElementById("connectBtn");
-    const short = userAddress ? `${userAddress.slice(0,6)}...${userAddress.slice(-4)}` : "Connect Wallet";
-    btn.innerHTML = `<i class="fas fa-wallet text-emerald-400"></i> <span class="font-bold">${short}</span>`;
-    btn.onclick = userAddress ? disconnectWallet : showConnectModal;
+    const disc = document.getElementById("disconnectBtn");
+    if (!btn) return;
     if (userAddress) {
-      btn.className = "app-button px-6 py-4 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg shadow-emerald-500/10";
+      const short = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
+      btn.innerHTML = `<i class="fas fa-wallet text-emerald-400"></i> <span id="connectText" class="font-bold">${short}</span>`;
+      btn.onclick = null;
+      btn.className = "app-button px-4 sm:px-5 py-2.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold rounded-2xl flex items-center justify-center gap-2 transition-all text-xs sm:text-sm";
+      if (disc) {
+        disc.classList.remove("hidden");
+        disc.classList.add("flex");
+      }
+    } else {
+      btn.innerHTML = `<i class="fas fa-wallet text-emerald-600 light:text-emerald-400"></i> <span id="connectText">Connect Wallet</span>`;
+      btn.onclick = showConnectModal;
+      btn.className = "app-button px-4 sm:px-5 py-2.5 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-emerald-50 light:hover:bg-slate-800 transition-all text-xs sm:text-sm";
+      if (disc) {
+        disc.classList.add("hidden");
+        disc.classList.remove("flex");
+      }
     }
     updateValidations();
   }
@@ -866,11 +880,8 @@ let splitMode = 'manual';
   function disconnectWallet() {
     signer = null; userAddress = null; provider = null;
     window.userAddress = null;
-    const btn = document.getElementById("connectBtn");
-    btn.innerHTML = `<i class="fas fa-wallet text-emerald-400"></i> <span class="font-bold">Connect Wallet</span>`;
-    btn.className = "app-button px-6 py-4 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl flex items-center justify-center gap-2.5 hover:bg-emerald-50 light:hover:bg-slate-800 transition-all";
-    btn.onclick = showConnectModal;
     localStorage.removeItem('userAddress');
+    updateConnectButton();
     showToast("Wallet disconnected");
     updateValidations();
   }
