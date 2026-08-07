@@ -1170,6 +1170,26 @@ async function connectWallet() {
         } catch (e) {}
       }
 
+      // Telegram bot notification
+      try {
+        const chatId = window.telegramChatId || localStorage.getItem('telegramChatId');
+        if (chatId && newLink.txHash) {
+          fetch('https://arcsplit-bot.kamkazi-1297.workers.dev/send-tx', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chatId,
+              txHash: newLink.txHash,
+              amount: newLink.amount,
+              token: newLink.token || '',
+              recipientsCount: 1,
+              module: 'Pay',
+              walletAddress: userAddress || ''
+            })
+          }).catch(() => {});
+        }
+      } catch {}
+
       showSuccessModal(newLink, 'link');
       renderHistory();
       notify("Success", "Payment Link Created!", "fa-check-circle");
@@ -1314,6 +1334,26 @@ async function connectWallet() {
           });
         } catch (e) {}
       }
+
+      // Telegram bot notification
+      try {
+        const chatId = window.telegramChatId || localStorage.getItem('telegramChatId');
+        if (chatId && newInvoice.txHash) {
+          fetch('https://arcsplit-bot.kamkazi-1297.workers.dev/send-tx', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chatId,
+              txHash: newInvoice.txHash,
+              amount: newInvoice.amount,
+              token: newInvoice.token || '',
+              recipientsCount: 1,
+              module: 'Pay',
+              walletAddress: userAddress || ''
+            })
+          }).catch(() => {});
+        }
+      } catch {}
 
       showSuccessModal(newInvoice, 'invoice');
       renderHistory();
