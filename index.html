@@ -401,8 +401,10 @@
     if (linked) {
       const uname = getTelegramUsername();
       if (label) {
-        label.textContent = uname ? ('@' + uname) : 'Telegram linked';
-        label.title = uname ? ('@' + uname) : 'Telegram linked';
+        // show username without @ sign
+        const clean = uname ? String(uname).replace(/^@/, '') : '';
+        label.textContent = clean || 'Telegram';
+        label.title = clean ? ('Telegram · ' + clean) : 'Telegram linked';
       }
       linkBtn.classList.add('hidden');
       badge.classList.remove('hidden');
@@ -485,7 +487,7 @@
         clean.searchParams.delete('username');
         clean.searchParams.delete('tg_username');
         window.history.replaceState({}, '', clean.pathname + (clean.search || '') + clean.hash);
-        showToast(username ? ('Linked @' + String(username).replace(/^@/, '')) : 'Telegram linked');
+        showToast(username ? ('Linked ' + String(username).replace(/^@/, '')) : 'Telegram linked');
       } else if (localStorage.getItem('telegramChatId')) {
         window.telegramChatId = localStorage.getItem('telegramChatId');
         window.telegramUsername = localStorage.getItem('telegramUsername') || '';
