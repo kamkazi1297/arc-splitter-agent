@@ -308,10 +308,11 @@
             </div>
 
             <!-- Utility Buttons -->
-            <div class="grid grid-cols-3 gap-2 mb-6">
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
               <button onclick="exportWallets()" class="app-button py-2.5 px-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[11px] font-semibold transition-all">📤 Export</button>
               <button onclick="importWallets()" class="app-button py-2.5 px-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[11px] font-semibold transition-all">📥 Import</button>
               <button onclick="copyShareableLink()" class="app-button py-2.5 px-2 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 border border-amber-500/30 rounded-xl text-[11px] font-semibold transition-all">🔗 Share</button>
+              <button onclick="clearWalletsList()" class="app-button py-2.5 px-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/25 rounded-xl text-[11px] font-semibold transition-all">🗑️ Clear</button>
             </div>
 
             <!-- Send Split Button -->
@@ -952,6 +953,16 @@ function copyWinners() {
 }
 
 // ==================== EXPORT / IMPORT / SHARE ====================
+
+function clearWalletsList() {
+  const el = document.getElementById("winnersList");
+  if (!el || !el.value.trim()) return showToast("List is already empty");
+  if (!confirm("Clear all participant addresses?")) return;
+  el.value = "";
+  localStorage.removeItem("arcsplit_last_wallets");
+  showToast("Participant list cleared");
+}
+
 function exportWallets() {
   const text = document.getElementById("winnersList").value.trim();
   if (!text) return showToast("List is empty");
