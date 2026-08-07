@@ -406,9 +406,22 @@
     showToast('Open bot → tap Start / Connect, then return here');
   }
 
-  function unlinkTelegram() {
+  async function unlinkTelegram() {
     if (!confirm('Unlink Telegram from this browser? You will stop receiving TX notifications.')) return;
+    const chatId = getTelegramChatId();
+    const wallet = userAddress || null;
     clearTelegramChatId();
+    if (chatId) {
+      try {
+        await fetch(`${BOT_URL}/unlink-connection`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chatId, walletAddress: wallet || undefined })
+        });
+      } catch (e) {
+        console.warn('unlink-connection failed', e);
+      }
+    }
     showToast('Telegram unlinked');
   }
 
