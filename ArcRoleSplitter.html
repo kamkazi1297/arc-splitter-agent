@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-  <title>ArcSplit · Role Splitter</title>
+  <title>ArcSplit - Role-Based Enterprise Token Splitter</title>
   <script src="db.js"></script>
   <script>window.ARC_MODULE_ID = "roles";</script>
   <script src="workspace-guard.js"></script>
@@ -56,8 +56,18 @@
     .light .preserve-dark-muted { color: #94a3b8 !important; }
 
     /* Light mode: darker text ONLY for the labels requested by user */
-    /* removed: was forcing tabs black in light mode */
-    /* removed old light active tab pill styles */
+    .light #tabSplitter,
+    .light #tabRoles,
+    .light #tabHistory,
+    .light #tabPending {
+      color: #0f172a !important;
+    }
+    .light #tabSplitter.bg-cyan-500\/20,
+    .light #tabRoles.bg-cyan-500\/20,
+    .light #tabHistory.bg-cyan-500\/20,
+    .light #tabPending.bg-cyan-500\/20 {
+      color: #0e7490 !important;
+    }
     .light button[onclick="distributeRoleRemaining()"] {
       color: #92400e !important;
     }
@@ -80,9 +90,9 @@
     .light .text-gray-400:not(.preserve-dark-muted) { color: #334155 !important; }
     .light .text-gray-300 { color: #1e293b !important; }
     .light .text-gray-200 { color: #0f172a !important; }
-    .light .text-cyan-400:not(.tab-btn):not(#tabSplitter):not(#tabRoles):not(#tabHistory):not(#tabPending) { color: #0e7490 !important; }
+    .light .text-cyan-400 { color: #0e7490 !important; }
     .light .text-rose-400 { color: #be123c !important; }
-    .light .text-cyan-400:not(.tab-btn):not(#tabSplitter):not(#tabRoles):not(#tabHistory):not(#tabPending) { color: #0e7490 !important; }
+    .light .text-cyan-400 { color: #0e7490 !important; }
 
     select, input, textarea {
       background-color: rgba(255, 255, 255, 0.03);
@@ -178,116 +188,47 @@
     .light .pitch-black-text {
       color: #000000 !important;
     }
-  
-    /* Tabs keep dark-mode colors in light mode */
-    .tab-btn { color: #9ca3af !important; border-bottom-color: transparent; }
-    .tab-btn:hover { color: #d1d5db !important; }
-    .tab-btn.active, #tabSplitter.tab-btn.active, #tabRoles.tab-btn.active,
-    #tabHistory.tab-btn.active, #tabPending.tab-btn.active {
-      color: #22d3ee !important; /* cyan-400 */
-      border-bottom: 2px solid #22d3ee !important;
-    }
-    html.light .tab-btn { color: #9ca3af !important; }
-    html.light .tab-btn:hover { color: #d1d5db !important; }
-    html.light .tab-btn.active {
-      color: #22d3ee !important;
-      border-bottom-color: #22d3ee !important;
-    }
-
-    /* FINAL: Role tabs — same colors in light & dark */
-    html.light #tabSplitter.tab-btn,
-    html.light #tabRoles.tab-btn,
-    html.light #tabHistory.tab-btn,
-    html.light #tabPending.tab-btn,
-    html.light .tab-btn {
-      color: #9ca3af !important;
-      background: transparent !important;
-    }
-    html.light #tabSplitter.tab-btn:hover,
-    html.light #tabRoles.tab-btn:hover,
-    html.light #tabHistory.tab-btn:hover,
-    html.light #tabPending.tab-btn:hover,
-    html.light .tab-btn:hover {
-      color: #d1d5db !important;
-    }
-    html.light #tabSplitter.tab-btn.active,
-    html.light #tabRoles.tab-btn.active,
-    html.light #tabHistory.tab-btn.active,
-    html.light #tabPending.tab-btn.active,
-    html.light .tab-btn.active {
-      color: #22d3ee !important;
-      border-bottom: 2px solid #22d3ee !important;
-      background: transparent !important;
-    }
-    /* When switchTab sets text-cyan-400 without .active on splitter */
-    html.light #tabSplitter.text-cyan-400,
-    html.light #tabRoles.text-cyan-400,
-    html.light #tabHistory.text-cyan-400,
-    html.light #tabPending.text-cyan-400 {
-      color: #22d3ee !important;
-    }
-
-    /* FORCE tabs colors — last word */
-    html.light button#tabSplitter,
-    html.light button#tabRoles,
-    html.light button#tabHistory,
-    html.light button#tabPending {
-      color: #9ca3af !important;
-      background: transparent !important;
-      -webkit-text-fill-color: #9ca3af !important;
-    }
-    html.light button#tabSplitter.tab-btn.active,
-    html.light button#tabRoles.tab-btn.active,
-    html.light button#tabHistory.tab-btn.active,
-    html.light button#tabPending.tab-btn.active,
-    html.light button#tabSplitter.text-cyan-400,
-    html.light button#tabRoles.text-cyan-400,
-    html.light button#tabHistory.text-cyan-400,
-    html.light button#tabPending.text-cyan-400 {
-      color: #22d3ee !important;
-      -webkit-text-fill-color: #22d3ee !important;
-      border-bottom-color: #22d3ee !important;
-    }
-</style>
-  <link rel="stylesheet" href="arc-shared.css" data-arc-shared="1">
-  <link rel="icon" type="image/svg+xml" href="logo-white.svg">
+  </style>
 </head>
-<body class="text-white min-h-screen selection:bg-cyan-500 selection:text-black" data-arc-accent="cyan">
+<body class="text-white min-h-screen selection:bg-cyan-500 selection:text-black">
 
   <div class="max-w-7xl mx-auto px-4 py-6 sm:py-8">
     
-    <!-- Header: logo + actions only (tabs below) -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-4 sm:p-5 rounded-3xl backdrop-blur-xl">
-      <div class="flex items-center gap-3 sm:gap-4 min-w-0">
-        <img src="logo-white.svg" alt="ArcSplit" class="w-10 h-10 sm:w-12 sm:h-12 object-contain block light:hidden shrink-0">
-        <img src="trace-raw.svg" alt="ArcSplit" class="w-10 h-10 sm:w-12 sm:h-12 object-contain hidden light:block shrink-0">
-        <div class="min-w-0">
-          <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight preserve-dark-color truncate">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-rose-400">Role-Based Engine</span></h1>
-          <p class="text-xs sm:text-sm font-medium preserve-dark-muted">Manage team roles and split assets securely on-chain</p>
+    <!-- Header Section -->
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
+      <div class="flex items-center gap-3 sm:gap-4">
+        <!-- لوگو سفید (حالت تاریک) -->
+        <img src="logo-white.svg" alt="ArcSplit" class="w-10 h-10 sm:w-12 sm:h-12 object-contain block light:hidden">
+        <!-- لوگو سیاه (حالت روشن) -->
+        <img src="trace-raw.svg" alt="ArcSplit" class="w-10 h-10 sm:w-12 sm:h-12 object-contain hidden light:block">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight preserve-dark-color">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-rose-400">Role-Based Engine</span></h1>
+          <p class="text-xs sm:text-sm font-medium preserve-dark-muted">Manage team roles and split assets securely on-chain with auto batching.</p>
         </div>
       </div>
-      <div class="flex items-center gap-2 sm:gap-2.5 flex-wrap">
-        <button onclick="toggleTheme()" id="themeBtn" class="arc-hdr-btn w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/15 border border-white/10 light:border-black/10 rounded-2xl transition-all" aria-label="Toggle Theme">
+      
+      <div class="flex items-center gap-3 flex-wrap">
+        <div class="flex bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 rounded-2xl p-1 text-xs relative">
+          <button onclick="switchTab('splitter')" id="tabSplitter" class="px-4 py-2 rounded-xl font-bold transition-all bg-cyan-500/20 text-cyan-400 preserve-dark-color">Role Split</button>
+          <button onclick="switchTab('roles')" id="tabRoles" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted">Role Management</button>
+          <button onclick="switchTab('history')" id="tabHistory" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted">History</button>
+          <button onclick="switchTab('pending')" id="tabPending" class="relative px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted">
+            Pending
+            <span id="pendingBadge" class="hidden absolute top-1 right-1 flex h-2.5 w-2.5">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+            </span>
+          </button>
+        </div>
+
+        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/15 border border-white/10 rounded-2xl transition-all" aria-label="Toggle Theme">
           <i class="fas fa-moon text-lg text-cyan-400"></i>
         </button>
-        <button onclick="toggleConnection()" id="connectBtn" class="arc-hdr-btn arc-btn-connect arc-btn-glass arc-accent-cyan app-button h-11 px-4 sm:px-5 font-bold rounded-2xl text-xs flex items-center gap-2">
+
+        <button onclick="toggleConnection()" id="connectBtn" class="app-button px-5 py-2.5 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl text-xs flex items-center gap-2 shadow-lg">
           <i class="fas fa-wallet text-cyan-500"></i> <span id="connectText">Connect Wallet</span>
         </button>
       </div>
-    </div>
-
-    <!-- Tab Navigation (separate row) -->
-    <div class="flex flex-wrap gap-4 sm:gap-6 mb-6 border-b border-white/10 light:border-black/10 pb-1 overflow-x-auto">
-      <button onclick="switchTab('splitter')" id="tabSplitter" class="tab-btn active pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-cyan-400 border-b-2 border-cyan-400 whitespace-nowrap">Role Split</button>
-      <button onclick="switchTab('roles')" id="tabRoles" class="tab-btn pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-gray-500 hover:text-gray-300  whitespace-nowrap">Role Management</button>
-      <button onclick="switchTab('history')" id="tabHistory" class="tab-btn pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-gray-500 hover:text-gray-300  whitespace-nowrap">History</button>
-      <button onclick="switchTab('pending')" id="tabPending" class="tab-btn relative pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-gray-500 hover:text-gray-300  whitespace-nowrap">
-        Pending
-        <span id="pendingBadge" class="hidden absolute top-0 -right-2 flex h-2.5 w-2.5">
-          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
-        </span>
-      </button>
     </div>
 
     <!-- Status Bar & Balance Widget -->
@@ -871,19 +812,24 @@
     document.getElementById('viewHistory').classList.toggle('hidden', tab !== 'history');
     document.getElementById('viewPending').classList.toggle('hidden', tab !== 'pending');
 
-    const activeClass = "tab-btn active pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-cyan-400 border-b-2 border-cyan-400 whitespace-nowrap";
-    const inactiveClass = "tab-btn pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-gray-500 hover:text-gray-300  whitespace-nowrap";
-    const pendingInactive = inactiveClass + " relative";
-    const pendingActive = activeClass + " relative";
-
+    const activeClass = "px-4 py-2 rounded-xl font-bold transition-all bg-cyan-500/20 text-cyan-400 preserve-dark-color";
+    const inactiveClass = "relative px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted";
+    
     document.getElementById('tabSplitter').className = tab === 'splitter' ? activeClass : inactiveClass;
     document.getElementById('tabRoles').className = tab === 'roles' ? activeClass : inactiveClass;
     document.getElementById('tabHistory').className = tab === 'history' ? activeClass : inactiveClass;
-    document.getElementById('tabPending').className = tab === 'pending' ? pendingActive : pendingInactive;
+    document.getElementById('tabPending').className = tab === 'pending' ? activeClass : inactiveClass;
 
-    if (tab === 'history' && typeof renderHistory === 'function') renderHistory();
-    if (tab === 'pending' && typeof renderPendingBatches === 'function') renderPendingBatches();
-    if (tab === 'roles' && typeof renderRolesTable === 'function') renderRolesTable();
+    if (tab === 'splitter') {
+      renderRoleSplitRows();
+      updateRoleSplitPreview();
+    } else if (tab === 'roles') {
+      renderRolesTable();
+    } else if (tab === 'history') {
+      renderHistory();
+    } else if (tab === 'pending') {
+      renderPendingBatches();
+    }
   }
 
   function showToast(msg, duration = 4000) {
@@ -1550,7 +1496,7 @@
 
   function renderHistory() {
     const container = document.getElementById("historyContainer");
-    container.innerHTML = historyList.length ? "" : "<p class='arc-empty'>No role splits yet.</p>";
+    container.innerHTML = historyList.length ? "" : "<p class='text-gray-400 light:text-slate-600 text-center py-6 text-xs'>No role splits yet.</p>";
     historyList.forEach(item => {
       const shortHash = item.hash ? item.hash.substring(0, 12) + '...' : '0x8a7fb3c2...';
       const explorerLink = item.hash ? `https://testnet.arcscan.app/tx/${item.hash}` : 'https://testnet.arcscan.app/';
@@ -1596,6 +1542,5 @@
   };
 
 </script>
-  <script src="arc-chrome.js"></script>
 </body>
 </html>
