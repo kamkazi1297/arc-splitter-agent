@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-  <title>ArcSplit · Token Splitter</title>
+  <title>ArcSplit - Token Splitter</title>
   <!-- Cloud storage (Supabase) – credentials loaded from environment variables via db.js -->
   <script src="db.js"></script>
   <script>window.ARC_MODULE_ID = "split";</script>
@@ -244,41 +244,59 @@
       }
     }
   </style>
-  <link rel="stylesheet" href="arc-shared.css" data-arc-shared="1">
-  <link rel="icon" type="image/svg+xml" href="logo-white.svg">
 </head>
-<body class="text-white min-h-screen selection:bg-emerald-500 selection:text-black" data-arc-accent="emerald">
+<body class="text-white min-h-screen selection:bg-emerald-500 selection:text-black">
 
   <div class="max-w-6xl mx-auto px-4 py-6 sm:py-8">
     
     <!-- Header Section -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-4 sm:p-5 rounded-3xl backdrop-blur-xl">
-      <div class="flex items-center gap-3 sm:gap-4 min-w-0">
-        <img src="logo-white.svg" alt="ArcSplit" class="w-10 h-10 sm:w-12 sm:h-12 object-contain block light:hidden shrink-0">
-        <img src="trace-raw.svg" alt="ArcSplit" class="w-10 h-10 sm:w-12 sm:h-12 object-contain hidden light:block shrink-0">
-        <div class="min-w-0">
-          <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight truncate">
-            ArcSplit
-            <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">Token Splitter</span>
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
+      
+      <!-- لوگو + متن -->
+      <div class="flex items-center gap-3 sm:gap-4">
+        
+        <!-- لوگو سفید (حالت تاریک) -->
+        <img src="logo-white.svg" 
+             alt="ArcSplit" 
+             class="w-10 h-10 sm:w-12 sm:h-12 object-contain block light:hidden">
+        
+        <!-- لوگو سیاه (حالت روشن) -->
+        <img src="trace-raw.svg" 
+             alt="ArcSplit" 
+             class="w-10 h-10 sm:w-12 sm:h-12 object-contain hidden light:block">
+        
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">
+            ArcSplit 
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-400">
+              Token Splitter
+            </span>
           </h1>
-          <p class="text-gray-400 light:text-slate-600 text-xs sm:text-sm font-medium">Professional decentralized token splitter</p>
+          <p class="text-gray-400 light:text-slate-600 text-xs sm:text-sm font-medium">
+            Professional Decentralized Token Splitter
+          </p>
         </div>
       </div>
-      <div class="flex items-center gap-2 sm:gap-2.5 flex-wrap">
-        <button onclick="toggleTheme()" id="themeBtn" class="arc-hdr-btn w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/10 light:hover:bg-black/10 border border-white/10 light:border-black/10 rounded-2xl transition-all shadow-lg">
+      
+      <div class="flex items-center gap-2 sm:gap-3 flex-wrap justify-end">
+        <!-- Navigation Tabs -->
+        <div class="flex bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 rounded-2xl p-1 text-xs">
+          <button onclick="switchTab('splitter')" id="tabSplitter" class="px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400">Splitter</button>
+          <button onclick="switchTab('history')" id="tabHistory" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-600">History</button>
+        </div>
+
+        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/10 light:hover:bg-black/10 border border-white/10 light:border-black/10 rounded-2xl transition-all shadow-lg">
           <i class="fas fa-moon text-lg text-emerald-400"></i>
         </button>
-        <button onclick="handleWalletClick()" id="connectBtn" class="arc-hdr-btn arc-btn-connect arc-btn-glass arc-accent-emerald app-button h-11 px-4 sm:px-5 font-bold rounded-2xl text-xs flex items-center gap-2">
-          <i class="fas fa-wallet text-emerald-500"></i>
+
+        <button onclick="showConnectModal()" id="connectBtn" class="app-button px-4 sm:px-5 py-2.5 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-emerald-50 light:hover:bg-slate-800 transition-all text-xs sm:text-sm">
+          <i class="fas fa-wallet text-emerald-600 light:text-emerald-400"></i>
           <span id="connectText">Connect Wallet</span>
         </button>
+        <button onclick="disconnectWallet()" id="disconnectBtn" class="hidden w-11 h-11 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 transition" title="Disconnect Wallet">
+          <i class="fas fa-power-off"></i>
+        </button>
       </div>
-    </div>
-
-    <!-- Tab Navigation -->
-    <div class="flex flex-wrap gap-4 sm:gap-6 mb-6 border-b border-white/10 light:border-black/10 pb-1 overflow-x-auto">
-      <button onclick="switchTab('splitter')" id="tabSplitter" class="tab-btn active pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-emerald-400 border-b-2 border-emerald-400 whitespace-nowrap">Splitter</button>
-      <button onclick="switchTab('history')" id="tabHistory" class="tab-btn pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-gray-500 hover:text-gray-300 light:hover:text-slate-700 whitespace-nowrap">History</button>
     </div>
 
     <!-- Step Indicator -->
@@ -628,8 +646,8 @@ let splitMode = 'manual';
     document.getElementById('viewSplitter').classList.toggle('hidden', !isSplitter);
     document.getElementById('viewHistory').classList.toggle('hidden', isSplitter);
     
-    document.getElementById('tabSplitter').className = isSplitter ? "tab-btn active pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-emerald-400 border-b-2 border-emerald-400 whitespace-nowrap" : "tab-btn pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-gray-500 hover:text-gray-300 light:hover:text-slate-700 whitespace-nowrap";
-    document.getElementById('tabHistory').className = !isSplitter ? "tab-btn active pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-emerald-400 border-b-2 border-emerald-400 whitespace-nowrap" : "tab-btn pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-gray-500 hover:text-gray-300 light:hover:text-slate-700 whitespace-nowrap";
+    document.getElementById('tabSplitter').className = isSplitter ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-600";
+    document.getElementById('tabHistory').className = !isSplitter ? "px-4 py-2 rounded-xl font-bold transition-all bg-emerald-500/20 text-emerald-400" : "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 light:text-slate-600";
   }
 
   function toggleAdvanced() {
@@ -651,22 +669,27 @@ let splitMode = 'manual';
     if (chatId) window.telegramChatId = chatId;
   }
 
-  function handleWalletClick() {
-    if (userAddress) disconnectWallet();
-    else showConnectModal();
-  }
-
   function updateConnectButton() {
     const btn = document.getElementById("connectBtn");
+    const disc = document.getElementById("disconnectBtn");
     if (!btn) return;
-    const baseClass = "arc-hdr-btn arc-btn-connect arc-btn-glass arc-accent-emerald app-button h-11 px-4 sm:px-5 font-bold rounded-2xl text-xs flex items-center gap-2";
     if (userAddress) {
       const short = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
-      btn.innerHTML = `<i class="fas fa-wallet text-emerald-400"></i> <span id="connectText" class="font-bold">${short}</span> <i class="fas fa-power-off text-rose-400 ml-1 text-[10px]" title="Disconnect"></i>`;
-      btn.className = baseClass;
+      btn.innerHTML = `<i class="fas fa-wallet text-emerald-400"></i> <span id="connectText" class="font-bold">${short}</span>`;
+      btn.onclick = null;
+      btn.className = "app-button px-4 sm:px-5 py-2.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold rounded-2xl flex items-center justify-center gap-2 transition-all text-xs sm:text-sm";
+      if (disc) {
+        disc.classList.remove("hidden");
+        disc.classList.add("flex");
+      }
     } else {
-      btn.innerHTML = `<i class="fas fa-wallet text-emerald-500"></i> <span id="connectText">Connect Wallet</span>`;
-      btn.className = baseClass;
+      btn.innerHTML = `<i class="fas fa-wallet text-emerald-600 light:text-emerald-400"></i> <span id="connectText">Connect Wallet</span>`;
+      btn.onclick = showConnectModal;
+      btn.className = "app-button px-4 sm:px-5 py-2.5 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl flex items-center justify-center gap-2 hover:bg-emerald-50 light:hover:bg-slate-800 transition-all text-xs sm:text-sm";
+      if (disc) {
+        disc.classList.add("hidden");
+        disc.classList.remove("flex");
+      }
     }
     updateValidations();
   }
@@ -1457,7 +1480,7 @@ let splitMode = 'manual';
 
   function renderHistory() {
     const container = document.getElementById("history");
-    container.innerHTML = transactions.length ? "" : "<p class='arc-empty no-tx-text'>No transactions yet.</p>";
+    container.innerHTML = transactions.length ? "" : "<p class='text-gray-400 no-tx-text text-center py-6 text-xs'>No transactions yet.</p>";
     transactions.forEach(tx => {
       const div = document.createElement("div");
       div.className = "bg-white/[0.02] light:bg-white/60 border border-white/5 light:border-slate-200 rounded-2xl p-4 text-xs flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 shadow-sm";
@@ -1621,6 +1644,5 @@ window.addEventListener('load', async () => {
   autoFillFromURL();
 });
 </script>
-  <script src="arc-chrome.js"></script>
 </body>
 </html>
