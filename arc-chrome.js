@@ -1,7 +1,4 @@
-/**
- * ArcSplit shared chrome — Hub link, glass Connect, favicon, toast polish.
- * Include after the page header markup. Optional: <body data-arc-accent="emerald">
- */
+
 (function () {
   const ACCENTS = {
     emerald: "arc-accent-emerald",
@@ -221,6 +218,21 @@
     });
   }
 
+  
+  function elevateHeaders() {
+    // Mark top header bars for consistent elevation
+    document.querySelectorAll("div.rounded-3xl, header.glass, div.glass").forEach((el) => {
+      const txt = (el.textContent || "").slice(0, 80);
+      const hasLogo = el.querySelector('img[src*="logo"], img[src*="trace"]');
+      const hasConnect = el.querySelector("#connectBtn, #connectHeaderBtn, #connectWalletBtn, #themeBtn");
+      if (hasLogo && hasConnect) {
+        el.classList.add("arc-header");
+        el.style.position = el.style.position || "relative";
+      }
+    });
+    // Logo depth already in CSS
+  }
+
   function boot() {
     ensureSharedCss();
     ensureFavicon();
@@ -233,6 +245,7 @@
     wrapConnectHandlers();
     emptyStateUpgrade();
     polishActionButtons();
+    elevateHeaders();
     // Re-apply after late UI updates (wallet connect rewrites)
     setTimeout(() => { styleConnectButtons(accent); polishActionButtons(); }, 800);
     setTimeout(() => emptyStateUpgrade(), 1500);
