@@ -181,18 +181,14 @@
         </div>
       </div>
       <div class="flex flex-wrap items-center gap-2.5">
-        <a href="/" class="h-11 px-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold inline-flex items-center gap-1.5 transition shrink-0" title="Back to Hub">
-          <i class="fas fa-home text-[11px] opacity-80"></i>
-          <span>Hub</span>
-        </a>
-        <button onclick="toggleTheme()" id="themeBtn" class="h-11 w-11 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition shrink-0">
+        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition">
           <i class="fas fa-moon text-lg text-indigo-400"></i>
         </button>
-        <button onclick="connectWallet()" id="connectBtn" class="app-button h-11 px-4 sm:px-5 rounded-2xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 text-xs sm:text-sm font-bold flex items-center gap-2 transition shrink-0">
-          <i class="fas fa-wallet text-indigo-400"></i>
+        <button onclick="connectWallet()" id="connectBtn" class="app-button px-5 py-2.5 rounded-2xl bg-white text-gray-950 font-bold text-sm flex items-center gap-2 shadow-lg">
+          <i class="fas fa-wallet text-indigo-600"></i>
           <span id="connectText">Connect Wallet</span>
         </button>
-        <button onclick="disconnectWallet()" id="disconnectBtn" class="hidden h-11 w-11 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 transition shrink-0">
+        <button onclick="disconnectWallet()" id="disconnectBtn" class="hidden w-11 h-11 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
           <i class="fas fa-power-off"></i>
         </button>
       </div>
@@ -698,21 +694,11 @@
   function setWalletUI(on) {
     document.getElementById("noWallet").classList.toggle("hidden", on);
     document.getElementById("app").classList.toggle("hidden", !on);
-    const btn = document.getElementById("connectBtn");
-    const disc = document.getElementById("disconnectBtn");
-    const txt = document.getElementById("connectText");
-    // Keep connect button visible — show short address when connected
-    btn.classList.remove("hidden");
-    if (on && userAddress) {
-      txt.textContent = shortAddr(userAddress);
-      btn.className = "app-button h-11 px-4 sm:px-5 rounded-2xl bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/40 text-indigo-300 text-xs sm:text-sm font-bold flex items-center gap-2 transition";
-      disc.classList.remove("hidden");
-      disc.classList.add("flex");
-    } else {
-      txt.textContent = "Connect Wallet";
-      btn.className = "app-button h-11 px-4 sm:px-5 rounded-2xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 text-xs sm:text-sm font-bold flex items-center gap-2 transition";
-      disc.classList.add("hidden");
-      disc.classList.remove("flex");
+    document.getElementById("connectBtn").classList.toggle("hidden", on);
+    document.getElementById("disconnectBtn").classList.toggle("hidden", !on);
+    document.getElementById("disconnectBtn").classList.toggle("flex", on);
+    document.getElementById("connectText").textContent = on ? shortAddr(userAddress) : "Connect Wallet";
+    if (!on) {
       document.getElementById("sideNav").classList.add("hidden");
       document.getElementById("emptyWs").classList.add("hidden");
     }
