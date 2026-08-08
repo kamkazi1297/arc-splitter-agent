@@ -76,9 +76,7 @@
     .light .font-bold { color: #000000 !important; }
     .light .font-semibold, .light .font-medium { color: #0f172a !important; }
     
-    /* Nav inactive & muted stay readable but dark */
-    .light .nav-item:not(.active) { color: #1e293b !important; }
-    .light .nav-item.active { color: #312e81 !important; }
+    /* Nav colors handled in .nav-item block below */
 
     select, input, textarea {
       background-color: rgba(255, 255, 255, 0.03);
@@ -138,16 +136,77 @@
       color: #ffffff !important;
     }
 
+    .nav-item {
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+      border: 1px solid transparent;
+    }
+    .nav-item:hover:not(.active) {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: rgba(255, 255, 255, 0.08);
+      color: #e2e8f0 !important;
+    }
     .nav-item.active { 
       background: rgba(99, 102, 241, 0.15); 
-      color: #a5b4fc; 
+      color: #a5b4fc !important; 
       border-color: rgba(99, 102, 241, 0.35); 
     }
-    .light .nav-item.active { 
-      background: rgba(99, 102, 241, 0.12); 
-      color: #4338ca; 
-      border-color: rgba(99, 102, 241, 0.3);
+    .light .nav-item:not(.active) {
+      color: #334155 !important;
     }
+    .light .nav-item:hover:not(.active) {
+      background: rgba(99, 102, 241, 0.08) !important;
+      border-color: rgba(99, 102, 241, 0.18) !important;
+      color: #312e81 !important;
+    }
+    .light .nav-item.active { 
+      background: rgba(99, 102, 241, 0.14) !important;
+      color: #3730a3 !important; 
+      border-color: rgba(99, 102, 241, 0.4) !important;
+    }
+
+    /* Activity list / detail alignment */
+    .act-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 0.5rem 0.75rem;
+      align-items: center;
+    }
+    .act-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.35rem 0.5rem;
+      font-size: 0.75rem;
+      color: #94a3b8;
+    }
+    .act-meta .dot { opacity: 0.45; }
+    .ad-row {
+      display: grid;
+      grid-template-columns: 7.5rem 1fr;
+      gap: 0.75rem;
+      align-items: start;
+      padding: 0.55rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .ad-row .ad-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #64748b;
+      padding-top: 0.1rem;
+    }
+    .ad-row .ad-value {
+      font-size: 0.75rem;
+      font-family: ui-monospace, monospace;
+      word-break: break-all;
+      text-align: left;
+      line-height: 1.4;
+    }
+    .light .ad-row { border-bottom-color: rgba(15,23,42,0.08); }
+    .light .ad-row .ad-label { color: #475569; }
+    .light .ad-row .ad-value { color: #0f172a; }
+    .light .act-meta { color: #475569; }
 
     .app-button {
       position: relative;
@@ -1327,14 +1386,19 @@ html.light button[class*="bg-white/5"]:not(.hdr-btn) {
           ? ' <span class="text-[10px] text-gray-500 font-semibold">other ws</span>'
           : ' <span class="text-[10px] text-amber-400 font-semibold">personal</span>';
       }
+      const parts = [who];
+      if (amt) parts.push(amt);
+      if (r.status) parts.push(r.status);
       return `<button type="button" onclick="showActivityDetail(${idx})" class="w-full text-left p-3 rounded-2xl bg-white/5 border border-white/5 hover:border-indigo-500/40 hover:bg-white/[0.07] transition cursor-pointer">
-        <div class="flex justify-between gap-2">
-          <div class="font-bold text-sm">${esc(typ)}${badge}</div>
-          <div class="text-[11px] text-gray-500 shrink-0">${esc(ts)}</div>
+        <div class="act-row">
+          <div class="font-bold text-sm truncate min-w-0">${esc(typ)}${badge}</div>
+          <div class="text-[11px] text-gray-500 shrink-0 whitespace-nowrap">${esc(ts)}</div>
         </div>
-        <div class="text-xs text-gray-400 mt-1">${esc(who)}${amt ? " · " + esc(amt) : ""}${r.status ? " · " + esc(r.status) : ""}</div>
+        <div class="act-meta mt-1.5">
+          ${parts.map((p,i) => (i ? '<span class="dot">·</span>' : '') + `<span>${esc(p)}</span>`).join("")}
+        </div>
         ${hash ? `<div class="text-[10px] font-mono text-gray-600 mt-1 truncate">${esc(hash)}</div>` : ""}
-        <div class="text-[10px] text-indigo-400 mt-1.5 font-semibold"><i class="fas fa-info-circle mr-1"></i>Click for full details</div>
+        <div class="text-[10px] text-indigo-400 mt-1.5 font-semibold"><i class="fas fa-info-circle mr-1"></i>Details</div>
       </button>`;
     }).join("");
   }
@@ -1373,9 +1437,9 @@ html.light button[class*="bg-white/5"]:not(.hdr-btn) {
     });
 
     document.getElementById("adBody").innerHTML = rows.map(([k, v]) => `
-      <div class="flex justify-between gap-3 py-2 border-b border-white/5">
-        <span class="text-gray-500 text-xs font-bold uppercase shrink-0">${esc(k)}</span>
-        <span class="text-right font-mono text-xs break-all">${esc(v)}</span>
+      <div class="ad-row">
+        <span class="ad-label">${esc(k)}</span>
+        <span class="ad-value">${esc(v)}</span>
       </div>`).join("");
 
     const exp = document.getElementById("adExplorer");
