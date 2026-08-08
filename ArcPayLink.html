@@ -97,7 +97,7 @@
     .light,
     .light body,
     .light h1, .light h2, .light h3, .light h4,
-    .light label, .light p, .light span:not(.always-white):not(#toast *):not(.keep-white),
+    .light label, .light p, .light span:not(.always-white):not(.arc-muted-label):not(#toast *):not(.keep-white),
     .light div:not(.preview-card):not(.preview-card *) {
       color: #0f172a;
     }
@@ -105,7 +105,8 @@
       color: #000000 !important;
     }
     /* خاکستری‌ها → تیره قوی */
-    .light .text-gray-400 { color: #1e293b !important; }
+    .light .text-gray-400:not(.arc-muted-label) { color: #1e293b !important; }
+    .light .preview-meta-row .text-gray-400 { color: #9ca3af !important; }
     .light .text-gray-300 { color: #0f172a !important; }
     .light .text-gray-200 { color: #000000 !important; }
     .light .text-gray-500 { color: #334155 !important; }
@@ -323,7 +324,60 @@
     @media (max-width: 640px) {
       .max-w-6xl { max-width: 100% !important; padding-left: 12px; padding-right: 12px; }
     }
-  </style>
+  
+    /* Tabs & form labels keep dark-mode colors in light mode */
+    .tab-btn { color: #9ca3af !important; }
+    .tab-btn:hover { color: #d1d5db !important; }
+    .tab-btn.active {
+      color: #34d399 !important; /* emerald-400 for payment link */
+      border-bottom: 2px solid #34d399 !important;
+    }
+    html.light .tab-btn { color: #9ca3af !important; }
+    html.light .tab-btn:hover { color: #d1d5db !important; }
+    html.light .tab-btn.active {
+      color: #34d399 !important;
+      border-bottom-color: #34d399 !important;
+    }
+    /* Field labels on dark glass cards */
+    html.light label,
+    html.light .field-label,
+    html.light .form-label {
+      color: #9ca3af !important;
+    }
+
+    /* FINAL: muted labels same in light/dark */
+    .arc-muted-label,
+    html.light .arc-muted-label {
+      color: #9ca3af !important;
+    }
+    html.light .flex.justify-between.items-center.text-gray-400 {
+      color: #9ca3af !important;
+    }
+    html.light .text-gray-400 {
+      color: #9ca3af !important;
+    }
+
+    /* FINAL2: ArcPay muted labels beat global .light span rules */
+    html.light span.arc-muted-label,
+    html.light .arc-muted-label,
+    html.light .preview-meta-row > .flex > span.arc-muted-label,
+    html.light .preview-meta-row .text-gray-400,
+    html.light .preview-meta-row {
+      color: #9ca3af !important;
+    }
+
+    /* FORCE muted labels */
+    html.light span.arc-muted-label {
+      color: #9ca3af !important;
+      -webkit-text-fill-color: #9ca3af !important;
+    }
+    html.light .preview-meta-row,
+    html.light .preview-meta-row .text-gray-400,
+    html.light .preview-meta-row span.arc-muted-label {
+      color: #9ca3af !important;
+      -webkit-text-fill-color: #9ca3af !important;
+    }
+</style>
   <link rel="stylesheet" href="arc-shared.css" data-arc-shared="1">
   <link rel="icon" type="image/svg+xml" href="logo-white.svg">
 </head>
@@ -338,7 +392,7 @@
         <img src="logo-white.svg" alt="ArcPay" class="w-10 h-10 sm:w-12 sm:h-12 object-contain hidden light:block shrink-0">
         <div class="min-w-0">
           <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight truncate">Arc <span class="brand-gradient text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-emerald-400">Pay</span></h1>
-          <p class="text-gray-400 light:text-slate-700 text-xs sm:text-sm font-medium">Decentralized links & invoices</p>
+          <p class="text-gray-400  text-xs sm:text-sm font-medium">Decentralized links & invoices</p>
         </div>
       </div>
       <div class="flex items-center gap-2 sm:gap-2.5 flex-wrap">
@@ -358,8 +412,8 @@
     <!-- Tab Navigation -->
     <div class="flex flex-wrap gap-4 sm:gap-6 mb-6 border-b border-white/10 light:border-black/10 pb-1 overflow-x-auto">
       <button onclick="switchTab('create')" id="tabCreate" class="tab-btn active pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-emerald-400 border-b-2 border-emerald-400 whitespace-nowrap">Payment Link</button>
-      <button onclick="switchTab('invoice')" id="tabInvoice" class="tab-btn pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-gray-500 hover:text-gray-300 light:hover:text-slate-700 whitespace-nowrap">Invoice</button>
-      <button onclick="switchTab('history')" id="tabHistory" class="tab-btn pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-gray-500 hover:text-gray-300 light:hover:text-slate-700 whitespace-nowrap">History</button>
+      <button onclick="switchTab('invoice')" id="tabInvoice" class="tab-btn pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-gray-500 hover:text-gray-300  whitespace-nowrap">Invoice</button>
+      <button onclick="switchTab('history')" id="tabHistory" class="tab-btn pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-gray-500 hover:text-gray-300  whitespace-nowrap">History</button>
     </div>
 
     <!-- Toast Notification -->
@@ -495,15 +549,15 @@
 
               <div class="preview-meta-row bg-white/5 rounded-2xl p-4 text-xs space-y-3 text-left border border-white/5">
                 <div class="flex justify-between items-center text-gray-400">
-                  <span>From</span>
+                  <span class="arc-muted-label">From</span>
                   <span id="prevSender" class="font-mono text-white bg-black/20 px-2 py-1 rounded-md always-white">Not Connected</span>
                 </div>
                 <div class="flex justify-between items-center text-gray-400">
-                  <span>Note</span>
+                  <span class="arc-muted-label">Note</span>
                   <span id="prevDesc" class="text-white truncate max-w-[140px] font-medium always-white">—</span>
                 </div>
                 <div class="flex justify-between items-center text-gray-400">
-                  <span>Valid Until</span>
+                  <span class="arc-muted-label">Valid Until</span>
                   <span id="prevExpires" class="text-white font-medium always-white">Never</span>
                 </div>
               </div>
@@ -647,15 +701,15 @@
 
               <div class="preview-meta-row bg-white/5 rounded-2xl p-4 text-xs space-y-3 text-left border border-white/5">
                 <div class="flex justify-between items-center text-gray-400">
-                  <span>To (Payer)</span>
+                  <span class="arc-muted-label">To (Payer)</span>
                   <span id="prevInvPayer" class="font-mono text-white bg-black/20 px-2 py-1 rounded-md always-white">Anyone</span>
                 </div>
                 <div class="flex justify-between items-center text-gray-400">
-                  <span>Issuer</span>
+                  <span class="arc-muted-label">Issuer</span>
                   <span id="prevInvIssuer" class="font-mono text-white bg-black/20 px-2 py-1 rounded-md always-white">Not Connected</span>
                 </div>
                 <div class="flex justify-between items-center text-gray-400">
-                  <span>Due By</span>
+                  <span class="arc-muted-label">Due By</span>
                   <span id="prevInvExpires" class="text-white font-medium always-white">No Due Date</span>
                 </div>
               </div>
@@ -1522,7 +1576,7 @@ async function connectWallet() {
     if (views[k]) views[k].classList.toggle('hidden', k !== tab);
   });
   const active = "tab-btn active pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-emerald-400 border-b-2 border-emerald-400 whitespace-nowrap";
-  const inactive = "tab-btn pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-gray-500 hover:text-gray-300 light:hover:text-slate-700 whitespace-nowrap";
+  const inactive = "tab-btn pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-gray-500 hover:text-gray-300  whitespace-nowrap";
   const map = { create: 'tabCreate', invoice: 'tabInvoice', history: 'tabHistory' };
   Object.keys(map).forEach(k => {
     const el = document.getElementById(map[k]);
