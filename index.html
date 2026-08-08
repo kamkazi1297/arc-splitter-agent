@@ -374,8 +374,8 @@
     if (!id) return;
     window.telegramChatId = String(id);
     localStorage.setItem('telegramChatId', String(id));
-    if (username) {
-      const u = String(username).replace(/^@/, '');
+    if (username !== undefined && username !== null && String(username).length) {
+      const u = String(username).replace(/^@+/, '');
       window.telegramUsername = u;
       localStorage.setItem('telegramUsername', u);
     }
@@ -401,8 +401,9 @@
     if (linked) {
       const uname = getTelegramUsername();
       if (label) {
-        label.textContent = uname ? ('@' + uname) : 'Telegram linked';
-        label.title = uname ? ('@' + uname) : 'Telegram linked';
+        const clean = uname ? String(uname).replace(/^@/, '') : '';
+        label.textContent = clean || 'Telegram linked';
+        label.title = clean || 'Telegram linked';
       }
       linkBtn.classList.add('hidden');
       badge.classList.remove('hidden');
@@ -418,10 +419,75 @@
     }
   }
 
-  function linkTelegram() {
-    // Opens bot with ONLY Connect flow (not full menu)
-    window.open(`${BOT_TELEGRAM}?start=connect`, '_blank', 'noopener');
-    showToast('In Telegram: tap Connect My Wallet');
+  async function linkTelegram() {
+    if (!userAddress) {
+      showToast('Connect your wallet first, then Link Telegram');
+      return;
+    }
+    try {
+      let wsId = null;
+      let wsName = null;
+      try {
+        if (typeof getWsParam === 'function') wsId = getWsParam();
+        const el = document.getElementById('wsLabel');
+        if (el && el.textContent && el.textContent !== 'Personal') wsName = el.textContent;
+      } catch {}
+
+      const res = await fetch(`${BOT_URL}/prepare-link`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          walletAddress: userAddress,
+          workspaceId: wsId || undefined,
+          workspaceName: wsName || undefined
+        })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!data.token) {
+        showToast('Could not start Telegram link. Try again.');
+        return;
+      }
+      window.open(`${BOT_TELEGRAM}?start=link_${data.token}`, '_blank', 'noopener');
+      showToast('In Telegram: tap Confirm Link');
+      // Poll until user confirms in bot — then store chatId locally (no @ on username)
+      startLinkStatusPoll(data.token);
+    } catch (e) {
+      console.warn('linkTelegram failed', e);
+      showToast('Could not open Telegram link');
+    }
+  }
+
+  let _linkPollTimer = null;
+  function startLinkStatusPoll(token) {
+    if (_linkPollTimer) clearInterval(_linkPollTimer);
+    let tries = 0;
+    _linkPollTimer = setInterval(async () => {
+      tries++;
+      if (tries > 60) {
+        // ~2 minutes
+        clearInterval(_linkPollTimer);
+        _linkPollTimer = null;
+        return;
+      }
+      try {
+        const res = await fetch(`${BOT_URL}/link-status`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token })
+        });
+        const data = await res.json().catch(() => ({}));
+        if (data.status === 'pending') return;
+        clearInterval(_linkPollTimer);
+        _linkPollTimer = null;
+        if (data.ok && (data.status === 'linked' || data.status === 'already_linked') && data.chatId) {
+          const uname = data.username ? String(data.username).replace(/^@/, '') : '';
+          setTelegramChatId(data.chatId, uname);
+          showToast(uname ? ('Telegram linked · ' + uname) : 'Telegram linked');
+        } else if (data.status === 'rejected') {
+          showToast('Telegram link cancelled');
+        }
+      } catch {}
+    }, 2000);
   }
 
   async function unlinkTelegram() {
@@ -517,7 +583,8 @@
         clean.searchParams.delete('username');
         clean.searchParams.delete('tg_username');
         window.history.replaceState({}, '', clean.pathname + (clean.search || '') + clean.hash);
-        showToast(username ? ('Telegram ready · @' + String(username).replace(/^@/, '')) : 'Telegram ready — connect wallet then Confirm in bot');
+        const cleanUser = username ? String(username).replace(/^@/, '') : '';
+        showToast(cleanUser ? ('Telegram ready · ' + cleanUser) : 'Telegram ready');
       } else if (localStorage.getItem('telegramChatId')) {
         window.telegramChatId = localStorage.getItem('telegramChatId');
         window.telegramUsername = localStorage.getItem('telegramUsername') || '';
