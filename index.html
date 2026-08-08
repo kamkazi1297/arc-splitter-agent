@@ -443,32 +443,63 @@
     showToast('Telegram unlinked');
   }
 
-  async function saveWalletToBot() {
+  function buildBotPayload() {
+    let wsId = null;
+    let wsName = null;
+    try {
+      if (typeof getWsParam === 'function') wsId = getWsParam();
+      const el = document.getElementById('wsLabel');
+      if (el && el.textContent && el.textContent !== 'Personal') wsName = el.textContent;
+    } catch {}
+    return {
+      chatId: getTelegramChatId(),
+      walletAddress: userAddress,
+      username: getTelegramUsername() || undefined,
+      workspaceId: wsId || undefined,
+      workspaceName: wsName || undefined
+    };
+  }
+
+  // Ask Telegram bot to show Confirm/Reject — does NOT auto-link
+  async function requestWalletLinkConfirm() {
     const chatId = getTelegramChatId();
     if (!chatId || !userAddress) return;
     try {
-      let workspaceId = null;
-      let workspaceName = null;
-      try {
-        if (typeof getWsParam === 'function') workspaceId = getWsParam();
-        const el = document.getElementById('wsLabel');
-        if (el && el.textContent && el.textContent !== 'Personal') workspaceName = el.textContent;
-      } catch {}
+      const res = await fetch(`${BOT_URL}/request-link`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(buildBotPayload())
+      });
+      const data = await res.json().catch(() => ({}));
+      if (data.status === 'already_linked') {
+        // same wallet already linked — quiet
+        return;
+      }
+      if (data.status === 'pending_confirm') {
+        showToast('Check Telegram bot and Confirm the wallet link');
+      }
+    } catch (e) {
+      console.warn('request-link failed', e);
+    }
+  }
+
+  // Silent sync only (workspace / no notification) — used rarely
+  async function saveWalletToBotSilent() {
+    const chatId = getTelegramChatId();
+    if (!chatId || !userAddress) return;
+    try {
       await fetch(`${BOT_URL}/save-connection`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chatId,
-          walletAddress: userAddress,
-          username: getTelegramUsername() || undefined,
-          workspaceId: workspaceId || undefined,
-          workspaceName: workspaceName || undefined
-        })
+        body: JSON.stringify({ ...buildBotPayload(), silent: true })
       });
     } catch (e) {
-      console.warn('save-connection failed', e);
+      console.warn('save-connection silent failed', e);
     }
   }
+
+  // Set when landing from bot connect deep-link — used once after wallet is ready
+  let pendingBotLinkConfirm = false;
 
   function initTelegramFromURL() {
     try {
@@ -477,6 +508,7 @@
       const username = params.get('username') || params.get('tg_username') || '';
       if (chatId) {
         setTelegramChatId(chatId, username);
+        pendingBotLinkConfirm = true;
         const clean = new URL(window.location.href);
         clean.searchParams.delete('chatId');
         clean.searchParams.delete('telegram_chat_id');
@@ -485,7 +517,7 @@
         clean.searchParams.delete('username');
         clean.searchParams.delete('tg_username');
         window.history.replaceState({}, '', clean.pathname + (clean.search || '') + clean.hash);
-        showToast(username ? ('Linked @' + String(username).replace(/^@/, '')) : 'Telegram linked');
+        showToast(username ? ('Telegram ready · @' + String(username).replace(/^@/, '')) : 'Telegram ready — connect wallet then Confirm in bot');
       } else if (localStorage.getItem('telegramChatId')) {
         window.telegramChatId = localStorage.getItem('telegramChatId');
         window.telegramUsername = localStorage.getItem('telegramUsername') || '';
@@ -735,10 +767,9 @@
       showToast('Wallet connected · Arc Testnet');
       loadActivity();
       loadWorkspaceLabel();
-      // Link wallet ↔ Telegram if chatId exists
+      // If Telegram is linked: ask user to Confirm inside the bot (no auto-link spam)
       if (getTelegramChatId()) {
-        await saveWalletToBot();
-        showToast('Wallet linked to Telegram');
+        await requestWalletLinkConfirm();
       }
     } catch (e) {
       console.error(e);
@@ -874,7 +905,11 @@
           window.userAddress = userAddress;
           setWalletUI(true);
           loadActivity();
-          if (getTelegramChatId()) saveWalletToBot();
+          // Only request bot confirm when arriving from Telegram connect link (not every refresh)
+          if (pendingBotLinkConfirm && getTelegramChatId()) {
+            pendingBotLinkConfirm = false;
+            requestWalletLinkConfirm();
+          }
         } else {
           // still show current chain label
           window.ethereum.request({ method: 'eth_chainId' }).then(id => {
@@ -899,11 +934,11 @@
           window.userAddress = userAddress;
           setWalletUI(true);
           ensureArcNetwork().then(() => loadActivity());
-          if (getTelegramChatId()) saveWalletToBot();
+          // Account switched: request bot confirmation only (no auto-link / no spam)
+          if (getTelegramChatId()) requestWalletLinkConfirm();
         } else {
           disconnectWallet();
         }
-
       });
     }
   })();
