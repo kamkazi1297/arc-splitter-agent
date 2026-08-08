@@ -103,14 +103,86 @@
       scrollbar-width: thin;
       scrollbar-color: rgba(255,255,255,0.2) transparent;
     }
-  </style>
+  
+    /* ===== Light mode: unified cards + dark text ===== */
+    html.light body,
+    html.light {
+      color: #0f172a !important;
+    }
+    html.light h1, html.light h2, html.light h3, html.light h4,
+    html.light p, html.light label, html.light div,
+    html.light button, html.light a, html.light li {
+      color: inherit;
+    }
+    html.light span:not(.gw-title-accent):not(.text-transparent) {
+      color: inherit;
+    }
+    html.light .text-white { color: #0f172a !important; }
+    html.light .text-gray-200 { color: #1e293b !important; }
+    html.light .text-gray-300 { color: #334155 !important; }
+    html.light .text-gray-400 { color: #475569 !important; }
+    html.light .text-gray-500 { color: #64748b !important; }
+    html.light .pitch-black-text { color: #0f172a !important; }
+
+    /* Header card same glass as other cards */
+    html.light .bg-white\/\[0\.02\],
+    html.light [class*="bg-white/[0.02]"] {
+      background: rgba(255, 255, 255, 0.55) !important;
+      border-color: rgba(0, 0, 0, 0.06) !important;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04), inset 0 1px 0 #fff !important;
+    }
+    html.light .glass {
+      background: rgba(255, 255, 255, 0.55) !important;
+      border: 1px solid rgba(0, 0, 0, 0.06) !important;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04), inset 0 1px 0 #fff !important;
+      backdrop-filter: blur(24px) !important;
+    }
+
+    /* Accent labels stay orange/rose */
+    html.light .text-orange-400,
+    html.light .text-orange-300 { color: #ea580c !important; }
+    html.light .text-rose-400 { color: #e11d48 !important; }
+    html.light .tab-btn { color: #64748b !important; }
+    html.light .tab-btn.active { color: #ea580c !important; border-bottom-color: #ea580c !important; }
+
+    /* Secondary buttons readable in light */
+    html.light .app-button.bg-white\/5,
+    html.light button.bg-white\/5 {
+      background: rgba(0, 0, 0, 0.04) !important;
+      border-color: rgba(0, 0, 0, 0.08) !important;
+      color: #334155 !important;
+    }
+    html.light .app-button.bg-white\/5:hover {
+      background: rgba(0, 0, 0, 0.07) !important;
+      color: #0f172a !important;
+    }
+
+    /* Gradient CTA text stays white/dark-contrast */
+    html.light #sendBtn,
+    html.light button[onclick="selectRandomWinners()"] {
+      color: #fff !important;
+    }
+
+    /* Title: ArcSplit dark in light mode; Giveaway keeps accent gradient */
+    html.light h1 {
+      color: #0f172a !important;
+    }
+    html.light h1 .gw-title-accent,
+    html.light span.gw-title-accent {
+      color: transparent !important;
+      -webkit-text-fill-color: transparent !important;
+      background-image: linear-gradient(to right, #fb923c, #fb7185) !important;
+      -webkit-background-clip: text !important;
+      background-clip: text !important;
+    }
+</style>
 </head>
 <body class="text-white min-h-screen selection:bg-orange-500 selection:text-black" data-arc-accent="orange">
 
   <div class="max-w-6xl mx-auto px-4 py-6 sm:py-8">
     
     <!-- Header Section -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-4 sm:p-5 rounded-3xl backdrop-blur-xl">
+    <div class="glass flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 p-4 sm:p-5 rounded-3xl">
       <div class="flex items-center gap-3 sm:gap-4 min-w-0">
         <img src="logo-white.svg" alt="ArcSplit" width="48" height="48"
              class="gw-logo block light:hidden shrink-0"
@@ -120,7 +192,7 @@
              style="width:48px;height:48px;max-width:48px;object-fit:contain;">
         <div class="min-w-0">
           <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight truncate">
-            ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-rose-400">Giveaway</span>
+            ArcSplit <span class="gw-title-accent text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-rose-400">Giveaway</span>
           </h1>
           <p class="text-gray-400 light:text-slate-600 text-xs sm:text-sm font-medium">Fair on-chain winner selection &amp; distribution</p>
         </div>
@@ -151,11 +223,11 @@
 
       <!-- Status bar -->
       <div class="flex flex-wrap items-center justify-between gap-3 mb-6 glass rounded-2xl px-4 py-3 border border-white/10">
-        <div id="status" class="text-sm font-medium text-gray-300 flex items-center gap-2 min-w-0">
+        <div id="status" class="text-sm font-medium text-gray-300 light:text-slate-700 flex items-center gap-2 min-w-0">
           <span class="w-2 h-2 rounded-full bg-orange-500 animate-pulse shrink-0"></span>
           <span class="truncate">Ready · Arc Testnet</span>
         </div>
-        <div class="text-[11px] font-semibold text-gray-500 flex items-center gap-2">
+        <div class="text-[11px] font-semibold text-gray-500 light:text-slate-600 flex items-center gap-2">
           <i class="fas fa-network-wired text-orange-400"></i> Arc Testnet
         </div>
       </div>
@@ -224,15 +296,19 @@
           <div class="glass rounded-3xl p-6 sm:p-8 border border-white/5" style="position: sticky; top: 24px;">
             
             <div class="mb-4">
-              <label class="block text-gray-400 pitch-black-text text-xs font-semibold uppercase tracking-wider mb-2">All Participant Addresses</label>
+              <div class="flex items-center justify-between gap-2 mb-2">
+                <label class="block text-gray-400 pitch-black-text text-xs font-semibold uppercase tracking-wider">All Participant Addresses</label>
+                <button type="button" onclick="clearAll()" class="text-[11px] font-bold text-rose-400 hover:text-rose-300 transition px-2 py-1 rounded-lg hover:bg-rose-500/10">Clear</button>
+              </div>
               <textarea id="winnersList" rows="8" class="w-full rounded-2xl p-4 font-mono text-xs sm:text-sm outline-none resize-none" placeholder="Paste all addresses here..."></textarea>
             </div>
 
             <!-- Utility Buttons -->
-            <div class="grid grid-cols-3 gap-2 mb-6">
-              <button onclick="exportWallets()" class="app-button py-2.5 px-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[11px] font-semibold transition-all">📤 Export</button>
-              <button onclick="importWallets()" class="app-button py-2.5 px-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[11px] font-semibold transition-all">📥 Import</button>
-              <button onclick="copyShareableLink()" class="app-button py-2.5 px-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[11px] font-semibold transition-all text-orange-300">🔗 Share</button>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
+              <button type="button" onclick="exportWallets()" class="app-button py-2.5 px-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[11px] font-semibold transition-all">Export</button>
+              <button type="button" onclick="importWallets()" class="app-button py-2.5 px-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[11px] font-semibold transition-all">Import</button>
+              <button type="button" onclick="copyShareableLink()" class="app-button py-2.5 px-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[11px] font-semibold transition-all">Share</button>
+              <button type="button" onclick="clearAll()" class="app-button py-2.5 px-2 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-400 rounded-xl text-[11px] font-semibold transition-all">Clear</button>
             </div>
 
             <!-- Send Split Button -->
@@ -506,19 +582,22 @@ function switchTab(tab) {
   document.getElementById("panelHistory").classList.toggle("hidden", tab !== "history");
   const g = document.getElementById("tabGiveaway");
   const h = document.getElementById("tabHistory");
+  const light = document.documentElement.classList.contains("light");
+  const active = light ? "#ea580c" : "#fb923c";
+  const idle = light ? "#64748b" : "#9ca3af";
   if (tab === "giveaway") {
     g.classList.add("active");
     h.classList.remove("active");
-    g.style.color = "#fb923c";
-    g.style.borderBottom = "2px solid #fb923c";
-    h.style.color = "#9ca3af";
+    g.style.color = active;
+    g.style.borderBottom = "2px solid " + active;
+    h.style.color = idle;
     h.style.borderBottom = "2px solid transparent";
   } else {
     h.classList.add("active");
     g.classList.remove("active");
-    h.style.color = "#fb923c";
-    h.style.borderBottom = "2px solid #fb923c";
-    g.style.color = "#9ca3af";
+    h.style.color = active;
+    h.style.borderBottom = "2px solid " + active;
+    g.style.color = idle;
     g.style.borderBottom = "2px solid transparent";
     if (typeof renderHistory === "function") renderHistory();
   }
