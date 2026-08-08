@@ -1,4 +1,3 @@
-
 (function () {
   const ACCENTS = {
     emerald: "arc-accent-emerald",
@@ -71,7 +70,6 @@
       document.getElementById("connectBtn") ||
       document.getElementById("connectHeaderBtn");
     if (connect && connect.parentElement) {
-      // Prefer header row over full-width sidebar parent
       const parent = connect.parentElement;
       if (parent.classList.contains("flex") || parent.querySelector("#themeBtn")) {
         return parent;
@@ -102,7 +100,7 @@
     const a = document.createElement("a");
     a.id = "arcHubLink";
     a.href = "index.html" + workspaceQuery();
-    a.className = "arc-hub-link arc-hdr-btn";
+    a.className = "arc-hub-link arc-hdr-btn arc-btn-glass";
     a.innerHTML = '<i class="fas fa-home"></i><span class="arc-hub-text">Hub</span>';
     a.title = "Back to Hub";
 
@@ -115,7 +113,6 @@
         actions.insertBefore(a, actions.firstChild);
       }
     } else {
-      // Fixed corner fallback
       a.classList.add("arc-hub-fixed");
       document.body.appendChild(a);
     }
@@ -130,7 +127,7 @@
       el.classList.remove("bg-white", "text-gray-950", "text-black");
     });
     const theme = document.getElementById("themeBtn");
-    if (theme) theme.classList.add("arc-btn-icon");
+    if (theme) theme.classList.add("arc-btn-icon", "arc-btn-glass");
     const disc =
       document.getElementById("disconnectBtn") ||
       document.getElementById("disconnectWalletBtn");
@@ -190,14 +187,17 @@
       )
       .forEach((box) => {
         if (!box) return;
-        // Single child empty message
         if (box.children.length === 1) {
           const child = box.children[0];
           if (child && re.test(child.textContent || "")) {
             child.classList.add("arc-empty");
+            if (!child.querySelector("i")) {
+              const icon = document.createElement("i");
+              icon.className = "fas fa-inbox";
+              child.prepend(icon);
+            }
           }
         }
-        // Direct text-only empty
         if (
           box.children.length === 0 &&
           re.test((box.textContent || "").trim())
@@ -205,7 +205,6 @@
           box.classList.add("arc-empty");
         }
       });
-    // Common static empty nodes
     document.querySelectorAll("p, div").forEach((el) => {
       if (el.children.length > 0) return;
       const t = (el.textContent || "").trim();
@@ -233,7 +232,11 @@
       'button[onclick*="clearAll"]',
       'button[onclick*="showExtract"]',
       'button[onclick*="addRole"]',
-      'button[onclick*="AddRole"]'
+      'button[onclick*="AddRole"]',
+      'button[onclick*="linkTelegram"]',
+      'button[onclick*="LinkTelegram"]',
+      'button[onclick*="copy"]',
+      'button[onclick*="Copy"]'
     ];
     document.querySelectorAll(sels.join(",")).forEach((el) => {
       if (
@@ -260,6 +263,15 @@
     });
   }
 
+  function normalizeHeaderSpacing() {
+    const actions = findHeaderActions();
+    if (!actions) return;
+    actions.classList.add("flex", "items-center");
+    if (!actions.className.includes("gap-")) {
+      actions.style.gap = "0.5rem";
+    }
+  }
+
   function boot() {
     ensureSharedCss();
     ensureFavicon();
@@ -273,10 +285,12 @@
     emptyStateUpgrade();
     polishActionButtons();
     elevateHeaders();
+    normalizeHeaderSpacing();
     setTimeout(() => {
       styleConnectButtons(accent);
       polishActionButtons();
       ensureHubLink();
+      elevateHeaders();
     }, 600);
     setTimeout(() => emptyStateUpgrade(), 1200);
   }
