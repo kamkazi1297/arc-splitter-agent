@@ -166,10 +166,8 @@
 
     .light .pitch-black-text { color: #000000 !important; }
   </style>
-  <link rel="stylesheet" href="arc-shared.css" data-arc-shared="1">
-  <link rel="icon" type="image/svg+xml" href="logo-white.svg">
 </head>
-<body class="text-white min-h-screen selection:bg-indigo-500 selection:text-white" data-arc-accent="indigo">
+<body class="text-white min-h-screen selection:bg-indigo-500 selection:text-white">
 
   <div class="max-w-[1280px] mx-auto px-4 py-6 sm:py-8 space-y-6">
 
@@ -183,12 +181,15 @@
         </div>
       </div>
       <div class="flex flex-wrap items-center gap-2.5">
-        <button onclick="toggleTheme()" id="themeBtn" class="arc-hdr-btn w-11 h-11 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition">
+        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition">
           <i class="fas fa-moon text-lg text-indigo-400"></i>
         </button>
-        <button onclick="handleWalletClick()" id="connectBtn" class="arc-hdr-btn app-button h-11 px-4 sm:px-5 rounded-2xl font-bold text-xs flex items-center gap-2 arc-btn-connect arc-btn-glass arc-accent-indigo">
-          <i class="fas fa-wallet text-indigo-500"></i>
+        <button onclick="connectWallet()" id="connectBtn" class="app-button px-5 py-2.5 rounded-2xl bg-white text-gray-950 font-bold text-sm flex items-center gap-2 shadow-lg">
+          <i class="fas fa-wallet text-indigo-600"></i>
           <span id="connectText">Connect Wallet</span>
+        </button>
+        <button onclick="disconnectWallet()" id="disconnectBtn" class="hidden w-11 h-11 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
+          <i class="fas fa-power-off"></i>
         </button>
       </div>
     </header>
@@ -663,11 +664,6 @@
     }
   }
 
-  function handleWalletClick() {
-    if (userAddress) disconnectWallet();
-    else connectWallet();
-  }
-
   async function connectWallet() {
     forceDisconnected = false;
     if (!window.ethereum) return showToast("Install MetaMask");
@@ -698,17 +694,10 @@
   function setWalletUI(on) {
     document.getElementById("noWallet").classList.toggle("hidden", on);
     document.getElementById("app").classList.toggle("hidden", !on);
-    const btn = document.getElementById("connectBtn");
-    if (btn) {
-      if (on && userAddress) {
-        const short = typeof shortAddr === "function" ? shortAddr(userAddress) : (userAddress.slice(0,6)+"..."+userAddress.slice(-4));
-        btn.innerHTML = `<i class="fas fa-wallet text-indigo-500"></i> <span id="connectText" class="font-bold">${short}</span> <i class="fas fa-power-off text-rose-400 ml-1 text-[10px]" title="Disconnect"></i>`;
-        btn.classList.remove("hidden");
-      } else {
-        btn.innerHTML = `<i class="fas fa-wallet text-indigo-500"></i> <span id="connectText">Connect Wallet</span>`;
-        btn.classList.remove("hidden");
-      }
-    }
+    document.getElementById("connectBtn").classList.toggle("hidden", on);
+    document.getElementById("disconnectBtn").classList.toggle("hidden", !on);
+    document.getElementById("disconnectBtn").classList.toggle("flex", on);
+    document.getElementById("connectText").textContent = on ? shortAddr(userAddress) : "Connect Wallet";
     if (!on) {
       document.getElementById("sideNav").classList.add("hidden");
       document.getElementById("emptyWs").classList.add("hidden");
@@ -1390,6 +1379,5 @@
     } catch {}
   })();
 </script>
-  <script src="arc-chrome.js"></script>
 </body>
 </html>
