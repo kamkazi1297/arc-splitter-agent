@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-  <title>ArcSplit · Batch Split</title>
+  <title> Multi-Token Batch Split</title>
   <!-- کتابخانه Supabase به درستی به هدر اضافه شد -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="db.js"></script>
@@ -178,44 +178,45 @@
     .fade-in { animation: fadeIn 0.4s ease forwards; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   </style>
-  <link rel="stylesheet" href="arc-shared.css" data-arc-shared="1">
-  <link rel="icon" type="image/svg+xml" href="logo-white.svg">
 </head>
-<body class="text-white min-h-screen selection:bg-rose-500 selection:text-black" data-arc-accent="rose">
+<body class="text-white min-h-screen selection:bg-rose-500 selection:text-black">
 
   <div class="max-w-7xl mx-auto px-4 py-6 sm:py-8">
     
     <!-- HEADER -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-4 sm:p-5 rounded-3xl backdrop-blur-xl">
-      <div class="flex items-center gap-3 sm:gap-4 min-w-0">
-        <img src="logo-white.svg" alt="ArcSplit" class="w-10 h-10 sm:w-12 sm:h-12 object-contain block light:hidden shrink-0">
-        <img src="trace-raw.svg" alt="ArcSplit" class="w-10 h-10 sm:w-12 sm:h-12 object-contain hidden light:block shrink-0">
-        <div class="min-w-0">
-          <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight keep-dark-white truncate">Multi Token <span class="text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-pink-400">Batch Split</span></h1>
-          <p class="text-xs sm:text-sm font-medium keep-dark-white">Professional multi-token distribution</p>
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
+      <div class="flex items-center gap-3 sm:gap-4">
+        <!-- لوگو سفید (حالت تاریک) -->
+        <img src="logo-white.svg" alt="ArcSplit" class="w-10 h-10 sm:w-12 sm:h-12 object-contain block light:hidden">
+        <!-- لوگو سیاه (حالت روشن) -->
+        <img src="trace-raw.svg" alt="ArcSplit" class="w-10 h-10 sm:w-12 sm:h-12 object-contain hidden light:block">
+        <div>
+          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight keep-dark-white">Multi Token <span class="text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-pink-400">Batch Split</span></h1>
+          <p class="text-xs sm:text-sm font-medium keep-dark-white">Professional Decentralized multi-Token Splitter</p>
         </div>
       </div>
-      <div class="flex items-center gap-2 sm:gap-2.5 flex-wrap">
-        <button onclick="toggleTheme()" id="themeBtn" class="arc-hdr-btn w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/15 border border-white/10 rounded-2xl transition-all" aria-label="Toggle Theme">
+      
+      <div class="flex items-center gap-3 flex-wrap">
+        <div class="flex bg-white/5 border border-white/10 rounded-2xl p-1 text-xs relative">
+          <button onclick="switchView('splitter')" id="navSplitterBtn" class="px-4 py-2 rounded-xl font-bold transition-all bg-rose-500/20 text-rose-400 keep-dark-emerald shadow-lg shadow-rose-500/20">Batch Split</button>
+          <button onclick="switchView('history')" id="navHistoryBtn" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 keep-dark-gray">History</button>
+          <button onclick="switchView('pending')" id="navPendingBtn" class="relative px-4 py-2 rounded-xl font-bold transition-all text-gray-400 keep-dark-gray">
+            Pending
+            <span id="pendingBadge" class="hidden absolute top-1 right-1 flex h-2.5 w-2.5">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+            </span>
+          </button>
+        </div>
+
+        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/15 border border-white/10 rounded-2xl transition-all" aria-label="Toggle Theme">
           <i class="fas fa-moon text-lg text-rose-400"></i>
         </button>
-        <button onclick="handleWalletClick()" id="connectBtn" class="arc-hdr-btn arc-btn-connect arc-btn-glass arc-accent-rose app-button h-11 px-4 sm:px-5 font-bold rounded-2xl text-xs flex items-center gap-2">
+
+        <button onclick="handleWalletClick()" id="connectBtn" class="app-button px-5 py-2.5 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl text-xs flex items-center gap-2 shadow-lg">
           <i class="fas fa-wallet text-rose-500"></i> <span id="connectText">Connect Wallet</span>
         </button>
       </div>
-    </div>
-
-    <!-- Tab Navigation -->
-    <div class="flex flex-wrap gap-4 sm:gap-6 mb-6 border-b border-white/10 light:border-black/10 pb-1 overflow-x-auto relative">
-      <button onclick="switchView('splitter')" id="navSplitterBtn" class="tab-btn active pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-rose-400 border-b-2 border-rose-400 whitespace-nowrap">Batch Split</button>
-      <button onclick="switchView('history')" id="navHistoryBtn" class="tab-btn pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-gray-500 hover:text-gray-300 light:hover:text-slate-700 whitespace-nowrap">History</button>
-      <button onclick="switchView('pending')" id="navPendingBtn" class="tab-btn relative pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-gray-500 hover:text-gray-300 light:hover:text-slate-700 whitespace-nowrap">
-        Pending
-        <span id="pendingBadge" class="hidden absolute top-0 -right-2 flex h-2.5 w-2.5">
-          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
-        </span>
-      </button>
     </div>
 
     <!-- STATUS BAR -->
@@ -251,10 +252,10 @@
             </h3>
             <div class="flex gap-2">
               <!-- دکمه Add Custom Token -->
-              <button onclick="openCustomTokenModal()" class="px-3.5 py-2 bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 border border-violet-500/20 rounded-xl text-xs font-semibold transition-all arc-btn-glass">
+              <button onclick="openCustomTokenModal()" class="px-3.5 py-2 bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 border border-violet-500/20 rounded-xl text-xs font-semibold transition-all">
                 <i class="fas fa-coins mr-1"></i> Custom Token
               </button>
-              <button onclick="addTokenRow()" class="px-3.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-xl text-xs font-semibold transition-all arc-btn-glass">
+              <button onclick="addTokenRow()" class="px-3.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-xl text-xs font-semibold transition-all">
                 <i class="fas fa-plus mr-1"></i> Add Token
               </button>
             </div>
@@ -269,10 +270,10 @@
               <i class="fas fa-users-gear text-rose-400"></i> Step 2: Recipients & Shares
             </h3>
             <div class="flex items-center gap-2">
-              <button onclick="importCSVModal()" class="px-3.5 py-2 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/20 rounded-xl text-xs font-semibold transition-all arc-btn-glass">
+              <button onclick="importCSVModal()" class="px-3.5 py-2 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/20 rounded-xl text-xs font-semibold transition-all">
                 <i class="fas fa-file-csv mr-1"></i> CSV
               </button>
-              <button onclick="addRecipientRow()" class="px-3.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-xl text-xs font-semibold transition-all arc-btn-glass">
+              <button onclick="addRecipientRow()" class="px-3.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-xl text-xs font-semibold transition-all">
                 <i class="fas fa-plus mr-1"></i> Add Recipient
               </button>
             </div>
@@ -295,10 +296,10 @@
             <textarea id="batchMemo" rows="2" class="w-full bg-black/20 light:bg-slate-100 rounded-2xl p-4 text-xs sm:text-sm outline-none resize-none" placeholder="e.g. Treasury Distribution - July Payroll"></textarea>
           </div>
           <div class="flex flex-wrap gap-3 pt-2">
-            <button onclick="openSaveTemplateModal()" class="px-4 py-2.5 bg-violet-600/20 text-violet-400 border border-violet-600/30 rounded-xl text-xs font-semibold transition-all arc-btn-glass">
+            <button onclick="openSaveTemplateModal()" class="px-4 py-2.5 bg-violet-600/20 text-violet-400 border border-violet-600/30 rounded-xl text-xs font-semibold transition-all">
               <i class="fas fa-save mr-1"></i> Save as Template 
             </button>
-            <button onclick="openLoadTemplateModal()" class="px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-semibold transition-all preserve-dark-color arc-btn-glass">
+            <button onclick="openLoadTemplateModal()" class="px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-semibold transition-all preserve-dark-color">
               <i class="fas fa-folder-open mr-1"></i> Open Template
             </button>
           </div>
@@ -533,8 +534,8 @@ function switchView(view) {
   const hBtn = document.getElementById("navHistoryBtn");
   const pBtn = document.getElementById("navPendingBtn");
 
-  const activeClass = "tab-btn active pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-rose-400 border-b-2 border-rose-400 whitespace-nowrap";
-  const inactiveClass = "tab-btn pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-gray-500 hover:text-gray-300 light:hover:text-slate-700 whitespace-nowrap";
+  const activeClass = "px-4 py-2 rounded-xl font-bold transition-all bg-rose-500/20 text-rose-400 keep-dark-emerald shadow-lg shadow-rose-500/20";
+  const inactiveClass = "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 keep-dark-gray";
 
   splitter.classList.add("hidden");
   history.classList.add("hidden");
@@ -1246,7 +1247,7 @@ async function renderHistoryTable() {
   const container = document.getElementById("historyTableContainer");
 
   if (history.length === 0) {
-    container.innerHTML = '<div class="arc-empty">No batch splits recorded yet.</div>';
+    container.innerHTML = '<div class="text-center py-12 text-gray-400 light:text-slate-500">No batch splits recorded yet.</div>';
     return;
   }
 
@@ -1339,6 +1340,5 @@ window.addEventListener('load', async () => {
   await autoConnectWallet();
 });
 </script>
-  <script src="arc-chrome.js"></script>
 </body>
 </html>
