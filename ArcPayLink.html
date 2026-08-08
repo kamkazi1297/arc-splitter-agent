@@ -399,12 +399,9 @@
         <button onclick="toggleTheme()" id="themeBtn" class="arc-hdr-btn w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/10 light:hover:bg-black/10 border border-white/10 light:border-black/10 rounded-2xl transition-all">
           <i class="fas fa-moon text-lg text-yellow-400"></i>
         </button>
-        <button onclick="connectWallet()" id="connectHeaderBtn" class="arc-hdr-btn arc-btn-connect arc-btn-glass arc-accent-yellow app-button h-11 px-4 sm:px-5 font-bold rounded-2xl text-xs flex items-center gap-2">
+        <button onclick="handleWalletClick()" id="connectHeaderBtn" class="arc-hdr-btn arc-btn-connect arc-btn-glass arc-accent-yellow app-button h-11 px-4 sm:px-5 font-bold rounded-2xl text-xs flex items-center gap-2">
           <i class="fas fa-wallet text-yellow-500"></i>
           <span id="headerWalletText">Connect</span>
-        </button>
-        <button onclick="disconnectWallet()" id="disconnectBtn" class="hidden arc-hdr-btn w-11 h-11 items-center justify-center bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-2xl border border-rose-500/10" title="Disconnect">
-          <i class="fas fa-power-off"></i>
         </button>
       </div>
     </div>
@@ -894,7 +891,12 @@
     }
   }
 
-async function connectWallet() {
+function handleWalletClick() {
+    if (userAddress) disconnectWallet();
+    else connectWallet();
+  }
+
+  async function connectWallet() {
     if (window.ethereum) await ensureArcNetwork();
 
     if (!window.ethereum) return notify("Error", "MetaMask not found! Please install it.", "fa-exclamation-triangle", true);
@@ -922,12 +924,10 @@ async function connectWallet() {
       signer = await provider.getSigner();
       const shortAddress = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
       
-      document.getElementById("headerWalletText").textContent = shortAddress;
+      const _hb = document.getElementById("connectHeaderBtn");
+      if (_hb) _hb.innerHTML = `<i class="fas fa-wallet text-yellow-500"></i> <span id="headerWalletText" class="font-bold">${shortAddress}</span> <i class="fas fa-power-off text-rose-400 ml-1 text-[10px]" title="Disconnect"></i>`;
       document.getElementById("prevSender").textContent = shortAddress;
       document.getElementById("prevInvIssuer").textContent = shortAddress;
-      document.getElementById("disconnectBtn").classList.remove("hidden");
-      document.getElementById("disconnectBtn").classList.add("flex");
-
       if (typeof refreshWorkspaceGuard === "function") refreshWorkspaceGuard();
       notify("Success", "Wallet Connected Successfully", "fa-check-circle");
       await loadUserBalance();
@@ -948,11 +948,10 @@ async function connectWallet() {
     provider = null;
     rawBalance = 0n;
 
-    document.getElementById("headerWalletText").textContent = "Connect";
+    const _hb2 = document.getElementById("connectHeaderBtn");
+    if (_hb2) _hb2.innerHTML = `<i class="fas fa-wallet text-yellow-500"></i> <span id="headerWalletText">Connect</span>`;
     document.getElementById("prevSender").textContent = "Not Connected";
     document.getElementById("prevInvIssuer").textContent = "Not Connected";
-    document.getElementById("disconnectBtn").classList.remove("flex");
-    document.getElementById("disconnectBtn").classList.add("hidden");
     document.getElementById("tokenBalanceDisplay").textContent = "Balance: —";
     document.getElementById("invTokenBalanceDisplay").textContent = "Balance: —";
 
