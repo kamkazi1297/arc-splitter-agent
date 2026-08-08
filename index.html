@@ -2,7 +2,7 @@
 <html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>ArcSplit · Hub</title>
   <script src="db.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -127,9 +127,113 @@
       scrollbar-color: rgba(255,255,255,0.15) transparent;
     }
     .light .scroll-thin { scrollbar-color: rgba(0,0,0,0.15) transparent; }
-  </style>
+  
+
+/* ===== ArcSplit page chrome (inline — no shared CSS vars) ===== */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; box-sizing: border-box; }
+*, *::before, *::after { box-sizing: inherit; }
+body { overflow-x: hidden; max-width: 100vw; -webkit-font-smoothing: antialiased; }
+img, video, canvas, svg { max-width: 100%; height: auto; }
+button, a, input, select, textarea { max-width: 100%; }
+.max-w-6xl, .max-w-7xl, .max-w-5xl { width: 100%; max-width: min(72rem, 100%); }
+
+/* glass buttons */
+.arc-btn-glass, button.arc-btn-glass, a.arc-btn-glass,
+.app-button:not([class*="bg-gradient"]),
+#themeBtn, #connectBtn, #connectHeaderBtn, #connectWalletBtn,
+button[class*="bg-white/5"], button[class*="bg-rose-500/10"], button[class*="bg-sky-500/10"],
+button[class*="bg-violet-500/10"], button[class*="bg-emerald-500/10"], button[class*="bg-cyan-500/10"],
+button[class*="bg-orange-500/10"], button[class*="bg-lime-500/10"], button[class*="bg-blue-500/10"],
+button[class*="bg-amber-500/10"], button[class*="bg-indigo-500/10"], button[class*="bg-yellow-500/10"] {
+  position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem;
+  font-weight: 600; font-size: 0.75rem; line-height: 1.2; letter-spacing: 0.01em;
+  border-radius: 11px !important;
+  border: 1px solid rgba(255,255,255,0.16) !important;
+  background: linear-gradient(165deg, rgba(255,255,255,0.16) 0%, rgba(42,48,82,0.82) 48%, rgba(16,18,36,0.92) 100%) !important;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -2px 0 rgba(0,0,0,0.2) !important;
+  backdrop-filter: blur(16px) saturate(140%) !important; -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
+  transition: filter 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.12s ease !important;
+  cursor: pointer; text-decoration: none; white-space: nowrap;
+}
+.arc-btn-glass:hover, .app-button:not([class*="bg-gradient"]):hover, #themeBtn:hover {
+  filter: brightness(1.1); border-color: rgba(255,255,255,0.3) !important;
+}
+.arc-btn-glass:active, .app-button:not([class*="bg-gradient"]):active { transform: scale(0.985); }
+
+/* Connect — accent glass */
+#connectBtn, #connectHeaderBtn, #connectWalletBtn, .arc-btn-connect {
+  border-color: rgba(34,211,238,0.40) !important;
+  background: linear-gradient(160deg, rgba(34,211,238,0.18) 0%, rgba(36,42,72,0.72) 45%, rgba(0,0,0,0.18) 100%) !important;
+  color: #22d3ee !important;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.16), inset 0 -2px 0 rgba(0,0,0,0.18) !important;
+}
+#connectBtn i, #connectHeaderBtn i, #connectWalletBtn i, .arc-btn-connect i { color: #22d3ee !important; }
+
+/* header equal height */
+.arc-hdr-btn, #themeBtn, #connectBtn.arc-hdr-btn, #connectHeaderBtn.arc-hdr-btn {
+  height: 2.75rem !important; min-height: 2.75rem !important; box-sizing: border-box;
+}
+#themeBtn { width: 2.75rem !important; min-width: 2.75rem !important; padding: 0 !important; }
+
+/* gradient CTA keep shine */
+.app-button[class*="bg-gradient"], button[class*="bg-gradient-to-r"] {
+  border: 1px solid rgba(255,255,255,0.16) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.28) !important;
+  font-weight: 700 !important; border-radius: 11px !important;
+}
+.app-button[class*="bg-gradient"]:hover { filter: brightness(1.06); }
+button:disabled, .app-button:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; }
+
+/* toast */
+#toast {
+  position: fixed !important; bottom: 1.5rem !important; left: 50% !important;
+  transform: translateX(-50%) !important; z-index: 9999 !important;
+  max-width: min(92vw, 28rem); padding: 0.85rem 1.25rem !important;
+  border-radius: 14px !important; background: rgba(15,23,42,0.94) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important; color: #fff !important;
+  font-size: 0.8rem !important; font-weight: 600 !important;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.35) !important;
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+}
+
+/* empty state */
+.arc-empty {
+  text-align: center; padding: 2.5rem 1.25rem;
+  border: 1px dashed rgba(255,255,255,0.12); border-radius: 14px;
+  color: #94a3b8; font-size: 0.85rem; line-height: 1.5;
+}
+.arc-empty i { display: block; font-size: 1.75rem; margin-bottom: 0.75rem; opacity: 0.45; }
+.arc-spin { animation: arc-spin 0.8s linear infinite; }
+@keyframes arc-spin { to { transform: rotate(360deg); } }
+
+/* light mode glass */
+html.light .arc-btn-glass, html.light .app-button:not([class*="bg-gradient"]),
+html.light #themeBtn, html.light #connectBtn, html.light #connectHeaderBtn, html.light #connectWalletBtn {
+  background: #ffffff !important; border: 1px solid rgba(15,23,42,0.14) !important;
+  box-shadow: 0 4px 14px rgba(15,23,42,0.10) !important;
+  backdrop-filter: none !important; -webkit-backdrop-filter: none !important; filter: none !important;
+}
+html.light #themeBtn { color: #0f172a !important; }
+html.light #connectBtn, html.light #connectHeaderBtn, html.light #connectWalletBtn, html.light .arc-btn-connect {
+  border: 1.5px solid rgba(34,211,238,0.40) !important; color: #22d3ee !important;
+  box-shadow: 0 4px 16px rgba(15,23,42,0.10), 0 0 0 3px rgba(34,211,238,0.18) !important;
+}
+html.light #connectBtn i, html.light #connectHeaderBtn i, html.light #connectWalletBtn i { color: #22d3ee !important; }
+html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
+
+@media (max-width: 640px) {
+  .arc-hdr-btn, #themeBtn, #connectBtn.arc-hdr-btn, #connectHeaderBtn.arc-hdr-btn {
+    height: 2.5rem !important; min-height: 2.5rem !important;
+  }
+  #themeBtn { width: 2.5rem !important; min-width: 2.5rem !important; }
+}
+
+
+</style>
+  <link rel="stylesheet" href="arc-shared.css" data-arc-shared="1">
+  <link rel="icon" type="image/svg+xml" href="logo-white.svg">
 </head>
-<body class="text-white min-h-screen selection:bg-cyan-500 selection:text-black">
+<body class="text-white min-h-screen selection:bg-cyan-500 selection:text-black" data-arc-accent="cyan">
 
   <div class="max-w-[1280px] mx-auto px-4 py-6 sm:py-8 space-y-8 relative">
 
@@ -171,15 +275,12 @@
           </button>
         </div>
 
-        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition" aria-label="Toggle theme">
+        <button onclick="toggleTheme()" id="themeBtn" class="arc-hdr-btn w-11 h-11 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition" aria-label="Toggle theme">
           <i class="fas fa-moon text-lg text-cyan-400"></i>
         </button>
-        <button onclick="connectWallet()" id="connectBtn" class="app-button px-5 py-2.5 rounded-2xl bg-white text-gray-950 font-bold text-sm flex items-center gap-2 shadow-lg">
-          <i class="fas fa-wallet text-cyan-600"></i>
+        <button onclick="handleWalletClick()" id="connectBtn" class="arc-hdr-btn app-button h-11 px-4 sm:px-5 rounded-2xl font-bold text-xs flex items-center gap-2 arc-btn-connect arc-btn-glass arc-accent-cyan">
+          <i class="fas fa-wallet text-cyan-500"></i>
           <span id="connectText">Connect Wallet</span>
-        </button>
-        <button onclick="disconnectWallet()" id="disconnectBtn" class="hidden w-11 h-11 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 transition" title="Disconnect Wallet">
-          <i class="fas fa-power-off"></i>
         </button>
       </div>
     </header>
@@ -756,20 +857,16 @@
 
   function setWalletUI(connected) {
     const btn = document.getElementById('connectBtn');
-    const disc = document.getElementById('disconnectBtn');
-    const txt = document.getElementById('connectText');
     const label = document.getElementById('walletLabel');
+    if (!btn) return;
     if (connected && userAddress) {
-      txt.textContent = shortAddr(userAddress);
-      disc.classList.remove('hidden');
-      disc.classList.add('flex');
-      label.textContent = shortAddr(userAddress);
+      const short = shortAddr(userAddress);
+      btn.innerHTML = `<i class="fas fa-wallet text-cyan-500"></i> <span id="connectText" class="font-bold">${short}</span> <i class="fas fa-power-off text-rose-400 ml-1 text-[10px]" title="Disconnect"></i>`;
+      if (label) label.textContent = short;
       btn.classList.add('ring-2', 'ring-cyan-500/30');
     } else {
-      txt.textContent = 'Connect Wallet';
-      disc.classList.add('hidden');
-      disc.classList.remove('flex');
-      label.textContent = 'Not connected';
+      btn.innerHTML = `<i class="fas fa-wallet text-cyan-500"></i> <span id="connectText">Connect Wallet</span>`;
+      if (label) label.textContent = 'Not connected';
       btn.classList.remove('ring-2', 'ring-cyan-500/30');
     }
   }
@@ -819,7 +916,28 @@
     }
   }
 
+  
+  // Wallet connect loading UI (page-local)
+  function arcSetConnectLoading(loading) {
+    const btn = document.getElementById("connectBtn") || document.getElementById("connectHeaderBtn") || document.getElementById("connectWalletBtn");
+    if (!btn) return;
+    if (loading) {
+      btn.dataset.arcPrev = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-circle-notch arc-spin"></i> <span>Connecting…</span>';
+    } else {
+      btn.disabled = false;
+      if (btn.dataset.arcPrev) { btn.innerHTML = btn.dataset.arcPrev; delete btn.dataset.arcPrev; }
+    }
+  }
+
+  function handleWalletClick() {
+    if (userAddress) disconnectWallet();
+    else connectWallet();
+  }
+
   async function connectWallet() {
+    try { if (typeof arcSetConnectLoading === 'function') arcSetConnectLoading(true); } catch(e) {}
     if (!window.ethereum) return showToast('MetaMask / Web3 wallet not found');
     try {
       provider = new ethers.BrowserProvider(window.ethereum);
@@ -905,7 +1023,7 @@
       }).slice(0, 12);
 
       if (!rows.length) {
-        box.innerHTML = `<p class="text-sm text-gray-500 text-center py-10">No activity yet — run your first split.</p>`;
+        box.innerHTML = `<p class="arc-empty">No activity yet — run your first split.</p>`;
         return;
       }
 
@@ -1010,5 +1128,6 @@
     }
   })();
 </script>
+  <script src="arc-chrome.js"></script>
 </body>
 </html>
