@@ -128,10 +128,8 @@
     }
     .light .scroll-thin { scrollbar-color: rgba(0,0,0,0.15) transparent; }
   </style>
-  <link rel="stylesheet" href="arc-shared.css" data-arc-shared="1">
-  <link rel="icon" type="image/svg+xml" href="logo-white.svg">
 </head>
-<body class="text-white min-h-screen selection:bg-cyan-500 selection:text-black" data-arc-accent="cyan">
+<body class="text-white min-h-screen selection:bg-cyan-500 selection:text-black">
 
   <div class="max-w-[1280px] mx-auto px-4 py-6 sm:py-8 space-y-8 relative">
 
@@ -173,12 +171,15 @@
           </button>
         </div>
 
-        <button onclick="toggleTheme()" id="themeBtn" class="arc-hdr-btn w-11 h-11 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition" aria-label="Toggle theme">
+        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition" aria-label="Toggle theme">
           <i class="fas fa-moon text-lg text-cyan-400"></i>
         </button>
-        <button onclick="handleWalletClick()" id="connectBtn" class="arc-hdr-btn app-button h-11 px-4 sm:px-5 rounded-2xl font-bold text-xs flex items-center gap-2 arc-btn-connect arc-btn-glass arc-accent-cyan">
-          <i class="fas fa-wallet text-cyan-500"></i>
+        <button onclick="connectWallet()" id="connectBtn" class="app-button px-5 py-2.5 rounded-2xl bg-white text-gray-950 font-bold text-sm flex items-center gap-2 shadow-lg">
+          <i class="fas fa-wallet text-cyan-600"></i>
           <span id="connectText">Connect Wallet</span>
+        </button>
+        <button onclick="disconnectWallet()" id="disconnectBtn" class="hidden w-11 h-11 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 transition" title="Disconnect Wallet">
+          <i class="fas fa-power-off"></i>
         </button>
       </div>
     </header>
@@ -755,16 +756,20 @@
 
   function setWalletUI(connected) {
     const btn = document.getElementById('connectBtn');
+    const disc = document.getElementById('disconnectBtn');
+    const txt = document.getElementById('connectText');
     const label = document.getElementById('walletLabel');
-    if (!btn) return;
     if (connected && userAddress) {
-      const short = shortAddr(userAddress);
-      btn.innerHTML = `<i class="fas fa-wallet text-cyan-500"></i> <span id="connectText" class="font-bold">${short}</span> <i class="fas fa-power-off text-rose-400 ml-1 text-[10px]" title="Disconnect"></i>`;
-      if (label) label.textContent = short;
+      txt.textContent = shortAddr(userAddress);
+      disc.classList.remove('hidden');
+      disc.classList.add('flex');
+      label.textContent = shortAddr(userAddress);
       btn.classList.add('ring-2', 'ring-cyan-500/30');
     } else {
-      btn.innerHTML = `<i class="fas fa-wallet text-cyan-500"></i> <span id="connectText">Connect Wallet</span>`;
-      if (label) label.textContent = 'Not connected';
+      txt.textContent = 'Connect Wallet';
+      disc.classList.add('hidden');
+      disc.classList.remove('flex');
+      label.textContent = 'Not connected';
       btn.classList.remove('ring-2', 'ring-cyan-500/30');
     }
   }
@@ -812,11 +817,6 @@
       document.getElementById('netLabel').textContent = 'Wrong network';
       return false;
     }
-  }
-
-  function handleWalletClick() {
-    if (userAddress) disconnectWallet();
-    else connectWallet();
   }
 
   async function connectWallet() {
@@ -905,7 +905,7 @@
       }).slice(0, 12);
 
       if (!rows.length) {
-        box.innerHTML = `<p class="arc-empty">No activity yet — run your first split.</p>`;
+        box.innerHTML = `<p class="text-sm text-gray-500 text-center py-10">No activity yet — run your first split.</p>`;
         return;
       }
 
@@ -1010,6 +1010,5 @@
     }
   })();
 </script>
-  <script src="arc-chrome.js"></script>
 </body>
 </html>
