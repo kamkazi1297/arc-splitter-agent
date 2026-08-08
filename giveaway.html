@@ -194,7 +194,47 @@
     @media (max-width: 640px) {
       .max-w-6xl { max-width: 100% !important; padding-left: 12px; padding-right: 12px; }
     }
-  </style>
+  
+    /* FORCE giveaway tabs — same in light/dark */
+    html.light .tab-btn { color: #9ca3af !important; }
+    html.light .tab-btn:hover { color: #d1d5db !important; }
+    html.light .tab-btn.active,
+    html.light #tabGiveaway.tab-btn.active {
+      color: #fbbf24 !important;
+      border-bottom-color: #fbbf24 !important;
+    }
+
+    /* Giveaway — product-consistent buttons */
+    #sendBtn, button[onclick="selectRandomWinners()"] {
+      letter-spacing: 0.01em;
+    }
+    #sendBtn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      filter: grayscale(0.2);
+    }
+    .app-button.bg-white\/5,
+    button.app-button.bg-white\/5 {
+      background: rgba(255,255,255,0.04) !important;
+      border: 1px solid rgba(255,255,255,0.1) !important;
+      color: #e5e7eb !important;
+      box-shadow: none !important;
+    }
+    .app-button.bg-white\/5:hover {
+      background: rgba(255,255,255,0.08) !important;
+    }
+    /* inputs match split feel */
+    select, input[type="number"], input[type="text"], textarea {
+      background-color: rgba(255, 255, 255, 0.03) !important;
+      border: 1px solid rgba(255, 255, 255, 0.1) !important;
+      border-radius: 1rem !important;
+    }
+    select:focus, input:focus, textarea:focus {
+      border-color: rgba(245, 158, 11, 0.55) !important;
+      box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.12) !important;
+      outline: none !important;
+    }
+</style>
   <link rel="stylesheet" href="arc-shared.css" data-arc-shared="1">
   <link rel="icon" type="image/svg+xml" href="logo-white.svg">
 </head>
@@ -203,20 +243,20 @@
   <div class="max-w-6xl mx-auto px-4 py-6 sm:py-8">
     
     <!-- Header Section -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 bg-white/[0.02] border border-white/5 p-4 sm:p-5 rounded-3xl backdrop-blur-xl">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-4 sm:p-5 rounded-3xl backdrop-blur-xl">
       <div class="flex items-center gap-3 sm:gap-4 min-w-0">
-        <img src="logo-white.svg" alt="ArcSplit" class="logo-dark w-10 h-10 sm:w-11 sm:h-11 object-contain shrink-0">
-        <img src="logo-white.svg" alt="ArcSplit" class="logo-light w-10 h-10 sm:w-11 sm:h-11 object-contain shrink-0">
+        <img src="logo-white.svg" alt="ArcSplit" class="w-10 h-10 sm:w-12 sm:h-12 object-contain block light:hidden shrink-0">
+        <img src="trace-raw.svg" alt="ArcSplit" class="w-10 h-10 sm:w-12 sm:h-12 object-contain hidden light:block shrink-0">
         <div class="min-w-0">
-          <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight truncate">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-yellow-300 to-stone-300">Giveaway Ultra</span></h1>
-          <p class="text-gray-400 text-xs sm:text-sm font-medium">Professional decentralized giveaway tool</p>
+          <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight truncate">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-300">Giveaway</span></h1>
+          <p class="text-gray-400 light:text-slate-600 text-xs sm:text-sm font-medium">Fair on-chain winner selection & distribution</p>
         </div>
       </div>
       <div class="flex items-center gap-2 sm:gap-2.5 flex-wrap">
-        <button onclick="toggleTheme()" id="themeBtn" class="arc-hdr-btn w-11 h-11 flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl transition-all shadow-lg">
+        <button onclick="toggleTheme()" id="themeBtn" class="arc-hdr-btn w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/10 border border-white/10 light:border-black/10 rounded-2xl transition-all">
           <i class="fas fa-moon text-lg text-amber-400"></i>
         </button>
-        <button onclick="showConnectModal()" id="connectBtn" class="arc-hdr-btn arc-btn-connect arc-btn-glass arc-accent-amber app-button h-11 px-4 sm:px-5 font-bold rounded-2xl text-xs flex items-center gap-2">
+        <button onclick="handleWalletClick()" id="connectBtn" class="arc-hdr-btn arc-btn-connect arc-btn-glass arc-accent-amber app-button h-11 px-4 sm:px-5 font-bold rounded-2xl text-xs flex items-center gap-2">
           <i class="fas fa-wallet text-amber-500"></i>
           <span id="connectText">Connect Wallet</span>
         </button>
@@ -236,28 +276,18 @@
     <!-- ==================== GIVEAWAY TAB ==================== -->
     <div id="panelGiveaway">
 
-      <!-- Action Connect Hub -->
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5 mb-8">
-        <button onclick="showConnectModal()" class="app-button px-6 py-4 font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all arc-btn-connect arc-btn-glass arc-accent-amber">
-          <i class="fas fa-wallet text-amber-500"></i>
-          <span id="connectTextSecondary">Connect Wallet</span>
-        </button>
-
-        <div class="glass px-6 py-4 rounded-2xl flex items-center justify-between border border-white/10">
-          <div class="flex items-center gap-2 text-xs font-semibold text-gray-400">
-            <i class="fas fa-network-wired text-amber-400"></i> Network: Arc Testnet
-          </div>
-          <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
+      <!-- Status bar -->
+      <div class="flex flex-wrap items-center justify-between gap-3 mb-6 glass rounded-2xl px-4 py-3 border border-white/10">
+        <div id="status" class="text-sm font-medium text-gray-300 flex items-center gap-2 min-w-0">
+          <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse shrink-0"></span>
+          <span class="truncate">Ready · Arc Testnet</span>
+        </div>
+        <div class="text-[11px] font-semibold text-gray-500 flex items-center gap-2">
+          <i class="fas fa-network-wired text-amber-400"></i> Arc Testnet
         </div>
       </div>
-
-      <!-- Status Boxes -->
-      <div id="status" class="glass rounded-2xl p-5 mb-4 text-sm font-medium flex items-center gap-3 border-l-4 border-l-amber-500">
-        <div class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></div>
-        Ready for Giveaway on Arc Testnet (ArcRoleSplitter V30).
-      </div>
-      <div id="successMessage" class="hidden glass border border-amber-500/30 bg-amber-500/10 rounded-2xl p-5 mb-6 text-amber-400 text-sm"></div>
-
+      <div id="successMessage" class="hidden glass border border-amber-500/30 bg-amber-500/10 rounded-2xl p-4 mb-6 text-amber-400 text-sm"></div>
+<!-- Status Boxes -->
       <!-- Main Container Grid -->
       <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
@@ -295,7 +325,7 @@
 
             <!-- Random Selection Action -->
             <div>
-              <button onclick="selectRandomWinners()" class="app-button w-full py-4 bg-gradient-to-r from-amber-600 to-yellow-600 hover:brightness-110 rounded-2xl font-bold text-sm sm:text-base shadow-lg shadow-amber-600/20 transition-all flex items-center justify-center gap-2 text-gray-950">
+              <button onclick="selectRandomWinners()" class="app-button w-full py-4 rounded-2xl font-bold text-sm sm:text-base bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:brightness-110 text-gray-950 shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2">
                 <i class="fas fa-dice text-lg"></i> Random Select Winners
               </button>
             </div>
@@ -303,12 +333,12 @@
             <div class="h-px bg-white/5"></div>
 
             <!-- AI Extractor Banner Box -->
-            <div class="border border-amber-500/30 rounded-2xl p-5 bg-gradient-to-br from-amber-500/5 to-transparent space-y-3">
+            <div class="border border-white/10 rounded-2xl p-5 bg-white/[0.02] space-y-3">
               <h3 class="font-bold text-sm sm:text-base flex items-center gap-2 text-amber-400">
                 <i class="fas fa-brain"></i> AI-Powered Wallet Extractor
               </h3>
               <p class="text-xs text-gray-400">Extract participant addresses automatically from comment sections or raw text.</p>
-              <button onclick="showExtractModal()" class="app-button w-full py-3.5 bg-gradient-to-r from-amber-500 to-yellow-500 rounded-xl font-semibold text-xs sm:text-sm hover:brightness-110 transition-all shadow-md shadow-amber-500/20 text-gray-950">
+              <button onclick="showExtractModal()" class="app-button w-full py-3.5 rounded-2xl font-semibold text-xs sm:text-sm bg-white/5 hover:bg-white/10 border border-white/10 text-amber-300 transition-all flex items-center justify-center gap-2">
                 Extract Wallets from Comments / Text
               </button>
             </div>
@@ -318,7 +348,7 @@
 
         <!-- Right Column: Participant List & Execution (5 Cols) -->
         <div class="lg:col-span-5 space-y-6">
-          <div class="glass rounded-3xl p-6 sm:p-8" style="position: sticky; top: 24px;">
+          <div class="glass rounded-3xl p-6 sm:p-8 border border-white/5" style="position: sticky; top: 24px;">
             
             <div class="mb-4">
               <label class="block text-gray-400 pitch-black-text text-xs font-semibold uppercase tracking-wider mb-2">All Participant Addresses</label>
@@ -329,11 +359,11 @@
             <div class="grid grid-cols-3 gap-2 mb-6">
               <button onclick="exportWallets()" class="app-button py-2.5 px-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[11px] font-semibold transition-all">📤 Export</button>
               <button onclick="importWallets()" class="app-button py-2.5 px-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[11px] font-semibold transition-all">📥 Import</button>
-              <button onclick="copyShareableLink()" class="app-button py-2.5 px-2 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 border border-amber-500/30 rounded-xl text-[11px] font-semibold transition-all">🔗 Share</button>
+              <button onclick="copyShareableLink()" class="app-button py-2.5 px-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-[11px] font-semibold transition-all text-amber-300">🔗 Share</button>
             </div>
 
             <!-- Send Split Button -->
-            <button id="sendBtn" onclick="sendGiveawaySplit()" class="app-button w-full bg-gradient-to-r from-amber-500 via-yellow-500 to-stone-400 hover:brightness-110 py-4 sm:py-5 rounded-2xl text-base sm:text-lg font-bold shadow-xl shadow-amber-500/25 transition-all text-gray-950">
+            <button id="sendBtn" onclick="sendGiveawaySplit()" class="app-button w-full py-5 rounded-2xl text-base sm:text-lg font-bold bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:brightness-110 text-gray-950 shadow-xl shadow-amber-500/25 transition-all">
               Send Equal Split to Winners
             </button>
 
@@ -405,8 +435,8 @@
 
       <div class="flex gap-3">
         <button onclick="hideExtractModal()" class="app-button flex-1 py-3 rounded-xl border border-white/15 hover:bg-white/5 font-semibold text-xs transition-all">Cancel</button>
-        <button onclick="applyExtracted('append')" class="app-button flex-1 py-3 bg-amber-500 hover:bg-amber-600 text-gray-950 font-bold rounded-xl text-xs transition-all">Append</button>
-        <button onclick="applyExtracted('replace')" class="app-button flex-1 py-3 bg-gradient-to-r from-amber-500 to-yellow-500 hover:brightness-110 text-gray-950 font-bold rounded-xl text-xs transition-all">Replace</button>
+        <button onclick="applyExtracted('append')" class="app-button flex-1 py-3 bg-white/5 hover:bg-white/10 border border-white/10 font-bold rounded-xl text-xs transition-all">Append</button>
+        <button onclick="applyExtracted('replace')" class="app-button flex-1 py-3 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:brightness-110 text-gray-950 font-bold rounded-xl text-xs transition-all shadow-md shadow-amber-500/20">Replace</button>
       </div>
     </div>
   </div>
@@ -452,7 +482,7 @@
           <label class="block text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2">Decimals</label>
           <input type="number" id="customTokenDecimals" value="18" min="0" max="36" class="w-full rounded-2xl px-4 py-3 text-sm outline-none">
         </div>
-        <button onclick="addCustomToken()" class="app-button w-full py-3.5 bg-gradient-to-r from-amber-500 to-yellow-500 hover:brightness-110 rounded-xl font-bold text-gray-950 transition-all">
+        <button onclick="addCustomToken()" class="app-button w-full py-3.5 bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-600 hover:brightness-110 rounded-2xl font-bold text-gray-950 transition-all shadow-lg shadow-amber-500/20">
           Add Token
         </button>
       </div>
@@ -771,18 +801,29 @@ async function connectMetaMask() {
   }
 }
 
+function handleWalletClick() {
+  if (typeof userAddress !== "undefined" && userAddress) {
+    if (typeof disconnectWallet === "function") disconnectWallet();
+  } else {
+    if (typeof showConnectModal === "function") showConnectModal();
+    else if (typeof connectWallet === "function") connectWallet();
+  }
+}
+
 function updateConnectButton() {
   const btn = document.getElementById("connectBtn");
+  if (!btn) return;
+  const base = "arc-hdr-btn arc-btn-connect arc-btn-glass arc-accent-amber app-button h-11 px-4 sm:px-5 font-bold rounded-2xl text-xs flex items-center gap-2";
   if (userAddress) {
-    const short = `${userAddress.slice(0, 6)}...${userAddress.slice(-4)}`;
-    btn.innerHTML = `<i class="fas fa-wallet text-amber-400"></i> <span class="font-bold">${short}</span>`;
-    btn.onclick = disconnectWallet;
-    btn.className = "app-button px-6 py-4 bg-amber-500/10 border border-amber-500/30 text-amber-400 font-bold rounded-2xl flex items-center justify-center gap-2.5 transition-all shadow-lg shadow-amber-500/10";
+    const short = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
+    btn.innerHTML = `<i class="fas fa-wallet text-amber-500"></i> <span id="connectText" class="font-bold">${short}</span> <i class="fas fa-power-off text-rose-400 ml-1 text-[10px]" title="Disconnect"></i>`;
+    btn.className = base;
   } else {
-    btn.innerHTML = `<i class="fas fa-wallet text-amber-600"></i> <span id="connectText">Connect Wallet</span>`;
-    btn.onclick = showConnectModal;
-    btn.className = "app-button px-6 py-4 bg-white text-gray-950 font-bold rounded-2xl flex items-center justify-center gap-2.5 hover:bg-amber-50 transition-all";
+    btn.innerHTML = `<i class="fas fa-wallet text-amber-500"></i> <span id="connectText">Connect Wallet</span>`;
+    btn.className = base;
   }
+  const sec = document.getElementById("connectTextSecondary");
+  if (sec) sec.textContent = userAddress ? (userAddress.slice(0,6)+"..."+userAddress.slice(-4)) : "Connect Wallet";
 }
 
 function disconnectWallet() {
