@@ -13,7 +13,8 @@
     blue: "arc-accent-blue",
     sky: "arc-accent-sky",
     indigo: "arc-accent-indigo",
-    violet: "arc-accent-violet"
+    violet: "arc-accent-violet",
+    orange: "arc-accent-orange"
   };
 
   function detectAccent() {
@@ -22,7 +23,7 @@
     const path = (location.pathname || "").toLowerCase();
     if (path.includes("batch")) return ACCENTS.rose;
     if (path.includes("role")) return ACCENTS.cyan;
-    if (path.includes("giveaway")) return ACCENTS.amber;
+    if (path.includes("giveaway")) return ACCENTS.orange;
     if (path.includes("vest")) return ACCENTS.lime;
     if (path.includes("pay") || path.includes("invoice")) return ACCENTS.yellow;
     if (path.includes("conditional") || path.includes("smart")) return ACCENTS.blue;
@@ -195,6 +196,31 @@
     });
   }
 
+  
+  function polishActionButtons() {
+    const sels = [
+      'button.app-button',
+      'button[onclick*="addRecipient"]',
+      'button[onclick*="AddToken"]',
+      'button[onclick*="openCustom"]',
+      'button[onclick*="importCSV"]',
+      'button[onclick*="openSaveTemplate"]',
+      'button[onclick*="openLoadTemplate"]',
+      'button[onclick*="Distribute"]',
+      'button[onclick*="distribute"]',
+      'button[onclick*="Refresh"]',
+      'button[onclick*="refresh"]',
+      'button[onclick*="export"]',
+      'button[onclick*="import"]',
+      'button[onclick*="clearAll"]',
+      'button[onclick*="showExtract"]'
+    ];
+    document.querySelectorAll(sels.join(',')).forEach((el) => {
+      if (el.id === 'connectBtn' || el.id === 'connectHeaderBtn' || el.id === 'connectWalletBtn') return;
+      el.classList.add('arc-btn-glass');
+    });
+  }
+
   function boot() {
     ensureSharedCss();
     ensureFavicon();
@@ -206,8 +232,9 @@
     polishToast();
     wrapConnectHandlers();
     emptyStateUpgrade();
+    polishActionButtons();
     // Re-apply after late UI updates (wallet connect rewrites)
-    setTimeout(() => styleConnectButtons(accent), 800);
+    setTimeout(() => { styleConnectButtons(accent); polishActionButtons(); }, 800);
     setTimeout(() => emptyStateUpgrade(), 1500);
   }
 
