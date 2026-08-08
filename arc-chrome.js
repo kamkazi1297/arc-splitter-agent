@@ -1,3 +1,7 @@
+/**
+ * ArcSplit shared chrome — Hub link, glass Connect, favicon, toast, empty states.
+ * Include after the page header markup. Optional: <body data-arc-accent="emerald">
+ */
 (function () {
   const ACCENTS = {
     emerald: "arc-accent-emerald",
@@ -48,6 +52,8 @@
       }
       if (!/^ArcSplit/i.test(t) && !/^Arc\s/i.test(t)) {
         document.title = "ArcSplit · " + t;
+      } else if (/^ArcSplit\s*[-–—]\s*/i.test(t)) {
+        document.title = t.replace(/^ArcSplit\s*[-–—]\s*/i, "ArcSplit · ");
       }
     } catch {}
   }
@@ -66,9 +72,14 @@
     if (themeBtn && themeBtn.parentElement) return themeBtn.parentElement;
     const connect =
       document.getElementById("connectBtn") ||
-      document.getElementById("connectHeaderBtn") ||
-      document.getElementById("connectWalletBtn");
-    if (connect && connect.parentElement) return connect.parentElement;
+      document.getElementById("connectHeaderBtn");
+    if (connect && connect.parentElement) {
+      // Prefer header row over full-width sidebar parent
+      const parent = connect.parentElement;
+      if (parent.classList.contains("flex") || parent.querySelector("#themeBtn")) {
+        return parent;
+      }
+    }
     return null;
   }
 
@@ -82,13 +93,14 @@
     }
   }
 
+  function isHubPage() {
+    const path = (location.pathname || "").toLowerCase();
+    return path.endsWith("/") || /index\.html?$/i.test(path) || path === "";
+  }
+
   function ensureHubLink() {
     if (document.getElementById("arcHubLink")) return;
-    const path = (location.pathname || "").toLowerCase();
-    if (path.endsWith("/") || /index\.html?$/i.test(path)) return;
-
-    const actions = findHeaderActions();
-    if (!actions) return;
+    if (isHubPage()) return;
 
     const a = document.createElement("a");
     a.id = "arcHubLink";
@@ -97,11 +109,18 @@
     a.innerHTML = '<i class="fas fa-home"></i><span class="arc-hub-text">Hub</span>';
     a.title = "Back to Hub";
 
-    const themeBtn = document.getElementById("themeBtn");
-    if (themeBtn && themeBtn.parentElement === actions) {
-      actions.insertBefore(a, themeBtn);
+    const actions = findHeaderActions();
+    if (actions) {
+      const themeBtn = document.getElementById("themeBtn");
+      if (themeBtn && themeBtn.parentElement === actions) {
+        actions.insertBefore(a, themeBtn);
+      } else {
+        actions.insertBefore(a, actions.firstChild);
+      }
     } else {
-      actions.insertBefore(a, actions.firstChild);
+      // Fixed corner fallback
+      a.classList.add("arc-hub-fixed");
+      document.body.appendChild(a);
     }
   }
 
@@ -113,14 +132,12 @@
       el.classList.add("arc-btn-connect", "arc-btn-glass", "arc-hdr-btn", accentClass);
       el.classList.remove("bg-white", "text-gray-950", "text-black");
     });
-
     const theme = document.getElementById("themeBtn");
-    if (theme) theme.classList.add("arc-btn-icon", "arc-hdr-btn");
-
+    if (theme) theme.classList.add("arc-btn-icon");
     const disc =
       document.getElementById("disconnectBtn") ||
       document.getElementById("disconnectWalletBtn");
-    if (disc) disc.classList.add("arc-btn-icon");
+    if (disc) disc.classList.add("arc-btn-icon", "arc-btn-glass");
   }
 
   function polishToast() {
@@ -168,17 +185,35 @@
   }
 
   function emptyStateUpgrade() {
-    document.querySelectorAll("[id*='history'], [id*='History'], [id*='activity']").forEach((box) => {
-      if (!box || box.children.length !== 1) return;
-      const child = box.children[0];
-      if (
-        child &&
-        (child.tagName === "P" || child.tagName === "DIV") &&
-        /no (transactions|history|activity|batch|vesting|giveaway|links|invoices)/i.test(
-          child.textContent || ""
-        )
-      ) {
-        child.classList.add("arc-empty");
+    const re =
+      /no (transactions|history|activity|batch|vesting|giveaway|links|invoices|role splits|plans)/i;
+    document
+      .querySelectorAll(
+        "[id*='history'], [id*='History'], [id*='activity'], [id*='Activity'], [id*='linkList'], [id*='invoice']"
+      )
+      .forEach((box) => {
+        if (!box) return;
+        // Single child empty message
+        if (box.children.length === 1) {
+          const child = box.children[0];
+          if (child && re.test(child.textContent || "")) {
+            child.classList.add("arc-empty");
+          }
+        }
+        // Direct text-only empty
+        if (
+          box.children.length === 0 &&
+          re.test((box.textContent || "").trim())
+        ) {
+          box.classList.add("arc-empty");
+        }
+      });
+    // Common static empty nodes
+    document.querySelectorAll("p, div").forEach((el) => {
+      if (el.children.length > 0) return;
+      const t = (el.textContent || "").trim();
+      if (re.test(t) && t.length < 80) {
+        el.classList.add("arc-empty");
       }
     });
   }
@@ -199,7 +234,9 @@
       'button[onclick*="export"]',
       'button[onclick*="import"]',
       'button[onclick*="clearAll"]',
-      'button[onclick*="showExtract"]'
+      'button[onclick*="showExtract"]',
+      'button[onclick*="addRole"]',
+      'button[onclick*="AddRole"]'
     ];
     document.querySelectorAll(sels.join(",")).forEach((el) => {
       if (
@@ -208,9 +245,8 @@
         el.id === "connectWalletBtn"
       )
         return;
-      if (!el.className.includes("bg-gradient")) {
-        el.classList.add("arc-btn-glass");
-      }
+      if (el.className && el.className.includes("bg-gradient")) return;
+      el.classList.add("arc-btn-glass");
     });
   }
 
@@ -222,6 +258,7 @@
       );
       if (hasLogo && hasConnect) {
         el.classList.add("arc-header");
+        if (!el.style.position) el.style.position = "relative";
       }
     });
   }
@@ -239,12 +276,12 @@
     emptyStateUpgrade();
     polishActionButtons();
     elevateHeaders();
-
     setTimeout(() => {
       styleConnectButtons(accent);
       polishActionButtons();
-    }, 800);
-    setTimeout(() => emptyStateUpgrade(), 1500);
+      ensureHubLink();
+    }, 600);
+    setTimeout(() => emptyStateUpgrade(), 1200);
   }
 
   if (document.readyState === "loading") {
