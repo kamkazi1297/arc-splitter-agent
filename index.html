@@ -2,7 +2,7 @@
 <html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>ArcSplit · Hub</title>
   <script src="db.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -127,9 +127,265 @@
       scrollbar-color: rgba(255,255,255,0.15) transparent;
     }
     .light .scroll-thin { scrollbar-color: rgba(0,0,0,0.15) transparent; }
-  </style>
+  
+
+/* ===== ArcSplit page chrome (inline — no shared CSS vars) ===== */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; box-sizing: border-box; }
+*, *::before, *::after { box-sizing: inherit; }
+body { overflow-x: hidden; max-width: 100vw; -webkit-font-smoothing: antialiased; }
+img, video, canvas, svg { max-width: 100%; height: auto; }
+button, a, input, select, textarea { max-width: 100%; }
+.max-w-6xl, .max-w-7xl, .max-w-5xl { width: 100%; max-width: min(72rem, 100%); }
+
+/* ===== Header buttons: solid, equal height, NO glass ===== */
+.hdr-btn {
+  height: 2.75rem !important;
+  min-height: 2.75rem !important;
+  box-sizing: border-box;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0 1rem;
+  border-radius: 0.75rem !important;
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+  line-height: 1;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease, filter 0.15s ease, transform 0.12s ease;
+  cursor: pointer;
+  text-decoration: none;
+  border: 1px solid transparent;
+}
+.hdr-btn:active { transform: scale(0.98); }
+.hdr-btn-icon {
+  width: 2.75rem !important;
+  min-width: 2.75rem !important;
+  padding: 0 !important;
+}
+
+/* Floating theme toggle — bottom right */
+#themeBtn {
+  position: fixed !important;
+  right: 1.25rem !important;
+  bottom: 1.25rem !important;
+  z-index: 90 !important;
+  width: 2.75rem !important;
+  height: 2.75rem !important;
+  min-width: 2.75rem !important;
+  min-height: 2.75rem !important;
+  padding: 0 !important;
+  border-radius: 999px !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  background: rgba(18, 18, 38, 0.88) !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  color: #22d3ee !important;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.35) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease, filter 0.15s ease;
+}
+#themeBtn:hover { filter: brightness(1.12); border-color: rgba(255,255,255,0.22) !important; }
+#themeBtn:active { transform: scale(0.96); }
+@media (max-width: 640px) {
+  #themeBtn {
+    right: 1rem !important;
+    bottom: 1rem !important;
+    width: 2.5rem !important;
+    height: 2.5rem !important;
+    min-width: 2.5rem !important;
+    min-height: 2.5rem !important;
+  }
+}
+
+/* Telegram — solid blue; connected = outline + red power */
+#tgLinkBtn.hdr-btn {
+  background: #229ED9 !important;
+  border: 1px solid #1a8bc0 !important;
+  color: #fff !important;
+  box-shadow: 0 4px 14px rgba(34,158,217,0.28) !important;
+  backdrop-filter: none !important;
+  max-width: 200px;
+}
+#tgLinkBtn.hdr-btn:hover { filter: brightness(1.08); }
+#tgLinkBtn.hdr-btn i { color: #fff !important; }
+#tgLinkBtn.hdr-btn.connected {
+  background: rgba(34,158,217,0.12) !important;
+  border: 1px solid rgba(34,158,217,0.45) !important;
+  color: #5ac8fa !important;
+  box-shadow: none !important;
+}
+#tgLinkBtn.hdr-btn.connected i { color: #5ac8fa !important; }
+#tgLinkBtn.hdr-btn.connected .fa-power-off { color: #fb7185 !important; }
+
+/* Connect Wallet — solid cyan gradient; connected = outline + red power */
+#connectBtn.hdr-btn {
+  background: linear-gradient(135deg, #06b6d4 0%, #0ea5e9 100%) !important;
+  border: 1px solid rgba(255,255,255,0.2) !important;
+  color: #0f172a !important;
+  box-shadow: 0 6px 18px rgba(6,182,212,0.35) !important;
+  backdrop-filter: none !important;
+}
+#connectBtn.hdr-btn:hover { filter: brightness(1.06); }
+#connectBtn.hdr-btn i { color: #0f172a !important; }
+#connectBtn.hdr-btn.connected {
+  background: rgba(6,182,212,0.12) !important;
+  border: 1px solid rgba(6,182,212,0.4) !important;
+  color: #22d3ee !important;
+  box-shadow: none !important;
+}
+#connectBtn.hdr-btn.connected i { color: #22d3ee !important; }
+#connectBtn.hdr-btn.connected .fa-power-off { color: #fb7185 !important; }
+
+/* Hero CTAs — solid like Connect Wallet, different colors */
+.hero-cta {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 2.85rem;
+  padding: 0 1.35rem;
+  border-radius: 0.85rem !important;
+  font-size: 0.875rem !important;
+  font-weight: 700 !important;
+  text-decoration: none !important;
+  border: 1px solid rgba(255,255,255,0.18) !important;
+  transition: filter 0.15s ease, transform 0.12s ease;
+  white-space: nowrap;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.22) !important;
+  backdrop-filter: none !important;
+}
+.hero-cta:hover { filter: brightness(1.07); }
+.hero-cta:active { transform: scale(0.98); }
+.hero-cta-cyan {
+  background: linear-gradient(135deg, #06b6d4 0%, #0ea5e9 100%) !important;
+  color: #0f172a !important;
+  box-shadow: 0 6px 18px rgba(6,182,212,0.35) !important;
+}
+.hero-cta-cyan i { color: #0f172a !important; }
+.hero-cta-indigo {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 6px 18px rgba(99,102,241,0.35) !important;
+}
+.hero-cta-indigo i { color: #fff !important; }
+.hero-cta-tg {
+  background: linear-gradient(135deg, #229ED9 0%, #1a8bc0 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 6px 18px rgba(34,158,217,0.32) !important;
+}
+.hero-cta-tg i { color: #fff !important; }
+
+/* body/module glass buttons still allowed outside header */
+.arc-btn-glass, button.arc-btn-glass, a.arc-btn-glass,
+.app-button:not([class*="bg-gradient"]):not(.hdr-btn),
+button[class*="bg-white/5"]:not(.hdr-btn),
+button[class*="bg-rose-500/10"]:not(.hdr-btn),
+button[class*="bg-sky-500/10"]:not(.hdr-btn),
+button[class*="bg-violet-500/10"]:not(.hdr-btn),
+button[class*="bg-emerald-500/10"]:not(.hdr-btn),
+button[class*="bg-cyan-500/10"]:not(.hdr-btn),
+button[class*="bg-orange-500/10"]:not(.hdr-btn),
+button[class*="bg-lime-500/10"]:not(.hdr-btn),
+button[class*="bg-blue-500/10"]:not(.hdr-btn),
+button[class*="bg-amber-500/10"]:not(.hdr-btn),
+button[class*="bg-indigo-500/10"]:not(.hdr-btn),
+button[class*="bg-yellow-500/10"]:not(.hdr-btn) {
+  position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem;
+  font-weight: 600; font-size: 0.75rem; line-height: 1.2; letter-spacing: 0.01em;
+  border-radius: 11px !important;
+  border: 1px solid rgba(255,255,255,0.16) !important;
+  background: linear-gradient(165deg, rgba(255,255,255,0.16) 0%, rgba(42,48,82,0.82) 48%, rgba(16,18,36,0.92) 100%) !important;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -2px 0 rgba(0,0,0,0.2) !important;
+  backdrop-filter: blur(16px) saturate(140%) !important; -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
+  transition: filter 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.12s ease !important;
+  cursor: pointer; text-decoration: none; white-space: nowrap;
+}
+.arc-btn-glass:hover, .app-button:not([class*="bg-gradient"]):not(.hdr-btn):hover {
+  filter: brightness(1.1); border-color: rgba(255,255,255,0.3) !important;
+}
+.arc-btn-glass:active, .app-button:not([class*="bg-gradient"]):not(.hdr-btn):active { transform: scale(0.985); }
+
+.app-button[class*="bg-gradient"], button[class*="bg-gradient-to-r"] {
+  border: 1px solid rgba(255,255,255,0.16) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.28) !important;
+  font-weight: 700 !important; border-radius: 11px !important;
+}
+.app-button[class*="bg-gradient"]:hover { filter: brightness(1.06); }
+button:disabled, .app-button:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; }
+
+/* toast */
+#toast {
+  position: fixed !important; bottom: 1.5rem !important; left: 50% !important;
+  transform: translateX(-50%) !important; z-index: 9999 !important;
+  max-width: min(92vw, 28rem); padding: 0.85rem 1.25rem !important;
+  border-radius: 14px !important; background: rgba(15,23,42,0.94) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important; color: #fff !important;
+  font-size: 0.8rem !important; font-weight: 600 !important;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.35) !important;
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+}
+
+/* empty state */
+.arc-empty {
+  text-align: center; padding: 2.5rem 1.25rem;
+  border: 1px dashed rgba(255,255,255,0.12); border-radius: 14px;
+  color: #94a3b8; font-size: 0.85rem; line-height: 1.5;
+}
+.arc-empty i { display: block; font-size: 1.75rem; margin-bottom: 0.75rem; opacity: 0.45; }
+.arc-spin { animation: arc-spin 0.8s linear infinite; }
+@keyframes arc-spin { to { transform: rotate(360deg); } }
+
+/* light mode — header solid buttons */
+html.light #themeBtn {
+  background: rgba(255,255,255,0.92) !important;
+  border: 1px solid rgba(15,23,42,0.12) !important;
+  color: #0f172a !important;
+  box-shadow: 0 8px 24px rgba(15,23,42,0.12) !important;
+}
+html.light #tgLinkBtn.hdr-btn {
+  background: #229ED9 !important;
+  border-color: #1a8bc0 !important;
+  color: #fff !important;
+}
+html.light #tgLinkBtn.hdr-btn.connected {
+  background: #ffffff !important;
+  border: 1.5px solid rgba(34,158,217,0.45) !important;
+  color: #0284c7 !important;
+  box-shadow: 0 2px 10px rgba(15,23,42,0.06) !important;
+}
+html.light #tgLinkBtn.hdr-btn.connected i { color: #0284c7 !important; }
+html.light #tgLinkBtn.hdr-btn.connected .fa-power-off { color: #e11d48 !important; }
+html.light #connectBtn.hdr-btn {
+  background: linear-gradient(135deg, #06b6d4 0%, #0ea5e9 100%) !important;
+  border: 1px solid transparent !important;
+  color: #0f172a !important;
+  box-shadow: 0 6px 18px rgba(6,182,212,0.3) !important;
+}
+html.light #connectBtn.hdr-btn.connected {
+  background: #ffffff !important;
+  border: 1.5px solid rgba(6,182,212,0.45) !important;
+  color: #0891b2 !important;
+  box-shadow: 0 2px 10px rgba(15,23,42,0.06) !important;
+}
+html.light #connectBtn.hdr-btn.connected i { color: #0891b2 !important; }
+html.light #connectBtn.hdr-btn.connected .fa-power-off { color: #e11d48 !important; }
+html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
+
+@media (max-width: 640px) {
+  .hdr-btn { height: 2.5rem !important; min-height: 2.5rem !important; padding: 0 0.75rem; font-size: 0.7rem !important; }
+  .hdr-btn-icon { width: 2.5rem !important; min-width: 2.5rem !important; }
+}
+
+
+</style>
+  <link rel="stylesheet" href="arc-shared.css" data-arc-shared="1">
+  <link rel="icon" type="image/svg+xml" href="logo-white.svg">
 </head>
-<body class="text-white min-h-screen selection:bg-cyan-500 selection:text-black">
+<body class="text-white min-h-screen selection:bg-cyan-500 selection:text-black" data-arc-accent="cyan">
 
   <div class="max-w-[1280px] mx-auto px-4 py-6 sm:py-8 space-y-8 relative">
 
@@ -150,36 +406,15 @@
         </div>
       </div>
 
-      <div class="flex flex-wrap items-center gap-2.5">
-        <a href="Workspace.html" class="app-button px-4 py-2.5 rounded-2xl bg-indigo-500/15 hover:bg-indigo-500/25 text-indigo-300 border border-indigo-500/30 text-xs font-bold flex items-center gap-2 transition">
-          <i class="fas fa-building"></i> Workspace
-        </a>
-        <a href="ArcAnalytics.html" class="app-button px-4 py-2.5 rounded-2xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/25 text-xs font-bold flex items-center gap-2 transition">
-          <i class="fas fa-chart-line"></i> Dashboard
-        </a>
-        <!-- Telegram link status -->
-        <div id="tgStatusBox" class="flex items-center gap-1.5">
-          <button onclick="linkTelegram()" id="tgLinkBtn" class="app-button px-4 py-2.5 rounded-2xl bg-[#229ED9]/15 hover:bg-[#229ED9]/25 text-[#5ac8fa] border border-[#229ED9]/30 text-xs font-bold flex items-center gap-2 transition" title="Link Telegram account">
-            <i class="fab fa-telegram-plane"></i> Link Telegram
-          </button>
-          <div id="tgLinkedBadge" class="hidden items-center gap-1.5 px-3 py-2 rounded-2xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-bold max-w-[180px]">
-            <i class="fab fa-telegram-plane"></i>
-            <span id="tgLinkedLabel" class="truncate">Telegram</span>
-          </div>
-          <button onclick="unlinkTelegram()" id="tgUnlinkBtn" class="hidden w-9 h-9 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 transition" title="Unlink Telegram">
-            <i class="fas fa-unlink text-xs"></i>
-          </button>
-        </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <button onclick="handleTelegramClick()" id="tgLinkBtn" class="hdr-btn" title="Link Telegram">
+          <i class="fab fa-telegram-plane"></i>
+          <span id="tgLinkText">Link Telegram</span>
+        </button>
 
-        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition" aria-label="Toggle theme">
-          <i class="fas fa-moon text-lg text-cyan-400"></i>
-        </button>
-        <button onclick="connectWallet()" id="connectBtn" class="app-button px-5 py-2.5 rounded-2xl bg-white text-gray-950 font-bold text-sm flex items-center gap-2 shadow-lg">
-          <i class="fas fa-wallet text-cyan-600"></i>
+        <button onclick="handleWalletClick()" id="connectBtn" class="hdr-btn">
+          <i class="fas fa-wallet"></i>
           <span id="connectText">Connect Wallet</span>
-        </button>
-        <button onclick="disconnectWallet()" id="disconnectBtn" class="hidden w-11 h-11 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20 transition" title="Disconnect Wallet">
-          <i class="fas fa-power-off"></i>
         </button>
       </div>
     </header>
@@ -199,16 +434,15 @@
           One suite for token distribution, role-based payroll, vesting, giveaways, payment links, and smart conditional releases — all powered by Arc.
         </p>
         <div class="flex flex-wrap gap-3">
-          <a href="split.html" class="app-button px-6 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-sky-500 hover:brightness-110 text-gray-950 font-bold text-sm shadow-lg shadow-cyan-500/25 flex items-center gap-2">
+          <a href="split.html" class="hero-cta hero-cta-cyan">
             <i class="fas fa-bolt"></i> Start Splitting
           </a>
-          <a href="Workspace.html" class="app-button px-6 py-3.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 font-bold text-sm flex items-center gap-2">
+          <a href="Workspace.html" class="hero-cta hero-cta-indigo">
             <i class="fas fa-users"></i> Open Workspace
           </a>
-          <a href="https://t.me/ArcSplitPro_bot" target="_blank" rel="noopener" class="app-button px-6 py-3.5 rounded-2xl bg-[#229ED9] hover:brightness-110 text-white font-bold text-sm flex items-center gap-2 shadow-lg shadow-sky-500/20">
+          <a href="https://t.me/ArcSplitPro_bot" target="_blank" rel="noopener" class="hero-cta hero-cta-tg">
             <i class="fab fa-telegram-plane"></i> Telegram Bot
           </a>
-
         </div>
       </div>
       <!-- decorative orbs -->
@@ -247,13 +481,66 @@
       </div>
     </div>
 
+    <!-- ================= INSIGHTS ================= -->
+    <section class="space-y-4 fade-up" style="animation-delay:0.18s">
+      <div class="flex items-end justify-between gap-3 px-1">
+        <div>
+          <h3 class="text-lg font-extrabold section-title">Insights</h3>
+          <p class="text-xs mt-0.5 section-sub">Workspace, analytics, and Telegram notifications</p>
+        </div>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <a href="Workspace.html" class="module-card glass rounded-3xl p-5 sm:p-6 block group" style="--glow: rgba(99,102,241,0.18)">
+          <div class="flex items-start gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-indigo-500/15 border border-indigo-500/25 flex items-center justify-center shrink-0">
+              <i class="fas fa-building text-indigo-400 text-lg"></i>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center justify-between gap-2">
+                <h4 class="font-extrabold text-base">Workspace</h4>
+                <i class="fas fa-arrow-right text-gray-500 text-xs group-hover:text-indigo-400 transition"></i>
+              </div>
+              <p class="text-xs text-gray-400 mt-1.5 leading-relaxed">Create teams, manage roles, and share history across modules.</p>
+            </div>
+          </div>
+        </a>
+        <a href="ArcAnalytics.html" class="module-card glass rounded-3xl p-5 sm:p-6 block group" style="--glow: rgba(6,182,212,0.18)">
+          <div class="flex items-start gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-cyan-500/15 border border-cyan-500/25 flex items-center justify-center shrink-0">
+              <i class="fas fa-chart-line text-cyan-400 text-lg"></i>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center justify-between gap-2">
+                <h4 class="font-extrabold text-base">Dashboard Analytics</h4>
+                <i class="fas fa-arrow-right text-gray-500 text-xs group-hover:text-cyan-400 transition"></i>
+              </div>
+              <p class="text-xs text-gray-400 mt-1.5 leading-relaxed">Track volumes, splits, and activity across your wallet and workspace.</p>
+            </div>
+          </div>
+        </a>
+        <a href="https://t.me/ArcSplitPro_bot" target="_blank" rel="noopener" class="module-card glass rounded-3xl p-5 sm:p-6 block group" style="--glow: rgba(34,158,217,0.18)">
+          <div class="flex items-start gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-[#229ED9]/15 border border-[#229ED9]/30 flex items-center justify-center shrink-0">
+              <i class="fab fa-telegram-plane text-[#5ac8fa] text-lg"></i>
+            </div>
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center justify-between gap-2">
+                <h4 class="font-extrabold text-base">Telegram Bot</h4>
+                <i class="fas fa-arrow-right text-gray-500 text-xs group-hover:text-[#5ac8fa] transition"></i>
+              </div>
+              <p class="text-xs text-gray-400 mt-1.5 leading-relaxed">Get TX notifications and manage wallet links inside Telegram.</p>
+            </div>
+          </div>
+        </a>
+      </div>
+    </section>
+
     <!-- ================= MODULES ================= -->
     <section class="space-y-4 fade-up" style="animation-delay:0.2s">
       <div class="flex items-end justify-between gap-3 px-1">
         <div>
           <h3 class="text-lg font-extrabold section-title">Modules</h3>
           <p class="text-xs mt-0.5 section-sub">Pick a tool and open it under your current workspace</p>
-
         </div>
         <span class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">8 tools</span>
       </div>
@@ -341,7 +628,7 @@
       <div class="flex flex-wrap items-center justify-center gap-3 mb-2">
         <a href="Workspace.html" class="hover:text-cyan-400 transition">Workspace</a>
         <span class="opacity-30">·</span>
-        <a href="ArcAnalytics.html" class="hover:text-cyan-400 transition">Dashboard</a>
+        <a href="ArcAnalytics.html" class="hover:text-cyan-400 transition">Dashboard Analytics</a>
         <span class="opacity-30">·</span>
         <a href="https://t.me/ArcSplitPro_bot" target="_blank" rel="noopener" class="hover:text-sky-400 transition">Telegram Bot</a>
         <span class="opacity-30">·</span>
@@ -351,6 +638,11 @@
       <div>© ArcSplit · Built for professional on-chain teams</div>
     </footer>
   </div>
+
+  <!-- Floating theme toggle -->
+  <button onclick="toggleTheme()" id="themeBtn" aria-label="Toggle theme" title="Toggle light / dark">
+    <i class="fas fa-moon text-sm"></i>
+  </button>
 
   <!-- Toast -->
   <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#121228] border border-white/15 text-white px-5 py-3 rounded-2xl shadow-2xl z-50 text-xs backdrop-blur-xl">
@@ -393,30 +685,24 @@
   function updateTelegramUI() {
     const linked = !!getTelegramChatId();
     const linkBtn = document.getElementById('tgLinkBtn');
-    const badge = document.getElementById('tgLinkedBadge');
-    const unlinkBtn = document.getElementById('tgUnlinkBtn');
-    const label = document.getElementById('tgLinkedLabel');
-    if (!linkBtn || !badge || !unlinkBtn) return;
+    if (!linkBtn) return;
 
     if (linked) {
       const uname = getTelegramUsername();
-      if (label) {
-        const clean = uname ? String(uname).replace(/^@/, '') : '';
-        label.textContent = clean || 'Telegram linked';
-        label.title = clean || 'Telegram linked';
-      }
-      linkBtn.classList.add('hidden');
-      badge.classList.remove('hidden');
-      badge.classList.add('flex');
-      unlinkBtn.classList.remove('hidden');
-      unlinkBtn.classList.add('flex');
+      const clean = uname ? String(uname).replace(/^@/, '') : 'Telegram';
+      linkBtn.classList.add('connected');
+      linkBtn.title = 'Unlink Telegram';
+      linkBtn.innerHTML = `<i class="fab fa-telegram-plane"></i> <span id="tgLinkText" class="truncate max-w-[100px]">${clean}</span> <i class="fas fa-power-off text-[10px]" title="Unlink"></i>`;
     } else {
-      linkBtn.classList.remove('hidden');
-      badge.classList.add('hidden');
-      badge.classList.remove('flex');
-      unlinkBtn.classList.add('hidden');
-      unlinkBtn.classList.remove('flex');
+      linkBtn.classList.remove('connected');
+      linkBtn.title = 'Link Telegram';
+      linkBtn.innerHTML = `<i class="fab fa-telegram-plane"></i> <span id="tgLinkText">Link Telegram</span>`;
     }
+  }
+
+  function handleTelegramClick() {
+    if (getTelegramChatId()) unlinkTelegram();
+    else linkTelegram();
   }
 
   async function linkTelegram() {
@@ -756,21 +1042,19 @@
 
   function setWalletUI(connected) {
     const btn = document.getElementById('connectBtn');
-    const disc = document.getElementById('disconnectBtn');
-    const txt = document.getElementById('connectText');
     const label = document.getElementById('walletLabel');
+    if (!btn) return;
     if (connected && userAddress) {
-      txt.textContent = shortAddr(userAddress);
-      disc.classList.remove('hidden');
-      disc.classList.add('flex');
-      label.textContent = shortAddr(userAddress);
-      btn.classList.add('ring-2', 'ring-cyan-500/30');
+      const short = shortAddr(userAddress);
+      btn.innerHTML = `<i class="fas fa-wallet"></i> <span id="connectText">${short}</span> <i class="fas fa-power-off text-[10px]" title="Disconnect"></i>`;
+      btn.classList.add('connected');
+      btn.title = 'Disconnect wallet';
+      if (label) label.textContent = short;
     } else {
-      txt.textContent = 'Connect Wallet';
-      disc.classList.add('hidden');
-      disc.classList.remove('flex');
-      label.textContent = 'Not connected';
-      btn.classList.remove('ring-2', 'ring-cyan-500/30');
+      btn.innerHTML = `<i class="fas fa-wallet"></i> <span id="connectText">Connect Wallet</span>`;
+      btn.classList.remove('connected');
+      btn.title = 'Connect wallet';
+      if (label) label.textContent = 'Not connected';
     }
   }
 
@@ -819,7 +1103,28 @@
     }
   }
 
+  
+  // Wallet connect loading UI (page-local)
+  function arcSetConnectLoading(loading) {
+    const btn = document.getElementById("connectBtn") || document.getElementById("connectHeaderBtn") || document.getElementById("connectWalletBtn");
+    if (!btn) return;
+    if (loading) {
+      btn.dataset.arcPrev = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-circle-notch arc-spin"></i> <span>Connecting…</span>';
+    } else {
+      btn.disabled = false;
+      if (btn.dataset.arcPrev) { btn.innerHTML = btn.dataset.arcPrev; delete btn.dataset.arcPrev; }
+    }
+  }
+
+  function handleWalletClick() {
+    if (userAddress) disconnectWallet();
+    else connectWallet();
+  }
+
   async function connectWallet() {
+    try { if (typeof arcSetConnectLoading === 'function') arcSetConnectLoading(true); } catch(e) {}
     if (!window.ethereum) return showToast('MetaMask / Web3 wallet not found');
     try {
       provider = new ethers.BrowserProvider(window.ethereum);
@@ -905,7 +1210,7 @@
       }).slice(0, 12);
 
       if (!rows.length) {
-        box.innerHTML = `<p class="text-sm text-gray-500 text-center py-10">No activity yet — run your first split.</p>`;
+        box.innerHTML = `<p class="arc-empty">No activity yet — run your first split.</p>`;
         return;
       }
 
@@ -939,10 +1244,10 @@
     document.documentElement.classList.toggle('light');
     const icon = document.querySelector('#themeBtn i');
     if (document.documentElement.classList.contains('light')) {
-      icon.className = 'fas fa-sun text-lg text-amber-500';
+      icon.className = 'fas fa-sun text-sm text-amber-500';
       localStorage.setItem('theme', 'light');
     } else {
-      icon.className = 'fas fa-moon text-lg text-cyan-400';
+      icon.className = 'fas fa-moon text-sm text-cyan-400';
       localStorage.setItem('theme', 'dark');
     }
   }
@@ -951,7 +1256,7 @@
   (async () => {
     if (localStorage.getItem('theme') === 'light') {
       document.documentElement.classList.add('light');
-      document.querySelector('#themeBtn i').className = 'fas fa-sun text-lg text-amber-500';
+      document.querySelector('#themeBtn i').className = 'fas fa-sun text-sm text-amber-500';
     }
 
     initTelegramFromURL();
@@ -1010,5 +1315,6 @@
     }
   })();
 </script>
+  <script src="arc-chrome.js"></script>
 </body>
 </html>
