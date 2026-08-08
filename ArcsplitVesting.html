@@ -327,11 +327,8 @@
         <button onclick="toggleTheme()" id="themeBtn" class="arc-hdr-btn w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/10 light:hover:bg-black/10 border border-white/10 light:border-black/10 rounded-2xl transition-all shadow-lg" aria-label="Toggle Theme">
           <i class="fas fa-moon text-lg text-lime-400"></i>
         </button>
-        <button id="connectWalletBtn" onclick="connectWallet()" class="arc-hdr-btn arc-btn-connect arc-btn-glass arc-accent-lime app-button h-11 px-4 sm:px-5 font-bold rounded-2xl text-xs flex items-center gap-2">
-          <i class="fas fa-wallet"></i> <span id="walletBtnText">Connect Wallet</span>
-        </button>
-        <button id="disconnectWalletBtn" onclick="disconnectWallet()" class="hidden arc-hdr-btn w-11 h-11 items-center justify-center rounded-2xl bg-rose-500/10 text-rose-400 border border-rose-500/20" title="Disconnect">
-          <i class="fas fa-power-off"></i>
+        <button id="connectWalletBtn" onclick="handleWalletClick()" class="arc-hdr-btn arc-btn-connect arc-btn-glass arc-accent-lime app-button h-11 px-4 sm:px-5 font-bold rounded-2xl text-xs flex items-center gap-2">
+          <i class="fas fa-wallet text-lime-400"></i> <span id="walletBtnText">Connect Wallet</span>
         </button>
       </div>
     </div>
@@ -668,6 +665,11 @@
     }
   });
 
+  function handleWalletClick() {
+    if (userAddress) disconnectWallet();
+    else connectWallet();
+  }
+
   async function connectWallet(isAuto = false) {
     if (window.ethereum) {
       try {
@@ -683,8 +685,9 @@
         if (typeof refreshWorkspaceGuard === "function") refreshWorkspaceGuard();
         
         const shortAddr = userAddress.substring(0, 6) + "..." + userAddress.substring(userAddress.length - 4);
-        document.getElementById('walletBtnText').textContent = shortAddr;
-        document.getElementById('disconnectWalletBtn').classList.remove('hidden');
+        const _wb = document.getElementById('connectWalletBtn');
+        if (_wb) _wb.innerHTML = `<i class="fas fa-wallet text-lime-400"></i> <span id="walletBtnText" class="font-bold">${shortAddr}</span> <i class="fas fa-power-off text-rose-400 ml-1 text-[10px]" title="Disconnect"></i>`;
+        /* disconnect btn removed — single toggle */
         
         await fetchRealTokenBalanceWithRetry();
         
@@ -732,8 +735,9 @@
     signer = null;
     userAddress = null;
     window.userAddress = null;
-    document.getElementById('walletBtnText').textContent = "Connect Wallet";
-    document.getElementById('disconnectWalletBtn').classList.add('hidden');
+    const _wb2 = document.getElementById('connectWalletBtn');
+    if (_wb2) _wb2.innerHTML = `<i class="fas fa-wallet text-lime-400"></i> <span id="walletBtnText">Connect Wallet</span>`;
+    /* disconnect btn removed — single toggle */
     document.getElementById('walletBalanceDisplay').textContent = `0.00 (Not Connected)`;
     historyTransactions = [];
     renderHistoryList();
