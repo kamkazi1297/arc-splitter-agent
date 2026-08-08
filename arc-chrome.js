@@ -1,7 +1,4 @@
-/**
- * ArcSplit shared chrome — Hub link, glass Connect, favicon, toast, empty states.
- * Include after the page header markup. Optional: <body data-arc-accent="emerald">
- */
+
 (function () {
   const ACCENTS = {
     emerald: "arc-accent-emerald",
