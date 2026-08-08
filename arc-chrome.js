@@ -97,7 +97,7 @@
     const a = document.createElement("a");
     a.id = "arcHubLink";
     a.href = "index.html" + workspaceQuery();
-    a.className = "arc-hub-link";
+    a.className = "arc-hub-link arc-hdr-btn";
     a.innerHTML = '<i class="fas fa-home"></i><span class="arc-hub-text">Hub</span>';
     a.title = "Back to Hub";
 
@@ -115,7 +115,7 @@
     ids.forEach((id) => {
       const el = document.getElementById(id);
       if (!el) return;
-      el.classList.add("arc-btn-connect", "arc-btn-glass", accentClass);
+      el.classList.add("arc-btn-connect", "arc-btn-glass", "arc-hdr-btn", accentClass);
       // Remove solid white backgrounds that fight glass look
       el.classList.remove("bg-white", "text-gray-950", "text-black");
     });
