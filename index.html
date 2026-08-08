@@ -158,6 +158,12 @@ button, a, input, select, textarea { max-width: 100%; }
   border: 1px solid transparent;
 }
 .hdr-btn:active { transform: scale(0.98); }
+.hdr-btn:disabled {
+  opacity: 0.7 !important;
+  cursor: wait !important;
+  transform: none !important;
+  pointer-events: none;
+}
 .hdr-btn-icon {
   width: 2.75rem !important;
   min-width: 2.75rem !important;
@@ -564,7 +570,10 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
           </button>
         </div>
         <div id="activityList" class="space-y-2 max-h-80 overflow-y-auto scroll-thin">
-          <p class="text-sm text-gray-500 text-center py-10">Connect wallet to load activity.</p>
+          <div class="arc-empty">
+            <i class="fas fa-wallet"></i>
+            Connect wallet to see recent activity
+          </div>
         </div>
       </section>
 
@@ -701,6 +710,8 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
   }
 
   function handleTelegramClick() {
+    const btn = document.getElementById('tgLinkBtn');
+    if (btn && btn.disabled) return;
     if (getTelegramChatId()) unlinkTelegram();
     else linkTelegram();
   }
@@ -744,15 +755,36 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
   }
 
   let _linkPollTimer = null;
+  function setTelegramWaiting(waiting) {
+    const btn = document.getElementById('tgLinkBtn');
+    if (!btn) return;
+    if (waiting) {
+      btn.disabled = true;
+      btn.classList.remove('connected');
+      btn.innerHTML = `<i class="fas fa-circle-notch arc-spin"></i> <span id="tgLinkText">Waiting…</span>`;
+      btn.title = 'Confirm in Telegram';
+    } else if (!getTelegramChatId()) {
+      btn.disabled = false;
+      updateTelegramUI();
+    } else {
+      btn.disabled = false;
+      updateTelegramUI();
+    }
+  }
+
   function startLinkStatusPoll(token) {
     if (_linkPollTimer) clearInterval(_linkPollTimer);
+    setTelegramWaiting(true);
     let tries = 0;
-    _linkPollTimer = setInterval(async () => {
+    const maxTries = 90; // ~90s with 1s interval
+
+    const tick = async () => {
       tries++;
-      if (tries > 60) {
-        // ~2 minutes
+      if (tries > maxTries) {
         clearInterval(_linkPollTimer);
         _linkPollTimer = null;
+        setTelegramWaiting(false);
+        showToast('Telegram link timed out — try again');
         return;
       }
       try {
@@ -768,12 +800,22 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
         if (data.ok && (data.status === 'linked' || data.status === 'already_linked') && data.chatId) {
           const uname = data.username ? String(data.username).replace(/^@/, '') : '';
           setTelegramChatId(data.chatId, uname);
+          setTelegramWaiting(false);
           showToast(uname ? ('Telegram linked · ' + uname) : 'Telegram linked');
         } else if (data.status === 'rejected') {
+          setTelegramWaiting(false);
           showToast('Telegram link cancelled');
+        } else {
+          setTelegramWaiting(false);
         }
-      } catch {}
-    }, 2000);
+      } catch {
+        // keep polling on network blips
+      }
+    };
+
+    // first check quickly, then every 1s
+    setTimeout(tick, 400);
+    _linkPollTimer = setInterval(tick, 1000);
   }
 
   async function unlinkTelegram() {
@@ -1109,12 +1151,11 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
     const btn = document.getElementById("connectBtn") || document.getElementById("connectHeaderBtn") || document.getElementById("connectWalletBtn");
     if (!btn) return;
     if (loading) {
-      btn.dataset.arcPrev = btn.innerHTML;
       btn.disabled = true;
       btn.innerHTML = '<i class="fas fa-circle-notch arc-spin"></i> <span>Connecting…</span>';
     } else {
       btn.disabled = false;
-      if (btn.dataset.arcPrev) { btn.innerHTML = btn.dataset.arcPrev; delete btn.dataset.arcPrev; }
+      // Do NOT restore old HTML — setWalletUI owns the final label
     }
   }
 
@@ -1124,8 +1165,11 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
   }
 
   async function connectWallet() {
-    try { if (typeof arcSetConnectLoading === 'function') arcSetConnectLoading(true); } catch(e) {}
-    if (!window.ethereum) return showToast('MetaMask / Web3 wallet not found');
+    if (!window.ethereum) {
+      showToast('MetaMask / Web3 wallet not found');
+      return;
+    }
+    try { if (typeof arcSetConnectLoading === 'function') arcSetConnectLoading(true); } catch (e) {}
     try {
       provider = new ethers.BrowserProvider(window.ethereum);
       await provider.send('eth_requestAccounts', []);
@@ -1146,6 +1190,11 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
     } catch (e) {
       console.error(e);
       showToast(e?.code === 4001 ? 'Connection rejected' : 'Connection failed');
+      setWalletUI(!!userAddress);
+    } finally {
+      try { if (typeof arcSetConnectLoading === 'function') arcSetConnectLoading(false); } catch (e) {}
+      // Re-apply final UI after re-enable (loading may have left spinner text)
+      setWalletUI(!!userAddress);
     }
   }
 
@@ -1156,7 +1205,7 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
     signer = null;
     setWalletUI(false);
     document.getElementById('activityList').innerHTML =
-      `<p class="text-sm text-gray-500 text-center py-10">Connect wallet to load activity.</p>`;
+      `<div class="arc-empty"><i class="fas fa-wallet"></i>Connect wallet to see recent activity</div>`;
     showToast('Wallet disconnected');
     // Telegram link stays until user Unlink — intentional
   }
@@ -1193,13 +1242,13 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
   async function loadActivity() {
     const box = document.getElementById('activityList');
     if (!userAddress) {
-      box.innerHTML = `<p class="text-sm text-gray-500 text-center py-10">Connect wallet to load activity.</p>`;
+      box.innerHTML = `<div class="arc-empty"><i class="fas fa-wallet"></i>Connect wallet to see recent activity</div>`;
       return;
     }
-    box.innerHTML = `<p class="text-sm text-cyan-400 text-center py-8"><i class="fas fa-spinner fa-spin mr-2"></i>Loading…</p>`;
+    box.innerHTML = `<div class="arc-empty" style="border:none"><i class="fas fa-circle-notch arc-spin"></i>Loading activity…</div>`;
     try {
       if (typeof fetchHistoryFromCloud !== 'function') {
-        box.innerHTML = `<p class="text-sm text-gray-500 text-center py-10">Cloud history unavailable.</p>`;
+        box.innerHTML = `<div class="arc-empty"><i class="fas fa-cloud"></i>Cloud history unavailable</div>`;
         return;
       }
       let rows = await fetchHistoryFromCloud(userAddress);
@@ -1210,7 +1259,7 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
       }).slice(0, 12);
 
       if (!rows.length) {
-        box.innerHTML = `<p class="arc-empty">No activity yet — run your first split.</p>`;
+        box.innerHTML = `<div class="arc-empty"><i class="fas fa-stream"></i>No activity yet — run your first split</div>`;
         return;
       }
 
@@ -1236,7 +1285,7 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
       }).join('');
     } catch (e) {
       console.error(e);
-      box.innerHTML = `<p class="text-sm text-rose-400 text-center py-10">Failed to load activity.</p>`;
+      box.innerHTML = `<div class="arc-empty" style="color:#fb7185"><i class="fas fa-exclamation-circle"></i>Failed to load activity</div>`;
     }
   }
 
