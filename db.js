@@ -1,5 +1,4 @@
 
-
 const SUPABASE_URL = 'https://yelauzpxsfjzydffhnhb.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InllbGF1enB4c2ZqenlkZmZobmhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzNjEyOTMsImV4cCI6MjEwMDkzNzI5M30.qtLEnhS8Zs34U_inur4e5UIBuKB5AmS_Z0VrT7jFvqM';
 
@@ -81,14 +80,14 @@ async function fetchHistoryFromCloud(userAddress) {
       .select('history_data, user_address, id, memo')
       .eq('user_address', addr)
       .order('id', { ascending: false })
-      .limit(80);
+      .limit(300);
     if (error) {
       console.warn('fetchHistory eq failed, fallback', error.message || error);
       const fb = await client
         .from('history')
         .select('history_data, user_address, id, memo')
         .order('id', { ascending: false })
-        .limit(150);
+        .limit(400);
       if (fb.error) {
         console.error('Error fetching history:', fb.error);
         return [];
@@ -1008,3 +1007,4 @@ if (typeof window !== 'undefined') {
   window.saveToCloudDB = saveToCloudDB;
   window.loadFromCloudDB = loadFromCloudDB;
 }
+
