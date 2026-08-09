@@ -2,19 +2,20 @@
 <html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ArcPay - Pay Invoice</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+  <link rel="icon" type="image/svg+xml" href="logo-white.svg">
 
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
-    
-    body { 
-      font-family: 'Plus Jakarta Sans', system-ui, sans-serif; 
+
+    body {
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
       background: #070711;
-      background-image: 
+      background-image:
         radial-gradient(circle at 10% 20%, rgba(234, 179, 8, 0.09) 0%, transparent 40%),
         radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.08) 0%, transparent 40%),
         radial-gradient(circle at 50% 50%, rgba(180, 140, 40, 0.05) 0%, transparent 50%);
@@ -22,7 +23,7 @@
       min-height: 100vh;
       overflow-x: hidden;
     }
-    
+
     .glass {
       background: rgba(18, 18, 38, 0.65);
       backdrop-filter: blur(24px);
@@ -31,52 +32,111 @@
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
 
-    .light {
-      background: #f8fafc !important; 
-      background-image: 
+    html.light body {
+      background: #f8fafc !important;
+      background-image:
         radial-gradient(circle at 10% 20%, rgba(234, 179, 8, 0.12) 0%, transparent 40%),
         radial-gradient(circle at 90% 80%, rgba(16, 185, 129, 0.10) 0%, transparent 40%),
         radial-gradient(circle at 50% 50%, rgba(180, 140, 40, 0.06) 0%, transparent 50%) !important;
       color: #0f172a !important;
     }
 
-    .light .glass {
+    html.light .glass {
       background: rgba(255, 255, 255, 0.55) !important;
-      backdrop-filter: blur(24px) !important;
-      -webkit-backdrop-filter: blur(24px) !important;
-      border: 1px solid rgba(0, 0, 0, 0.08) !important;
+      border: 1px solid rgba(0, 0, 0, 0.10) !important;
       box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
       color: #0f172a !important;
     }
 
-    .light h1, .light h3, .light label, .light .text-white:not(.always-white) {
-      color: #0f172a !important;
-    }
-    .light .text-gray-400 { color: #1e293b !important; }
-    .light .text-gray-300 { color: #0f172a !important; }
-    .light .text-gray-500 { color: #334155 !important; }
+    html.light h1, html.light h3, html.light label { color: #0f172a !important; }
+    html.light .text-gray-400 { color: #1e293b !important; }
+    html.light .text-gray-300 { color: #0f172a !important; }
+    html.light .text-gray-500 { color: #334155 !important; }
 
     .always-white { color: #ffffff !important; }
-    .light .always-white { color: #ffffff !important; }
+    html.light .always-white { color: #ffffff !important; }
 
-    .brand-gradient,
-    .light .brand-gradient {
-      -webkit-text-fill-color: transparent !important;
-      color: transparent !important;
+    .brand-gradient {
       background-image: linear-gradient(to right, #facc15, #34d399) !important;
       -webkit-background-clip: text !important;
       background-clip: text !important;
+      -webkit-text-fill-color: transparent !important;
+      color: transparent !important;
     }
 
-    .light .details-card {
+    .details-card {
+      background: rgba(0, 0, 0, 0.28);
+      border: 1px solid rgba(255, 255, 255, 0.10);
+    }
+    html.light .details-card {
       background: #0a0a0f !important;
       border-color: rgba(255, 255, 255, 0.08) !important;
     }
-    .light .details-card .text-gray-400 { color: #94a3b8 !important; }
-    .light .details-card .text-gray-300,
-    .light .details-card .text-white,
-    .light .details-card .always-white { color: #ffffff !important; }
-    .light .details-card .text-gray-500 { color: #64748b !important; }
+    html.light .details-card .text-gray-400 { color: #94a3b8 !important; }
+    html.light .details-card .text-gray-300,
+    html.light .details-card .always-white { color: #ffffff !important; }
+
+    .hdr-btn {
+      height: 2.5rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.4rem;
+      padding: 0 0.9rem;
+      border-radius: 0.85rem;
+      font-size: 0.8125rem;
+      font-weight: 700;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      border: 1px solid transparent;
+      cursor: pointer;
+    }
+    .hdr-btn:active { transform: scale(0.98); }
+    .hdr-connect {
+      background: linear-gradient(135deg, #eab308, #ca8a04);
+      color: #0f172a;
+      border-color: rgba(234, 179, 8, 0.5);
+      box-shadow: 0 2px 10px rgba(234, 179, 8, 0.25);
+    }
+    .hdr-connect:hover { filter: brightness(1.06); }
+    .hdr-connect.connected {
+      background: rgba(234, 179, 8, 0.14);
+      color: #fde047;
+      border-color: rgba(234, 179, 8, 0.4);
+      box-shadow: none;
+    }
+    .hdr-connect .pwr { margin-left: 0.3rem; color: #f43f5e; font-size: 0.75rem; }
+    html.light .hdr-connect.connected {
+      background: rgba(234, 179, 8, 0.12);
+      color: #a16207;
+      border-color: rgba(161, 98, 7, 0.35);
+    }
+
+    .theme-fab {
+      position: fixed;
+      bottom: 1.25rem;
+      right: 1.25rem;
+      z-index: 40;
+      width: 2.75rem;
+      height: 2.75rem;
+      border-radius: 999px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(18, 18, 38, 0.75);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      backdrop-filter: blur(12px);
+      color: #facc15;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .theme-fab:hover { transform: scale(1.06); }
+    html.light .theme-fab {
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      color: #ca8a04;
+    }
 
     .app-button {
       position: relative;
@@ -94,49 +154,40 @@
       height: 20px;
       animation: spin 1s linear infinite;
     }
-    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    @keyframes spin { to { transform: rotate(360deg); } }
   </style>
 </head>
 <body class="flex flex-col items-center justify-center p-4 min-h-screen selection:bg-yellow-500/40 selection:text-black">
 
-  <div class="w-full max-w-md flex justify-between items-center mb-6 px-1">
-    <div class="flex items-center gap-3">
-      <img src="logo-white.svg" alt="ArcPay" class="w-9 h-9 object-contain block light:hidden">
-      <img src="trace-raw.svg" alt="ArcPay" class="w-9 h-9 object-contain hidden light:block">
-      <div class="text-2xl font-extrabold tracking-tight">
-        Arc<span class="brand-gradient text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-emerald-400">Pay</span>
+  <div class="w-full max-w-md flex justify-between items-center mb-6 px-1 gap-3">
+    <div class="flex items-center gap-3 min-w-0">
+      <img src="logo-white.svg" alt="ArcPay" class="w-9 h-9 object-contain block light:hidden shrink-0">
+      <img src="trace-raw.svg" alt="ArcPay" class="w-9 h-9 object-contain hidden light:block shrink-0">
+      <div class="text-2xl font-extrabold tracking-tight truncate">
+        Arc<span class="brand-gradient">Pay</span>
       </div>
     </div>
-    
-    <div class="flex items-center gap-2">
-      <button onclick="toggleTheme()" id="themeBtn" class="w-10 h-10 flex items-center justify-center bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all">
-        <i class="fas fa-moon text-yellow-400"></i>
-      </button>
-      <div id="walletState">
-        <button id="topConnectBtn" onclick="connectWallet(true)" class="app-button text-sm bg-white/5 hover:bg-white/10 border border-white/10 px-4 py-2 rounded-xl transition-colors font-semibold flex items-center gap-2">
-          <i class="fas fa-wallet text-yellow-500"></i> Connect
-        </button>
-        <div id="topWalletInfo" class="hidden flex items-center gap-2">
-          <span id="topAddressDisplay" class="text-sm font-mono text-yellow-400 bg-yellow-400/10 px-3 py-1.5 rounded-lg border border-yellow-400/20"></span>
-          <button onclick="disconnectWallet()" class="text-rose-400 hover:text-white p-2 rounded-lg bg-rose-400/10 hover:bg-rose-500 transition-colors" title="Disconnect Wallet">
-            <i class="fas fa-power-off"></i>
-          </button>
-        </div>
-      </div>
-    </div>
+    <button onclick="onWalletBtnClick()" id="hdrConnectBtn" class="hdr-btn hdr-connect shrink-0">
+      <i class="fas fa-wallet text-sm"></i>
+      <span id="hdrConnectText">Connect</span>
+    </button>
   </div>
+
+  <button onclick="toggleTheme()" id="themeBtn" class="theme-fab" title="Toggle theme">
+    <i class="fas fa-moon text-sm"></i>
+  </button>
 
   <div class="glass w-full max-w-md rounded-[2rem] p-8 text-center space-y-6">
     <div class="w-16 h-16 bg-gradient-to-br from-yellow-400 to-amber-600 rounded-2xl flex items-center justify-center shadow-lg shadow-yellow-500/25 mx-auto">
       <i class="fas fa-file-invoice-dollar text-white text-2xl"></i>
     </div>
-    
+
     <div>
       <h1 class="text-2xl font-extrabold tracking-tight">Invoice Details</h1>
       <p class="text-gray-400 text-sm mt-2 font-medium">Review your invoice details below.</p>
     </div>
 
-    <div class="details-card bg-black/25 rounded-2xl p-4 text-left border border-white/10 space-y-3">
+    <div class="details-card rounded-2xl p-4 text-left space-y-3">
       <div class="flex justify-between items-center text-sm">
         <span class="text-gray-400 font-medium">Invoice ID</span>
         <span id="invoiceIdDisplay" class="font-mono text-yellow-400">Loading...</span>
@@ -170,10 +221,10 @@
         </span>
       </button>
     </div>
-    
+
     <p id="errorMsg" class="text-rose-400 text-sm hidden font-medium"></p>
     <p id="successMsg" class="text-emerald-400 text-sm hidden font-medium"></p>
-    
+
     <div id="txHashContainer" class="hidden mt-4 text-center">
       <a id="txHashLink" href="#" target="_blank" class="text-sm text-yellow-400 hover:text-yellow-300 font-semibold bg-yellow-500/10 border border-yellow-500/20 px-4 py-2.5 rounded-xl inline-flex items-center gap-2 transition-colors">
         <i class="fas fa-external-link-alt"></i> View on Explorer
@@ -184,7 +235,7 @@
   <script>
     const INVOICE_CONTRACT_ADDRESS = "0xD915573BCC42c5d4f859627435E975AEe316BCe0";
     const ARC_CHAIN_ID = 5042002;
-    const ARC_CHAIN_ID_HEX = "0x4cef52"; // 5042002 (was wrong: 0x4cebe2)
+    const ARC_CHAIN_ID_HEX = "0x4cef52";
     const ARC_NETWORK_PARAMS = {
       chainId: ARC_CHAIN_ID_HEX,
       chainName: "Arc Network Testnet",
@@ -192,13 +243,13 @@
       rpcUrls: ["https://rpc.testnet.arc.network"],
       blockExplorerUrls: ["https://testnet.arcscan.app"]
     };
-    
+
     const RPC_URL = "https://rpc.testnet.arc.network";
     const readProvider = new ethers.JsonRpcProvider(RPC_URL, {
       chainId: ARC_CHAIN_ID,
       name: "arc-testnet"
     }, { staticNetwork: true });
-    
+
     const TOKEN_MAP = {
       "0x0000000000000000000000000000000000000000": "USDC",
       "0x3600000000000000000000000000000000000000": "USDC",
@@ -217,7 +268,7 @@
       "function invoices(uint256) view returns (uint256 amount, address issuer, uint40 dueDate, uint8 status, address payer, address token)",
       "function payInvoice(uint256 invoiceId) external payable"
     ];
-    
+
     const ERC20ABI = [
       "function decimals() view returns (uint8)",
       "function allowance(address owner, address spender) view returns (uint256)",
@@ -234,14 +285,35 @@
 
     function toggleTheme() {
       document.documentElement.classList.toggle('light');
-      const icon = document.getElementById("themeBtn").querySelector("i");
+      const icon = document.getElementById("themeBtn")?.querySelector("i");
+      if (!icon) return;
       if (document.documentElement.classList.contains('light')) {
-        icon.classList.remove("fa-moon", "text-yellow-400");
-        icon.classList.add("fa-sun", "text-yellow-500");
+        icon.classList.remove("fa-moon");
+        icon.classList.add("fa-sun");
       } else {
-        icon.classList.remove("fa-sun", "text-yellow-500");
-        icon.classList.add("fa-moon", "text-yellow-400");
+        icon.classList.remove("fa-sun");
+        icon.classList.add("fa-moon");
       }
+    }
+
+    function setWalletUI(connected) {
+      const short = connected && userAddress
+        ? userAddress.slice(0, 6) + "..." + userAddress.slice(-4)
+        : null;
+      const btn = document.getElementById('hdrConnectBtn');
+      if (!btn) return;
+      btn.disabled = false;
+      btn.className = connected
+        ? "hdr-btn hdr-connect connected shrink-0"
+        : "hdr-btn hdr-connect shrink-0";
+      btn.innerHTML = connected
+        ? '<i class="fas fa-wallet text-sm"></i><span id="hdrConnectText">' + short + '</span><i class="fas fa-power-off pwr"></i>'
+        : '<i class="fas fa-wallet text-sm"></i><span id="hdrConnectText">Connect</span>';
+    }
+
+    function onWalletBtnClick() {
+      if (userAddress) disconnectWallet();
+      else connectWallet(true);
     }
 
     window.addEventListener('load', async () => {
@@ -252,16 +324,25 @@
         showError("Invalid invoice link. Missing Invoice ID.");
         return;
       }
-      
+
       document.getElementById('invoiceIdDisplay').textContent = "#" + invoiceId;
-      
-      let fetchPromise = fetchInvoiceDetails();
+
+      const fetchPromise = fetchInvoiceDetails();
       let walletPromise = Promise.resolve();
 
-      if (window.ethereum && window.ethereum.selectedAddress) {
-        walletPromise = connectWallet(false);
+      if (window.ethereum && localStorage.getItem("arcWalletDisconnected") !== "1") {
+        try {
+          const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+          if (accounts && accounts.length) {
+            walletPromise = connectWallet(false);
+          } else {
+            setWalletUI(false);
+          }
+        } catch (_) {
+          setWalletUI(false);
+        }
       } else {
-        updateWalletUI();
+        setWalletUI(false);
       }
 
       await Promise.all([fetchPromise, walletPromise]);
@@ -269,237 +350,204 @@
 
     async function fetchInvoiceDetails() {
       hideMessages();
-      
       document.getElementById('amountDisplay').innerHTML = '<div class="spinner border-gray-400 border-left-transparent w-4 h-4 inline-block"></div>';
-      
       const statusEl = document.getElementById('statusDisplay');
       statusEl.className = 'font-bold flex items-center gap-2 text-gray-400';
       statusEl.innerHTML = '<div class="spinner border-gray-400 border-left-transparent w-4 h-4 inline-block"></div> Fetching...';
 
       let success = false;
-
       while (!success) {
         try {
           const contract = new ethers.Contract(INVOICE_CONTRACT_ADDRESS, ArcInvoiceABI, readProvider);
           const [amount, issuer, dueDate, status, payer, tokenAddress] = await contract.invoices(invoiceId);
-
           const tokenLower = tokenAddress.toLowerCase();
           let tokenSymbol = TOKEN_MAP[tokenLower] || "Unknown Token";
-          let decimals = TOKEN_DECIMALS[tokenLower] || 18; 
-
+          let decimals = TOKEN_DECIMALS[tokenLower] || 18;
           const formattedAmount = ethers.formatUnits(amount, decimals);
-          
+
           invoiceData = {
-              amountRaw: amount,
-              amountFormatted: formattedAmount,
-              tokenAddress: tokenAddress,
-              tokenSymbol: tokenSymbol,
-              issuer: issuer,
-              payer: payer,
-              status: Number(status),
-              isNative: tokenLower === "0x0000000000000000000000000000000000000000" || tokenLower === "0x3600000000000000000000000000000000000000"
+            amountRaw: amount,
+            amountFormatted: formattedAmount,
+            tokenAddress: tokenAddress,
+            tokenSymbol: tokenSymbol,
+            issuer: issuer,
+            payer: payer,
+            status: Number(status),
+            isNative: tokenLower === "0x0000000000000000000000000000000000000000" || tokenLower === "0x3600000000000000000000000000000000000000"
           };
 
-          document.getElementById('issuerDisplay').textContent = issuer.slice(0,6) + "..." + issuer.slice(-4);
-          document.getElementById('payerDisplay').textContent = payer === ethers.ZeroAddress ? 'Anyone' : payer.slice(0,6) + "..." + payer.slice(-4);
+          document.getElementById('issuerDisplay').textContent = issuer.slice(0, 6) + "..." + issuer.slice(-4);
+          document.getElementById('payerDisplay').textContent = payer === ethers.ZeroAddress ? 'Anyone' : payer.slice(0, 6) + "..." + payer.slice(-4);
           document.getElementById('dueDateDisplay').textContent = dueDate > 0 ? new Date(Number(dueDate) * 1000).toLocaleString() : "No Due Date";
           document.getElementById('amountDisplay').innerHTML = '<span class="text-white always-white">' + parseFloat(formattedAmount).toFixed(4) + '</span> <span class="text-yellow-400 font-bold">' + tokenSymbol + '</span>';
 
-          if (invoiceData.status === 1) { 
-              statusEl.innerHTML = "Pending";
-              statusEl.className = 'font-bold text-yellow-400';
-              document.getElementById('actionSection').classList.remove('hidden');
-          } else if (invoiceData.status === 2) { 
-              statusEl.innerHTML = "Paid";
-              statusEl.className = 'font-bold text-emerald-400';
-          } else if (invoiceData.status === 3) { 
-              statusEl.innerHTML = "Cancelled";
-              statusEl.className = 'font-bold text-rose-400';
+          if (invoiceData.status === 1) {
+            statusEl.innerHTML = "Pending";
+            statusEl.className = 'font-bold text-yellow-400';
+            document.getElementById('actionSection').classList.remove('hidden');
+          } else if (invoiceData.status === 2) {
+            statusEl.innerHTML = "Paid";
+            statusEl.className = 'font-bold text-emerald-400';
+          } else if (invoiceData.status === 3) {
+            statusEl.innerHTML = "Cancelled";
+            statusEl.className = 'font-bold text-rose-400';
           }
-          
+
           updateActionButton();
           success = true;
-
         } catch (error) {
-          console.warn("RPC is slow, retrying fetching values silently...");
+          console.warn("RPC is slow, retrying...");
           await sleep(3000);
         }
       }
     }
 
     async function ensureArcNetwork() {
-        if (!window.ethereum) return false;
+      if (!window.ethereum) return false;
+      try {
+        const chainId = await window.ethereum.request({ method: "eth_chainId" });
+        if (chainId === ARC_CHAIN_ID_HEX || parseInt(chainId, 16) === ARC_CHAIN_ID) return true;
         try {
-            const chainId = await window.ethereum.request({ method: "eth_chainId" });
-            if (chainId === ARC_CHAIN_ID_HEX || parseInt(chainId, 16) === ARC_CHAIN_ID) return true;
-            try {
-                await window.ethereum.request({
-                    method: "wallet_switchEthereumChain",
-                    params: [{ chainId: ARC_CHAIN_ID_HEX }]
-                });
-            } catch (switchError) {
-                if (switchError.code === 4902 || switchError.code === -32603) {
-                    await window.ethereum.request({
-                        method: "wallet_addEthereumChain",
-                        params: [ARC_NETWORK_PARAMS]
-                    });
-                } else {
-                    throw switchError;
-                }
-            }
-            return true;
-        } catch (err) {
-            console.warn("ensureArcNetwork", err);
-            return false;
+          await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: ARC_CHAIN_ID_HEX }] });
+        } catch (switchError) {
+          if (switchError.code === 4902 || switchError.code === -32603) {
+            await window.ethereum.request({ method: "wallet_addEthereumChain", params: [ARC_NETWORK_PARAMS] });
+          } else {
+            throw switchError;
+          }
         }
+        return true;
+      } catch (err) {
+        console.warn("ensureArcNetwork", err);
+        return false;
+      }
     }
 
     async function connectWallet(showErr) {
-        if (showErr === undefined) showErr = true;
-        if (!window.ethereum) return showErr ? showError("MetaMask not found!") : null;
-        try {
-            const onArc = await ensureArcNetwork();
-            if (!onArc) {
-                if (showErr) showError("Please switch to Arc Network Testnet (5042002)");
-                return;
-            }
-            const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
-            userAddress = accounts[0];
-            provider = new ethers.BrowserProvider(window.ethereum);
-            signer = await provider.getSigner();
-            hideMessages();
-        } catch (e) {
-            if (showErr) showError("Failed to connect wallet.");
-        } finally {
-            updateWalletUI();
-            updateActionButton();
+      if (showErr === undefined) showErr = true;
+      if (!window.ethereum) return showErr ? showError("MetaMask not found!") : null;
+
+      const btn = document.getElementById('hdrConnectBtn');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin text-sm"></i><span>…</span>';
+      }
+
+      try {
+        const onArc = await ensureArcNetwork();
+        if (!onArc) {
+          if (showErr) showError("Please switch to Arc Network Testnet (5042002)");
+          setWalletUI(!!userAddress);
+          return;
         }
+        const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+        userAddress = accounts[0];
+        localStorage.setItem("userAddress", userAddress);
+        localStorage.removeItem("arcWalletDisconnected");
+        provider = new ethers.BrowserProvider(window.ethereum);
+        signer = await provider.getSigner();
+        hideMessages();
+      } catch (e) {
+        if (showErr) showError("Failed to connect wallet.");
+      } finally {
+        setWalletUI(!!userAddress);
+        updateActionButton();
+      }
     }
 
     function disconnectWallet() {
-        userAddress = null;
-        signer = null;
-        hideMessages();
-        updateWalletUI();
-        updateActionButton();
-    }
-
-    function updateWalletUI() {
-        const connectBtn = document.getElementById('topConnectBtn');
-        const walletInfo = document.getElementById('topWalletInfo');
-        const addressDisplay = document.getElementById('topAddressDisplay');
-
-        if (userAddress) {
-            connectBtn.classList.add('hidden');
-            walletInfo.classList.remove('hidden');
-            addressDisplay.textContent = userAddress.slice(0,6) + "..." + userAddress.slice(-4);
-        } else {
-            connectBtn.classList.remove('hidden');
-            walletInfo.classList.add('hidden');
-        }
+      userAddress = null;
+      signer = null;
+      provider = null;
+      localStorage.removeItem("userAddress");
+      localStorage.setItem("arcWalletDisconnected", "1");
+      hideMessages();
+      setWalletUI(false);
+      updateActionButton();
     }
 
     function updateActionButton() {
-        if (!invoiceData) return;
-        if (invoiceData.status !== 1) {
-            document.getElementById('actionSection').classList.add('hidden');
-            return;
-        }
-
-        const btnText = document.getElementById('actionBtnText');
-
-        if (!userAddress) {
-            btnText.innerHTML = '<i class="fas fa-wallet mr-2"></i> Connect to Proceed';
-        } else {
-            btnText.innerHTML = '<i class="fas fa-bolt mr-2"></i> Process Invoice (' + invoiceData.tokenSymbol + ')';
-        }
+      if (!invoiceData) return;
+      if (invoiceData.status !== 1) {
+        document.getElementById('actionSection').classList.add('hidden');
+        return;
+      }
+      const btnText = document.getElementById('actionBtnText');
+      if (!userAddress) {
+        btnText.innerHTML = '<i class="fas fa-wallet mr-2"></i> Connect to Proceed';
+      } else {
+        btnText.innerHTML = '<i class="fas fa-bolt mr-2"></i> Process Invoice (' + invoiceData.tokenSymbol + ')';
+      }
     }
 
     async function handleAction() {
-        hideMessages();
-        
-        if (!userAddress) return await connectWallet();
-        if (invoiceData.payer !== ethers.ZeroAddress && invoiceData.payer.toLowerCase() !== userAddress.toLowerCase()) {
-            return showError("This invoice is assigned to a different payer address.");
+      hideMessages();
+      if (!userAddress) return await connectWallet();
+      if (invoiceData.payer !== ethers.ZeroAddress && invoiceData.payer.toLowerCase() !== userAddress.toLowerCase()) {
+        return showError("This invoice is assigned to a different payer address.");
+      }
+
+      const btn = document.getElementById('mainActionBtn');
+      const btnText = document.getElementById('actionBtnText');
+      btn.disabled = true;
+      document.getElementById('txHashContainer').classList.add('hidden');
+
+      try {
+        let needsApproval = false;
+        if (!invoiceData.isNative) {
+          btnText.innerHTML = '<div class="spinner border-black border-left-transparent mr-2"></div> Checking Allowance...';
+          const tokenContract = new ethers.Contract(invoiceData.tokenAddress, ERC20ABI, signer);
+          const currentAllowance = await tokenContract.allowance(userAddress, INVOICE_CONTRACT_ADDRESS);
+          if (currentAllowance < invoiceData.amountRaw) needsApproval = true;
         }
 
-        const btn = document.getElementById('mainActionBtn');
-        const btnText = document.getElementById('actionBtnText');
-        btn.disabled = true;
-        document.getElementById('txHashContainer').classList.add('hidden');
-
-        try {
-            let needsApproval = false;
-            
-            if (!invoiceData.isNative) {
-                btnText.innerHTML = '<div class="spinner border-black border-left-transparent mr-2"></div> Checking Allowance...';
-                const tokenContract = new ethers.Contract(invoiceData.tokenAddress, ERC20ABI, signer);
-                const currentAllowance = await tokenContract.allowance(userAddress, INVOICE_CONTRACT_ADDRESS);
-                
-                if (currentAllowance < invoiceData.amountRaw) {
-                    needsApproval = true;
-                }
-            }
-
-            if (needsApproval) {
-                btnText.innerHTML = '<div class="spinner border-black border-left-transparent mr-2"></div> Requesting Approval...';
-                const tokenContract = new ethers.Contract(invoiceData.tokenAddress, ERC20ABI, signer);
-                const tx = await tokenContract.approve(INVOICE_CONTRACT_ADDRESS, invoiceData.amountRaw);
-                
-                btnText.innerHTML = '<div class="spinner border-black border-left-transparent mr-2"></div> Confirming Approval...';
-                await tx.wait(1);
-                
-                showSuccess("Approval granted! You can now securely pay.");
-                updateActionButton();
-                btn.disabled = false; 
-                return;
-            }
-
-            btnText.innerHTML = '<div class="spinner border-black border-left-transparent mr-2"></div> Initiating Payment...';
-            const contract = new ethers.Contract(INVOICE_CONTRACT_ADDRESS, ArcInvoiceABI, signer);
-            
-            const options = {};
-            if (invoiceData.isNative) options.value = invoiceData.amountRaw;
-            
-            const tx = await contract.payInvoice(invoiceId, options);
-            
-            let attempt = 0;
-            let txSuccess = false;
-            
-            while(attempt < 3 && !txSuccess) {
-                try {
-                    attempt++;
-                    btnText.innerHTML = '<div class="spinner border-black border-left-transparent mr-2"></div> Confirming...';
-                    const receipt = await provider.waitForTransaction(tx.hash, 1, 35000);
-                    
-                    if (receipt && receipt.status === 1) txSuccess = true;
-                    else throw new Error("Transaction reverted on chain.");
-                } catch (err) {
-                    if (attempt >= 2) throw err;
-                    await sleep(2000);
-                }
-            }
-            
-            showSuccess("Invoice paid successfully!");
-            document.getElementById('statusDisplay').textContent = "Paid";
-            document.getElementById('statusDisplay').className = 'font-bold text-emerald-400';
-            document.getElementById('txHashContainer').classList.remove('hidden');
-            document.getElementById('txHashLink').href = "https://testnet.arcscan.app/tx/" + tx.hash;
-            document.getElementById('actionSection').classList.add('hidden');
-            
-        } catch (error) {
-            console.error(error);
-            if (error.code === "ACTION_REJECTED") {
-                showError("Transaction rejected by user.");
-            } else {
-                showError(error.reason || "Transaction failed. Please try again.");
-            }
-        } finally {
-            btn.disabled = false;
-            if(!document.getElementById('actionSection').classList.contains('hidden')) {
-                updateActionButton();
-            }
+        if (needsApproval) {
+          btnText.innerHTML = '<div class="spinner border-black border-left-transparent mr-2"></div> Requesting Approval...';
+          const tokenContract = new ethers.Contract(invoiceData.tokenAddress, ERC20ABI, signer);
+          const tx = await tokenContract.approve(INVOICE_CONTRACT_ADDRESS, invoiceData.amountRaw);
+          btnText.innerHTML = '<div class="spinner border-black border-left-transparent mr-2"></div> Confirming Approval...';
+          await tx.wait(1);
+          showSuccess("Approval granted! You can now securely pay.");
+          updateActionButton();
+          btn.disabled = false;
+          return;
         }
+
+        btnText.innerHTML = '<div class="spinner border-black border-left-transparent mr-2"></div> Initiating Payment...';
+        const contract = new ethers.Contract(INVOICE_CONTRACT_ADDRESS, ArcInvoiceABI, signer);
+        const options = {};
+        if (invoiceData.isNative) options.value = invoiceData.amountRaw;
+        const tx = await contract.payInvoice(invoiceId, options);
+
+        let attempt = 0;
+        let txSuccess = false;
+        while (attempt < 3 && !txSuccess) {
+          try {
+            attempt++;
+            btnText.innerHTML = '<div class="spinner border-black border-left-transparent mr-2"></div> Confirming...';
+            const receipt = await provider.waitForTransaction(tx.hash, 1, 35000);
+            if (receipt && receipt.status === 1) txSuccess = true;
+            else throw new Error("Transaction reverted on chain.");
+          } catch (err) {
+            if (attempt >= 2) throw err;
+            await sleep(2000);
+          }
+        }
+
+        showSuccess("Invoice paid successfully!");
+        document.getElementById('statusDisplay').textContent = "Paid";
+        document.getElementById('statusDisplay').className = 'font-bold text-emerald-400';
+        document.getElementById('txHashContainer').classList.remove('hidden');
+        document.getElementById('txHashLink').href = "https://testnet.arcscan.app/tx/" + tx.hash;
+        document.getElementById('actionSection').classList.add('hidden');
+      } catch (error) {
+        console.error(error);
+        if (error.code === "ACTION_REJECTED") showError("Transaction rejected by user.");
+        else showError(error.reason || "Transaction failed. Please try again.");
+      } finally {
+        btn.disabled = false;
+        if (!document.getElementById('actionSection').classList.contains('hidden')) updateActionButton();
+      }
     }
 
     function showError(msg) {
@@ -507,13 +555,11 @@
       el.textContent = msg;
       el.classList.remove('hidden');
     }
-    
     function showSuccess(msg) {
       const el = document.getElementById('successMsg');
       el.textContent = msg;
       el.classList.remove('hidden');
     }
-
     function hideMessages() {
       document.getElementById('errorMsg').classList.add('hidden');
       document.getElementById('successMsg').classList.add('hidden');
