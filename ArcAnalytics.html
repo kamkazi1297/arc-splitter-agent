@@ -628,6 +628,9 @@ const ARC_RPCS = [
   "https://rpc.ankr.com/arc_testnet"
 ];
 const CHAIN_ID = 5042002;
+/** How far back on-chain scan looks (blocks). Chunked to avoid RPC limits. */
+const ONCHAIN_BLOCK_SPAN = 50000;
+const ONCHAIN_CHUNK = 2500;
 
 const CONTRACTS = {
   roleSplitter: "0xf2073671b726b96DC1c99D001BBF6e60EE1f187F",
@@ -809,15 +812,24 @@ function disconnectWallet() {
 }
 
 /* ===================== DATA PIPELINE ===================== */
-async function getReadProvider() {
-  if (readProvider) return readProvider;
-  for (const url of ARC_RPCS) {
+async function getReadProvider(forceNew = false) {
+  if (readProvider && !forceNew) return readProvider;
+  const urls = forceNew
+    ? [...ARC_RPCS].reverse()
+    : ARC_RPCS;
+  for (const url of urls) {
     try {
       const p = new ethers.JsonRpcProvider(url, CHAIN_ID, { staticNetwork: true });
-      await p.getBlockNumber();
+      // soft timeout so weak RPC doesn't hang forever
+      await Promise.race([
+        p.getBlockNumber(),
+        new Promise((_, rej) => setTimeout(() => rej(new Error("rpc timeout")), 8000))
+      ]);
       readProvider = p;
       return p;
-    } catch {}
+    } catch (e) {
+      console.warn("RPC fail", url, e.message || e);
+    }
   }
   if (provider) return provider;
   return null;
@@ -907,6 +919,38 @@ function extractTypeLabel(item) {
   ).slice(0, 80);
 }
 
+function isConfigRecord(item) {
+  if (!item || typeof item !== "object") return true;
+  const typ = String(item.type || "").toLowerCase();
+  const status = String(item.status || "").toLowerCase();
+  const app = String(item.appName || "").toLowerCase();
+  if (typ === "roles_config" || typ === "module_data") return true;
+  if (status === "config") return true;
+  if (app === "moduledata") return true;
+  if (app === "roles" && typ !== "rolesplit" && Array.isArray(item.roles)) return true;
+  return false;
+}
+
+/** Rebuild chart timeline from all activity (cloud + on-chain) inside selected range */
+function rebuildTimelineFromActivity() {
+  const now = Date.now();
+  const rangeStart = now - rangeDays * 86400000;
+  const daily = {};
+  (state.activity || []).forEach(a => {
+    if (!a || a.status === "Pending" || a.status === "Config") return;
+    if (isConfigRecord(a)) return;
+    const ts = a.timestamp || 0;
+    if (ts < rangeStart) return;
+    const amount = Number(a.amount) || 0;
+    if (amount <= 0) return;
+    const day = new Date(ts).toISOString().slice(0, 10);
+    daily[day] = (daily[day] || 0) + amount;
+  });
+  state.timeline = Object.entries(daily)
+    .map(([date, volume]) => ({ date, volume }))
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
 async function processCloudHistory(hist) {
   if (!Array.isArray(hist) || !hist.length) return 0;
   const now = Date.now();
@@ -918,9 +962,11 @@ async function processCloudHistory(hist) {
   const seen = new Set(state.activity.map(a => a.hash).filter(Boolean));
 
   hist.forEach(raw => {
-    // history_data may be nested or the row itself
     const item = raw?.history_data || raw;
     if (!item || typeof item !== "object") return;
+
+    // Skip config / non-transaction records (roles, module_data, …)
+    if (isConfigRecord(item)) return;
 
     const tsMs = extractTimestamp(item);
     const hash = extractHash(item);
@@ -932,7 +978,12 @@ async function processCloudHistory(hist) {
     const mod = detectModule(item);
     const status = (item.status || "Success").toString();
 
-    if (tsMs >= rangeStart) {
+    // Only real activity counts toward KPIs (not zero-amount noise without type)
+    const countsAsTx = amount > 0 || /split|batch|pay|vest|condition|claim|push|role|giveaway|invoice/i.test(
+      String(item.type || item.appName || item.memo || "")
+    );
+
+    if (tsMs >= rangeStart && countsAsTx) {
       state.volume += amount;
       state.tx++;
       if (state.tokens[tokenSym] !== undefined) state.tokens[tokenSym] += amount;
@@ -948,11 +999,10 @@ async function processCloudHistory(hist) {
         else state.linksActive++;
       }
       if (mod === "conditional" || mod === "vesting") state.activeRules++;
-    } else if (tsMs >= prevStart) {
+    } else if (tsMs >= prevStart && countsAsTx) {
       state.prevVolume += amount;
     }
 
-    // Recipients (real only)
     const recips = [];
     if (item.recipient && typeof item.recipient === "string") recips.push(item.recipient);
     if (Array.isArray(item.winners)) recips.push(...item.winners.filter(Boolean));
@@ -969,18 +1019,20 @@ async function processCloudHistory(hist) {
         if (a?.roleName) recips.push(a.roleName);
       });
     }
-    recips.forEach(r => {
-      const key = String(r);
-      if (!key) return;
-      if (!state.recipients[key]) {
-        state.recipients[key] = {
-          amount: 0, count: 0,
-          label: key.startsWith("0x") ? shortAddr(key) : key.slice(0, 24)
-        };
-      }
-      state.recipients[key].amount += amount / Math.max(1, recips.length);
-      state.recipients[key].count++;
-    });
+    if (countsAsTx) {
+      recips.forEach(r => {
+        const key = String(r);
+        if (!key) return;
+        if (!state.recipients[key]) {
+          state.recipients[key] = {
+            amount: 0, count: 0,
+            label: key.startsWith("0x") ? shortAddr(key) : key.slice(0, 24)
+          };
+        }
+        state.recipients[key].amount += amount / Math.max(1, recips.length);
+        state.recipients[key].count++;
+      });
+    }
 
     state.activity.push({
       type: extractTypeLabel(item),
@@ -997,7 +1049,6 @@ async function processCloudHistory(hist) {
     added++;
   });
 
-  // Also load real pending batches from localStorage (BatchSplit / RoleSplitter)
   try {
     const pendingKeys = ["arcPendingBatchesMain", "arcPendingBatches"];
     pendingKeys.forEach(key => {
@@ -1021,10 +1072,8 @@ async function processCloudHistory(hist) {
           recipient: null,
           source: "local"
         });
-        state.notifications = state.notifications || [];
       });
       if (list.length > 0) {
-        // will be added in buildAutomations after
         state._pendingBatchCount = (state._pendingBatchCount || 0) + list.length;
       }
     });
@@ -1037,14 +1086,25 @@ async function processCloudHistory(hist) {
   return added;
 }
 
-/* On-chain enrichment – recent events from main contracts */
+/* On-chain enrichment – chunked logs + multi-RPC retry */
 async function scanOnChain() {
   const rp = await getReadProvider();
   if (!rp || !userAddress) return 0;
 
   let added = 0;
+  const me = userAddress.toLowerCase();
   const seen = new Set(state.activity.map(a => a.hash).filter(Boolean));
-  const fromBlock = Math.max(0, (await rp.getBlockNumber()) - 8000);
+  const rangeStart = Date.now() - rangeDays * 86400000;
+  const blockTsCache = new Map();
+
+  let latest = 0;
+  try {
+    latest = await rp.getBlockNumber();
+  } catch (e) {
+    console.warn("scanOnChain getBlockNumber", e);
+    return 0;
+  }
+  const fromBlock = Math.max(0, latest - ONCHAIN_BLOCK_SPAN);
 
   const roleIface = new ethers.Interface([
     "event BatchPercentageExecuted(uint256 indexed batchId, address indexed sender, address indexed token, uint256 totalDistributed, uint256 gasRefunded, uint256 unspentRefunded)",
@@ -1063,146 +1123,154 @@ async function scanOnChain() {
     "event LinkClaimed(address indexed linkId, address indexed destination, address indexed relayer, uint256 amount, uint256 feeAmount)"
   ]);
 
-  async function pullLogs(addr, iface, eventNames) {
+  async function getBlockTs(blockNumber) {
+    if (blockTsCache.has(blockNumber)) return blockTsCache.get(blockNumber);
     try {
-      const topics = eventNames.map(n => iface.getEvent(n).topicHash);
-      const logs = await rp.getLogs({
-        address: addr,
-        fromBlock,
-        toBlock: "latest",
-        topics: [topics]
-      });
-      return logs;
-    } catch (e) {
-      console.warn("log pull", addr, e.message);
-      return [];
+      const block = await rp.getBlock(blockNumber);
+      const ts = (block?.timestamp || 0) * 1000;
+      blockTsCache.set(blockNumber, ts);
+      return ts;
+    } catch {
+      return Date.now();
     }
+  }
+
+  /** Chunked getLogs with retry on alternate RPC */
+  async function pullLogsChunked(addr, iface, eventNames) {
+    const topics = eventNames.map(n => iface.getEvent(n).topicHash);
+    const all = [];
+    let start = fromBlock;
+    while (start <= latest) {
+      const end = Math.min(start + ONCHAIN_CHUNK - 1, latest);
+      let got = null;
+      for (let attempt = 0; attempt < 3 && !got; attempt++) {
+        try {
+          const provider = attempt === 0 ? rp : await getReadProvider(true);
+          if (!provider) break;
+          got = await provider.getLogs({
+            address: addr,
+            fromBlock: start,
+            toBlock: end,
+            topics: [topics]
+          });
+        } catch (e) {
+          console.warn("log chunk", addr, start, end, e.message || e);
+          if (attempt < 2) await new Promise(r => setTimeout(r, 250 * (attempt + 1)));
+        }
+      }
+      if (got && got.length) all.push(...got);
+      start = end + 1;
+    }
+    return all;
+  }
+
+  function pushOnchain({ type, amount, tokenSym, hash, ts, module, status, bumpRules, bumpPay }) {
+    if (seen.has(hash)) return false;
+    seen.add(hash);
+    state.activity.push({
+      type,
+      amount,
+      token: tokenSym,
+      memo: "Verified on-chain",
+      hash,
+      timestamp: ts,
+      module,
+      status: status || "Success",
+      source: "onchain"
+    });
+    if (ts >= rangeStart) {
+      state.volume += amount;
+      state.tx++;
+      if (state.tokens[tokenSym] !== undefined) state.tokens[tokenSym] += amount;
+      else state.tokens.Other += amount;
+      if (bumpRules) state.activeRules++;
+      if (bumpPay === "paid") state.linksPaid++;
+      else if (bumpPay === "active") state.linksActive++;
+    }
+    return true;
   }
 
   // Role Splitter
   try {
-    const logs = await pullLogs(CONTRACTS.roleSplitter, roleIface, ["BatchPercentageExecuted", "BatchAmountExecuted"]);
+    const logs = await pullLogsChunked(CONTRACTS.roleSplitter, roleIface, ["BatchPercentageExecuted", "BatchAmountExecuted"]);
     for (const log of logs) {
       try {
         const parsed = roleIface.parseLog(log);
-        if (parsed.args.sender?.toLowerCase() !== userAddress.toLowerCase()) continue;
+        if ((parsed.args.sender || "").toLowerCase() !== me) continue;
         const hash = log.transactionHash;
-        if (seen.has(hash)) continue;
-        seen.add(hash);
         const amount = fromWei(parsed.args.totalDistributed);
         const tokenSym = resolveToken(parsed.args.token);
-        const block = await rp.getBlock(log.blockNumber);
-        const ts = (block?.timestamp || 0) * 1000;
-        state.activity.push({
-          type: "On-chain Batch Split",
-          amount, token: tokenSym, memo: "Verified on-chain",
-          hash, timestamp: ts, module: "batch", status: "Success", source: "onchain"
-        });
-        if (ts >= Date.now() - rangeDays * 86400000) {
-          state.volume += amount;
-          state.tx++;
-          if (state.tokens[tokenSym] !== undefined) state.tokens[tokenSym] += amount;
-          else state.tokens.Other += amount;
-        }
-        added++;
+        const ts = await getBlockTs(log.blockNumber);
+        if (pushOnchain({ type: "On-chain Batch Split", amount, tokenSym, hash, ts, module: "batch" })) added++;
       } catch {}
     }
-  } catch {}
+  } catch (e) { console.warn("role scan", e); }
 
   // Conditional
   try {
-    const logs = await pullLogs(CONTRACTS.conditional, condIface, ["SplitExecuted", "RuleRegistered"]);
+    const logs = await pullLogsChunked(CONTRACTS.conditional, condIface, ["SplitExecuted", "RuleRegistered"]);
     for (const log of logs) {
       try {
         const parsed = condIface.parseLog(log);
-        const sponsor = (parsed.args.sponsor || "").toLowerCase();
-        if (sponsor !== userAddress.toLowerCase()) continue;
+        if ((parsed.args.sponsor || "").toLowerCase() !== me) continue;
         const hash = log.transactionHash;
-        if (seen.has(hash)) continue;
-        seen.add(hash);
-        const amount = parsed.args.netAmountPushed
-          ? fromWei(parsed.args.netAmountPushed)
-          : 0;
+        const amount = parsed.args.netAmountPushed ? fromWei(parsed.args.netAmountPushed) : 0;
         const tokenSym = resolveToken(parsed.args.token);
-        const block = await rp.getBlock(log.blockNumber);
-        const ts = (block?.timestamp || 0) * 1000;
-        state.activity.push({
+        const ts = await getBlockTs(log.blockNumber);
+        if (pushOnchain({
           type: parsed.name === "RuleRegistered" ? "Rule Registered" : "Conditional Push",
-          amount, token: tokenSym, memo: "On-chain verified",
-          hash, timestamp: ts, module: "conditional", status: "Success", source: "onchain"
-        });
-        if (ts >= Date.now() - rangeDays * 86400000) {
-          state.volume += amount;
-          state.tx++;
-          state.activeRules++;
-        }
-        added++;
+          amount, tokenSym, hash, ts, module: "conditional", bumpRules: true
+        })) added++;
       } catch {}
     }
-  } catch {}
+  } catch (e) { console.warn("cond scan", e); }
 
-  // Vesting
+  // Vesting — only events where recipient is this wallet (avoids noise)
   try {
-    const logs = await pullLogs(CONTRACTS.vesting, vestIface, ["ScheduleCreated", "VestedAmountPushed"]);
+    const logs = await pullLogsChunked(CONTRACTS.vesting, vestIface, ["ScheduleCreated", "VestedAmountPushed"]);
     for (const log of logs) {
       try {
         const parsed = vestIface.parseLog(log);
+        const recip = (parsed.args.recipient || "").toLowerCase();
+        if (recip !== me) continue;
         const hash = log.transactionHash;
-        if (seen.has(hash)) continue;
-        // We can't easily filter by creator without more events; accept recent and mark
-        seen.add(hash);
         const amount = parsed.args.totalAmount
           ? fromWei(parsed.args.totalAmount)
           : (parsed.args.amountReceived ? fromWei(parsed.args.amountReceived) : 0);
         const tokenSym = resolveToken(parsed.args.token);
-        const block = await rp.getBlock(log.blockNumber);
-        const ts = (block?.timestamp || 0) * 1000;
-        state.activity.push({
+        const ts = await getBlockTs(log.blockNumber);
+        if (pushOnchain({
           type: parsed.name === "ScheduleCreated" ? "Vesting Created" : "Vesting Unlock",
-          amount, token: tokenSym, memo: "On-chain verified",
-          hash, timestamp: ts, module: "vesting", status: "Success", source: "onchain"
-        });
-        if (ts >= Date.now() - rangeDays * 86400000) {
-          state.volume += amount;
-          state.tx++;
-        }
-        added++;
+          amount, tokenSym, hash, ts, module: "vesting", bumpRules: true
+        })) added++;
       } catch {}
     }
-  } catch {}
+  } catch (e) { console.warn("vest scan", e); }
 
-  // Pay Links (creator filter)
+  // Pay Links — LinkCreated by creator; LinkClaimed by destination
   try {
-    const logs = await pullLogs(CONTRACTS.payLink, payIface, ["LinkCreated", "LinkClaimed"]);
+    const logs = await pullLogsChunked(CONTRACTS.payLink, payIface, ["LinkCreated", "LinkClaimed"]);
     for (const log of logs) {
       try {
         const parsed = payIface.parseLog(log);
         const hash = log.transactionHash;
-        if (seen.has(hash)) continue;
-        const creator = (parsed.args.creator || "").toLowerCase();
-        if (parsed.name === "LinkCreated" && creator !== userAddress.toLowerCase()) continue;
-        seen.add(hash);
+        if (parsed.name === "LinkCreated") {
+          if ((parsed.args.creator || "").toLowerCase() !== me) continue;
+        } else {
+          if ((parsed.args.destination || "").toLowerCase() !== me) continue;
+        }
         const amount = fromWei(parsed.args.amount || 0);
         const tokenSym = resolveToken(parsed.args.token);
-        const block = await rp.getBlock(log.blockNumber);
-        const ts = (block?.timestamp || 0) * 1000;
-        state.activity.push({
+        const ts = await getBlockTs(log.blockNumber);
+        if (pushOnchain({
           type: parsed.name === "LinkCreated" ? "Payment Link Created" : "Payment Link Claimed",
-          amount, token: tokenSym, memo: "On-chain verified",
-          hash, timestamp: ts, module: "pay",
+          amount, tokenSym, hash, ts, module: "pay",
           status: parsed.name === "LinkClaimed" ? "Paid" : "Active",
-          source: "onchain"
-        });
-        if (ts >= Date.now() - rangeDays * 86400000) {
-          state.volume += amount;
-          state.tx++;
-          if (parsed.name === "LinkClaimed") state.linksPaid++;
-          else state.linksActive++;
-        }
-        added++;
+          bumpPay: parsed.name === "LinkClaimed" ? "paid" : "active"
+        })) added++;
       } catch {}
     }
-  } catch {}
+  } catch (e) { console.warn("pay scan", e); }
 
   return added;
 }
@@ -1563,16 +1631,25 @@ async function refreshDashboard() {
     }
   }
 
+  // Merge cloud + on-chain into one timeline so chart matches KPIs
+  rebuildTimelineFromActivity();
+
   buildAutomationsAndUpcoming();
   buildInsights();
 
   if (cloudCount > 0 && chainCount > 0) dataSource = "cloud + on-chain";
-  else if (cloudCount > 0) dataSource = "cloud";
+  else if (cloudCount > 0 && chainCount === 0) dataSource = "cloud";
   else if (chainCount > 0) dataSource = "on-chain";
   else dataSource = userAddress ? "empty" : "—";
 
   document.getElementById("syncStatus").textContent = "Synced";
   document.getElementById("dataSourceBadge").textContent = "Source: " + dataSource;
+  document.getElementById("dataSourceBadge").title =
+    chainCount > 0
+      ? `${chainCount} event(s) matched on-chain`
+      : cloudCount > 0
+        ? "Cloud data only — on-chain scan found no matching events in range (RPC/range limits)"
+        : "";
 
   showApp();
   renderAll();
