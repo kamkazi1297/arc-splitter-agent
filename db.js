@@ -75,44 +75,57 @@ async function saveHistoryToCloud(userAddress, record) {
   }
 }
 
+function normalizeHistoryRow(row) {
+  let raw = row && row.history_data;
+  // Supabase may return JSON already parsed, or as a string
+  if (typeof raw === "string") {
+    try { raw = JSON.parse(raw); } catch { raw = null; }
+  }
+  const h = (raw && typeof raw === "object" && !Array.isArray(raw))
+    ? { ...raw }
+    : {};
+  // Prefer real timestamps from payload; optional table column if present
+  if (!h.timestamp && row.created_at) h.timestamp = row.created_at;
+  if (!h.user && row.user_address) h.user = row.user_address;
+  if (!h.memo && row.memo) h.memo = row.memo;
+  return h;
+}
+
 async function fetchHistoryFromCloud(userAddress) {
   try {
     const client = await getSupabase();
     if (!client || !userAddress) return [];
     const addr = userAddress.toLowerCase();
-    // Prefer exact match (addresses are stored lowercased by saveHistoryToCloud)
+
+    // Use only columns that always exist (created_at may be missing on some projects)
+    const cols = "history_data, user_address, id, memo";
+
     let { data, error } = await client
-      .from('history')
-      .select('history_data, user_address, id, memo')
-      .eq('user_address', addr)
-      .order('id', { ascending: false })
-      .limit(80);
+      .from("history")
+      .select(cols)
+      .eq("user_address", addr)
+      .order("id", { ascending: false })
+      .limit(300);
+
     if (error) {
-      console.warn('fetchHistory eq failed, fallback', error.message || error);
+      console.warn("fetchHistory eq failed, fallback", error.message || error);
       const fb = await client
-        .from('history')
-        .select('history_data, user_address, id, memo')
-        .order('id', { ascending: false })
-        .limit(150);
+        .from("history")
+        .select(cols)
+        .order("id", { ascending: false })
+        .limit(400);
       if (fb.error) {
-        console.error('Error fetching history:', fb.error);
+        console.error("Error fetching history:", fb.error);
         return [];
       }
       data = (fb.data || []).filter(r =>
-        String(r.user_address || '').toLowerCase() === addr
+        String(r.user_address || "").toLowerCase() === addr
       );
-      error = null;
     }
-    return (data || []).map(row => {
-      const h = (row.history_data && typeof row.history_data === 'object')
-        ? { ...row.history_data }
-        : {};
-      if (!h.timestamp) h.timestamp = new Date().toISOString();
-      if (!h.user && row.user_address) h.user = row.user_address;
-      return h;
-    }).filter(Boolean);
+
+    return (data || []).map(normalizeHistoryRow).filter(h => h && typeof h === "object");
   } catch (e) {
-    console.error('fetchHistoryFromCloud', e);
+    console.error("fetchHistoryFromCloud", e);
     return [];
   }
 }
