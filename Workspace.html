@@ -1417,16 +1417,7 @@ html.light button[class*="bg-white/5"]:not(.hdr-btn) {
     box.innerHTML = rows.map((r, idx) => {
       const who = shortAddr(r.user || r.user_address);
       const typ = r.type || r.appName || "Activity";
-      const rawTok = r.tokenSymbol || r.symbol || r.token || "";
-      const tokMap = {
-        "0x89b50855aa3be2f677cd6303cec089b5f319d72a": "EURC",
-        "0xf0c4a4ce82a5746abaad9425360ab04fbba432bf": "cirBTC",
-        "0x0000000000000000000000000000000000000000": "USDC",
-        "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee": "USDC"
-      };
-      const low = String(rawTok).toLowerCase();
-      const tokLabel = tokMap[low] || (/^0x[a-f0-9]{40}$/i.test(String(rawTok)) ? String(rawTok).slice(0,6)+"…"+String(rawTok).slice(-4) : rawTok);
-      const amt = r.amount != null ? `${r.amount} ${tokLabel}`.trim() : "";
+      const amt = r.amount != null ? `${r.amount} ${r.token || r.symbol || ""}` : "";
       const ts = r.timestamp ? new Date(r.timestamp).toLocaleString() : "";
       const hash = r.hash || r.txHash || "";
       let badge = "";
