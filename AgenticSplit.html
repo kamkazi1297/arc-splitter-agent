@@ -397,13 +397,13 @@
       <!-- Wallet & Sponsor Hub -->
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
         
-        <!-- Connect -->
-        <div class="glass rounded-3xl p-6 flex flex-col justify-center gap-4 relative">
-          <div class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-2">1. Connection</div>
-          <button onclick="onWalletBtnClick()" id="connectBtn" class="hdr-btn hdr-connect w-full !h-12">
-            <i class="fas fa-wallet text-sm"></i>
-            <span id="connectText">Connect Wallet</span>
-          </button>
+        <!-- Connection status (connect/disconnect only in header) -->
+        <div class="glass rounded-3xl p-6 flex flex-col justify-center gap-3 relative">
+          <div class="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">1. Connection</div>
+          <div id="connectionStatus" class="rounded-xl px-4 py-3 text-sm font-bold border border-white/10 bg-white/5 text-gray-400 flex items-center gap-2">
+            <i class="fas fa-wallet text-sm opacity-70"></i>
+            <span id="connectText">Use Connect Wallet in the header</span>
+          </div>
           <div id="networkBadge" class="absolute top-6 right-6 px-2 py-1 bg-gray-500/20 text-gray-400 rounded text-[10px] font-bold border border-gray-500/30">Unknown Net</div>
         </div>
 
@@ -653,16 +653,17 @@
     const short = connected && userAddress
       ? userAddress.substring(0, 6) + "..." + userAddress.substring(userAddress.length - 4)
       : null;
-    const bodyBtn = document.getElementById('connectBtn');
+    const statusEl = document.getElementById('connectionStatus');
+    const statusText = document.getElementById('connectText');
     const hdrBtn = document.getElementById('hdrConnectBtn');
-    if (bodyBtn) {
-      bodyBtn.disabled = false;
-      bodyBtn.className = connected
-        ? "hdr-btn hdr-connect connected w-full !h-12"
-        : "hdr-btn hdr-connect w-full !h-12";
-      bodyBtn.innerHTML = connected
-        ? `<i class="fas fa-wallet text-sm"></i><span id="connectText">${short}</span><i class="fas fa-power-off pwr"></i>`
-        : `<i class="fas fa-wallet text-sm"></i><span id="connectText">Connect Wallet</span>`;
+    if (statusEl && statusText) {
+      if (connected && short) {
+        statusEl.className = "rounded-xl px-4 py-3 text-sm font-bold border border-sky-500/30 bg-sky-500/10 text-sky-300 flex items-center gap-2";
+        statusText.textContent = short;
+      } else {
+        statusEl.className = "rounded-xl px-4 py-3 text-sm font-bold border border-white/10 bg-white/5 text-gray-400 flex items-center gap-2";
+        statusText.textContent = "Use Connect Wallet in the header";
+      }
     }
     if (hdrBtn) {
       hdrBtn.disabled = false;
