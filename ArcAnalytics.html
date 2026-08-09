@@ -806,7 +806,7 @@ const ARC_CHAIN_ID = 5042002;
   const ARC_NETWORK_PARAMS = {
     chainId: ARC_CHAIN_ID_HEX,
     chainName: "Arc Testnet",
-    nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 6 },
+    nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 },
     rpcUrls: ["https://rpc.testnet.arc.network"],
     blockExplorerUrls: ["https://testnet.arcscan.app"]
   };
@@ -956,13 +956,51 @@ function detectModule(item) {
 }
 
 function extractTimestamp(item) {
-  let ts = item.timestamp || item.time || item.createdAt || item.date || item.ts;
+  let ts = item.timestamp ?? item.time ?? item.createdAt ?? item.date ?? item.ts ?? null;
+  if (ts == null || ts === "") return 0;
   if (typeof ts === "string") {
+    // numeric string (sec or ms)
+    if (/^\d+$/.test(ts.trim())) {
+      const n = Number(ts);
+      return n < 1e12 ? n * 1000 : n;
+    }
     const d = new Date(ts);
     if (!isNaN(d.getTime())) return d.getTime();
+    return 0;
   }
-  if (typeof ts === "number") return ts < 1e12 ? ts * 1000 : ts;
-  return Date.now();
+  if (typeof ts === "number" && !isNaN(ts)) {
+    // seconds vs milliseconds
+    return ts < 1e12 ? ts * 1000 : ts;
+  }
+  return 0;
+}
+
+/** Shared date/time label for Activity + Tx table */
+function formatTs(ts) {
+  const n = Number(ts) || 0;
+  if (!n) return { time: "—", date: "—", full: "—" };
+  const d = new Date(n);
+  if (isNaN(d.getTime())) return { time: "—", date: "—", full: "—" };
+  const time = d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const date = d.toLocaleDateString([], { month: "short", day: "numeric" });
+  const full = `${date} ${time}`;
+  return { time, date, full };
+}
+
+/** Amount display — aligned with Split (18 dec native USDC on Arc) */
+function fmtAmount(n, token) {
+  const num = Number(n) || 0;
+  const t = String(token || "").toUpperCase();
+  const maxD = t === "CIRBTC" ? 6 : 4;
+  if (Math.abs(num) >= 1e6) return (num / 1e6).toFixed(2) + "M";
+  if (Math.abs(num) >= 1e3) return (num / 1e3).toFixed(2) + "K";
+  if (Math.abs(num) > 0 && Math.abs(num) < 0.0001) return num.toExponential(2);
+  // trim trailing zeros
+  const s = num.toLocaleString("en-US", {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: maxD
+  });
+  return s;
 }
 
 function extractAmount(item) {
@@ -2027,14 +2065,13 @@ function renderActivity() {
     conditional: "fa-robot", vesting: "fa-calendar-check", other: "fa-circle"
   };
   box.innerHTML = items.slice(0, 40).map(i => {
-    const time = new Date(i.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-    const date = new Date(i.timestamp).toLocaleDateString([], { month: "short", day: "numeric" });
+    const { time, date } = formatTs(i.timestamp);
     const ic = icons[i.module] || icons.other;
     const srcBadge = i.source === "onchain"
       ? `<span class="text-[10px] text-lime-400 ml-1">⛓</span>`
       : "";
     return `<div class="flex gap-3 p-3 rounded-xl row-hover">
-      <div class="text-[11px] text-gray-500 font-mono w-14 shrink-0 pt-1 leading-tight">${time}<br><span class="opacity-60">${date}</span></div>
+      <div class="text-[11px] text-gray-500 font-mono w-[3.25rem] shrink-0 pt-1 leading-tight text-center">${time}<br><span class="opacity-60">${date}</span></div>
       <div class="w-9 h-9 rounded-xl bg-white/5 light:bg-black/5 flex items-center justify-center shrink-0">
         <i class="fas ${ic} text-cyan-400 text-sm"></i>
       </div>
@@ -2043,7 +2080,7 @@ function renderActivity() {
         <div class="text-xs text-gray-500 truncate">${i.memo || i.module}</div>
       </div>
       <div class="text-right shrink-0">
-        <div class="font-bold text-sm">${fmt(i.amount)}</div>
+        <div class="font-bold text-sm">${fmtAmount(i.amount, i.token)}</div>
         <div class="text-xs text-gray-500">${i.token}</div>
       </div>
     </div>`;
@@ -2058,17 +2095,16 @@ function renderTxTable() {
     return;
   }
   tb.innerHTML = items.map(i => {
-    const d = new Date(i.timestamp);
-    const dateStr = d.toLocaleDateString([], { month: "short", day: "numeric" });
+    const { full } = formatTs(i.timestamp);
     const hash = i.hash && i.hash.startsWith("0x")
       ? `<a class="text-cyan-400 font-mono hover:underline" href="${EXPLORER}${i.hash}" target="_blank" rel="noopener">${i.hash.slice(0, 8)}…</a>`
       : "—";
     const st = (i.status || "Success").toString();
     const ok = /success|paid|complete|ok|active/i.test(st);
     return `<tr class="row-hover border-b border-white/5 light:border-black/5">
-      <td class="py-3 text-gray-400">${dateStr}</td>
-      <td class="py-3 font-semibold">${i.type.slice(0, 32)}</td>
-      <td class="py-3 text-right font-bold">${fmt(i.amount)} <span class="text-gray-500 font-normal">${i.token}</span></td>
+      <td class="py-3 text-gray-400 whitespace-nowrap text-xs">${full}</td>
+      <td class="py-3 font-semibold">${(i.type || "").slice(0, 32)}</td>
+      <td class="py-3 text-right font-bold">${fmtAmount(i.amount, i.token)} <span class="text-gray-500 font-normal">${i.token || ""}</span></td>
       <td class="py-3"><span class="badge ${ok ? "bg-emerald-500/15 text-emerald-400" : "bg-amber-500/15 text-amber-400"}">${st}</span></td>
       <td class="py-3">${hash}</td>
     </tr>`;
