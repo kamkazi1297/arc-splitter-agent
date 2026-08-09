@@ -856,7 +856,8 @@ html.light button[class*="bg-white/5"]:not(.hdr-btn) {
   }
   const DEFAULT_PERMS = buildDefaultPerms();
 
-  let userAddress = null, signer = null, provider = null, forceDisconnected = false;
+  let userAddress = null, signer = null, provider = null;
+  let forceDisconnected = localStorage.getItem("arcWalletDisconnected") === "1";
   let myWorkspaces = [], currentWs = null, currentMembers = [], myRole = null;
   let permState = JSON.parse(JSON.stringify(DEFAULT_PERMS));
   let pendingInviteToken = null;
@@ -1024,12 +1025,11 @@ html.light button[class*="bg-white/5"]:not(.hdr-btn) {
     const btn = document.getElementById("connectBtn") || document.getElementById("connectHeaderBtn") || document.getElementById("connectWalletBtn");
     if (!btn) return;
     if (loading) {
-      btn.dataset.arcPrev = btn.innerHTML;
       btn.disabled = true;
       btn.innerHTML = '<i class="fas fa-circle-notch arc-spin"></i> <span>Connecting…</span>';
     } else {
       btn.disabled = false;
-      if (btn.dataset.arcPrev) { btn.innerHTML = btn.dataset.arcPrev; delete btn.dataset.arcPrev; }
+      // Do NOT restore old HTML — setWalletUI owns the label
     }
   }
 
@@ -1041,6 +1041,7 @@ html.light button[class*="bg-white/5"]:not(.hdr-btn) {
   async function connectWallet() {
     try { if (typeof arcSetConnectLoading === 'function') arcSetConnectLoading(true); } catch(e) {}
     forceDisconnected = false;
+    localStorage.removeItem("arcWalletDisconnected");
     if (!window.ethereum) {
       try { if (typeof arcSetConnectLoading === 'function') arcSetConnectLoading(false); } catch(e) {}
       return showToast("Install MetaMask");
@@ -1049,23 +1050,27 @@ html.light button[class*="bg-white/5"]:not(.hdr-btn) {
       const onArc = await ensureArcNetwork();
       if (!onArc) return;
       provider = new ethers.BrowserProvider(window.ethereum);
-      // continue
       await provider.send("eth_requestAccounts", []);
       signer = await provider.getSigner();
       userAddress = await signer.getAddress();
       window.userAddress = userAddress;
+      localStorage.setItem("userAddress", userAddress);
       setWalletUI(true);
       await handleInviteFromURL();
       await loadWorkspaces();
     } catch (e) {
       showToast(e.message || "Connect failed");
+      setWalletUI(!!userAddress);
     } finally {
       try { if (typeof arcSetConnectLoading === 'function') arcSetConnectLoading(false); } catch(e) {}
+      setWalletUI(!!userAddress);
     }
   }
 
   function disconnectWallet() {
     forceDisconnected = true;
+    localStorage.setItem("arcWalletDisconnected", "1");
+    localStorage.removeItem("userAddress");
     userAddress = null; signer = null; provider = null;
     window.userAddress = null;
     currentWs = null; myWorkspaces = []; currentMembers = [];
@@ -1097,13 +1102,15 @@ html.light button[class*="bg-white/5"]:not(.hdr-btn) {
 
   if (window.ethereum) {
     window.ethereum.on?.("accountsChanged", async (accs) => {
-      if (forceDisconnected) return;
+      if (localStorage.getItem("arcWalletDisconnected") === "1" || forceDisconnected) return;
       if (!accs?.length) return disconnectWallet();
       forceDisconnected = false;
+      localStorage.removeItem("arcWalletDisconnected");
       provider = new ethers.BrowserProvider(window.ethereum);
       signer = await provider.getSigner();
       userAddress = await signer.getAddress();
       window.userAddress = userAddress;
+      localStorage.setItem("userAddress", userAddress);
       setWalletUI(true);
       await handleInviteFromURL();
       await loadWorkspaces();
@@ -1824,6 +1831,7 @@ html.light button[class*="bg-white/5"]:not(.hdr-btn) {
     if (pendingInviteToken && !userAddress) {
       document.getElementById("inviteBanner").classList.remove("hidden");
     }
+    forceDisconnected = localStorage.getItem("arcWalletDisconnected") === "1";
     if (!window.ethereum || forceDisconnected) return;
     try {
       provider = new ethers.BrowserProvider(window.ethereum);
@@ -1832,6 +1840,7 @@ html.light button[class*="bg-white/5"]:not(.hdr-btn) {
         signer = await provider.getSigner();
         userAddress = await signer.getAddress();
         window.userAddress = userAddress;
+        localStorage.setItem("userAddress", userAddress);
         setWalletUI(true);
         await handleInviteFromURL();
         await loadWorkspaces();
