@@ -2,8 +2,8 @@
 <html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-  <title>ArcSplit - Role-Based Enterprise Token Splitter</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"> 
+  <title>ArcSplit · Role Splitter</title>
   <script src="db.js"></script>
   <script>window.ARC_MODULE_ID = "roles";</script>
   <script src="workspace-guard.js"></script>
@@ -56,18 +56,8 @@
     .light .preserve-dark-muted { color: #94a3b8 !important; }
 
     /* Light mode: darker text ONLY for the labels requested by user */
-    .light #tabSplitter,
-    .light #tabRoles,
-    .light #tabHistory,
-    .light #tabPending {
-      color: #0f172a !important;
-    }
-    .light #tabSplitter.bg-cyan-500\/20,
-    .light #tabRoles.bg-cyan-500\/20,
-    .light #tabHistory.bg-cyan-500\/20,
-    .light #tabPending.bg-cyan-500\/20 {
-      color: #0e7490 !important;
-    }
+    /* removed: was forcing tabs black in light mode */
+    /* removed old light active tab pill styles */
     .light button[onclick="distributeRoleRemaining()"] {
       color: #92400e !important;
     }
@@ -90,34 +80,36 @@
     .light .text-gray-400:not(.preserve-dark-muted) { color: #334155 !important; }
     .light .text-gray-300 { color: #1e293b !important; }
     .light .text-gray-200 { color: #0f172a !important; }
-    .light .text-cyan-400 { color: #0e7490 !important; }
+    .light .text-cyan-400:not(.tab-btn):not(#tabSplitter):not(#tabRoles):not(#tabHistory):not(#tabPending) { color: #0e7490 !important; }
     .light .text-rose-400 { color: #be123c !important; }
-    .light .text-cyan-400 { color: #0e7490 !important; }
+    .light .text-cyan-400:not(.tab-btn):not(#tabSplitter):not(#tabRoles):not(#tabHistory):not(#tabPending) { color: #0e7490 !important; }
 
+    /* Fields — inset depth */
     select, input, textarea {
-      background-color: rgba(255, 255, 255, 0.03);
+      background-color: rgba(0, 0, 0, 0.25);
       color: white;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35);
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
     select:hover, input:hover, textarea:hover {
-      border-color: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.18);
     }
     select:focus, input:focus, textarea:focus {
       border-color: #06b6d4;
-      box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.15);
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35), 0 0 0 3px rgba(6, 182, 212, 0.15);
       outline: none;
     }
     .light select, .light input, .light textarea {
-      background-color: rgba(255, 255, 255, 0.6) !important;
+      background-color: #f1f5f9 !important;
       color: #0f172a !important;
-      border: 1px solid rgba(0, 0, 0, 0.06) !important;
-      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02) !important;
+      border: 1px solid rgba(0, 0, 0, 0.14) !important;
+      box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.06) !important;
     }
     .light select:focus, .light input:focus, .light textarea:focus {
       background-color: #ffffff !important;
       border-color: #06b6d4 !important;
-      box-shadow: 0 0 0 4px rgba(6, 182, 212, 0.15) !important;
+      box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.06), 0 0 0 3px rgba(6, 182, 212, 0.15) !important;
     }
 
     select option { background-color: #0f172a; color: white; padding: 14px 18px; }
@@ -188,47 +180,260 @@
     .light .pitch-black-text {
       color: #000000 !important;
     }
-  </style>
+  
+    /* Tabs keep dark-mode colors in light mode */
+    .tab-btn { color: #9ca3af !important; border-bottom-color: transparent; }
+    .tab-btn:hover { color: #d1d5db !important; }
+    .tab-btn.active, #tabSplitter.tab-btn.active, #tabRoles.tab-btn.active,
+    #tabHistory.tab-btn.active, #tabPending.tab-btn.active {
+      color: #22d3ee !important; /* cyan-400 */
+      border-bottom: 2px solid #22d3ee !important;
+    }
+    html.light .tab-btn { color: #9ca3af !important; }
+    html.light .tab-btn:hover { color: #d1d5db !important; }
+    html.light .tab-btn.active {
+      color: #22d3ee !important;
+      border-bottom-color: #22d3ee !important;
+    }
+
+    /* FINAL: Role tabs — same colors in light & dark */
+    html.light #tabSplitter.tab-btn,
+    html.light #tabRoles.tab-btn,
+    html.light #tabHistory.tab-btn,
+    html.light #tabPending.tab-btn,
+    html.light .tab-btn {
+      color: #9ca3af !important;
+      background: transparent !important;
+    }
+    html.light #tabSplitter.tab-btn:hover,
+    html.light #tabRoles.tab-btn:hover,
+    html.light #tabHistory.tab-btn:hover,
+    html.light #tabPending.tab-btn:hover,
+    html.light .tab-btn:hover {
+      color: #d1d5db !important;
+    }
+    html.light #tabSplitter.tab-btn.active,
+    html.light #tabRoles.tab-btn.active,
+    html.light #tabHistory.tab-btn.active,
+    html.light #tabPending.tab-btn.active,
+    html.light .tab-btn.active {
+      color: #22d3ee !important;
+      border-bottom: 2px solid #22d3ee !important;
+      background: transparent !important;
+    }
+    /* When switchTab sets text-cyan-400 without .active on splitter */
+    html.light #tabSplitter.text-cyan-400,
+    html.light #tabRoles.text-cyan-400,
+    html.light #tabHistory.text-cyan-400,
+    html.light #tabPending.text-cyan-400 {
+      color: #22d3ee !important;
+    }
+
+    /* FORCE tabs colors — last word */
+    html.light button#tabSplitter,
+    html.light button#tabRoles,
+    html.light button#tabHistory,
+    html.light button#tabPending {
+      color: #9ca3af !important;
+      background: transparent !important;
+      -webkit-text-fill-color: #9ca3af !important;
+    }
+    html.light button#tabSplitter.tab-btn.active,
+    html.light button#tabRoles.tab-btn.active,
+    html.light button#tabHistory.tab-btn.active,
+    html.light button#tabPending.tab-btn.active,
+    html.light button#tabSplitter.text-cyan-400,
+    html.light button#tabRoles.text-cyan-400,
+    html.light button#tabHistory.text-cyan-400,
+    html.light button#tabPending.text-cyan-400 {
+      color: #22d3ee !important;
+      -webkit-text-fill-color: #22d3ee !important;
+      border-bottom-color: #22d3ee !important;
+    }
+
+
+/* ===== Header chrome aligned with Hub / Split ===== */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; box-sizing: border-box; }
+*, *::before, *::after { box-sizing: inherit; }
+body { overflow-x: hidden; max-width: 100vw; -webkit-font-smoothing: antialiased; }
+img, video, canvas, svg { max-width: 100%; height: auto; }
+button, a, input, select, textarea { max-width: 100%; }
+.max-w-6xl, .max-w-7xl, .max-w-5xl { width: 100%; max-width: min(72rem, 100%); }
+
+.hdr-btn {
+  height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0 1rem;
+  border-radius: 0.9rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  text-decoration: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.hdr-btn:active { transform: scale(0.98); }
+.hdr-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.hdr-hub {
+  background: linear-gradient(135deg, #6366f1, #7c3aed);
+  color: #fff;
+  border-color: rgba(99, 102, 241, 0.5);
+  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.25);
+}
+.hdr-hub:hover { filter: brightness(1.08); }
+
+.hdr-connect {
+  background: linear-gradient(135deg, #06b6d4, #0891b2);
+  color: #fff;
+  border-color: rgba(6, 182, 212, 0.5);
+  box-shadow: 0 2px 10px rgba(6, 182, 212, 0.25);
+}
+.hdr-connect:hover { filter: brightness(1.08); }
+.hdr-connect.connected {
+  background: rgba(6, 182, 212, 0.12);
+  color: #22d3ee;
+  border-color: rgba(6, 182, 212, 0.35);
+  box-shadow: none;
+}
+.hdr-connect .pwr { margin-left: 0.35rem; color: #f43f5e; font-size: 0.75rem; }
+.light .hdr-connect.connected {
+  background: rgba(6, 182, 212, 0.1);
+  color: #0e7490;
+  border-color: rgba(14, 116, 144, 0.35);
+}
+
+.title-grad {
+  background: linear-gradient(90deg, #22d3ee, #fb7185);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+}
+.light .title-grad {
+  background: linear-gradient(90deg, #0891b2, #e11d48);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+}
+
+.theme-fab {
+  position: fixed;
+  bottom: 1.25rem;
+  right: 1.25rem;
+  z-index: 40;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(18, 18, 38, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  color: #22d3ee;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+.theme-fab:hover { transform: scale(1.06); }
+.light .theme-fab {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: #d97706;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.app-button[class*="bg-gradient"], button[class*="bg-gradient-to-r"] {
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+  font-weight: 700;
+  border-radius: 0.9rem;
+}
+.app-button[class*="bg-gradient"]:hover { filter: brightness(1.05); }
+button:disabled, .app-button:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; }
+
+#toast {
+  position: fixed !important; bottom: 1.5rem !important; left: 50% !important;
+  transform: translateX(-50%) !important; z-index: 9999 !important;
+  max-width: min(92vw, 28rem); padding: 0.85rem 1.25rem !important;
+  border-radius: 14px !important; background: rgba(15,23,42,0.94) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important; color: #fff !important;
+  font-size: 0.8rem !important; font-weight: 600 !important;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.35) !important;
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+}
+
+.arc-empty {
+  text-align: center; padding: 2.5rem 1.25rem;
+  border: 1px dashed rgba(255,255,255,0.12); border-radius: 14px;
+  color: #94a3b8; font-size: 0.85rem; line-height: 1.5;
+}
+.arc-empty i { display: block; font-size: 1.75rem; margin-bottom: 0.75rem; opacity: 0.45; }
+.arc-spin { animation: arc-spin 0.8s linear infinite; }
+@keyframes arc-spin { to { transform: rotate(360deg); } }
+.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
+
+.light .glass {
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+}
+
+@media (max-width: 640px) {
+  .hdr-btn { height: 2.5rem; font-size: 0.75rem; padding: 0 0.75rem; }
+}
+
+</style>
+  <link rel="stylesheet" href="arc-shared.css" data-arc-shared="1">
+  <link rel="icon" type="image/svg+xml" href="logo-white.svg">
 </head>
-<body class="text-white min-h-screen selection:bg-cyan-500 selection:text-black">
+<body class="text-white min-h-screen selection:bg-cyan-500 selection:text-black" data-arc-accent="cyan">
 
   <div class="max-w-7xl mx-auto px-4 py-6 sm:py-8">
     
-    <!-- Header Section -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
-      <div class="flex items-center gap-3 sm:gap-4">
-        <!-- لوگو سفید (حالت تاریک) -->
-        <img src="logo-white.svg" alt="ArcSplit" class="w-10 h-10 sm:w-12 sm:h-12 object-contain block light:hidden">
-        <!-- لوگو سیاه (حالت روشن) -->
-        <img src="trace-raw.svg" alt="ArcSplit" class="w-10 h-10 sm:w-12 sm:h-12 object-contain hidden light:block">
-        <div>
-          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight preserve-dark-color">ArcSplit <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-rose-400">Role-Based Engine</span></h1>
-          <p class="text-xs sm:text-sm font-medium preserve-dark-muted">Manage team roles and split assets securely on-chain with auto batching.</p>
+    <!-- Header -->
+    <div class="glass rounded-3xl p-4 sm:p-5 mb-4">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex items-center gap-3 min-w-0">
+          <img src="logo-white.svg" alt="ArcSplit" class="w-10 h-10 sm:w-11 sm:h-11 object-contain block light:hidden shrink-0">
+          <img src="trace-raw.svg" alt="ArcSplit" class="w-10 h-10 sm:w-11 sm:h-11 object-contain hidden light:block shrink-0">
+          <div class="min-w-0">
+            <h1 class="text-lg sm:text-xl font-extrabold tracking-tight truncate">
+              ArcSplit <span class="title-grad">Role-Based Engine</span>
+            </h1>
+            <p class="text-[11px] sm:text-xs text-gray-400 mt-0.5 font-medium truncate">Manage roles & split on-chain</p>
+          </div>
         </div>
-      </div>
-      
-      <div class="flex items-center gap-3 flex-wrap">
-        <div class="flex bg-white/5 light:bg-black/5 border border-white/10 light:border-black/10 rounded-2xl p-1 text-xs relative">
-          <button onclick="switchTab('splitter')" id="tabSplitter" class="px-4 py-2 rounded-xl font-bold transition-all bg-cyan-500/20 text-cyan-400 preserve-dark-color">Role Split</button>
-          <button onclick="switchTab('roles')" id="tabRoles" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted">Role Management</button>
-          <button onclick="switchTab('history')" id="tabHistory" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted">History</button>
-          <button onclick="switchTab('pending')" id="tabPending" class="relative px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted">
-            Pending
-            <span id="pendingBadge" class="hidden absolute top-1 right-1 flex h-2.5 w-2.5">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
-            </span>
+        <div class="flex items-center gap-2 shrink-0 w-full sm:w-auto sm:ml-auto">
+          <a href="index.html" id="arcHubLink" class="hdr-btn hdr-hub flex-1 sm:flex-none" title="Back to Hub">
+            <i class="fas fa-home text-sm"></i><span>Hub</span>
+          </a>
+          <button onclick="toggleConnection()" id="connectBtn" class="hdr-btn hdr-connect flex-1 sm:flex-none">
+            <i class="fas fa-wallet text-sm"></i>
+            <span id="connectText">Connect Wallet</span>
           </button>
         </div>
-
-        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/15 border border-white/10 rounded-2xl transition-all" aria-label="Toggle Theme">
-          <i class="fas fa-moon text-lg text-cyan-400"></i>
-        </button>
-
-        <button onclick="toggleConnection()" id="connectBtn" class="app-button px-5 py-2.5 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl text-xs flex items-center gap-2 shadow-lg">
-          <i class="fas fa-wallet text-cyan-500"></i> <span id="connectText">Connect Wallet</span>
-        </button>
       </div>
+    </div>
+
+    <button onclick="toggleTheme()" id="themeBtn" class="theme-fab" title="Toggle theme" aria-label="Toggle Theme">
+      <i class="fas fa-moon text-base"></i>
+    </button>
+
+    <!-- Tab Navigation (separate row) -->
+    <div class="flex flex-wrap gap-4 sm:gap-6 mb-6 border-b border-white/10 light:border-black/10 pb-1 overflow-x-auto">
+      <button onclick="switchTab('splitter')" id="tabSplitter" class="tab-btn active pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-cyan-400 border-b-2 border-cyan-400 whitespace-nowrap">Role Split</button>
+      <button onclick="switchTab('roles')" id="tabRoles" class="tab-btn pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-gray-500 hover:text-gray-300  whitespace-nowrap">Role Management</button>
+      <button onclick="switchTab('history')" id="tabHistory" class="tab-btn pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-gray-500 hover:text-gray-300  whitespace-nowrap">History</button>
+      <button onclick="switchTab('pending')" id="tabPending" class="tab-btn relative pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-gray-500 hover:text-gray-300  whitespace-nowrap">
+        Pending
+        <span id="pendingBadge" class="hidden absolute top-0 -right-2 flex h-2.5 w-2.5">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+        </span>
+      </button>
     </div>
 
     <!-- Status Bar & Balance Widget -->
@@ -641,7 +846,12 @@
           signer = await provider.getSigner();
 
           const shortAddr = userAddress.substring(0, 6) + '...' + userAddress.substring(userAddress.length - 4);
-          document.getElementById("connectBtn").innerHTML = `<i class="fas fa-wallet text-cyan-400"></i> <span class="font-bold">${shortAddr}</span> <i class="fas fa-power-off text-rose-400 ml-1 text-[10px]"></i>`;
+          const cBtn = document.getElementById("connectBtn");
+          if (cBtn) {
+            cBtn.className = "hdr-btn hdr-connect connected flex-1 sm:flex-none";
+            cBtn.innerHTML = `<i class="fas fa-wallet text-sm"></i><span id="connectText">${shortAddr}</span><i class="fas fa-power-off pwr"></i>`;
+            cBtn.disabled = false;
+          }
           document.getElementById("contractStatusText").textContent = "Connected to Arc Network";
           
           if (typeof refreshWorkspaceGuard === "function") refreshWorkspaceGuard();
@@ -665,7 +875,12 @@
         userAddress = null;
         window.userAddress = null;
         signer = null;
-        document.getElementById("connectBtn").innerHTML = `<i class="fas fa-wallet text-cyan-500"></i> <span>Connect Wallet</span>`;
+        const cBtn = document.getElementById("connectBtn");
+        if (cBtn) {
+          cBtn.className = "hdr-btn hdr-connect flex-1 sm:flex-none";
+          cBtn.innerHTML = `<i class="fas fa-wallet text-sm"></i><span id="connectText">Connect Wallet</span>`;
+          cBtn.disabled = false;
+        }
         document.getElementById("userBalanceDisplay").textContent = "0.00";
       } else {
         userAddress = accounts[0];
@@ -680,12 +895,30 @@
     });
   }
 
+  function arcSetConnectLoading(loading) {
+    const btn = document.getElementById("connectBtn") || document.getElementById("connectHeaderBtn") || document.getElementById("connectWalletBtn");
+    if (!btn) return;
+    if (loading) {
+      btn.dataset.arcPrev = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-circle-notch arc-spin"></i> <span>Connecting…</span>';
+    } else {
+      btn.disabled = false;
+      if (btn.dataset.arcPrev) { btn.innerHTML = btn.dataset.arcPrev; delete btn.dataset.arcPrev; }
+    }
+  }
+
   async function toggleConnection() {
     if (userAddress) {
       userAddress = null;
       window.userAddress = null;
       signer = null;
-      document.getElementById("connectBtn").innerHTML = `<i class="fas fa-wallet text-cyan-500"></i> <span id="connectText">Connect Wallet</span>`;
+      const cBtn = document.getElementById("connectBtn");
+      if (cBtn) {
+        cBtn.className = "hdr-btn hdr-connect flex-1 sm:flex-none";
+        cBtn.innerHTML = `<i class="fas fa-wallet text-sm"></i><span id="connectText">Connect Wallet</span>`;
+        cBtn.disabled = false;
+      }
       document.getElementById("userBalanceDisplay").textContent = "0.00";
       document.getElementById("contractStatusText").textContent = "Ready to connect to Arc Testnet Network";
       showToast("Wallet disconnected locally.");
@@ -709,7 +942,12 @@
       signer = await provider.getSigner();
 
       const shortAddr = userAddress.substring(0, 6) + '...' + userAddress.substring(userAddress.length - 4);
-      document.getElementById("connectBtn").innerHTML = `<i class="fas fa-wallet text-cyan-400"></i> <span class="font-bold">${shortAddr}</span> <i class="fas fa-power-off text-rose-400 ml-1 text-[10px]"></i>`;
+      const cBtn = document.getElementById("connectBtn");
+      if (cBtn) {
+        cBtn.className = "hdr-btn hdr-connect connected flex-1 sm:flex-none";
+        cBtn.innerHTML = `<i class="fas fa-wallet text-sm"></i><span id="connectText">${shortAddr}</span><i class="fas fa-power-off pwr"></i>`;
+        cBtn.disabled = false;
+      }
       document.getElementById("contractStatusText").textContent = "Connected to Arc Network";
       showToast("Wallet Connected Successfully via Web3!");
       if (typeof refreshWorkspaceGuard === "function") refreshWorkspaceGuard();
@@ -812,24 +1050,19 @@
     document.getElementById('viewHistory').classList.toggle('hidden', tab !== 'history');
     document.getElementById('viewPending').classList.toggle('hidden', tab !== 'pending');
 
-    const activeClass = "px-4 py-2 rounded-xl font-bold transition-all bg-cyan-500/20 text-cyan-400 preserve-dark-color";
-    const inactiveClass = "relative px-4 py-2 rounded-xl font-bold transition-all text-gray-400 preserve-dark-muted";
-    
+    const activeClass = "tab-btn active pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-cyan-400 border-b-2 border-cyan-400 whitespace-nowrap";
+    const inactiveClass = "tab-btn pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-gray-500 hover:text-gray-300  whitespace-nowrap";
+    const pendingInactive = inactiveClass + " relative";
+    const pendingActive = activeClass + " relative";
+
     document.getElementById('tabSplitter').className = tab === 'splitter' ? activeClass : inactiveClass;
     document.getElementById('tabRoles').className = tab === 'roles' ? activeClass : inactiveClass;
     document.getElementById('tabHistory').className = tab === 'history' ? activeClass : inactiveClass;
-    document.getElementById('tabPending').className = tab === 'pending' ? activeClass : inactiveClass;
+    document.getElementById('tabPending').className = tab === 'pending' ? pendingActive : pendingInactive;
 
-    if (tab === 'splitter') {
-      renderRoleSplitRows();
-      updateRoleSplitPreview();
-    } else if (tab === 'roles') {
-      renderRolesTable();
-    } else if (tab === 'history') {
-      renderHistory();
-    } else if (tab === 'pending') {
-      renderPendingBatches();
-    }
+    if (tab === 'history' && typeof renderHistory === 'function') renderHistory();
+    if (tab === 'pending' && typeof renderPendingBatches === 'function') renderPendingBatches();
+    if (tab === 'roles' && typeof renderRolesTable === 'function') renderRolesTable();
   }
 
   function showToast(msg, duration = 4000) {
@@ -842,10 +1075,13 @@
   function toggleTheme() {
     document.documentElement.classList.toggle('light');
     const btnIcon = document.querySelector("#themeBtn i");
+    if (!btnIcon) return;
     if (document.documentElement.classList.contains('light')) {
-      btnIcon.className = "fas fa-sun text-lg text-amber-500";
+      btnIcon.className = "fas fa-sun text-base";
+      localStorage.setItem("theme", "light");
     } else {
-      btnIcon.className = "fas fa-moon text-lg text-cyan-400";
+      btnIcon.className = "fas fa-moon text-base";
+      localStorage.setItem("theme", "dark");
     }
   }
 
@@ -1496,7 +1732,7 @@
 
   function renderHistory() {
     const container = document.getElementById("historyContainer");
-    container.innerHTML = historyList.length ? "" : "<p class='text-gray-400 light:text-slate-600 text-center py-6 text-xs'>No role splits yet.</p>";
+    container.innerHTML = historyList.length ? "" : "<p class='arc-empty'>No role splits yet.</p>";
     historyList.forEach(item => {
       const shortHash = item.hash ? item.hash.substring(0, 12) + '...' : '0x8a7fb3c2...';
       const explorerLink = item.hash ? `https://testnet.arcscan.app/tx/${item.hash}` : 'https://testnet.arcscan.app/';
@@ -1519,6 +1755,11 @@
 
   window.onload = async () => {
     initTelegramWebApp();
+    if (localStorage.getItem("theme") === "light") {
+      document.documentElement.classList.add("light");
+      const ic = document.querySelector("#themeBtn i");
+      if (ic) ic.className = "fas fa-sun text-base";
+    }
 
     // First connect wallet (so userAddress is set), then load roles from cloud
     await checkAutoConnect();
@@ -1542,5 +1783,6 @@
   };
 
 </script>
+  <script src="arc-chrome.js"></script>
 </body>
 </html>
