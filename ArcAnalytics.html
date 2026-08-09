@@ -274,16 +274,25 @@
       align-items: center; justify-content: center; gap: 0.4rem;
       padding: 0 0.85rem; border-radius: 0.75rem !important;
       font-size: 0.75rem !important; font-weight: 700 !important;
-      border: 1px solid rgba(255,255,255,0.12);
-      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.04);
       color: inherit; cursor: pointer;
       transition: background 0.15s ease, border-color 0.15s ease;
     }
-    .hdr-tool:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); }
+    .hdr-tool:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.18); }
     .light .hdr-tool {
-      background: rgba(255,255,255,0.9) !important;
-      border-color: rgba(15,23,42,0.16) !important;
+      background: rgba(255,255,255,0.85) !important;
+      border-color: rgba(15,23,42,0.12) !important;
       color: #0f172a !important;
+    }
+    .dash-toolbar {
+      box-shadow: none !important;
+      border: 1px solid rgba(255,255,255,0.06) !important;
+      background: rgba(18,18,38,0.45) !important;
+    }
+    .light .dash-toolbar {
+      background: rgba(255,255,255,0.55) !important;
+      border-color: rgba(15,23,42,0.08) !important;
     }
 
     select#timeRange {
@@ -351,7 +360,7 @@
   <!-- MAIN APP -->
   <div id="app" class="hidden max-w-[1400px] mx-auto px-4 py-6 sm:py-8 space-y-6">
 
-    <!-- HEADER -->
+    <!-- HEADER — brand + primary actions only -->
     <header class="glass rounded-3xl p-4 sm:p-5 md:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
       <div class="flex items-center gap-3 sm:gap-4 min-w-0">
         <img src="logo-white.svg" alt="ArcSplit" class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 object-contain block light:hidden shrink-0">
@@ -363,41 +372,42 @@
           <p class="text-[11px] sm:text-xs md:text-sm text-gray-400 light:text-slate-600 font-medium mt-0.5 truncate">Workspace analytics · volume · activity · links</p>
         </div>
       </div>
-
-      <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto sm:justify-end">
-        <div id="healthBadge" class="hdr-tool text-emerald-400 border-emerald-500/30 bg-emerald-500/10">
-          <span class="dot bg-emerald-400 animate-pulse"></span> Healthy
-        </div>
-
-        <select id="timeRange" onchange="onRangeChange()" class="cursor-pointer font-bold">
-          <option value="1">Today</option>
-          <option value="7" selected>Last 7 Days</option>
-          <option value="30">Last 30 Days</option>
-          <option value="365">Last Year</option>
-        </select>
-
-        <button onclick="toggleNotif()" class="hdr-tool relative" title="Notifications" type="button">
-          <i class="fas fa-bell text-sm"></i>
-          <span id="notifDot" class="hidden absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500"></span>
-        </button>
-
-        <button onclick="exportCSV()" class="hdr-tool" type="button" title="Export CSV">
-          <i class="fas fa-download text-cyan-400"></i><span class="hidden sm:inline">Export</span>
-        </button>
-
-        <button onclick="refreshDashboard()" class="hdr-tool" type="button" title="Refresh data" id="refreshBtn">
-          <i class="fas fa-sync-alt text-cyan-400"></i><span class="hidden sm:inline">Refresh</span>
-        </button>
-
-        <a href="index.html" id="arcHubLink" class="hdr-btn" title="Back to Hub">
+      <div class="flex items-center gap-2 w-full sm:w-auto sm:shrink-0">
+        <a href="index.html" id="arcHubLink" class="hdr-btn flex-1 sm:flex-none" title="Back to Hub">
           <i class="fas fa-home"></i><span>Hub</span>
         </a>
-        <button onclick="handleWalletClick()" id="connectBtn" class="hdr-btn" title="Connect wallet" type="button">
+        <button onclick="handleWalletClick()" id="connectBtn" class="hdr-btn flex-1 sm:flex-none" title="Connect wallet" type="button">
           <i class="fas fa-wallet"></i>
           <span id="connectText">Connect Wallet</span>
         </button>
       </div>
     </header>
+
+    <!-- Toolbar — secondary controls -->
+    <div class="dash-toolbar glass rounded-2xl px-3 sm:px-4 py-2.5 flex flex-wrap items-center gap-2">
+      <div id="healthBadge" class="hdr-tool text-emerald-400 border-emerald-500/30 bg-emerald-500/10 !h-9 !min-h-9 text-[11px]">
+        <span class="dot bg-emerald-400 animate-pulse"></span> Healthy
+      </div>
+      <div class="h-5 w-px bg-white/10 light:bg-black/10 hidden sm:block shrink-0"></div>
+      <select id="timeRange" onchange="onRangeChange()" class="cursor-pointer font-bold !h-9 !min-h-9 text-[11px]">
+        <option value="1">Today</option>
+        <option value="7" selected>Last 7 Days</option>
+        <option value="30">Last 30 Days</option>
+        <option value="365">Last Year</option>
+      </select>
+      <div class="ml-auto flex items-center gap-2">
+        <button onclick="toggleNotif()" class="hdr-tool relative !h-9 !min-h-9 !w-9 !px-0" title="Notifications" type="button">
+          <i class="fas fa-bell text-sm"></i>
+          <span id="notifDot" class="hidden absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-rose-500"></span>
+        </button>
+        <button onclick="exportCSV()" class="hdr-tool !h-9 !min-h-9 text-[11px]" type="button" title="Export CSV">
+          <i class="fas fa-download text-cyan-400"></i><span class="hidden sm:inline">Export</span>
+        </button>
+        <button onclick="refreshDashboard()" class="hdr-tool !h-9 !min-h-9 text-[11px]" type="button" title="Refresh data" id="refreshBtn">
+          <i class="fas fa-sync-alt text-cyan-400"></i><span class="hidden sm:inline">Refresh</span>
+        </button>
+      </div>
+    </div>
 
     <button onclick="toggleTheme()" id="themeBtn" aria-label="Toggle theme" title="Toggle light / dark" type="button">
       <i class="fas fa-moon text-sm"></i>
@@ -919,6 +929,15 @@ async function processCloudHistory(hist) {
     // history_data may be nested or the row itself
     const item = raw?.history_data || raw;
     if (!item || typeof item !== "object") return;
+
+    // Skip non-transaction config rows stored in history table
+    const typ = String(item.type || item.appName || "").toLowerCase();
+    if (
+      typ === "roles_config" ||
+      typ === "module_data" ||
+      typ === "config" ||
+      (item.status && String(item.status).toLowerCase() === "config")
+    ) return;
 
     const tsMs = extractTimestamp(item);
     const hash = extractHash(item);
