@@ -1,10 +1,3 @@
-/**
- * ArcSplit Cloud DB helpers
- * - History API (all pages)
- * - Payment links / invoices
- * - Workspace (teams, members, permissions, invites, team activity)
- */
-
 const SUPABASE_URL = 'https://yelauzpxsfjzydffhnhb.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InllbGF1enB4c2ZqenlkZmZobmhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzNjEyOTMsImV4cCI6MjEwMDkzNzI5M30.qtLEnhS8Zs34U_inur4e5UIBuKB5AmS_Z0VrT7jFvqM';
 
@@ -1013,4 +1006,3 @@ if (typeof window !== 'undefined') {
   window.saveToCloudDB = saveToCloudDB;
   window.loadFromCloudDB = loadFromCloudDB;
 }
-
