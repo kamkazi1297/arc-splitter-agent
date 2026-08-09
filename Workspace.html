@@ -229,6 +229,9 @@
     .light .ad-row .ad-label { color: #64748b !important; }
     .light .ad-row .ad-value { color: #0f172a !important; }
     .light .act-meta { color: #475569; }
+    .light #adBody td:first-child { color: #64748b !important; }
+    .light #adBody td:last-child { color: #0f172a !important; }
+    .light #adBody { border-color: rgba(15,23,42,0.1) !important; }
     .light .act-card:hover {
       border-left-color: #6366f1;
       background: rgba(99,102,241,0.05) !important;
@@ -773,13 +776,13 @@ html.light button[class*="bg-white/5"]:not(.hdr-btn) {
           <i class="fas fa-times"></i>
         </button>
       </div>
-      <div id="adBody" class="space-y-3 text-sm"></div>
-      <div class="flex flex-wrap gap-2 pt-2">
+      <div id="adBody" class="text-sm border-t border-white/10 pt-3 mt-1"></div>
+      <div class="flex flex-wrap gap-2 pt-2 border-t border-white/10">
         <a id="adExplorer" href="#" target="_blank" rel="noopener" class="hidden px-4 py-2 rounded-xl bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs font-bold">
           <i class="fas fa-external-link-alt mr-1"></i> View on Explorer
         </a>
-        <button onclick="copyAdHash()" id="adCopyHashBtn" class="hidden px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-bold">Copy hash</button>
-        <button onclick="hideActivityDetail()" class="px-4 py-2 rounded-xl text-xs font-bold text-gray-400 ml-auto">Close</button>
+        <button type="button" onclick="copyAdHash()" id="adCopyHashBtn" class="hidden px-4 py-2 rounded-xl bg-white/5 border border-white/10 text-xs font-bold">Copy hash</button>
+        <button type="button" onclick="hideActivityDetail()" class="px-4 py-2 rounded-xl text-xs font-bold text-gray-400 ml-auto">Close</button>
       </div>
     </div>
   </div>
@@ -1426,6 +1429,9 @@ html.light button[class*="bg-white/5"]:not(.hdr-btn) {
       const parts = [who];
       if (amt) parts.push(amt);
       if (r.status) parts.push(r.status);
+      const hashLink = hash && String(hash).startsWith("0x")
+        ? `<a href="https://testnet.arcscan.app/tx/${esc(hash)}" target="_blank" rel="noopener" onclick="event.stopPropagation()" class="text-[10px] font-mono text-indigo-400 hover:text-indigo-300 underline underline-offset-2 truncate inline-block max-w-full mt-1">${esc(hash.slice(0,10))}…${esc(hash.slice(-8))}</a>`
+        : (hash ? `<div class="text-[10px] font-mono text-gray-600 mt-1 truncate">${esc(hash)}</div>` : "");
       return `<button type="button" onclick="showActivityDetail(${idx})" class="act-card w-full text-left p-3 rounded-2xl bg-white/5 border border-white/5 hover:border-indigo-500/40 hover:bg-white/[0.07] transition cursor-pointer">
         <div class="act-row">
           <div class="font-bold text-sm truncate min-w-0">${esc(typ)}${badge}</div>
@@ -1434,8 +1440,8 @@ html.light button[class*="bg-white/5"]:not(.hdr-btn) {
         <div class="act-meta mt-1.5">
           ${parts.map((p,i) => (i ? '<span class="dot">·</span>' : '') + `<span>${esc(p)}</span>`).join("")}
         </div>
-        ${hash ? `<div class="text-[10px] font-mono text-gray-600 mt-1 truncate">${esc(hash)}</div>` : ""}
-        <div class="text-[10px] text-indigo-400 mt-1.5 font-semibold"><i class="fas fa-info-circle mr-1"></i>Details</div>
+        ${hashLink}
+        <div class="text-[10px] text-indigo-400/90 mt-1.5 font-semibold"><i class="fas fa-info-circle mr-1"></i>Click for full details</div>
       </button>`;
     }).join("");
   }
@@ -1444,11 +1450,16 @@ html.light button[class*="bg-white/5"]:not(.hdr-btn) {
     let r = _activityCache[idx];
     if (!r) return;
 
-    // Flatten nested payloads (history_data / data / meta)
-    const nested = r.history_data || r.data || r.meta || r.payload || null;
-    if (nested && typeof nested === "object" && !Array.isArray(nested)) {
-      r = { ...nested, ...r };
-    }
+    // Flatten nested payloads
+    try {
+      let nested = r.history_data || r.data || r.meta || r.payload || null;
+      if (typeof nested === "string") {
+        try { nested = JSON.parse(nested); } catch (_) { nested = null; }
+      }
+      if (nested && typeof nested === "object" && !Array.isArray(nested)) {
+        r = { ...nested, ...r };
+      }
+    } catch (_) {}
 
     const typ = r.type || r.appName || r.module || "Activity";
     const tsRaw = r.timestamp || r.time || r.created_at || r.createdAt;
@@ -1459,29 +1470,22 @@ html.light button[class*="bg-white/5"]:not(.hdr-btn) {
     document.getElementById("adType").textContent = typ;
     document.getElementById("adTime").textContent = ts;
 
-    const statusRaw = String(r.status || "").toLowerCase();
-    let statusHtml = "—";
-    if (statusRaw) {
-      const cls = /fail|error|revert/.test(statusRaw) ? "fail"
-        : /pend|wait|progress/.test(statusRaw) ? "pend" : "ok";
-      statusHtml = `<span class="status-pill ${cls}">${esc(r.status)}</span>`;
-    }
-
-    const amountStr = r.amount != null && r.amount !== ""
+    const statusVal = r.status != null && r.status !== "" ? String(r.status) : "—";
+    const amountStr = (r.amount != null && r.amount !== "")
       ? `${r.amount} ${r.token || r.symbol || ""}`.trim()
-      : (r.value != null ? String(r.value) : "");
+      : (r.value != null ? String(r.value) : "—");
 
-    const fieldDefs = [
-      ["Status", statusHtml, true],
-      ["Member wallet", r.user || r.user_address || r.wallet || r.from || "", false],
-      ["Amount", amountStr, false],
-      ["Token", r.token || r.symbol || "", false],
-      ["App / module", r.appName || r.module || r.app || "", false],
-      ["Intent / memo", r.intent || r.memo || r.note || r.message || "", false],
-      ["Recipients", r.recipientsCount != null ? String(r.recipientsCount) : (r.recipient || r.to || ""), false],
-      ["Workspace", r.workspaceId || r.workspace_id || currentWs?.id || "", false],
-      ["Tagged", r._untagged ? "No (personal history)" : (r.workspaceId || r.workspace_id ? "Yes" : "—"), false],
-      ["Tx hash", hash || "", false]
+    const rows = [
+      ["Status", statusVal],
+      ["Member wallet", r.user || r.user_address || r.wallet || r.from || "—"],
+      ["Amount", amountStr || "—"],
+      ["Token", r.token || r.symbol || "—"],
+      ["App / module", r.appName || r.module || r.app || "—"],
+      ["Intent / memo", r.intent || r.memo || r.note || r.message || "—"],
+      ["Recipients", r.recipientsCount != null ? String(r.recipientsCount) : (r.recipient || r.to || "—")],
+      ["Workspace", r.workspaceId || r.workspace_id || (currentWs && currentWs.id) || "—"],
+      ["Tagged", r._untagged ? "No (personal history)" : "Yes"],
+      ["Tx hash", hash || "—"]
     ];
 
     const skip = new Set([
@@ -1490,39 +1494,45 @@ html.light button[class*="bg-white/5"]:not(.hdr-btn) {
       "workspaceId","workspace_id","hash","txHash","tx_hash","transactionHash","timestamp","time",
       "created_at","createdAt","_untagged","_otherWorkspace","module","history_data","data","meta","payload","id"
     ]);
-
     Object.keys(r).forEach(k => {
       if (skip.has(k)) return;
       const v = r[k];
       if (v == null || v === "") return;
       if (typeof v === "object") return;
-      fieldDefs.push([k, String(v), false]);
+      rows.push([k, String(v)]);
     });
 
     const body = document.getElementById("adBody");
-    body.innerHTML = fieldDefs.map(([k, v, isHtml]) => {
-      const empty = v === "" || v == null || v === "—";
-      const display = empty ? "—" : v;
-      return `<div class="ad-row">
-        <span class="ad-label">${esc(k)}</span>
-        <span class="ad-value">${isHtml ? display : esc(String(display))}</span>
-      </div>`;
-    }).join("");
+    if (body) {
+      body.innerHTML = `<table style="width:100%;border-collapse:collapse;">
+        <tbody>
+          ${rows.map(([k, v]) => `
+            <tr>
+              <td style="padding:8px 12px 8px 0;vertical-align:top;white-space:nowrap;width:8.5rem;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:#94a3b8;">${esc(k)}</td>
+              <td style="padding:8px 0;vertical-align:top;font-size:13px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;word-break:break-all;color:#f1f5f9;line-height:1.45;">${esc(String(v))}</td>
+            </tr>`).join("")}
+        </tbody>
+      </table>`;
+    }
 
     const exp = document.getElementById("adExplorer");
     const copyBtn = document.getElementById("adCopyHashBtn");
     if (hash && String(hash).startsWith("0x")) {
-      exp.href = "https://testnet.arcscan.app/tx/" + hash;
-      exp.classList.remove("hidden");
-      copyBtn.classList.remove("hidden");
+      if (exp) {
+        exp.href = "https://testnet.arcscan.app/tx/" + hash;
+        exp.classList.remove("hidden");
+      }
+      if (copyBtn) copyBtn.classList.remove("hidden");
     } else {
-      exp.classList.add("hidden");
-      copyBtn.classList.add("hidden");
+      if (exp) exp.classList.add("hidden");
+      if (copyBtn) copyBtn.classList.add("hidden");
     }
 
     const m = document.getElementById("activityDetailModal");
-    m.classList.remove("hidden");
-    m.classList.add("flex");
+    if (m) {
+      m.classList.remove("hidden");
+      m.classList.add("flex");
+    }
   }
 
   function hideActivityDetail() {
