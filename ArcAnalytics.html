@@ -720,7 +720,7 @@ const TOKEN_MAP = {
 
 /* ===================== STATE ===================== */
 let userAddress = null;
-let forceDisconnected = false;
+let forceDisconnected = localStorage.getItem("arcWalletDisconnected") === "1";
 let provider = null;
 let signer = null;
 let readProvider = null;
@@ -855,14 +855,17 @@ async function connectWallet() {
     userAddress = await signer.getAddress();
     window.userAddress = userAddress;
     forceDisconnected = false;
+    localStorage.setItem("userAddress", userAddress);
+    localStorage.removeItem("arcWalletDisconnected");
     setWalletUI(true);
     showToast("Wallet connected");
     await refreshDashboard();
   } catch (e) {
-    setWalletUI(false);
+    setWalletUI(!!userAddress);
     showToast("Connection rejected", "fa-ban");
   } finally {
     if (btn) btn.disabled = false;
+    setWalletUI(!!userAddress);
   }
 }
 
@@ -872,6 +875,8 @@ function disconnectWallet() {
   window.userAddress = null;
   signer = null;
   provider = null;
+  localStorage.removeItem("userAddress");
+  localStorage.setItem("arcWalletDisconnected", "1");
   setWalletUI(false);
   Object.assign(state, emptyState());
   showToast("Wallet disconnected", "fa-power-off");
@@ -1867,6 +1872,8 @@ async function refreshDashboard() {
   document.getElementById("syncStatus").textContent = "Syncing…";
   Object.assign(state, emptyState());
 
+  // Respect explicit disconnect across refresh (same as Hub / Split)
+  forceDisconnected = localStorage.getItem("arcWalletDisconnected") === "1";
   if (!userAddress && !forceDisconnected && window.ethereum) {
     try {
       provider = new ethers.BrowserProvider(window.ethereum);
@@ -1875,6 +1882,7 @@ async function refreshDashboard() {
         signer = await provider.getSigner();
         userAddress = await signer.getAddress();
         window.userAddress = userAddress;
+        localStorage.setItem("userAddress", userAddress);
         setWalletUI(true);
       }
     } catch {}
@@ -2222,10 +2230,13 @@ window.addEventListener("load", async () => {
 
 if (window.ethereum) {
   window.ethereum.on?.("accountsChanged", async (accs) => {
+    if (localStorage.getItem("arcWalletDisconnected") === "1") return;
     if (accs?.length) {
       forceDisconnected = false;
       userAddress = accs[0];
       window.userAddress = userAddress;
+      localStorage.setItem("userAddress", userAddress);
+      localStorage.removeItem("arcWalletDisconnected");
       setWalletUI(true);
       await refreshDashboard();
     } else {
