@@ -936,19 +936,14 @@ function parseAmount(v, tokenHint) {
   return isNaN(n) ? 0 : n;
 }
 
-/**
- * Decimals — aligned with AgenticSplit:
- * - Native USDC (0x3600… / zero address) → 18
- * - ERC20 → 18 default (on-chain modules use 18; live pages fetch contract.decimals())
- */
-function tokenDecimals(tokenAddrOrSym) {
-  return tokenDecimalsFor(tokenAddrOrSym);
+/** Arc Network native USDC + listed tokens use 18 decimals */
+function tokenDecimals(/* tokenAddrOrSym */) {
+  return 18;
 }
 
-function fromWei(value, tokenHint) {
-  const dec = tokenDecimalsFor(tokenHint);
+function fromWei(value) {
   try {
-    return parseFloat(ethers.formatUnits(value ?? 0, dec));
+    return parseFloat(ethers.formatUnits(value ?? 0, 18));
   } catch {
     return 0;
   }
@@ -1031,21 +1026,10 @@ function fmtAmount(n, token) {
 }
 
 function tokenDecimalsFor(symOrAddr) {
-  const s = String(symOrAddr || "").toLowerCase().trim();
-  // Native system USDC on Arc (AgenticSplit: activeDecimals = 18)
-  if (
-    !s ||
-    s === "usdc" ||
-    s === "0x3600000000000000000000000000000000000000" ||
-    s === "0x0000000000000000000000000000000000000000" ||
-    s === "native"
-  ) {
-    return 18;
-  }
-  // Known Arc test tokens (same default as Agentic when contract fetch unavailable)
-  if (s.includes("cirbtc") || s.includes("0xf0c4a4ce82a5746abaad9425360ab04fbba432bf")) return 18;
-  if (s.includes("eurc") || s.includes("0x89b50855aa3be2f677cd6303cec089b5f319d72a")) return 18;
-  // Fallback — Agentic uses 18 if decimals() fails
+  const s = String(symOrAddr || "").toLowerCase();
+  // cirBTC on Arc is 18 in this project tooling; keep 18 default like Split
+  if (s.includes("cirbtc")) return 18;
+  if (s.includes("eurc")) return 18;
   return 18;
 }
 
