@@ -913,31 +913,42 @@ function resolveToken(addrOrSym) {
   return "USDC";
 }
 
-function parseAmount(v) {
-  if (v == null) return 0;
+function parseAmount(v, tokenHint) {
+  if (v == null || v === "") return 0;
+  const dec = tokenDecimalsFor(tokenHint);
   if (typeof v === "number") {
-    // Guard: raw wei-scale numbers (e.g. 2e18) → human units
-    if (Math.abs(v) >= 1e15) return v / 1e18;
+    // Guard: raw wei-scale numbers → human units
+    if (Math.abs(v) >= 1e15) {
+      try { return parseFloat(ethers.formatUnits(BigInt(Math.trunc(v)), dec)); }
+      catch { return v / 10 ** dec; }
+    }
     return v;
   }
   const s = String(v).replace(/,/g, "").trim();
   if (!s) return 0;
-  // Integer string longer than 15 digits → treat as 18-decimal wei
+  // Integer string longer than 15 digits → wei
   if (/^\d+$/.test(s) && s.length > 15) {
-    try { return parseFloat(ethers.formatUnits(s, 18)); } catch { return parseFloat(s) / 1e18; }
+    try { return parseFloat(ethers.formatUnits(s, dec)); }
+    catch { return parseFloat(s) / 10 ** dec; }
   }
+  // Scientific or decimal human amount
   const n = parseFloat(s);
   return isNaN(n) ? 0 : n;
 }
 
-/** Arc Network native USDC + listed tokens use 18 decimals */
-function tokenDecimals(/* tokenAddrOrSym */) {
-  return 18;
+/**
+ * Decimals — aligned with AgenticSplit:
+ * - Native USDC (0x3600… / zero address) → 18
+ * - ERC20 → 18 default (on-chain modules use 18; live pages fetch contract.decimals())
+ */
+function tokenDecimals(tokenAddrOrSym) {
+  return tokenDecimalsFor(tokenAddrOrSym);
 }
 
-function fromWei(value) {
+function fromWei(value, tokenHint) {
+  const dec = tokenDecimalsFor(tokenHint);
   try {
-    return parseFloat(ethers.formatUnits(value ?? 0, 18));
+    return parseFloat(ethers.formatUnits(value ?? 0, dec));
   } catch {
     return 0;
   }
@@ -956,21 +967,37 @@ function detectModule(item) {
 }
 
 function extractTimestamp(item) {
-  let ts = item.timestamp ?? item.time ?? item.createdAt ?? item.date ?? item.ts ?? null;
-  if (ts == null || ts === "") return 0;
-  if (typeof ts === "string") {
-    // numeric string (sec or ms)
-    if (/^\d+$/.test(ts.trim())) {
-      const n = Number(ts);
-      return n < 1e12 ? n * 1000 : n;
+  // Prefer machine timestamps; avoid locale display strings as primary source
+  const candidates = [
+    item.timestamp,
+    item.createdAt,
+    item.created_at,
+    item.ts,
+    item.blockTimestamp,
+    item.time,
+    item.date
+  ];
+  for (const ts of candidates) {
+    if (ts == null || ts === "") continue;
+    if (typeof ts === "number" && !isNaN(ts)) {
+      return ts < 1e12 ? ts * 1000 : ts;
     }
-    const d = new Date(ts);
-    if (!isNaN(d.getTime())) return d.getTime();
-    return 0;
-  }
-  if (typeof ts === "number" && !isNaN(ts)) {
-    // seconds vs milliseconds
-    return ts < 1e12 ? ts * 1000 : ts;
+    if (typeof ts === "string") {
+      const s = ts.trim();
+      if (/^\d+$/.test(s)) {
+        const n = Number(s);
+        return n < 1e12 ? n * 1000 : n;
+      }
+      // ISO-like
+      if (/^\d{4}-\d{2}-\d{2}/.test(s) || s.includes("T")) {
+        const d = new Date(s);
+        if (!isNaN(d.getTime())) return d.getTime();
+      }
+      const d = new Date(s);
+      if (!isNaN(d.getTime()) && d.getFullYear() >= 2020 && d.getFullYear() <= 2100) {
+        return d.getTime();
+      }
+    }
   }
   return 0;
 }
@@ -1003,22 +1030,71 @@ function fmtAmount(n, token) {
   return s;
 }
 
+function tokenDecimalsFor(symOrAddr) {
+  const s = String(symOrAddr || "").toLowerCase().trim();
+  // Native system USDC on Arc (AgenticSplit: activeDecimals = 18)
+  if (
+    !s ||
+    s === "usdc" ||
+    s === "0x3600000000000000000000000000000000000000" ||
+    s === "0x0000000000000000000000000000000000000000" ||
+    s === "native"
+  ) {
+    return 18;
+  }
+  // Known Arc test tokens (same default as Agentic when contract fetch unavailable)
+  if (s.includes("cirbtc") || s.includes("0xf0c4a4ce82a5746abaad9425360ab04fbba432bf")) return 18;
+  if (s.includes("eurc") || s.includes("0x89b50855aa3be2f677cd6303cec089b5f319d72a")) return 18;
+  // Fallback — Agentic uses 18 if decimals() fails
+  return 18;
+}
+
 function extractAmount(item) {
-  return parseAmount(
+  const tokenHint = item.tokenSymbol || item.symbol || item.token || item.tokenAddress || "";
+  const raw =
     item.amount ?? item.totalAmount ?? item.allocated ?? item.rawAmount ??
-    item.netAmountPushed ?? item.totalDistributed ?? 0
-  );
+    item.netAmountPushed ?? item.totalDistributed ?? item.value ?? item.total ?? null;
+
+  if (raw != null && raw !== "") {
+    return parseAmount(raw, tokenHint);
+  }
+
+  // Multi-token batch: sum token amounts
+  if (Array.isArray(item.tokens) && item.tokens.length) {
+    return item.tokens.reduce((sum, t) => sum + parseAmount(t.amount ?? t.rawAmount ?? 0, t.symbol || t.token || tokenHint), 0);
+  }
+
+  // Fallback: parse from intent / memo e.g. "12.5 cirBTC → 3 recipients"
+  const blob = String(item.intent || item.memo || item.type || "");
+  const m = blob.match(/([\d,.]+)\s*(USDC|EURC|cirBTC|TOKEN)?/i);
+  if (m) return parseAmount(m[1], m[2] || tokenHint);
+
+  return 0;
 }
 
 function extractHash(item) {
   if (item.hash) return item.hash;
   if (item.txHash) return item.txHash;
+  if (item.tx_hash) return item.tx_hash;
+  if (item.transactionHash) return item.transactionHash;
   if (Array.isArray(item.txHashes) && item.txHashes.length) return item.txHashes[0];
   return "";
 }
 
 function extractToken(item) {
-  return resolveToken(item.token || item.tokenSymbol || item.symbol || item.tokenAddress || "USDC");
+  // Prefer explicit symbol fields over address
+  const sym = item.tokenSymbol || item.symbol;
+  if (sym && typeof sym === "string" && !sym.startsWith("0x")) {
+    return resolveToken(sym);
+  }
+  if (item.token && typeof item.token === "string" && !item.token.startsWith("0x")) {
+    return resolveToken(item.token);
+  }
+  if (Array.isArray(item.tokens) && item.tokens[0]) {
+    const t0 = item.tokens[0];
+    return resolveToken(t0.tokenSymbol || t0.symbol || t0.token || "USDC");
+  }
+  return resolveToken(item.token || item.tokenAddress || item.token_address || "USDC");
 }
 
 function extractTypeLabel(item) {
@@ -1070,7 +1146,10 @@ async function processCloudHistory(hist) {
   const seen = new Set(state.activity.map(a => a.hash).filter(Boolean));
 
   hist.forEach(raw => {
-    const item = raw?.history_data || raw;
+    let item = raw?.history_data || raw;
+    if (typeof item === "string") {
+      try { item = JSON.parse(item); } catch { return; }
+    }
     if (!item || typeof item !== "object") return;
 
     // Skip config / non-transaction records (roles, module_data, …)
