@@ -420,11 +420,16 @@
     <!-- EMPTY / ERROR -->
     <div id="emptyState" class="hidden glass rounded-3xl p-14 text-center">
       <div class="text-5xl mb-5">✨</div>
-      <h2 class="text-2xl font-extrabold mb-2">Welcome to Arc</h2>
-      <p class="text-gray-400 light:text-slate-600 text-sm mb-7 max-w-md mx-auto">Connect your wallet and run your first Split to unlock workspace analytics.</p>
-      <button onclick="connectWallet()" class="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-cyan-500 hover:bg-cyan-400 text-white font-bold text-sm transition shadow-lg shadow-cyan-500/20">
-        <i class="fas fa-wallet"></i> Connect Wallet
-      </button>
+      <h2 id="emptyTitle" class="text-2xl font-extrabold mb-2">Welcome to Arc</h2>
+      <p id="emptyDesc" class="text-gray-400 light:text-slate-600 text-sm mb-7 max-w-md mx-auto">Connect your wallet and run your first Split to unlock workspace analytics.</p>
+      <div id="emptyActions" class="flex flex-wrap items-center justify-center gap-3">
+        <button onclick="connectWallet()" id="emptyConnectBtn" class="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-cyan-500 hover:bg-cyan-400 text-white font-bold text-sm transition shadow-lg shadow-cyan-500/20">
+          <i class="fas fa-wallet"></i> Connect Wallet
+        </button>
+        <a href="index.html" id="emptyHubBtn" class="hidden inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-sm transition">
+          <i class="fas fa-home"></i> Go to Hub
+        </a>
+      </div>
     </div>
 
     <div id="errorState" class="hidden glass rounded-3xl p-12 text-center border border-rose-500/30">
@@ -628,9 +633,35 @@ const ARC_RPCS = [
   "https://rpc.ankr.com/arc_testnet"
 ];
 const CHAIN_ID = 5042002;
-/** How far back on-chain scan looks (blocks). Chunked to avoid RPC limits. */
-const ONCHAIN_BLOCK_SPAN = 50000;
-const ONCHAIN_CHUNK = 2500;
+/** On-chain scan window (blocks). Chunked to avoid RPC limits. Kept moderate for speed. */
+const ONCHAIN_BLOCK_SPAN = 12000;
+const ONCHAIN_CHUNK = 3000;
+const ONCHAIN_CURSOR_KEY = "arcOnchainCursor_v1";
+
+function onchainCursorKey(addr) {
+  return `${ONCHAIN_CURSOR_KEY}:${String(addr || "").toLowerCase()}`;
+}
+
+function loadOnchainCursor(addr) {
+  try {
+    const raw = localStorage.getItem(onchainCursorKey(addr));
+    if (!raw) return null;
+    const j = JSON.parse(raw);
+    const block = Number(j?.block);
+    return Number.isFinite(block) && block >= 0 ? block : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveOnchainCursor(addr, block) {
+  try {
+    localStorage.setItem(onchainCursorKey(addr), JSON.stringify({
+      block: Number(block) || 0,
+      savedAt: Date.now()
+    }));
+  } catch {}
+}
 
 const CONTRACTS = {
   roleSplitter: "0xf2073671b726b96DC1c99D001BBF6e60EE1f187F",
@@ -804,11 +835,10 @@ function disconnectWallet() {
   setWalletUI(false);
   Object.assign(state, emptyState());
   showToast("Wallet disconnected", "fa-power-off");
-  document.getElementById("emptyState").classList.remove("hidden");
-  document.getElementById("dashboardBody").classList.add("opacity-40");
   document.getElementById("syncStatus").textContent = "Disconnected";
   document.getElementById("dataSourceBadge").textContent = "Source: —";
   renderAll();
+  updateEmptyState();
 }
 
 /* ===================== DATA PIPELINE ===================== */
@@ -1104,7 +1134,20 @@ async function scanOnChain() {
     console.warn("scanOnChain getBlockNumber", e);
     return 0;
   }
-  const fromBlock = Math.max(0, latest - ONCHAIN_BLOCK_SPAN);
+
+  // Incremental cursor: only scan new blocks after last successful scan
+  const savedCursor = loadOnchainCursor(me);
+  let fromBlock;
+  if (savedCursor != null && savedCursor < latest) {
+    // Continue from next block, but never look back more than SPAN (safety if cursor is ancient)
+    fromBlock = Math.max(savedCursor + 1, latest - ONCHAIN_BLOCK_SPAN);
+  } else if (savedCursor != null && savedCursor >= latest) {
+    // Already up to date — skip heavy log pull
+    return 0;
+  } else {
+    // First visit for this wallet
+    fromBlock = Math.max(0, latest - ONCHAIN_BLOCK_SPAN);
+  }
 
   const roleIface = new ethers.Interface([
     "event BatchPercentageExecuted(uint256 indexed batchId, address indexed sender, address indexed token, uint256 totalDistributed, uint256 gasRefunded, uint256 unspentRefunded)",
@@ -1271,6 +1314,9 @@ async function scanOnChain() {
       } catch {}
     }
   } catch (e) { console.warn("pay scan", e); }
+
+  // Persist progress so next visit only scans new blocks
+  saveOnchainCursor(me, latest);
 
   return added;
 }
@@ -1542,6 +1588,117 @@ function buildInsights() {
   }
 }
 
+function hasRealActivity() {
+  return (state.activity || []).some(a =>
+    a && a.status !== "Config" && a.status !== "Pending" && !isConfigRecord(a) &&
+    ((Number(a.amount) || 0) > 0 || /split|batch|pay|vest|condition|claim|push|role|giveaway|invoice|on-chain/i.test(String(a.type || "")))
+  );
+}
+
+function updateEmptyState() {
+  const box = document.getElementById("emptyState");
+  const body = document.getElementById("dashboardBody");
+  const title = document.getElementById("emptyTitle");
+  const desc = document.getElementById("emptyDesc");
+  const connectBtn = document.getElementById("emptyConnectBtn");
+  const hubBtn = document.getElementById("emptyHubBtn");
+  if (!box || !body) return;
+
+  if (!userAddress) {
+    box.classList.remove("hidden");
+    body.classList.add("opacity-40");
+    if (title) title.textContent = "Welcome to Arc";
+    if (desc) desc.textContent = "Connect your wallet to unlock workspace analytics.";
+    if (connectBtn) connectBtn.classList.remove("hidden");
+    if (hubBtn) hubBtn.classList.add("hidden");
+    return;
+  }
+
+  if (hasRealActivity() || state.tx > 0) {
+    box.classList.add("hidden");
+    body.classList.remove("opacity-40");
+    return;
+  }
+
+  // Connected but no activity yet
+  box.classList.remove("hidden");
+  body.classList.add("opacity-40");
+  if (title) title.textContent = "No activity yet";
+  if (desc) desc.textContent = "Run a Split, create a payment link, or use a module — analytics will show up here.";
+  if (connectBtn) connectBtn.classList.add("hidden");
+  if (hubBtn) hubBtn.classList.remove("hidden");
+}
+
+async function loadPaymentLinkCounts() {
+  let a = 0, p = 0, e = 0;
+  let found = false;
+
+  if (userAddress && typeof fetchPaymentRecords === "function") {
+    try {
+      const rows = await fetchPaymentRecords(userAddress, { limit: 100 });
+      if (rows && rows.length) {
+        found = true;
+        rows.forEach(r => {
+          const st = (r.status || "").toLowerCase();
+          if (/paid|claimed/i.test(st)) p++;
+          else if (/expir|cancel/i.test(st)) e++;
+          else a++;
+        });
+      }
+    } catch {}
+  }
+
+  if (!found) {
+    try {
+      const localLinks = JSON.parse(localStorage.getItem("arcPaymentLinksV2") || "[]");
+      const localInvs = JSON.parse(localStorage.getItem("arcInvoicesV1") || "[]");
+      const all = [...(Array.isArray(localLinks) ? localLinks : []), ...(Array.isArray(localInvs) ? localInvs : [])];
+      if (all.length) {
+        found = true;
+        all.forEach(r => {
+          const st = (r.status || "").toLowerCase();
+          if (/paid|claimed|complete/i.test(st)) p++;
+          else if (/expir|cancel|overdue/i.test(st)) e++;
+          else a++;
+        });
+      }
+    } catch {}
+  }
+
+  if (found) {
+    state.linksActive = a;
+    state.linksPaid = p;
+    state.linksExpired = e;
+  }
+}
+
+function finalizeRender(cloudCount, chainCount) {
+  rebuildTimelineFromActivity();
+  buildAutomationsAndUpcoming();
+  buildInsights();
+
+  if (cloudCount > 0 && chainCount > 0) dataSource = "cloud + on-chain";
+  else if (cloudCount > 0) dataSource = "cloud";
+  else if (chainCount > 0) dataSource = "on-chain";
+  else dataSource = userAddress ? "empty" : "—";
+
+  const sync = document.getElementById("syncStatus");
+  const badge = document.getElementById("dataSourceBadge");
+  if (sync) sync.textContent = "Synced";
+  if (badge) {
+    badge.textContent = "Source: " + dataSource;
+    badge.title = chainCount > 0
+      ? `${chainCount} event(s) matched on-chain`
+      : cloudCount > 0
+        ? "Cloud data only — on-chain scan found no matching events in range"
+        : "";
+  }
+
+  showApp();
+  renderAll();
+  updateEmptyState();
+}
+
 async function refreshDashboard() {
   document.getElementById("errorState").classList.add("hidden");
   document.getElementById("syncStatus").textContent = "Syncing…";
@@ -1560,11 +1717,17 @@ async function refreshDashboard() {
     } catch {}
   }
 
+  // Not connected → show empty immediately, no heavy work
+  if (!userAddress) {
+    finalizeRender(0, 0);
+    return;
+  }
+
   let cloudCount = 0;
   let chainCount = 0;
 
-  // 1) Cloud first
-  if (userAddress && typeof fetchHistoryFromCloud === "function") {
+  // 1) Cloud (fast path) — paint UI ASAP
+  if (typeof fetchHistoryFromCloud === "function") {
     try {
       const hist = await fetchHistoryFromCloud(userAddress);
       cloudCount = await processCloudHistory(hist || []);
@@ -1574,97 +1737,26 @@ async function refreshDashboard() {
     }
   }
 
-  // 2) On-chain verification / enrichment
-  if (userAddress) {
-    try {
-      chainCount = await scanOnChain();
-    } catch (e) {
-      console.warn("on-chain scan", e);
-    }
+  await Promise.all([
+    loadPaymentLinkCounts(),
+    fetchBalances().catch(() => {})
+  ]);
+
+  finalizeRender(cloudCount, 0);
+  document.getElementById("syncStatus").textContent = "Checking on-chain…";
+
+  // 2) On-chain + claimables in background (does not block first paint)
+  try {
+    const [cCount] = await Promise.all([
+      scanOnChain().catch(e => { console.warn("on-chain scan", e); return 0; }),
+      fetchClaimables().catch(() => {})
+    ]);
+    chainCount = cCount || 0;
+  } catch (e) {
+    console.warn("on-chain", e);
   }
 
-  await fetchBalances();
-  await fetchClaimables();
-
-  // Enrich link counts from payment_links table, with localStorage fallback (ArcPayLink)
-  {
-    let a = 0, p = 0, e = 0;
-    let found = false;
-
-    if (userAddress && typeof fetchPaymentRecords === "function") {
-      try {
-        const rows = await fetchPaymentRecords(userAddress, { limit: 100 });
-        if (rows && rows.length) {
-          found = true;
-          rows.forEach(r => {
-            const st = (r.status || "").toLowerCase();
-            if (/paid|claimed/i.test(st)) p++;
-            else if (/expir|cancel/i.test(st)) e++;
-            else a++;
-          });
-        }
-      } catch {}
-    }
-
-    // Fallback to localStorage used by ArcPayLink when cloud table is empty
-    if (!found) {
-      try {
-        const localLinks = JSON.parse(localStorage.getItem('arcPaymentLinksV2') || '[]');
-        const localInvs = JSON.parse(localStorage.getItem('arcInvoicesV1') || '[]');
-        const all = [...(Array.isArray(localLinks) ? localLinks : []), ...(Array.isArray(localInvs) ? localInvs : [])];
-        if (all.length) {
-          found = true;
-          all.forEach(r => {
-            const st = (r.status || "").toLowerCase();
-            if (/paid|claimed|complete/i.test(st)) p++;
-            else if (/expir|cancel|overdue/i.test(st)) e++;
-            else a++;
-          });
-        }
-      } catch {}
-    }
-
-    if (found) {
-      state.linksActive = a;
-      state.linksPaid = p;
-      state.linksExpired = e;
-    }
-  }
-
-  // Merge cloud + on-chain into one timeline so chart matches KPIs
-  rebuildTimelineFromActivity();
-
-  buildAutomationsAndUpcoming();
-  buildInsights();
-
-  if (cloudCount > 0 && chainCount > 0) dataSource = "cloud + on-chain";
-  else if (cloudCount > 0 && chainCount === 0) dataSource = "cloud";
-  else if (chainCount > 0) dataSource = "on-chain";
-  else dataSource = userAddress ? "empty" : "—";
-
-  document.getElementById("syncStatus").textContent = "Synced";
-  document.getElementById("dataSourceBadge").textContent = "Source: " + dataSource;
-  document.getElementById("dataSourceBadge").title =
-    chainCount > 0
-      ? `${chainCount} event(s) matched on-chain`
-      : cloudCount > 0
-        ? "Cloud data only — on-chain scan found no matching events in range (RPC/range limits)"
-        : "";
-
-  showApp();
-  renderAll();
-
-  if (!userAddress) {
-    document.getElementById("emptyState").classList.add("hidden");
-    return;
-  }
-  if (state.tx === 0 && state.activity.length === 0) {
-    document.getElementById("emptyState").classList.remove("hidden");
-    document.getElementById("dashboardBody").classList.add("opacity-40");
-  } else {
-    document.getElementById("emptyState").classList.add("hidden");
-    document.getElementById("dashboardBody").classList.remove("opacity-40");
-  }
+  finalizeRender(cloudCount, chainCount);
 }
 
 function onRangeChange() {
