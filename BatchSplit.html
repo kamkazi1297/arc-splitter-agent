@@ -2,8 +2,8 @@
 <html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-  <title> Multi-Token Batch Split</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"> 
+  <title>ArcSplit · Batch Split</title>
   <!-- کتابخانه Supabase به درستی به هدر اضافه شد -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="db.js"></script>
@@ -101,17 +101,17 @@
     .light .text-cyan-400 { color: #0e7490 !important; }
     .light .text-emerald-400 { color: #be123c !important; } /* remap leftover emerald to rose */
 
-    /* Inputs / selects glass in light mode */
+    /* Inputs / selects — inset in light mode */
     .light select, .light input, .light textarea {
-      background-color: rgba(255, 255, 255, 0.6) !important;
+      background-color: #f1f5f9 !important;
       color: #0f172a !important;
-      border: 1px solid rgba(0, 0, 0, 0.06) !important;
-      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02) !important;
+      border: 1px solid rgba(0, 0, 0, 0.14) !important;
+      box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.06) !important;
     }
     .light select:focus, .light input:focus, .light textarea:focus {
       background-color: #ffffff !important;
       border-color: #f43f5e !important;
-      box-shadow: 0 0 0 4px rgba(244, 63, 94, 0.15) !important;
+      box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.06), 0 0 0 3px rgba(244, 63, 94, 0.15) !important;
     }
     .light select option { background-color: #ffffff !important; color: #0f172a !important; }
 
@@ -133,18 +133,20 @@
       color: #ffffff !important;
     }
 
+    /* Fields — inset depth */
     select, input, textarea {
-      background-color: rgba(255, 255, 255, 0.03);
+      background-color: rgba(0, 0, 0, 0.25);
       color: white;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35);
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
     select:hover, input:hover, textarea:hover {
-      border-color: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.18);
     }
     select:focus, input:focus, textarea:focus {
       border-color: #f43f5e;
-      box-shadow: 0 0 0 4px rgba(244, 63, 94, 0.15);
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35), 0 0 0 3px rgba(244, 63, 94, 0.15);
       outline: none;
     }
 
@@ -177,46 +179,188 @@
 
     .fade-in { animation: fadeIn 0.4s ease forwards; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-  </style>
+  
+
+/* ===== Header chrome aligned with Hub / Split ===== */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; box-sizing: border-box; }
+*, *::before, *::after { box-sizing: inherit; }
+body { overflow-x: hidden; max-width: 100vw; -webkit-font-smoothing: antialiased; }
+img, video, canvas, svg { max-width: 100%; height: auto; }
+button, a, input, select, textarea { max-width: 100%; }
+.max-w-6xl, .max-w-7xl, .max-w-5xl { width: 100%; max-width: min(72rem, 100%); }
+
+.hdr-btn {
+  height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0 1rem;
+  border-radius: 0.9rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  text-decoration: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.hdr-btn:active { transform: scale(0.98); }
+.hdr-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.hdr-hub {
+  background: linear-gradient(135deg, #6366f1, #7c3aed);
+  color: #fff;
+  border-color: rgba(99, 102, 241, 0.5);
+  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.25);
+}
+.hdr-hub:hover { filter: brightness(1.08); }
+
+/* Batch accent = rose */
+.hdr-connect {
+  background: linear-gradient(135deg, #fb7185, #e11d48);
+  color: #fff;
+  border-color: rgba(251, 113, 133, 0.55);
+  box-shadow: 0 2px 10px rgba(244, 63, 94, 0.28);
+}
+.hdr-connect:hover { filter: brightness(1.06); }
+.hdr-connect.connected {
+  background: rgba(251, 113, 133, 0.14);
+  color: #fda4af;
+  border-color: rgba(251, 113, 133, 0.4);
+  box-shadow: none;
+}
+.hdr-connect .pwr { margin-left: 0.35rem; color: #f43f5e; font-size: 0.75rem; }
+.light .hdr-connect.connected {
+  background: rgba(244, 63, 94, 0.1);
+  color: #be123c;
+  border-color: rgba(190, 18, 60, 0.35);
+}
+
+.title-grad {
+  background: linear-gradient(90deg, #fb7185, #f472b6);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+}
+.light .title-grad {
+  background: linear-gradient(90deg, #e11d48, #db2777);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+}
+
+.theme-fab {
+  position: fixed;
+  bottom: 1.25rem;
+  right: 1.25rem;
+  z-index: 40;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(18, 18, 38, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  color: #fb7185;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+.theme-fab:hover { transform: scale(1.06); }
+.light .theme-fab {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: #d97706;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.app-button[class*="bg-gradient"], button[class*="bg-gradient-to-r"] {
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+  font-weight: 700;
+  border-radius: 0.9rem;
+}
+.app-button[class*="bg-gradient"]:hover { filter: brightness(1.05); }
+button:disabled, .app-button:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; }
+
+#toast {
+  position: fixed !important; bottom: 1.5rem !important; left: 50% !important;
+  transform: translateX(-50%) !important; z-index: 9999 !important;
+  max-width: min(92vw, 28rem); padding: 0.85rem 1.25rem !important;
+  border-radius: 14px !important; background: rgba(15,23,42,0.94) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important; color: #fff !important;
+  font-size: 0.8rem !important; font-weight: 600 !important;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.35) !important;
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+}
+
+.arc-empty {
+  text-align: center; padding: 2.5rem 1.25rem;
+  border: 1px dashed rgba(255,255,255,0.12); border-radius: 14px;
+  color: #94a3b8; font-size: 0.85rem; line-height: 1.5;
+}
+.arc-empty i { display: block; font-size: 1.75rem; margin-bottom: 0.75rem; opacity: 0.45; }
+.arc-spin { animation: arc-spin 0.8s linear infinite; }
+@keyframes arc-spin { to { transform: rotate(360deg); } }
+.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
+
+.light .glass { border: 1px solid rgba(0, 0, 0, 0.12) !important; }
+
+@media (max-width: 640px) {
+  .hdr-btn { height: 2.5rem; font-size: 0.75rem; padding: 0 0.75rem; }
+}
+
+</style>
+  <link rel="stylesheet" href="arc-shared.css" data-arc-shared="1">
+  <link rel="icon" type="image/svg+xml" href="logo-white.svg">
 </head>
-<body class="text-white min-h-screen selection:bg-rose-500 selection:text-black">
+<body class="text-white min-h-screen selection:bg-rose-500 selection:text-black" data-arc-accent="rose">
 
   <div class="max-w-7xl mx-auto px-4 py-6 sm:py-8">
     
     <!-- HEADER -->
-    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 bg-white/[0.02] light:bg-white/50 border border-white/5 light:border-black/5 p-4 sm:p-6 rounded-3xl backdrop-blur-xl">
-      <div class="flex items-center gap-3 sm:gap-4">
-        <!-- لوگو سفید (حالت تاریک) -->
-        <img src="logo-white.svg" alt="ArcSplit" class="w-10 h-10 sm:w-12 sm:h-12 object-contain block light:hidden">
-        <!-- لوگو سیاه (حالت روشن) -->
-        <img src="trace-raw.svg" alt="ArcSplit" class="w-10 h-10 sm:w-12 sm:h-12 object-contain hidden light:block">
-        <div>
-          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight keep-dark-white">Multi Token <span class="text-transparent bg-clip-text bg-gradient-to-r from-rose-400 to-pink-400">Batch Split</span></h1>
-          <p class="text-xs sm:text-sm font-medium keep-dark-white">Professional Decentralized multi-Token Splitter</p>
+    <div class="glass rounded-3xl p-4 sm:p-5 mb-4">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex items-center gap-3 min-w-0">
+          <img src="logo-white.svg" alt="ArcSplit" class="w-10 h-10 sm:w-11 sm:h-11 object-contain block light:hidden shrink-0">
+          <img src="trace-raw.svg" alt="ArcSplit" class="w-10 h-10 sm:w-11 sm:h-11 object-contain hidden light:block shrink-0">
+          <div class="min-w-0">
+            <h1 class="text-lg sm:text-xl font-extrabold tracking-tight truncate">
+              Multi Token <span class="title-grad">Batch Split</span>
+            </h1>
+            <p class="text-[11px] sm:text-xs text-gray-400 mt-0.5 font-medium truncate">Professional multi-token distribution</p>
+          </div>
         </div>
-      </div>
-      
-      <div class="flex items-center gap-3 flex-wrap">
-        <div class="flex bg-white/5 border border-white/10 rounded-2xl p-1 text-xs relative">
-          <button onclick="switchView('splitter')" id="navSplitterBtn" class="px-4 py-2 rounded-xl font-bold transition-all bg-rose-500/20 text-rose-400 keep-dark-emerald shadow-lg shadow-rose-500/20">Batch Split</button>
-          <button onclick="switchView('history')" id="navHistoryBtn" class="px-4 py-2 rounded-xl font-bold transition-all text-gray-400 keep-dark-gray">History</button>
-          <button onclick="switchView('pending')" id="navPendingBtn" class="relative px-4 py-2 rounded-xl font-bold transition-all text-gray-400 keep-dark-gray">
-            Pending
-            <span id="pendingBadge" class="hidden absolute top-1 right-1 flex h-2.5 w-2.5">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
-            </span>
+        <div class="flex items-center gap-2 shrink-0 w-full sm:w-auto sm:ml-auto">
+          <a href="index.html" id="arcHubLink" class="hdr-btn hdr-hub flex-1 sm:flex-none" title="Back to Hub">
+            <i class="fas fa-home text-sm"></i><span>Hub</span>
+          </a>
+          <button onclick="handleWalletClick()" id="connectBtn" class="hdr-btn hdr-connect flex-1 sm:flex-none">
+            <i class="fas fa-wallet text-sm"></i>
+            <span id="connectText">Connect Wallet</span>
           </button>
         </div>
-
-        <button onclick="toggleTheme()" id="themeBtn" class="w-11 h-11 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/15 border border-white/10 rounded-2xl transition-all" aria-label="Toggle Theme">
-          <i class="fas fa-moon text-lg text-rose-400"></i>
-        </button>
-
-        <button onclick="handleWalletClick()" id="connectBtn" class="app-button px-5 py-2.5 bg-white light:bg-slate-900 text-gray-950 light:text-white font-bold rounded-2xl text-xs flex items-center gap-2 shadow-lg">
-          <i class="fas fa-wallet text-rose-500"></i> <span id="connectText">Connect Wallet</span>
-        </button>
       </div>
+    </div>
+
+    <button onclick="toggleTheme()" id="themeBtn" class="theme-fab" title="Toggle theme" aria-label="Toggle Theme">
+      <i class="fas fa-moon text-base"></i>
+    </button>
+
+    <!-- Tab Navigation -->
+    <div class="flex flex-wrap gap-4 sm:gap-6 mb-6 border-b border-white/10 light:border-black/10 pb-1 overflow-x-auto relative">
+      <button onclick="switchView('splitter')" id="navSplitterBtn" class="tab-btn active pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-rose-400 border-b-2 border-rose-400 whitespace-nowrap">Batch Split</button>
+      <button onclick="switchView('history')" id="navHistoryBtn" class="tab-btn pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-gray-500 hover:text-gray-300 light:hover:text-slate-700 whitespace-nowrap">History</button>
+      <button onclick="switchView('pending')" id="navPendingBtn" class="tab-btn relative pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-gray-500 hover:text-gray-300 light:hover:text-slate-700 whitespace-nowrap">
+        Pending
+        <span id="pendingBadge" class="hidden absolute top-0 -right-2 flex h-2.5 w-2.5">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-500"></span>
+        </span>
+      </button>
     </div>
 
     <!-- STATUS BAR -->
@@ -252,10 +396,10 @@
             </h3>
             <div class="flex gap-2">
               <!-- دکمه Add Custom Token -->
-              <button onclick="openCustomTokenModal()" class="px-3.5 py-2 bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 border border-violet-500/20 rounded-xl text-xs font-semibold transition-all">
+              <button onclick="openCustomTokenModal()" class="px-3.5 py-2 bg-violet-500/10 hover:bg-violet-500/20 text-violet-400 border border-violet-500/20 rounded-xl text-xs font-semibold transition-all arc-btn-glass">
                 <i class="fas fa-coins mr-1"></i> Custom Token
               </button>
-              <button onclick="addTokenRow()" class="px-3.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-xl text-xs font-semibold transition-all">
+              <button onclick="addTokenRow()" class="px-3.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-xl text-xs font-semibold transition-all arc-btn-glass">
                 <i class="fas fa-plus mr-1"></i> Add Token
               </button>
             </div>
@@ -270,10 +414,10 @@
               <i class="fas fa-users-gear text-rose-400"></i> Step 2: Recipients & Shares
             </h3>
             <div class="flex items-center gap-2">
-              <button onclick="importCSVModal()" class="px-3.5 py-2 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/20 rounded-xl text-xs font-semibold transition-all">
+              <button onclick="importCSVModal()" class="px-3.5 py-2 bg-sky-500/10 hover:bg-sky-500/20 text-sky-400 border border-sky-500/20 rounded-xl text-xs font-semibold transition-all arc-btn-glass">
                 <i class="fas fa-file-csv mr-1"></i> CSV
               </button>
-              <button onclick="addRecipientRow()" class="px-3.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-xl text-xs font-semibold transition-all">
+              <button onclick="addRecipientRow()" class="px-3.5 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-xl text-xs font-semibold transition-all arc-btn-glass">
                 <i class="fas fa-plus mr-1"></i> Add Recipient
               </button>
             </div>
@@ -296,10 +440,10 @@
             <textarea id="batchMemo" rows="2" class="w-full bg-black/20 light:bg-slate-100 rounded-2xl p-4 text-xs sm:text-sm outline-none resize-none" placeholder="e.g. Treasury Distribution - July Payroll"></textarea>
           </div>
           <div class="flex flex-wrap gap-3 pt-2">
-            <button onclick="openSaveTemplateModal()" class="px-4 py-2.5 bg-violet-600/20 text-violet-400 border border-violet-600/30 rounded-xl text-xs font-semibold transition-all">
+            <button onclick="openSaveTemplateModal()" class="px-4 py-2.5 bg-violet-600/20 text-violet-400 border border-violet-600/30 rounded-xl text-xs font-semibold transition-all arc-btn-glass">
               <i class="fas fa-save mr-1"></i> Save as Template 
             </button>
-            <button onclick="openLoadTemplateModal()" class="px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-semibold transition-all preserve-dark-color">
+            <button onclick="openLoadTemplateModal()" class="px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-semibold transition-all preserve-dark-color arc-btn-glass">
               <i class="fas fa-folder-open mr-1"></i> Open Template
             </button>
           </div>
@@ -515,14 +659,15 @@ function showToast(msg, duration = 4000) {
 function toggleTheme() {
   const isLight = document.documentElement.classList.toggle('light');
   localStorage.setItem('theme', isLight ? 'light' : 'dark');
-  const icon = document.getElementById("themeBtn").querySelector("i");
-  if (isLight) {
-    icon.classList.remove("fa-moon", "text-rose-400");
-    icon.classList.add("fa-sun", "text-amber-500");
-  } else {
-    icon.classList.remove("fa-sun", "text-amber-500");
-    icon.classList.add("fa-moon", "text-rose-400");
-  }
+  const icon = document.getElementById("themeBtn")?.querySelector("i");
+  if (!icon) return;
+  icon.className = isLight ? "fas fa-sun text-base" : "fas fa-moon text-base";
+}
+
+if (localStorage.getItem("theme") === "light") {
+  document.documentElement.classList.add("light");
+  const _ti = document.querySelector("#themeBtn i");
+  if (_ti) _ti.className = "fas fa-sun text-base";
 }
 
 function switchView(view) {
@@ -534,8 +679,8 @@ function switchView(view) {
   const hBtn = document.getElementById("navHistoryBtn");
   const pBtn = document.getElementById("navPendingBtn");
 
-  const activeClass = "px-4 py-2 rounded-xl font-bold transition-all bg-rose-500/20 text-rose-400 keep-dark-emerald shadow-lg shadow-rose-500/20";
-  const inactiveClass = "px-4 py-2 rounded-xl font-bold transition-all text-gray-400 keep-dark-gray";
+  const activeClass = "tab-btn active pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-rose-400 border-b-2 border-rose-400 whitespace-nowrap";
+  const inactiveClass = "tab-btn pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-gray-500 hover:text-gray-300 light:hover:text-slate-700 whitespace-nowrap";
 
   splitter.classList.add("hidden");
   history.classList.add("hidden");
@@ -559,10 +704,23 @@ function switchView(view) {
   }
 }
 
-function handleWalletClick() { 
-  if (!userAddress) showConnectModal(); 
-  else disconnectWallet(new Event('click'));
-}
+
+  function arcSetConnectLoading(loading) {
+    const btn = document.getElementById("connectBtn") || document.getElementById("connectHeaderBtn") || document.getElementById("connectWalletBtn");
+    if (!btn) return;
+    if (loading) {
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-circle-notch arc-spin"></i> <span>Connecting…</span>';
+    } else {
+      btn.disabled = false;
+      // Do NOT restore old HTML — updateConnectButton owns the label
+    }
+  }
+
+  function handleWalletClick() {
+    if (!userAddress) showConnectModal();
+    else disconnectWallet();
+  }
 
 async function showConnectModal() {
   if (!window.ethereum) {
@@ -570,69 +728,91 @@ async function showConnectModal() {
     return;
   }
   try {
+    arcSetConnectLoading(true);
     await ensureArcNetwork();
     const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
     userAddress = accounts[0];
     window.userAddress = userAddress;
     const provider = new ethers.BrowserProvider(window.ethereum);
     signer = await provider.getSigner();
-    updateConnectButton();
+    localStorage.setItem("userAddress", userAddress);
+    localStorage.removeItem("arcWalletDisconnected");
     localStorage.setItem("arcWalletConnected", "true");
+    updateConnectButton();
     if (typeof refreshWorkspaceGuard === "function") refreshWorkspaceGuard();
     fetchAndRenderBalancesWithRetry();
     showToast("Wallet connected");
   } catch (e) {
     showToast("Connection rejected or network switch failed");
+    updateConnectButton();
+  } finally {
+    arcSetConnectLoading(false);
+    updateConnectButton();
   }
 }
 
 function disconnectWallet(event) {
-  if(event) event.stopPropagation();
+  if (event) event.stopPropagation();
   userAddress = null; window.userAddress = null; signer = null;
   localStorage.removeItem("arcWalletConnected");
+  localStorage.removeItem("userAddress");
+  localStorage.setItem("arcWalletDisconnected", "1");
   updateConnectButton();
-  document.getElementById("walletBalancesBox").classList.add("hidden");
+  const box = document.getElementById("walletBalancesBox");
+  if (box) box.classList.add("hidden");
   showToast("Wallet disconnected");
 }
 
 function updateConnectButton() {
   const btn = document.getElementById("connectBtn");
-  
+  if (!btn) return;
+  btn.disabled = false;
   if (userAddress) {
     const shortAddr = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
-    btn.innerHTML = `<i class="fas fa-wallet text-rose-500"></i> <span class="font-bold">${shortAddr}</span> <i class="fas fa-power-off text-rose-400 ml-1 text-[10px]" title="Disconnect"></i>`;
+    btn.className = "hdr-btn hdr-connect connected flex-1 sm:flex-none";
+    btn.innerHTML = `<i class="fas fa-wallet text-sm"></i><span id="connectText">${shortAddr}</span><i class="fas fa-power-off pwr" title="Disconnect"></i>`;
   } else {
-    btn.innerHTML = `<i class="fas fa-wallet text-rose-500"></i> <span id="connectText">Connect Wallet</span>`;
+    btn.className = "hdr-btn hdr-connect flex-1 sm:flex-none";
+    btn.innerHTML = `<i class="fas fa-wallet text-sm"></i><span id="connectText">Connect Wallet</span>`;
   }
 }
 
 async function autoConnectWallet() {
-  if (window.ethereum && localStorage.getItem("arcWalletConnected") === "true") {
-    try {
-      await ensureArcNetwork();
-      const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-      if (accounts.length > 0) {
-        userAddress = accounts[0];
-        window.userAddress = userAddress;
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        signer = await provider.getSigner();
-        updateConnectButton();
-        if (typeof refreshWorkspaceGuard === "function") refreshWorkspaceGuard();
-        fetchAndRenderBalancesWithRetry();
-      }
-    } catch (e) { localStorage.removeItem("arcWalletConnected"); }
+  if (!window.ethereum) return;
+  if (localStorage.getItem("arcWalletDisconnected") === "1") return;
+  // Prefer shared flag; keep legacy arcWalletConnected for this page
+  const optedIn = localStorage.getItem("userAddress") || localStorage.getItem("arcWalletConnected") === "true";
+  if (!optedIn) return;
+  try {
+    const accounts = await window.ethereum.request({ method: 'eth_accounts' });
+    if (accounts.length > 0) {
+      userAddress = accounts[0];
+      window.userAddress = userAddress;
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      signer = await provider.getSigner();
+      localStorage.setItem("userAddress", userAddress);
+      localStorage.removeItem("arcWalletDisconnected");
+      updateConnectButton();
+      if (typeof refreshWorkspaceGuard === "function") refreshWorkspaceGuard();
+      fetchAndRenderBalancesWithRetry();
+    }
+  } catch (e) {
+    localStorage.removeItem("arcWalletConnected");
   }
 }
 
 if (window.ethereum && window.ethereum.on) {
   window.ethereum.on("accountsChanged", (accs) => {
+    if (localStorage.getItem("arcWalletDisconnected") === "1") return;
     if (!accs || !accs.length) {
       disconnectWallet();
       return;
     }
     userAddress = accs[0];
     window.userAddress = userAddress;
+    localStorage.setItem("userAddress", userAddress);
     localStorage.setItem("arcWalletConnected", "true");
+    localStorage.removeItem("arcWalletDisconnected");
     updateConnectButton();
     if (typeof refreshWorkspaceGuard === "function") refreshWorkspaceGuard();
     fetchAndRenderBalancesWithRetry();
@@ -1134,7 +1314,12 @@ async function resumeBatchTx(batchId) {
       assetsCount: 1,
       memo: data.memo + ` [${data.tokenSymbol}]`,
       txHashes: data.txHashes,
-      tokens: [{ token: data.originalToken, amount: data.rawAmount }],
+      amount: data.rawAmount,
+      token: data.tokenSymbol || "TOKEN",
+      symbol: data.tokenSymbol || "TOKEN",
+      tokenSymbol: data.tokenSymbol || "TOKEN",
+      tokenAddress: data.originalToken || data.token || "",
+      tokens: [{ token: data.tokenSymbol || "TOKEN", address: data.originalToken, amount: data.rawAmount }],
       recipients: data.originalRecipients
     });
 
@@ -1192,6 +1377,13 @@ function isBatchItem(item) {
 }
 
 async function saveToHistory(record) {
+  const sym = record.tokenSymbol || record.symbol || record.token
+    || (record.tokens && record.tokens[0] && (record.tokens[0].tokenSymbol || record.tokens[0].symbol || record.tokens[0].token))
+    || "TOKEN";
+  // Prefer human symbol over contract address
+  const tokenLabel = (typeof sym === "string" && sym.startsWith("0x") && sym.length >= 40)
+    ? (AVAILABLE_TOKENS.find(t => t.address.toLowerCase() === sym.toLowerCase())?.symbol || sym.slice(0, 6) + "…" + sym.slice(-4))
+    : sym;
   const enriched = {
     ...record,
     type: record.type || "Batch",
@@ -1200,7 +1392,9 @@ async function saveToHistory(record) {
     timestamp: record.timestamp || new Date().toISOString(),
     hash: record.hash || (record.txHashes && record.txHashes[0]) || null,
     amount: record.amount != null ? record.amount : (record.tokens && record.tokens[0] && record.tokens[0].amount),
-    token: record.token || (record.tokens && record.tokens[0] && record.tokens[0].token)
+    token: tokenLabel,
+    symbol: tokenLabel,
+    tokenSymbol: tokenLabel
   };
   if (userAddress && typeof saveHistoryToCloud === 'function') {
     await saveHistoryToCloud(userAddress, enriched);
@@ -1247,7 +1441,7 @@ async function renderHistoryTable() {
   const container = document.getElementById("historyTableContainer");
 
   if (history.length === 0) {
-    container.innerHTML = '<div class="text-center py-12 text-gray-400 light:text-slate-500">No batch splits recorded yet.</div>';
+    container.innerHTML = '<div class="arc-empty">No batch splits recorded yet.</div>';
     return;
   }
 
@@ -1340,5 +1534,6 @@ window.addEventListener('load', async () => {
   await autoConnectWallet();
 });
 </script>
+  <script src="arc-chrome.js"></script>
 </body>
 </html>
