@@ -1443,10 +1443,41 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
     return s.replace(/[_-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   }
 
+  const KNOWN_TOKENS = {
+    '0x89b50855aa3be2f677cd6303cec089b5f319d72a': 'EURC',
+    '0xf0c4a4ce82a5746abaad9425360ab04fbba432bf': 'cirBTC',
+    // native / common placeholders
+    '0x0000000000000000000000000000000000000000': 'USDC',
+    '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee': 'USDC',
+    'usdc': 'USDC',
+    'eurc': 'EURC',
+    'cirbtc': 'cirBTC'
+  };
+
+  function resolveTokenLabel(raw) {
+    if (raw == null || raw === '') return '';
+    const s = String(raw).trim();
+    if (!s) return '';
+    const lower = s.toLowerCase();
+    if (KNOWN_TOKENS[lower]) return KNOWN_TOKENS[lower];
+    // Contract address → try map, else short label
+    if (/^0x[a-f0-9]{40}$/i.test(s)) {
+      return KNOWN_TOKENS[lower] || (s.slice(0, 6) + '…' + s.slice(-4));
+    }
+    return s;
+  }
+
   function formatAmount(r) {
     if (r.amount == null && r.value == null) return '';
     const n = r.amount != null ? r.amount : r.value;
-    const tok = r.token || r.symbol || r.tokenSymbol || '';
+    // Prefer explicit symbols; never show long contract as token name
+    let tok = r.tokenSymbol || r.symbol || r.token || '';
+    // Batch sometimes nests token on tokens[0]
+    if ((!tok || /^0x[a-f0-9]{40}$/i.test(String(tok))) && r.tokens && r.tokens[0]) {
+      const t0 = r.tokens[0];
+      tok = t0.tokenSymbol || t0.symbol || t0.token || tok;
+    }
+    tok = resolveTokenLabel(tok);
     return `${n} ${tok}`.trim();
   }
 
