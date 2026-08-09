@@ -920,15 +920,6 @@ async function processCloudHistory(hist) {
     const item = raw?.history_data || raw;
     if (!item || typeof item !== "object") return;
 
-    // Skip non-transaction config rows stored in history table
-    const typ = String(item.type || item.appName || "").toLowerCase();
-    if (
-      typ === "roles_config" ||
-      typ === "module_data" ||
-      typ === "config" ||
-      (item.status && String(item.status).toLowerCase() === "config")
-    ) return;
-
     const tsMs = extractTimestamp(item);
     const hash = extractHash(item);
     if (hash && seen.has(hash)) return;
