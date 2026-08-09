@@ -1366,6 +1366,8 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
       signer = await provider.getSigner();
       userAddress = await signer.getAddress();
       window.userAddress = userAddress;
+      localStorage.setItem('userAddress', userAddress);
+      localStorage.removeItem('arcWalletDisconnected');
       setWalletUI(true);
       showToast(onCorrectNetwork ? 'Wallet connected · Arc Testnet' : 'Wallet connected · switch network');
       loadActivity();
@@ -1387,6 +1389,9 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
     userAddress = null;
     window.userAddress = null;
     signer = null;
+    provider = null;
+    localStorage.removeItem('userAddress');
+    localStorage.setItem('arcWalletDisconnected', '1');
     setWalletUI(false);
     document.getElementById('activityList').innerHTML =
       `<div class="arc-empty"><i class="fas fa-wallet"></i>Connect a wallet to load activity</div>`;
@@ -1581,19 +1586,22 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
       try {
         provider = new ethers.BrowserProvider(window.ethereum);
         await refreshNetworkState();
-        const accs = await provider.send('eth_accounts', []);
-        if (accs?.length) {
-          // Don't force-switch on silent reconnect — only reflect state
-          await refreshNetworkState();
-          provider = new ethers.BrowserProvider(window.ethereum);
-          signer = await provider.getSigner();
-          userAddress = await signer.getAddress();
-          window.userAddress = userAddress;
-          setWalletUI(true);
-          loadActivity();
-          if (pendingBotLinkConfirm && getTelegramChatId()) {
-            pendingBotLinkConfirm = false;
-            requestWalletLinkConfirm();
+        // Skip auto-reconnect if user explicitly disconnected
+        if (localStorage.getItem('arcWalletDisconnected') !== '1') {
+          const accs = await provider.send('eth_accounts', []);
+          if (accs?.length) {
+            await refreshNetworkState();
+            provider = new ethers.BrowserProvider(window.ethereum);
+            signer = await provider.getSigner();
+            userAddress = await signer.getAddress();
+            window.userAddress = userAddress;
+            localStorage.setItem('userAddress', userAddress);
+            setWalletUI(true);
+            loadActivity();
+            if (pendingBotLinkConfirm && getTelegramChatId()) {
+              pendingBotLinkConfirm = false;
+              requestWalletLinkConfirm();
+            }
           }
         }
       } catch {}
@@ -1611,9 +1619,11 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
       });
 
       window.ethereum.on?.('accountsChanged', (accs) => {
+        if (localStorage.getItem('arcWalletDisconnected') === '1') return;
         if (accs?.length) {
           userAddress = accs[0];
           window.userAddress = userAddress;
+          localStorage.setItem('userAddress', userAddress);
           refreshNetworkState().then(() => {
             setWalletUI(true);
             loadActivity();
