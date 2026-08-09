@@ -797,7 +797,7 @@ button:disabled, .app-button:disabled { opacity: 0.45; cursor: not-allowed; tran
     renderRecipients();
     recalculateVesting();
 
-    if (window.ethereum) {
+    if (window.ethereum && localStorage.getItem("arcWalletDisconnected") !== "1") {
       try {
         const accounts = await window.ethereum.request({ method: 'eth_accounts' });
         if (accounts && accounts.length > 0) {
@@ -809,24 +809,36 @@ button:disabled, .app-button:disabled { opacity: 0.45; cursor: not-allowed; tran
     }
   });
 
-  
+  function setVestWalletUI(connected) {
+    const _wb = document.getElementById('connectWalletBtn');
+    if (!_wb) return;
+    _wb.disabled = false;
+    if (connected && userAddress) {
+      const shortAddr = userAddress.substring(0, 6) + "..." + userAddress.substring(userAddress.length - 4);
+      _wb.className = "hdr-btn hdr-connect connected flex-1 sm:flex-none";
+      _wb.innerHTML = `<i class="fas fa-wallet text-sm"></i><span id="walletBtnText">${shortAddr}</span><i class="fas fa-power-off pwr" title="Disconnect"></i>`;
+    } else {
+      _wb.className = "hdr-btn hdr-connect flex-1 sm:flex-none";
+      _wb.innerHTML = `<i class="fas fa-wallet text-sm"></i><span id="walletBtnText">Connect Wallet</span>`;
+    }
+  }
+
   // Wallet connect loading UI (page-local)
   function arcSetConnectLoading(loading) {
     const btn = document.getElementById("connectBtn") || document.getElementById("connectHeaderBtn") || document.getElementById("connectWalletBtn");
     if (!btn) return;
     if (loading) {
-      btn.dataset.arcPrev = btn.innerHTML;
       btn.disabled = true;
       btn.innerHTML = '<i class="fas fa-circle-notch arc-spin"></i> <span>Connecting…</span>';
     } else {
       btn.disabled = false;
-      if (btn.dataset.arcPrev) { btn.innerHTML = btn.dataset.arcPrev; delete btn.dataset.arcPrev; }
+      // Do NOT restore old HTML — setVestWalletUI owns the label
     }
   }
 
   function handleWalletClick() {
     if (userAddress) disconnectWallet();
-    else connectWallet();
+    else connectWallet(false);
   }
 
   async function connectWallet(isAuto = false) {
@@ -842,15 +854,10 @@ button:disabled, .app-button:disabled { opacity: 0.45; cursor: not-allowed; tran
         signer = await provider.getSigner();
         userAddress = await signer.getAddress();
         window.userAddress = userAddress;
+        localStorage.setItem("userAddress", userAddress);
+        localStorage.removeItem("arcWalletDisconnected");
         if (typeof refreshWorkspaceGuard === "function") refreshWorkspaceGuard();
-        
-        const shortAddr = userAddress.substring(0, 6) + "..." + userAddress.substring(userAddress.length - 4);
-        const _wb = document.getElementById('connectWalletBtn');
-        if (_wb) {
-          _wb.className = "hdr-btn hdr-connect connected flex-1 sm:flex-none";
-          _wb.innerHTML = `<i class="fas fa-wallet text-sm"></i><span id="walletBtnText">${shortAddr}</span><i class="fas fa-power-off pwr" title="Disconnect"></i>`;
-          _wb.disabled = false;
-        }
+        setVestWalletUI(true);
 
         await fetchRealTokenBalanceWithRetry();
         
@@ -887,15 +894,11 @@ button:disabled, .app-button:disabled { opacity: 0.45; cursor: not-allowed; tran
         if (!isAuto) showToast("Wallet connected successfully!");
       } catch (error) {
         console.error(error);
-        const _wbErr = document.getElementById('connectWalletBtn');
-        if (_wbErr) {
-          _wbErr.className = "hdr-btn hdr-connect flex-1 sm:flex-none";
-          _wbErr.innerHTML = `<i class="fas fa-wallet text-sm"></i><span id="walletBtnText">Connect Wallet</span>`;
-          _wbErr.disabled = false;
-        }
+        setVestWalletUI(!!userAddress);
         if (!isAuto) showToast("Connection rejected by user or network switch failed.");
       } finally {
         try { if (typeof arcSetConnectLoading === "function") arcSetConnectLoading(false); } catch (e) {}
+        setVestWalletUI(!!userAddress);
       }
     } else {
       try { if (typeof arcSetConnectLoading === "function") arcSetConnectLoading(false); } catch (e) {}
@@ -907,12 +910,9 @@ button:disabled, .app-button:disabled { opacity: 0.45; cursor: not-allowed; tran
     signer = null;
     userAddress = null;
     window.userAddress = null;
-    const _wb2 = document.getElementById('connectWalletBtn');
-    if (_wb2) {
-      _wb2.className = "hdr-btn hdr-connect flex-1 sm:flex-none";
-      _wb2.innerHTML = `<i class="fas fa-wallet text-sm"></i><span id="walletBtnText">Connect Wallet</span>`;
-      _wb2.disabled = false;
-    }
+    localStorage.removeItem("userAddress");
+    localStorage.setItem("arcWalletDisconnected", "1");
+    setVestWalletUI(false);
     document.getElementById('walletBalanceDisplay').textContent = `0.00 (Not Connected)`;
     historyTransactions = [];
     renderHistoryList();
