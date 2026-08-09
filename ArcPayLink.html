@@ -2,8 +2,8 @@
 <html lang="en" dir="ltr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-  <title>ArcPay - Decentralized Payment & Invoicing</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"> 
+  <title>ArcSplit · Pay Link</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
@@ -97,7 +97,7 @@
     .light,
     .light body,
     .light h1, .light h2, .light h3, .light h4,
-    .light label, .light p, .light span:not(.always-white):not(#toast *):not(.keep-white),
+    .light label, .light p, .light span:not(.always-white):not(.arc-muted-label):not(#toast *):not(.keep-white),
     .light div:not(.preview-card):not(.preview-card *) {
       color: #0f172a;
     }
@@ -105,7 +105,8 @@
       color: #000000 !important;
     }
     /* خاکستری‌ها → تیره قوی */
-    .light .text-gray-400 { color: #1e293b !important; }
+    .light .text-gray-400:not(.arc-muted-label) { color: #1e293b !important; }
+    .light .preview-meta-row .text-gray-400 { color: #9ca3af !important; }
     .light .text-gray-300 { color: #0f172a !important; }
     .light .text-gray-200 { color: #000000 !important; }
     .light .text-gray-500 { color: #334155 !important; }
@@ -200,34 +201,35 @@
       color: #0f172a !important;
     }
 
+    /* Fields — inset depth */
     select, input, textarea {
-      background-color: rgba(255, 255, 255, 0.03);
+      background-color: rgba(0, 0, 0, 0.25);
       color: white;
-      border: 1px solid rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35);
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
       color-scheme: dark;
     }
     select:hover, input:hover, textarea:hover {
-      border-color: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.18);
     }
     select:focus, input:focus, textarea:focus {
       border-color: #eab308;
-      box-shadow: 0 0 0 4px rgba(234, 179, 8, 0.15);
+      box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.35), 0 0 0 3px rgba(234, 179, 8, 0.15);
       outline: none;
     }
 
-    /* کادرهای Input و Select در لایت مود */
     .light select, .light input, .light textarea {
-      background-color: rgba(255, 255, 255, 0.6) !important;
+      background-color: #f1f5f9 !important;
       color: #0f172a !important;
-      border: 1px solid rgba(0, 0, 0, 0.06) !important;
-      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02) !important;
+      border: 1px solid rgba(0, 0, 0, 0.14) !important;
+      box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.06) !important;
       color-scheme: light;
     }
     .light select:focus, .light input:focus, .light textarea:focus {
       background-color: #ffffff !important;
       border-color: #eab308 !important;
-      box-shadow: 0 0 0 4px rgba(234, 179, 8, 0.15) !important;
+      box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.06), 0 0 0 3px rgba(234, 179, 8, 0.15) !important;
     }
 
     select option {
@@ -323,44 +325,235 @@
     @media (max-width: 640px) {
       .max-w-6xl { max-width: 100% !important; padding-left: 12px; padding-right: 12px; }
     }
-  </style>
+  
+    /* Tabs & form labels keep dark-mode colors in light mode */
+    .tab-btn { color: #9ca3af !important; }
+    .tab-btn:hover { color: #d1d5db !important; }
+    .tab-btn.active {
+      color: #34d399 !important; /* emerald-400 for payment link */
+      border-bottom: 2px solid #34d399 !important;
+    }
+    html.light .tab-btn { color: #9ca3af !important; }
+    html.light .tab-btn:hover { color: #d1d5db !important; }
+    html.light .tab-btn.active {
+      color: #34d399 !important;
+      border-bottom-color: #34d399 !important;
+    }
+    /* Field labels on dark glass cards */
+    html.light label,
+    html.light .field-label,
+    html.light .form-label {
+      color: #9ca3af !important;
+    }
+
+    /* FINAL: muted labels same in light/dark */
+    .arc-muted-label,
+    html.light .arc-muted-label {
+      color: #9ca3af !important;
+    }
+    html.light .flex.justify-between.items-center.text-gray-400 {
+      color: #9ca3af !important;
+    }
+    html.light .text-gray-400 {
+      color: #9ca3af !important;
+    }
+
+    /* FINAL2: ArcPay muted labels beat global .light span rules */
+    html.light span.arc-muted-label,
+    html.light .arc-muted-label,
+    html.light .preview-meta-row > .flex > span.arc-muted-label,
+    html.light .preview-meta-row .text-gray-400,
+    html.light .preview-meta-row {
+      color: #9ca3af !important;
+    }
+
+    /* FORCE muted labels */
+    html.light span.arc-muted-label {
+      color: #9ca3af !important;
+      -webkit-text-fill-color: #9ca3af !important;
+    }
+    html.light .preview-meta-row,
+    html.light .preview-meta-row .text-gray-400,
+    html.light .preview-meta-row span.arc-muted-label {
+      color: #9ca3af !important;
+      -webkit-text-fill-color: #9ca3af !important;
+    }
+
+
+/* ===== Header chrome aligned with Hub / Split ===== */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; box-sizing: border-box; }
+*, *::before, *::after { box-sizing: inherit; }
+body { overflow-x: hidden; max-width: 100vw; -webkit-font-smoothing: antialiased; }
+img, video, canvas, svg { max-width: 100%; height: auto; }
+button, a, input, select, textarea { max-width: 100%; }
+.max-w-6xl, .max-w-7xl, .max-w-5xl { width: 100%; max-width: min(72rem, 100%); }
+
+.hdr-btn {
+  height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0 1rem;
+  border-radius: 0.9rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  text-decoration: none;
+  border: 1px solid transparent;
+  cursor: pointer;
+}
+.hdr-btn:active { transform: scale(0.98); }
+.hdr-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.hdr-hub {
+  background: linear-gradient(135deg, #6366f1, #7c3aed);
+  color: #fff;
+  border-color: rgba(99, 102, 241, 0.5);
+  box-shadow: 0 2px 10px rgba(99, 102, 241, 0.25);
+}
+.hdr-hub:hover { filter: brightness(1.08); }
+
+/* Pay accent = yellow/amber */
+.hdr-connect {
+  background: linear-gradient(135deg, #eab308, #ca8a04);
+  color: #111;
+  border-color: rgba(234, 179, 8, 0.55);
+  box-shadow: 0 2px 10px rgba(234, 179, 8, 0.28);
+}
+.hdr-connect:hover { filter: brightness(1.06); }
+.hdr-connect.connected {
+  background: rgba(234, 179, 8, 0.14);
+  color: #facc15;
+  border-color: rgba(234, 179, 8, 0.4);
+  box-shadow: none;
+}
+.hdr-connect .pwr { margin-left: 0.35rem; color: #f43f5e; font-size: 0.75rem; }
+.light .hdr-connect.connected {
+  background: rgba(234, 179, 8, 0.12);
+  color: #a16207;
+  border-color: rgba(161, 98, 7, 0.35);
+}
+
+.title-grad {
+  background: linear-gradient(90deg, #facc15, #34d399);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+}
+.light .title-grad {
+  background: linear-gradient(90deg, #ca8a04, #059669);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+}
+
+.theme-fab {
+  position: fixed;
+  bottom: 1.25rem;
+  right: 1.25rem;
+  z-index: 40;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(18, 18, 38, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(12px);
+  color: #facc15;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+.theme-fab:hover { transform: scale(1.06); }
+.light .theme-fab {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  color: #d97706;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.app-button[class*="bg-gradient"], button[class*="bg-gradient-to-r"] {
+  border: 1px solid rgba(255,255,255,0.12);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+  font-weight: 700;
+  border-radius: 0.9rem;
+}
+.app-button[class*="bg-gradient"]:hover { filter: brightness(1.05); }
+button:disabled, .app-button:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; }
+
+#toast {
+  position: fixed !important; bottom: 1.5rem !important; left: 50% !important;
+  transform: translateX(-50%) !important; z-index: 9999 !important;
+  max-width: min(92vw, 28rem); padding: 0.85rem 1.25rem !important;
+  border-radius: 14px !important; background: rgba(15,23,42,0.94) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important; color: #fff !important;
+  font-size: 0.8rem !important; font-weight: 600 !important;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.35) !important;
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+}
+
+.arc-empty {
+  text-align: center; padding: 2.5rem 1.25rem;
+  border: 1px dashed rgba(255,255,255,0.12); border-radius: 14px;
+  color: #94a3b8; font-size: 0.85rem; line-height: 1.5;
+}
+.arc-empty i { display: block; font-size: 1.75rem; margin-bottom: 0.75rem; opacity: 0.45; }
+.arc-spin { animation: arc-spin 0.8s linear infinite; }
+@keyframes arc-spin { to { transform: rotate(360deg); } }
+.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
+
+.light .glass { border: 1px solid rgba(0, 0, 0, 0.12) !important; }
+
+@media (max-width: 640px) {
+  .hdr-btn { height: 2.5rem; font-size: 0.75rem; padding: 0 0.75rem; }
+}
+
+</style>
+  <link rel="stylesheet" href="arc-shared.css" data-arc-shared="1">
+  <link rel="icon" type="image/svg+xml" href="logo-white.svg">
 </head>
-<body class="text-white min-h-screen selection:bg-yellow-500/40 selection:text-black">
+<body class="text-white min-h-screen selection:bg-yellow-500/40 selection:text-black" data-arc-accent="yellow">
 
   <div class="max-w-6xl mx-auto px-4 py-8 sm:py-12">
     
     <!-- Header -->
-    <div class="glass flex flex-col sm:flex-row justify-between items-start sm:items-center gap-5 mb-10 p-5 sm:px-8 sm:py-6 rounded-[2rem]">
-      <div class="flex items-center gap-4">
-        <img src="logo-white.svg" alt="ArcPay" class="w-12 h-12 object-contain block light:hidden shrink-0">
-        <img src="logo-white.svg" alt="ArcPay" class="w-12 h-12 object-contain hidden light:block shrink-0">
-        <div>
-          <h1 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Arc <span class="brand-gradient text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-emerald-400">Pay</span></h1>
-          <p class="text-gray-400 light:text-slate-700 text-xs sm:text-sm font-medium mt-1">Decentralized Links & Invoices</p>
+    <div class="glass rounded-3xl p-4 sm:p-5 mb-4">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex items-center gap-3 min-w-0">
+          <img src="logo-white.svg" alt="ArcPay" class="w-10 h-10 sm:w-11 sm:h-11 object-contain block light:hidden shrink-0">
+          <img src="trace-raw.svg" alt="ArcPay" class="w-10 h-10 sm:w-11 sm:h-11 object-contain hidden light:block shrink-0">
+          <div class="min-w-0">
+            <h1 class="text-lg sm:text-xl font-extrabold tracking-tight truncate">
+              Arc <span class="title-grad">Pay</span>
+            </h1>
+            <p class="text-[11px] sm:text-xs text-gray-400 mt-0.5 font-medium truncate">Payment links & invoices</p>
+          </div>
         </div>
-      </div>
-      
-      <div class="flex items-center gap-3 w-full sm:w-auto">
-        <div class="flex flex-1 sm:flex-none bg-black/20 light:bg-black/5 border border-white/10 light:border-black/10 p-1.5 rounded-2xl overflow-x-auto hide-scroll">
-          <button onclick="switchTab('create')" id="tabCreate" class="px-5 py-2.5 rounded-xl text-sm font-bold transition-all bg-emerald-500/15 text-emerald-400 shadow-sm whitespace-nowrap">Payment Link</button>
-          <button onclick="switchTab('invoice')" id="tabInvoice" class="px-5 py-2.5 rounded-xl text-sm font-bold transition-all text-gray-400 hover:text-white light:hover:text-black whitespace-nowrap">Invoice</button>
-          <button onclick="switchTab('history')" id="tabHistory" class="px-5 py-2.5 rounded-xl text-sm font-bold transition-all text-gray-400 hover:text-white light:hover:text-black whitespace-nowrap">History</button>
-        </div>
-
-        <button onclick="toggleTheme()" id="themeBtn" class="flex-shrink-0 w-12 h-12 flex items-center justify-center bg-white/5 light:bg-black/5 hover:bg-white/10 light:hover:bg-black/10 border border-white/10 light:border-black/10 rounded-2xl transition-all shadow-sm">
-          <i class="fas fa-moon text-lg text-yellow-400"></i>
-        </button>
-
-        <div class="flex items-center gap-2 flex-shrink-0">
-          <button onclick="connectWallet()" id="connectHeaderBtn" class="app-button px-5 py-3 bg-white light:bg-slate-900 text-black light:text-white font-bold rounded-2xl text-sm flex items-center gap-2 shadow-lg hover:shadow-xl transition-shadow">
-            <i class="fas fa-wallet text-yellow-500"></i>
-            <span id="headerWalletText">Connect</span>
-          </button>
-          <button onclick="disconnectWallet()" id="disconnectBtn" class="hidden w-12 h-12 items-center justify-center bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 rounded-2xl transition-all border border-rose-500/10" title="Disconnect">
-            <i class="fas fa-power-off"></i>
+        <div class="flex items-center gap-2 shrink-0 w-full sm:w-auto sm:ml-auto">
+          <a href="index.html" id="arcHubLink" class="hdr-btn hdr-hub flex-1 sm:flex-none" title="Back to Hub">
+            <i class="fas fa-home text-sm"></i><span>Hub</span>
+          </a>
+          <button onclick="handleWalletClick()" id="connectHeaderBtn" class="hdr-btn hdr-connect flex-1 sm:flex-none">
+            <i class="fas fa-wallet text-sm"></i>
+            <span id="headerWalletText">Connect Wallet</span>
           </button>
         </div>
       </div>
+    </div>
+
+    <button onclick="toggleTheme()" id="themeBtn" class="theme-fab" title="Toggle theme">
+      <i class="fas fa-moon text-base"></i>
+    </button>
+
+    <!-- Tab Navigation -->
+    <div class="flex flex-wrap gap-4 sm:gap-6 mb-6 border-b border-white/10 light:border-black/10 pb-1 overflow-x-auto">
+      <button onclick="switchTab('create')" id="tabCreate" class="tab-btn active pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-emerald-400 border-b-2 border-emerald-400 whitespace-nowrap">Payment Link</button>
+      <button onclick="switchTab('invoice')" id="tabInvoice" class="tab-btn pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-gray-500 hover:text-gray-300  whitespace-nowrap">Invoice</button>
+      <button onclick="switchTab('history')" id="tabHistory" class="tab-btn pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-gray-500 hover:text-gray-300  whitespace-nowrap">History</button>
     </div>
 
     <!-- Toast Notification -->
@@ -496,15 +689,15 @@
 
               <div class="preview-meta-row bg-white/5 rounded-2xl p-4 text-xs space-y-3 text-left border border-white/5">
                 <div class="flex justify-between items-center text-gray-400">
-                  <span>From</span>
+                  <span class="arc-muted-label">From</span>
                   <span id="prevSender" class="font-mono text-white bg-black/20 px-2 py-1 rounded-md always-white">Not Connected</span>
                 </div>
                 <div class="flex justify-between items-center text-gray-400">
-                  <span>Note</span>
+                  <span class="arc-muted-label">Note</span>
                   <span id="prevDesc" class="text-white truncate max-w-[140px] font-medium always-white">—</span>
                 </div>
                 <div class="flex justify-between items-center text-gray-400">
-                  <span>Valid Until</span>
+                  <span class="arc-muted-label">Valid Until</span>
                   <span id="prevExpires" class="text-white font-medium always-white">Never</span>
                 </div>
               </div>
@@ -648,15 +841,15 @@
 
               <div class="preview-meta-row bg-white/5 rounded-2xl p-4 text-xs space-y-3 text-left border border-white/5">
                 <div class="flex justify-between items-center text-gray-400">
-                  <span>To (Payer)</span>
+                  <span class="arc-muted-label">To (Payer)</span>
                   <span id="prevInvPayer" class="font-mono text-white bg-black/20 px-2 py-1 rounded-md always-white">Anyone</span>
                 </div>
                 <div class="flex justify-between items-center text-gray-400">
-                  <span>Issuer</span>
+                  <span class="arc-muted-label">Issuer</span>
                   <span id="prevInvIssuer" class="font-mono text-white bg-black/20 px-2 py-1 rounded-md always-white">Not Connected</span>
                 </div>
                 <div class="flex justify-between items-center text-gray-400">
-                  <span>Due By</span>
+                  <span class="arc-muted-label">Due By</span>
                   <span id="prevInvExpires" class="text-white font-medium always-white">No Due Date</span>
                 </div>
               </div>
@@ -841,13 +1034,35 @@
     }
   }
 
-async function connectWallet() {
+
+  // Wallet connect loading UI (page-local)
+  function arcSetConnectLoading(loading) {
+    const btn = document.getElementById("connectBtn") || document.getElementById("connectHeaderBtn") || document.getElementById("connectWalletBtn");
+    if (!btn) return;
+    if (loading) {
+      btn.dataset.arcPrev = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fas fa-circle-notch arc-spin"></i> <span>Connecting…</span>';
+    } else {
+      btn.disabled = false;
+      if (btn.dataset.arcPrev) { btn.innerHTML = btn.dataset.arcPrev; delete btn.dataset.arcPrev; }
+    }
+  }
+
+  function handleWalletClick() {
+    if (userAddress) disconnectWallet();
+    else connectWallet();
+  }
+
+  async function connectWallet() {
+    try { if (typeof arcSetConnectLoading === 'function') arcSetConnectLoading(true); } catch(e) {}
     if (window.ethereum) await ensureArcNetwork();
 
     if (!window.ethereum) return notify("Error", "MetaMask not found! Please install it.", "fa-exclamation-triangle", true);
 
     try {
       const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+      try { if (typeof arcSetConnectLoading === "function") arcSetConnectLoading(false); } catch(e) {};
       userAddress = accounts[0];
       window.userAddress = userAddress;
 
@@ -868,13 +1083,15 @@ async function connectWallet() {
 
       signer = await provider.getSigner();
       const shortAddress = `${userAddress.slice(0,6)}...${userAddress.slice(-4)}`;
-      
-      document.getElementById("headerWalletText").textContent = shortAddress;
+
+      const _hb = document.getElementById("connectHeaderBtn");
+      if (_hb) {
+        _hb.className = "hdr-btn hdr-connect connected flex-1 sm:flex-none";
+        _hb.innerHTML = `<i class="fas fa-wallet text-sm"></i><span id="headerWalletText">${shortAddress}</span><i class="fas fa-power-off pwr" title="Disconnect"></i>`;
+        _hb.disabled = false;
+      }
       document.getElementById("prevSender").textContent = shortAddress;
       document.getElementById("prevInvIssuer").textContent = shortAddress;
-      document.getElementById("disconnectBtn").classList.remove("hidden");
-      document.getElementById("disconnectBtn").classList.add("flex");
-
       if (typeof refreshWorkspaceGuard === "function") refreshWorkspaceGuard();
       notify("Success", "Wallet Connected Successfully", "fa-check-circle");
       await loadUserBalance();
@@ -884,7 +1101,15 @@ async function connectWallet() {
 
     } catch (e) {
       console.error(e);
+      const _hbErr = document.getElementById("connectHeaderBtn");
+      if (_hbErr) {
+        _hbErr.className = "hdr-btn hdr-connect flex-1 sm:flex-none";
+        _hbErr.innerHTML = `<i class="fas fa-wallet text-sm"></i><span id="headerWalletText">Connect Wallet</span>`;
+        _hbErr.disabled = false;
+      }
       notify("Error", "Failed to connect wallet.", "fa-times-circle", true);
+    } finally {
+      try { if (typeof arcSetConnectLoading === "function") arcSetConnectLoading(false); } catch (e) {}
     }
   }
 
@@ -895,11 +1120,14 @@ async function connectWallet() {
     provider = null;
     rawBalance = 0n;
 
-    document.getElementById("headerWalletText").textContent = "Connect";
+    const _hb2 = document.getElementById("connectHeaderBtn");
+    if (_hb2) {
+      _hb2.className = "hdr-btn hdr-connect flex-1 sm:flex-none";
+      _hb2.innerHTML = `<i class="fas fa-wallet text-sm"></i><span id="headerWalletText">Connect Wallet</span>`;
+      _hb2.disabled = false;
+    }
     document.getElementById("prevSender").textContent = "Not Connected";
     document.getElementById("prevInvIssuer").textContent = "Not Connected";
-    document.getElementById("disconnectBtn").classList.remove("flex");
-    document.getElementById("disconnectBtn").classList.add("hidden");
     document.getElementById("tokenBalanceDisplay").textContent = "Balance: —";
     document.getElementById("invTokenBalanceDisplay").textContent = "Balance: —";
 
@@ -1514,24 +1742,24 @@ async function connectWallet() {
   }
 
   function switchTab(tab) {
-    document.getElementById('viewCreate').classList.toggle('hidden', tab !== 'create');
-    document.getElementById('viewInvoice').classList.toggle('hidden', tab !== 'invoice');
-    document.getElementById('viewHistory').classList.toggle('hidden', tab !== 'history');
-    
-    const activeLink = "px-5 py-2.5 rounded-xl text-sm font-bold transition-all bg-emerald-500/15 text-emerald-400 shadow-sm whitespace-nowrap";
-    const activeInv = "px-5 py-2.5 rounded-xl text-sm font-bold transition-all bg-yellow-500/15 text-yellow-500 shadow-sm whitespace-nowrap";
-    const activeHist = "px-5 py-2.5 rounded-xl text-sm font-bold transition-all bg-yellow-500/10 text-yellow-400 shadow-sm whitespace-nowrap";
-    const inactiveClass = "px-5 py-2.5 rounded-xl text-sm font-bold transition-all text-gray-400 hover:text-white light:hover:text-black whitespace-nowrap";
-    
-    document.getElementById('tabCreate').className = tab === 'create' ? activeLink : inactiveClass;
-    document.getElementById('tabInvoice').className = tab === 'invoice' ? activeInv : inactiveClass;
-    document.getElementById('tabHistory').className = tab === 'history' ? activeHist : inactiveClass;
-
-    // آپدیت تاریخچه هنگام باز کردن تب به صورت لحظه‌ای
-    if (tab === 'history') {
-      renderHistory();
-    }
-  }
+  const views = {
+    create: document.getElementById('viewCreate'),
+    invoice: document.getElementById('viewInvoice'),
+    history: document.getElementById('viewHistory')
+  };
+  Object.keys(views).forEach(k => {
+    if (views[k]) views[k].classList.toggle('hidden', k !== tab);
+  });
+  const active = "tab-btn active pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-emerald-400 border-b-2 border-emerald-400 whitespace-nowrap";
+  const inactive = "tab-btn pb-2 font-bold text-sm sm:text-base transition-colors duration-200 text-gray-500 hover:text-gray-300  whitespace-nowrap";
+  const map = { create: 'tabCreate', invoice: 'tabInvoice', history: 'tabHistory' };
+  Object.keys(map).forEach(k => {
+    const el = document.getElementById(map[k]);
+    if (el) el.className = (k === tab) ? active : inactive;
+  });
+  if (tab === 'history' && typeof renderHistory === 'function') renderHistory();
+  if (tab === 'invoice' && typeof renderInvoices === 'function') renderInvoices();
+}
 
   function switchHistoryTab(tab) {
     document.getElementById('historyLinksView').classList.toggle('hidden', tab !== 'links');
@@ -1563,7 +1791,7 @@ async function connectWallet() {
     // --- Render Links History ---
     const linkContainer = document.getElementById('historyTableBody');
     if (currentLinks.length === 0) {
-      linkContainer.innerHTML = `<div class="text-center py-6 text-gray-500 text-sm border border-dashed border-white/10 rounded-2xl">No links created yet.</div>`;
+      linkContainer.innerHTML = `<div class="arc-empty">No links created yet.</div>`;
     } else {
       let linksChanged = false; // 플گ برای تشخیص تغییر و ذخیره نهایی
       
@@ -1626,7 +1854,7 @@ async function connectWallet() {
     // --- Render Invoices History ---
     const invContainer = document.getElementById('invoiceHistoryTableBody');
     if (currentInvoices.length === 0) {
-      invContainer.innerHTML = `<div class="text-center py-6 text-gray-500 text-sm border border-dashed border-white/10 rounded-2xl">No invoices created yet.</div>`;
+      invContainer.innerHTML = `<div class="arc-empty">No invoices created yet.</div>`;
     } else {
       let invoicesChanged = false; // 플گ برای تشخیص تغییر و ذخیره نهایی
       
@@ -1716,15 +1944,22 @@ async function connectWallet() {
   }
 
   function toggleTheme() {
-    document.documentElement.classList.toggle('light');
-    const icon = document.getElementById("themeBtn").querySelector("i");
-    if(document.documentElement.classList.contains('light')) {
-      icon.classList.remove("fa-moon", "text-yellow-400");
-      icon.classList.add("fa-sun", "text-yellow-500");
+    document.documentElement.classList.toggle("light");
+    const icon = document.getElementById("themeBtn")?.querySelector("i");
+    if (!icon) return;
+    if (document.documentElement.classList.contains("light")) {
+      icon.className = "fas fa-sun text-base";
+      localStorage.setItem("theme", "light");
     } else {
-      icon.classList.remove("fa-sun", "text-yellow-500");
-      icon.classList.add("fa-moon", "text-yellow-400");
+      icon.className = "fas fa-moon text-base";
+      localStorage.setItem("theme", "dark");
     }
+  }
+
+  if (localStorage.getItem("theme") === "light") {
+    document.documentElement.classList.add("light");
+    const _ti = document.querySelector("#themeBtn i");
+    if (_ti) _ti.className = "fas fa-sun text-base";
   }
 
 
@@ -1750,5 +1985,6 @@ async function connectWallet() {
   }, 60000); // 
   
 </script>
+  <script src="arc-chrome.js"></script>
 </body>
 </html>
