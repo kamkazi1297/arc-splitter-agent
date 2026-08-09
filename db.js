@@ -1,4 +1,3 @@
-
 const SUPABASE_URL = 'https://yelauzpxsfjzydffhnhb.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InllbGF1enB4c2ZqenlkZmZobmhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzNjEyOTMsImV4cCI6MjEwMDkzNzI5M30.qtLEnhS8Zs34U_inur4e5UIBuKB5AmS_Z0VrT7jFvqM';
 
@@ -77,7 +76,7 @@ async function fetchHistoryFromCloud(userAddress) {
     // Prefer exact match (addresses are stored lowercased by saveHistoryToCloud)
     let { data, error } = await client
       .from('history')
-      .select('history_data, user_address, id, memo')
+      .select('history_data, user_address, id, memo, created_at')
       .eq('user_address', addr)
       .order('id', { ascending: false })
       .limit(300);
@@ -85,7 +84,7 @@ async function fetchHistoryFromCloud(userAddress) {
       console.warn('fetchHistory eq failed, fallback', error.message || error);
       const fb = await client
         .from('history')
-        .select('history_data, user_address, id, memo')
+        .select('history_data, user_address, id, memo, created_at')
         .order('id', { ascending: false })
         .limit(400);
       if (fb.error) {
@@ -98,11 +97,18 @@ async function fetchHistoryFromCloud(userAddress) {
       error = null;
     }
     return (data || []).map(row => {
-      const h = (row.history_data && typeof row.history_data === 'object')
-        ? { ...row.history_data }
+      let raw = row.history_data;
+      // Supabase may return JSON already parsed, or as a string
+      if (typeof raw === "string") {
+        try { raw = JSON.parse(raw); } catch { raw = null; }
+      }
+      const h = (raw && typeof raw === "object" && !Array.isArray(raw))
+        ? { ...raw }
         : {};
-      if (!h.timestamp) h.timestamp = new Date().toISOString();
+      // Do NOT inject Date.now() — that made every missing-ts row show "now"
+      if (!h.timestamp && row.created_at) h.timestamp = row.created_at;
       if (!h.user && row.user_address) h.user = row.user_address;
+      if (!h.memo && row.memo) h.memo = row.memo;
       return h;
     }).filter(Boolean);
   } catch (e) {
@@ -1007,4 +1013,3 @@ if (typeof window !== 'undefined') {
   window.saveToCloudDB = saveToCloudDB;
   window.loadFromCloudDB = loadFromCloudDB;
 }
-
