@@ -4,9 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>ArcSplit · Hub</title>
-  <script src="db.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
@@ -477,14 +477,123 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
   .hdr-btn-icon { width: 2.5rem !important; min-width: 2.5rem !important; }
 }
 
+/* Inline logos: dark vs light */
+.logo-on-light { display: none; }
+html.light .logo-on-dark { display: none; }
+html.light .logo-on-light { display: block; }
+
+/* Module “what it is” line — same type scale, accent color already on the card */
+.mod-use {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.35;
+  margin: 0 0 0.4rem;
+}
+
+/* ===== USDC accent coins (decorative; theme colors unchanged) ===== */
+.hub-wrap { position: relative; z-index: 1; }
+.usdc-mini {
+  display: inline-flex;
+  align-items: center;
+  line-height: 0;
+}
+.usdc-sky {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.usdc-coin {
+  position: absolute;
+  left: var(--x, 50%);
+  top: -10%;
+  width: var(--sz, 32px);
+  height: var(--sz, 32px);
+  display: block;
+  opacity: 0;
+  will-change: transform, opacity;
+  animation: usdc-fall var(--d, 16s) linear infinite;
+  animation-delay: var(--delay, 0s);
+  filter: drop-shadow(0 8px 14px rgba(39, 117, 202, 0.45));
+}
+.usdc-coin.is-bubble {
+  top: auto;
+  bottom: -12%;
+  animation-name: usdc-bubble;
+  animation-timing-function: ease-in-out;
+}
+.usdc-coin svg,
+.usdc-float svg { width: 100%; height: 100%; display: block; }
+@keyframes usdc-fall {
+  0%   { transform: translate3d(0, -6vh, 0) rotate(0deg); opacity: 0; }
+  8%   { opacity: var(--op, 0.78); }
+  50%  { transform: translate3d(var(--mid, 22px), 52vh, 0) rotate(180deg); }
+  90%  { opacity: calc(var(--op, 0.78) * 0.92); }
+  100% { transform: translate3d(var(--drift, -16px), 110vh, 0) rotate(360deg); opacity: 0; }
+}
+@keyframes usdc-bubble {
+  0%   { transform: translate3d(0, 8vh, 0) scale(0.72) rotate(0deg); opacity: 0; }
+  10%  { opacity: var(--op, 0.78); }
+  50%  { transform: translate3d(var(--mid, 18px), -48vh, 0) scale(1) rotate(170deg); }
+  100% { transform: translate3d(var(--drift, -14px), -118vh, 0) scale(0.82) rotate(330deg); opacity: 0; }
+}
+.usdc-float {
+  position: absolute;
+  width: var(--sz, 64px);
+  height: var(--sz, 64px);
+  pointer-events: none;
+  z-index: 2;
+  animation: usdc-bob var(--d, 6.5s) ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+  filter: drop-shadow(0 14px 22px rgba(39, 117, 202, 0.5));
+  opacity: 0.95;
+}
+@keyframes usdc-bob {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(-8deg); }
+  50%      { transform: translate3d(8px, -18px, 0) rotate(10deg); }
+}
+html.light .usdc-coin { filter: drop-shadow(0 6px 10px rgba(39, 117, 202, 0.28)); }
+html.light .usdc-float { opacity: 0.92; }
+@media (prefers-reduced-motion: reduce) {
+  .usdc-coin, .usdc-float { animation: none !important; }
+  .usdc-coin { top: 22%; opacity: 0.35; }
+  .usdc-coin.is-bubble { top: auto; bottom: 18%; }
+}
 
 </style>
-  <link rel="stylesheet" href="arc-shared.css" data-arc-shared="1">
-  <link rel="icon" type="image/svg+xml" href="logo-white.svg">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='2 18 632 588'%3E%3Cpath fill='%2306b6d4' fill-rule='evenodd' d='M323 26 L355 30 L383 39 L410 53 L435 71 L482 120 L528 192 L550 238 L570 290 L602 405 L616 481 L625 566 L626 592 L622 597 L615 598 L533 598 L519 595 L518 574 L521 564 L548 526 L556 509 L564 480 L565 427 L553 381 L537 353 L509 322 L486 304 L455 285 L423 219 L390 171 L359 143 L344 135 L324 130 L303 132 L282 141 L263 155 L243 176 L216 216 L192 262 L173 308 L166 333 L169 335 L219 336 L264 364 L383 414 L147 415 L141 420 L134 452 L123 526 L117 593 L106 597 L12 596 L10 577 L20 484 L44 367 L73 274 L113 185 L132 152 L158 115 L206 67 L231 50 L261 36 L293 28 L322 26 Z'/%3E%3Cpath fill='%2306b6d4' fill-rule='evenodd' d='M291 163 L280 183 L277 204 L283 225 L300 245 L326 261 L421 298 L463 318 L494 340 L509 355 L524 376 L533 395 L540 419 L542 466 L532 505 L520 528 L506 546 L474 571 L431 589 L391 597 L346 598 L306 592 L253 575 L212 553 L176 525 L176 518 L210 450 L216 443 L248 469 L285 490 L312 500 L351 507 L380 507 L408 501 L430 486 L442 465 L443 443 L440 433 L432 419 L417 405 L383 386 L305 356 L261 335 L233 316 L211 292 L211 277 L241 220 L264 188 L290 164 Z'/%3E%3C/svg%3E">
 </head>
 <body class="text-white min-h-screen selection:bg-cyan-500 selection:text-black" data-arc-accent="cyan">
 
-  <div class="max-w-[1280px] mx-auto px-4 py-6 sm:py-8 space-y-8 relative">
+  <!-- USDC coins falling / bubbling through the page accent (decorative) -->
+  <div class="usdc-sky" id="usdcSky" aria-hidden="true"></div>
+  <script>
+    (function () {
+      var svg = '<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="16" cy="16" r="16" fill="#2775CA"/><circle cx="16" cy="16" r="15.15" fill="none" stroke="#1B5AA8" stroke-width="1.1"/><circle cx="16" cy="16" r="12.2" fill="none" stroke="#fff" stroke-width="1.55"/><path fill="#fff" d="M17.85 17.55c0-1.18-.72-1.58-2.28-1.96-1.08-.28-1.32-.5-1.32-.96 0-.5.4-.84 1.14-.84.7 0 1.08.28 1.22.78h1.78c-.18-1.16-1.08-1.92-2.4-2.12V11.1h-1.52v1.32c-1.42.2-2.38 1.14-2.38 2.4 0 1.16.7 1.82 2.28 2.2 1.04.28 1.32.52 1.32 1.04 0 .58-.48.92-1.24.92-.86 0-1.32-.36-1.5-.96h-1.86c.22 1.28 1.18 2.14 2.68 2.32v1.42h1.52v-1.36c1.5-.18 2.5-1.22 2.5-2.55z"/></svg>';
+      window.__USDC_COIN_SVG = svg;
+      var sky = document.getElementById('usdcSky');
+      if (!sky || sky.childElementCount) return;
+      for (var i = 0; i < 18; i++) {
+        var el = document.createElement('span');
+        var bubble = (i % 3 === 2);
+        el.className = bubble ? 'usdc-coin is-bubble' : 'usdc-coin';
+        el.style.setProperty('--x', (3 + ((i * 17 + i * 9) % 94)) + '%');
+        el.style.setProperty('--d', (11 + (i % 7) * 1.5) + 's');
+        el.style.setProperty('--delay', (-(i * 0.85)) + 's');
+        el.style.setProperty('--sz', (22 + (i % 6) * 5) + 'px');
+        el.style.setProperty('--drift', ((i % 2 === 0 ? 1 : -1) * (14 + (i % 5) * 8)) + 'px');
+        el.style.setProperty('--mid', ((i % 2 === 0 ? -1 : 1) * (10 + (i % 4) * 8)) + 'px');
+        el.style.setProperty('--op', (0.62 + (i % 4) * 0.08).toFixed(2));
+        el.innerHTML = svg;
+        sky.appendChild(el);
+      }
+    })();
+  </script>
+
+  <div class="hub-wrap max-w-[1280px] mx-auto px-4 py-6 sm:py-8 space-y-8 relative">
 
     <!-- soft glow behind hero -->
     <div class="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[90%] h-64 hero-glow opacity-60 -z-10"></div>
@@ -492,8 +601,14 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
     <!-- ================= HEADER ================= -->
     <header class="glass rounded-3xl p-4 sm:p-5 md:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 fade-up" style="animation-delay:0.05s">
       <div class="flex items-center gap-2.5 sm:gap-3 min-w-0 w-full sm:w-auto sm:flex-1">
-        <img src="logo-white.svg" alt="ArcSplit" class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 object-contain block light:hidden shrink-0">
-        <img src="trace-raw.svg" alt="ArcSplit" class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 object-contain hidden light:block shrink-0" onerror="this.src='logo-white.svg'">
+        <svg class="logo-on-dark w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 object-contain shrink-0" viewBox="2 18 632 588" fill="none" role="img" aria-label="ArcSplit" xmlns="http://www.w3.org/2000/svg">
+          <path fill="#ffffff" fill-rule="evenodd" d="M323.0 26.0 L355.0 30.0 L383.0 39.0 L410.0 53.0 L435.0 71.0 L482.0 120.0 L528.0 192.0 L550.0 238.0 L570.0 290.0 L602.0 405.0 L616.0 481.0 L625.0 566.0 L626.0 592.0 L622.0 597.0 L615.0 598.0 L533.0 598.0 L519.0 595.0 L518.0 574.0 L521.0 564.0 L548.0 526.0 L556.0 509.0 L564.0 480.0 L565.0 427.0 L553.0 381.0 L537.0 353.0 L509.0 322.0 L486.0 304.0 L455.0 285.0 L423.0 219.0 L390.0 171.0 L359.0 143.0 L344.0 135.0 L324.0 130.0 L303.0 132.0 L282.0 141.0 L263.0 155.0 L243.0 176.0 L216.0 216.0 L192.0 262.0 L173.0 308.0 L166.0 333.0 L169.0 335.0 L219.0 336.0 L264.0 364.0 L383.0 414.0 L147.0 415.0 L141.0 420.0 L134.0 452.0 L123.0 526.0 L117.0 593.0 L106.0 597.0 L12.0 596.0 L10.0 577.0 L20.0 484.0 L44.0 367.0 L73.0 274.0 L113.0 185.0 L132.0 152.0 L158.0 115.0 L206.0 67.0 L231.0 50.0 L261.0 36.0 L293.0 28.0 L322.0 26.0 L323.0 26.0 Z"/>
+          <path fill="#ffffff" fill-rule="evenodd" d="M291.0 163.0 L280.0 183.0 L277.0 204.0 L283.0 225.0 L300.0 245.0 L326.0 261.0 L421.0 298.0 L463.0 318.0 L494.0 340.0 L509.0 355.0 L524.0 376.0 L533.0 395.0 L540.0 419.0 L542.0 466.0 L532.0 505.0 L520.0 528.0 L506.0 546.0 L474.0 571.0 L431.0 589.0 L391.0 597.0 L346.0 598.0 L306.0 592.0 L253.0 575.0 L212.0 553.0 L176.0 525.0 L176.0 518.0 L210.0 450.0 L216.0 443.0 L248.0 469.0 L285.0 490.0 L312.0 500.0 L351.0 507.0 L380.0 507.0 L408.0 501.0 L430.0 486.0 L442.0 465.0 L443.0 443.0 L440.0 433.0 L432.0 419.0 L417.0 405.0 L383.0 386.0 L305.0 356.0 L261.0 335.0 L233.0 316.0 L211.0 292.0 L211.0 277.0 L241.0 220.0 L264.0 188.0 L290.0 164.0 L291.0 163.0 Z"/>
+        </svg>
+        <svg class="logo-on-light w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 object-contain shrink-0" viewBox="2 18 632 588" fill="none" role="img" aria-label="ArcSplit" xmlns="http://www.w3.org/2000/svg">
+          <path fill="#0f172a" fill-rule="evenodd" d="M323.0 26.0 L355.0 30.0 L383.0 39.0 L410.0 53.0 L435.0 71.0 L482.0 120.0 L528.0 192.0 L550.0 238.0 L570.0 290.0 L602.0 405.0 L616.0 481.0 L625.0 566.0 L626.0 592.0 L622.0 597.0 L615.0 598.0 L533.0 598.0 L519.0 595.0 L518.0 574.0 L521.0 564.0 L548.0 526.0 L556.0 509.0 L564.0 480.0 L565.0 427.0 L553.0 381.0 L537.0 353.0 L509.0 322.0 L486.0 304.0 L455.0 285.0 L423.0 219.0 L390.0 171.0 L359.0 143.0 L344.0 135.0 L324.0 130.0 L303.0 132.0 L282.0 141.0 L263.0 155.0 L243.0 176.0 L216.0 216.0 L192.0 262.0 L173.0 308.0 L166.0 333.0 L169.0 335.0 L219.0 336.0 L264.0 364.0 L383.0 414.0 L147.0 415.0 L141.0 420.0 L134.0 452.0 L123.0 526.0 L117.0 593.0 L106.0 597.0 L12.0 596.0 L10.0 577.0 L20.0 484.0 L44.0 367.0 L73.0 274.0 L113.0 185.0 L132.0 152.0 L158.0 115.0 L206.0 67.0 L231.0 50.0 L261.0 36.0 L293.0 28.0 L322.0 26.0 L323.0 26.0 Z"/>
+          <path fill="#0f172a" fill-rule="evenodd" d="M291.0 163.0 L280.0 183.0 L277.0 204.0 L283.0 225.0 L300.0 245.0 L326.0 261.0 L421.0 298.0 L463.0 318.0 L494.0 340.0 L509.0 355.0 L524.0 376.0 L533.0 395.0 L540.0 419.0 L542.0 466.0 L532.0 505.0 L520.0 528.0 L506.0 546.0 L474.0 571.0 L431.0 589.0 L391.0 597.0 L346.0 598.0 L306.0 592.0 L253.0 575.0 L212.0 553.0 L176.0 525.0 L176.0 518.0 L210.0 450.0 L216.0 443.0 L248.0 469.0 L285.0 490.0 L312.0 500.0 L351.0 507.0 L380.0 507.0 L408.0 501.0 L430.0 486.0 L442.0 465.0 L443.0 443.0 L440.0 433.0 L432.0 419.0 L417.0 405.0 L383.0 386.0 L305.0 356.0 L261.0 335.0 L233.0 316.0 L211.0 292.0 L211.0 277.0 L241.0 220.0 L264.0 188.0 L290.0 164.0 L291.0 163.0 Z"/>
+        </svg>
         <div class="min-w-0">
           <h1 class="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight truncate">
             ArcSplit
@@ -519,16 +634,24 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
     <!-- ================= HERO ================= -->
     <section class="glass rounded-3xl p-7 sm:p-10 relative overflow-hidden fade-up" style="animation-delay:0.1s">
       <div class="relative z-10 max-w-2xl">
-        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/25 text-cyan-300 text-[11px] font-bold mb-4">
-          <span class="status-dot bg-cyan-400 animate-pulse"></span>
-          Arc Testnet · Live
+        <div class="flex flex-wrap items-center gap-2 mb-4">
+          <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/25 text-cyan-300 text-[11px] font-bold">
+            <span class="status-dot bg-cyan-400 animate-pulse"></span>
+            Arc Testnet · Live
+          </div>
+          <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-sky-500/10 border border-sky-500/25 text-sky-300 text-[11px] font-bold">
+            <span class="usdc-mini" aria-hidden="true">
+              <svg viewBox="0 0 32 32" width="14" height="14"><circle cx="16" cy="16" r="16" fill="#2775CA"/><circle cx="16" cy="16" r="12.2" fill="none" stroke="#fff" stroke-width="1.7"/><path fill="#fff" d="M17.85 17.55c0-1.18-.72-1.58-2.28-1.96-1.08-.28-1.32-.5-1.32-.96 0-.5.4-.84 1.14-.84.7 0 1.08.28 1.22.78h1.78c-.18-1.16-1.08-1.92-2.4-2.12V11.1h-1.52v1.32c-1.42.2-2.38 1.14-2.38 2.4 0 1.16.7 1.82 2.28 2.2 1.04.28 1.32.52 1.32 1.04 0 .58-.48.92-1.24.92-.86 0-1.32-.36-1.5-.96h-1.86c.22 1.28 1.18 2.14 2.68 2.32v1.42h1.52v-1.36c1.5-.18 2.5-1.22 2.5-2.55z"/></svg>
+            </span>
+            Native gas · USDC
+          </div>
         </div>
         <h2 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight mb-3">
           Split. Schedule.<br>
           <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-rose-400">Automate on-chain.</span>
         </h2>
         <p class="text-sm sm:text-base text-gray-400 leading-relaxed mb-6 max-w-xl">
-          Split tokens, run payroll, schedule vesting, and automate releases — all on Arc Testnet.
+          This Hub is the home for every ArcSplit tool. Connect a wallet, pick a workspace, then open a module — split USDC, run payroll, vest tokens, or automate releases on Arc Testnet.
         </p>
         <div class="flex flex-wrap gap-3">
           <a href="split.html" class="hero-cta hero-cta-cyan">
@@ -542,9 +665,13 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
           </a>
         </div>
       </div>
-      <!-- decorative orbs -->
+      <!-- decorative orbs + floating USDC coins (hero accent) -->
       <div class="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none"></div>
       <div class="absolute -right-8 bottom-0 w-48 h-48 rounded-full bg-rose-500/10 blur-3xl pointer-events-none"></div>
+      <span class="usdc-float sm:hidden" style="--sz:40px; --d:6s; --delay:0s; right: 14px; top: 14px;" aria-hidden="true"><svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="16" fill="#2775CA"/><circle cx="16" cy="16" r="15.15" fill="none" stroke="#1B5AA8" stroke-width="1.1"/><circle cx="16" cy="16" r="12.2" fill="none" stroke="#fff" stroke-width="1.55"/><path fill="#fff" d="M17.85 17.55c0-1.18-.72-1.58-2.28-1.96-1.08-.28-1.32-.5-1.32-.96 0-.5.4-.84 1.14-.84.7 0 1.08.28 1.22.78h1.78c-.18-1.16-1.08-1.92-2.4-2.12V11.1h-1.52v1.32c-1.42.2-2.38 1.14-2.38 2.4 0 1.16.7 1.82 2.28 2.2 1.04.28 1.32.52 1.32 1.04 0 .58-.48.92-1.24.92-.86 0-1.32-.36-1.5-.96h-1.86c.22 1.28 1.18 2.14 2.68 2.32v1.42h1.52v-1.36c1.5-.18 2.5-1.22 2.5-2.55z"/></svg></span>
+      <span class="usdc-float hidden sm:block" style="--sz:80px; --d:7s; --delay:0s; right: 8%; top: 16%;" aria-hidden="true"><svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="16" fill="#2775CA"/><circle cx="16" cy="16" r="15.15" fill="none" stroke="#1B5AA8" stroke-width="1.1"/><circle cx="16" cy="16" r="12.2" fill="none" stroke="#fff" stroke-width="1.55"/><path fill="#fff" d="M17.85 17.55c0-1.18-.72-1.58-2.28-1.96-1.08-.28-1.32-.5-1.32-.96 0-.5.4-.84 1.14-.84.7 0 1.08.28 1.22.78h1.78c-.18-1.16-1.08-1.92-2.4-2.12V11.1h-1.52v1.32c-1.42.2-2.38 1.14-2.38 2.4 0 1.16.7 1.82 2.28 2.2 1.04.28 1.32.52 1.32 1.04 0 .58-.48.92-1.24.92-.86 0-1.32-.36-1.5-.96h-1.86c.22 1.28 1.18 2.14 2.68 2.32v1.42h1.52v-1.36c1.5-.18 2.5-1.22 2.5-2.55z"/></svg></span>
+      <span class="usdc-float hidden sm:block" style="--sz:48px; --d:5.5s; --delay:-1.6s; right: 24%; bottom: 14%;" aria-hidden="true"><svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="16" fill="#2775CA"/><circle cx="16" cy="16" r="15.15" fill="none" stroke="#1B5AA8" stroke-width="1.1"/><circle cx="16" cy="16" r="12.2" fill="none" stroke="#fff" stroke-width="1.55"/><path fill="#fff" d="M17.85 17.55c0-1.18-.72-1.58-2.28-1.96-1.08-.28-1.32-.5-1.32-.96 0-.5.4-.84 1.14-.84.7 0 1.08.28 1.22.78h1.78c-.18-1.16-1.08-1.92-2.4-2.12V11.1h-1.52v1.32c-1.42.2-2.38 1.14-2.38 2.4 0 1.16.7 1.82 2.28 2.2 1.04.28 1.32.52 1.32 1.04 0 .58-.48.92-1.24.92-.86 0-1.32-.36-1.5-.96h-1.86c.22 1.28 1.18 2.14 2.68 2.32v1.42h1.52v-1.36c1.5-.18 2.5-1.22 2.5-2.55z"/></svg></span>
+      <span class="usdc-float hidden md:block" style="--sz:34px; --d:6.2s; --delay:-3.2s; right: 5%; bottom: 30%;" aria-hidden="true"><svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="16" fill="#2775CA"/><circle cx="16" cy="16" r="15.15" fill="none" stroke="#1B5AA8" stroke-width="1.1"/><circle cx="16" cy="16" r="12.2" fill="none" stroke="#fff" stroke-width="1.55"/><path fill="#fff" d="M17.85 17.55c0-1.18-.72-1.58-2.28-1.96-1.08-.28-1.32-.5-1.32-.96 0-.5.4-.84 1.14-.84.7 0 1.08.28 1.22.78h1.78c-.18-1.16-1.08-1.92-2.4-2.12V11.1h-1.52v1.32c-1.42.2-2.38 1.14-2.38 2.4 0 1.16.7 1.82 2.28 2.2 1.04.28 1.32.52 1.32 1.04 0 .58-.48.92-1.24.92-.86 0-1.32-.36-1.5-.96h-1.86c.22 1.28 1.18 2.14 2.68 2.32v1.42h1.52v-1.36c1.5-.18 2.5-1.22 2.5-2.55z"/></svg></span>
     </section>
 
     <!-- ================= STATUS STRIP ================= -->
@@ -587,7 +714,7 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
       <div class="flex items-end justify-between gap-3 px-1">
         <div>
           <h3 class="text-lg font-extrabold section-title">Insights</h3>
-          <p class="text-xs mt-0.5 section-sub">Team tools, analytics, and bot alerts</p>
+          <p class="text-xs mt-0.5 section-sub">Team space, numbers, and Telegram alerts — not distribution tools</p>
         </div>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -601,7 +728,8 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
                 <h4 class="font-extrabold text-base">Workspace</h4>
                 <i class="fas fa-arrow-right text-gray-500 text-xs group-hover:text-indigo-400 transition"></i>
               </div>
-              <p class="text-xs text-gray-400 mt-1.5 leading-relaxed">Create teams, manage roles, and share history across modules.</p>
+              <div class="mod-use text-indigo-400 mt-1">Shared team space</div>
+              <p class="text-xs text-gray-400 mt-0.5 leading-relaxed">Create a team, invite members, set roles, and share history so every module uses the same people and payouts.</p>
             </div>
           </div>
         </a>
@@ -615,7 +743,8 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
                 <h4 class="font-extrabold text-base">Dashboard Analytics</h4>
                 <i class="fas fa-arrow-right text-gray-500 text-xs group-hover:text-cyan-400 transition"></i>
               </div>
-              <p class="text-xs text-gray-400 mt-1.5 leading-relaxed">Track volumes, splits, and activity across your wallet and workspace.</p>
+              <div class="mod-use text-cyan-400 mt-1">Your numbers at a glance</div>
+              <p class="text-xs text-gray-400 mt-0.5 leading-relaxed">See volume, split counts, and recent activity for the connected wallet or the current workspace.</p>
             </div>
           </div>
         </a>
@@ -629,7 +758,8 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
                 <h4 class="font-extrabold text-base">Telegram Bot</h4>
                 <i class="fas fa-arrow-right text-gray-500 text-xs group-hover:text-[#5ac8fa] transition"></i>
               </div>
-              <p class="text-xs text-gray-400 mt-1.5 leading-relaxed">Get TX notifications and manage wallet links inside Telegram.</p>
+              <div class="mod-use text-[#5ac8fa] mt-1">Alerts in Telegram</div>
+              <p class="text-xs text-gray-400 mt-0.5 leading-relaxed">Link your wallet to the bot to get TX notifications and manage the connection from Telegram.</p>
             </div>
           </div>
         </a>
@@ -641,7 +771,7 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
       <div class="flex items-end justify-between gap-3 px-1">
         <div>
           <h3 class="text-lg font-extrabold section-title">Modules</h3>
-          <p class="text-xs mt-0.5 section-sub">Open a tool in your current workspace</p>
+          <p class="text-xs mt-0.5 section-sub">Each card is a tool. The line under the name is what it does — then open it in this workspace</p>
         </div>
         <span class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">8 tools</span>
       </div>
@@ -683,7 +813,7 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
               <div class="w-9 h-9 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-400"><i class="fas fa-scissors"></i></div>
               <div class="flex-1 min-w-0">
                 <div class="text-sm font-bold">Token Split</div>
-                <div class="text-[11px] text-gray-500">Send to many wallets at once</div>
+                <div class="text-[11px] text-gray-500">One token → many wallets, by % or amount</div>
               </div>
               <i class="fas fa-chevron-right text-gray-600 text-xs"></i>
             </a>
@@ -691,7 +821,7 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
               <div class="w-9 h-9 rounded-xl bg-cyan-500/15 flex items-center justify-center text-cyan-400"><i class="fas fa-users-gear"></i></div>
               <div class="flex-1 min-w-0">
                 <div class="text-sm font-bold">Role Split</div>
-                <div class="text-[11px] text-gray-500">Payroll by team roles</div>
+                <div class="text-[11px] text-gray-500">Pay the team by role shares</div>
               </div>
               <i class="fas fa-chevron-right text-gray-600 text-xs"></i>
             </a>
@@ -699,7 +829,7 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
               <div class="w-9 h-9 rounded-xl bg-yellow-500/15 flex items-center justify-center text-yellow-400"><i class="fas fa-link"></i></div>
               <div class="flex-1 min-w-0">
                 <div class="text-sm font-bold">Payment Link</div>
-                <div class="text-[11px] text-gray-500">Create claimable links & invoices</div>
+                <div class="text-[11px] text-gray-500">Claimable USDC link or invoice</div>
               </div>
               <i class="fas fa-chevron-right text-gray-600 text-xs"></i>
             </a>
@@ -707,8 +837,7 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
               <div class="w-9 h-9 rounded-xl bg-lime-500/15 flex items-center justify-center text-lime-400"><i class="fas fa-calendar-check"></i></div>
               <div class="flex-1 min-w-0">
                 <div class="text-sm font-bold">Vesting</div>
-
-                <div class="text-[11px] text-gray-500">Cliff & schedule releases</div>
+                <div class="text-[11px] text-gray-500">Lock now, unlock on a calendar</div>
               </div>
               <i class="fas fa-chevron-right text-gray-600 text-xs"></i>
             </a>
@@ -720,7 +849,7 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
             <i class="fas fa-info-circle text-sky-400"></i> About ArcSplit
           </h3>
           <p class="text-xs text-gray-400 leading-relaxed">
-            Connect a wallet, pick a workspace, and run distribution tools with shared history and team roles — all on Arc.
+            Connect a wallet, pick a workspace, then open a module. History and team roles are shared across tools. Native gas on Arc is USDC.
           </p>
         </div>
       </section>
@@ -752,6 +881,59 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
     <span id="toastText"></span>
   </div>
 
+<script>
+  /* ===== Cloud helpers (inlined — no separate db.js) ===== */
+  const SUPABASE_URL = 'https://yelauzpxsfjzydffhnhb.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InllbGF1enB4c2ZqenlkZmZobmhiIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODUzNjEyOTMsImV4cCI6MjEwMDkzNzI5M30.qtLEnhS8Zs34U_inur4e5UIBuKB5AmS_Z0VrT7jFvqM';
+  let supabaseClient = null;
+  async function getSupabase() {
+    if (supabaseClient) return supabaseClient;
+    if (!window.supabase) return null;
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    return supabaseClient;
+  }
+  function normalizeHistoryRow(row) {
+    let raw = row && row.history_data;
+    if (typeof raw === 'string') { try { raw = JSON.parse(raw); } catch { raw = null; } }
+    const h = (raw && typeof raw === 'object' && !Array.isArray(raw)) ? { ...raw } : {};
+    if (!h.timestamp && row.created_at) h.timestamp = row.created_at;
+    if (!h.user && row.user_address) h.user = row.user_address;
+    if (!h.memo && row.memo) h.memo = row.memo;
+    return h;
+  }
+  async function fetchHistoryFromCloud(userAddress) {
+    try {
+      const client = await getSupabase();
+      if (!client || !userAddress) return [];
+      const addr = userAddress.toLowerCase();
+      const cols = 'history_data, user_address, id, memo';
+      let { data, error } = await client.from('history').select(cols).eq('user_address', addr).order('id', { ascending: false }).limit(300);
+      if (error) {
+        const fb = await client.from('history').select(cols).order('id', { ascending: false }).limit(400);
+        if (fb.error) return [];
+        data = (fb.data || []).filter(r => String(r.user_address || '').toLowerCase() === addr);
+      }
+      return (data || []).map(normalizeHistoryRow).filter(h => h && typeof h === 'object');
+    } catch (e) {
+      console.error('fetchHistoryFromCloud', e);
+      return [];
+    }
+  }
+  async function fetchWorkspace(workspaceId) {
+    try {
+      const client = await getSupabase();
+      if (!client || !workspaceId) return null;
+      const { data, error } = await client.from('workspaces').select('*').eq('id', workspaceId).single();
+      if (error) return null;
+      return data;
+    } catch (e) {
+      return null;
+    }
+  }
+  window.fetchHistoryFromCloud = fetchHistoryFromCloud;
+  window.fetchWorkspace = fetchWorkspace;
+  window.getSupabase = getSupabase;
+</script>
 <script>
   const BOT_URL = 'https://arcsplit-bot.kamkazi-1297.workers.dev';
   const BOT_TELEGRAM = 'https://t.me/ArcSplitPro_bot';
@@ -1022,7 +1204,8 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
       id: 'split',
       href: 'split.html',
       title: 'Token Split',
-      desc: 'Split any token to many wallets with percentage or amount.',
+      use: 'One token → many wallets',
+      desc: 'Send USDC or any token to a list of addresses in a single transaction. Split by percentage or by exact amount.',
       icon: 'fa-scissors',
       accent: 'emerald',
       glow: 'rgba(16,185,129,0.18)',
@@ -1032,7 +1215,8 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
       id: 'batch',
       href: 'BatchSplit.html',
       title: 'Batch Split',
-      desc: 'Multi-token distributions in sequential batches.',
+      use: 'Several tokens, one flow',
+      desc: 'Queue more than one token and distribute them in order — useful when payroll or an airdrop spans multiple assets.',
       icon: 'fa-layer-group',
       accent: 'rose',
       glow: 'rgba(244,63,94,0.18)',
@@ -1042,7 +1226,8 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
       id: 'roles',
       href: 'ArcRoleSplitter.html',
       title: 'Role Engine',
-      desc: 'Define team roles and split by role allocations.',
+      use: 'Team payroll by role',
+      desc: 'Define roles (dev, ops, founder…) with a share each. One pool is split across people according to their role.',
       icon: 'fa-users-gear',
       accent: 'cyan',
       glow: 'rgba(6,182,212,0.18)',
@@ -1052,7 +1237,8 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
       id: 'giveaway',
       href: 'giveaway.html',
       title: 'Giveaway',
-      desc: 'Pick winners and send equal shares on-chain.',
+      use: 'Random winners, equal share',
+      desc: 'Paste a list of wallets, pick N random winners, and send each the same on-chain amount.',
       icon: 'fa-gift',
       accent: 'amber',
       glow: 'rgba(245,158,11,0.18)',
@@ -1062,7 +1248,8 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
       id: 'vesting',
       href: 'ArcsplitVesting.html',
       title: 'Vesting',
-      desc: 'Cliff + vesting schedules with calendar view.',
+      use: 'Lock now, release over time',
+      desc: 'Set a cliff and a vesting calendar so tokens unlock on a schedule instead of all at once.',
       icon: 'fa-calendar-check',
       accent: 'lime',
       glow: 'rgba(163,230,53,0.16)',
@@ -1072,7 +1259,8 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
       id: 'pay',
       href: 'ArcPayLink.html',
       title: 'Arc Pay',
-      desc: 'Payment links and smart invoices.',
+      use: 'Links & invoices',
+      desc: 'Create a claimable payment link or an invoice. The other side pays or claims USDC without a custom transfer.',
       icon: 'fa-link',
       accent: 'yellow',
       glow: 'rgba(234,179,8,0.16)',
@@ -1082,7 +1270,8 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
       id: 'conditional',
       href: 'smartConditionalsplit.html',
       title: 'Conditional',
-      desc: 'No-code rules: time, balance, price, NFT gates.',
+      use: 'Send only if a rule is true',
+      desc: 'Gate a split behind a no-code rule: time window, wallet balance, token price, or NFT ownership.',
       icon: 'fa-microchip',
       accent: 'blue',
       glow: 'rgba(59,130,246,0.18)',
@@ -1092,7 +1281,8 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
       id: 'agentic',
       href: 'AgenticSplit.html',
       title: 'Agentic',
-      desc: 'Push-based rules with relayer-ready execution.',
+      use: 'Rules that run themselves',
+      desc: 'Push-based automation. When conditions match, a relayer can execute the split without you clicking send.',
       icon: 'fa-robot',
       accent: 'sky',
       glow: 'rgba(14,165,233,0.18)',
@@ -1160,7 +1350,8 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
             </div>
             <span class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/5 text-gray-400 border border-white/10">${m.tag}</span>
           </div>
-          <h4 class="font-extrabold text-base mb-1.5 group-hover:text-cyan-300 transition-colors">${m.title}</h4>
+          <h4 class="font-extrabold text-base mb-1 group-hover:text-cyan-300 transition-colors">${m.title}</h4>
+          <div class="mod-use ${a.text}">${m.use || ''}</div>
           <p class="text-xs text-gray-400 leading-relaxed mb-4">${m.desc}</p>
           <div class="flex items-center gap-1.5 text-[11px] font-bold ${a.text}">
             Open <i class="fas fa-arrow-right text-[9px] group-hover:translate-x-1 transition-transform"></i>
@@ -1569,6 +1760,32 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
     }
   }
 
+  const USDC_COIN_SVG = window.__USDC_COIN_SVG || '<svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><circle cx="16" cy="16" r="16" fill="#2775CA"/><circle cx="16" cy="16" r="12.2" fill="none" stroke="#fff" stroke-width="1.55"/><path fill="#fff" d="M17.85 17.55c0-1.18-.72-1.58-2.28-1.96-1.08-.28-1.32-.5-1.32-.96 0-.5.4-.84 1.14-.84.7 0 1.08.28 1.22.78h1.78c-.18-1.16-1.08-1.92-2.4-2.12V11.1h-1.52v1.32c-1.42.2-2.38 1.14-2.38 2.4 0 1.16.7 1.82 2.28 2.2 1.04.28 1.32.52 1.32 1.04 0 .58-.48.92-1.24.92-.86 0-1.32-.36-1.5-.96h-1.86c.22 1.28 1.18 2.14 2.68 2.32v1.42h1.52v-1.36c1.5-.18 2.5-1.22 2.5-2.55z"/></svg>';
+
+  function spawnUsdcCoins() {
+    const sky = document.getElementById('usdcSky');
+    if (sky && !sky.childElementCount) {
+      const n = 18;
+      for (let i = 0; i < n; i++) {
+        const el = document.createElement('span');
+        const bubble = (i % 3 === 2);
+        el.className = bubble ? 'usdc-coin is-bubble' : 'usdc-coin';
+        el.style.setProperty('--x', (3 + ((i * 17 + i * 9) % 94)) + '%');
+        el.style.setProperty('--d', (11 + (i % 7) * 1.5) + 's');
+        el.style.setProperty('--delay', (-(i * 0.85)) + 's');
+        el.style.setProperty('--sz', (22 + (i % 6) * 5) + 'px');
+        el.style.setProperty('--drift', ((i % 2 === 0 ? 1 : -1) * (14 + (i % 5) * 8)) + 'px');
+        el.style.setProperty('--mid', ((i % 2 === 0 ? -1 : 1) * (10 + (i % 4) * 8)) + 'px');
+        el.style.setProperty('--op', (0.62 + (i % 4) * 0.08).toFixed(2));
+        el.innerHTML = USDC_COIN_SVG;
+        sky.appendChild(el);
+      }
+    }
+    document.querySelectorAll('.usdc-float').forEach(el => {
+      if (!el.childElementCount) el.innerHTML = USDC_COIN_SVG;
+    });
+  }
+
   // boot
   (async () => {
     if (localStorage.getItem('theme') === 'light') {
@@ -1576,6 +1793,7 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
       document.querySelector('#themeBtn i').className = 'fas fa-sun text-sm text-amber-500';
     }
 
+    spawnUsdcCoins();
     initTelegramFromURL();
 
     workspaceId = getWsParam();
@@ -1638,6 +1856,5 @@ html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
     }
   })();
 </script>
-  <script src="arc-chrome.js"></script>
 </body>
 </html>
