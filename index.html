@@ -510,12 +510,12 @@ html.light .logo-on-light { display: block; }
   position: absolute;
   left: var(--x, 50%);
   top: -10%;
-  width: var(--sz, 32px);
-  height: var(--sz, 32px);
+  width: var(--sz, 64px);
+  height: var(--sz, 64px);
   display: block;
   opacity: 0;
   will-change: transform, opacity;
-  animation: usdc-fall var(--d, 16s) linear infinite;
+  animation: usdc-fall var(--d, 32s) linear infinite;
   animation-delay: var(--delay, 0s);
   filter: drop-shadow(0 8px 14px rgba(39, 117, 202, 0.45));
 }
@@ -526,7 +526,22 @@ html.light .logo-on-light { display: block; }
   animation-timing-function: ease-in-out;
 }
 .usdc-coin svg,
-.usdc-float svg { width: 100%; height: 100%; display: block; }
+.usdc-float svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  transition: opacity 0.55s ease, filter 0.55s ease;
+}
+.usdc-coin.is-behind svg,
+.usdc-float.is-behind svg {
+  opacity: 0.18;
+  filter: blur(4px) brightness(0.48) saturate(0.55);
+}
+html.light .usdc-coin.is-behind svg,
+html.light .usdc-float.is-behind svg {
+  opacity: 0.14;
+  filter: blur(5px) brightness(0.7) saturate(0.45);
+}
 @keyframes usdc-fall {
   0%   { transform: translate3d(0, -6vh, 0) rotate(0deg); opacity: 0; }
   8%   { opacity: var(--op, 0.78); }
@@ -542,11 +557,11 @@ html.light .logo-on-light { display: block; }
 }
 .usdc-float {
   position: absolute;
-  width: var(--sz, 64px);
-  height: var(--sz, 64px);
+  width: var(--sz, 110px);
+  height: var(--sz, 110px);
   pointer-events: none;
   z-index: 2;
-  animation: usdc-bob var(--d, 6.5s) ease-in-out infinite;
+  animation: usdc-bob var(--d, 12s) ease-in-out infinite;
   animation-delay: var(--delay, 0s);
   filter: drop-shadow(0 14px 22px rgba(39, 117, 202, 0.5));
   opacity: 0.95;
@@ -581,9 +596,9 @@ html.light .usdc-float { opacity: 0.92; }
         var bubble = (i % 3 === 2);
         el.className = bubble ? 'usdc-coin is-bubble' : 'usdc-coin';
         el.style.setProperty('--x', (3 + ((i * 17 + i * 9) % 94)) + '%');
-        el.style.setProperty('--d', (11 + (i % 7) * 1.5) + 's');
-        el.style.setProperty('--delay', (-(i * 0.85)) + 's');
-        el.style.setProperty('--sz', (22 + (i % 6) * 5) + 'px');
+        el.style.setProperty('--d', (24 + (i % 7) * 3.2) + 's');
+        el.style.setProperty('--delay', (-(i * 1.7)) + 's');
+        el.style.setProperty('--sz', (52 + (i % 6) * 12) + 'px');
         el.style.setProperty('--drift', ((i % 2 === 0 ? 1 : -1) * (14 + (i % 5) * 8)) + 'px');
         el.style.setProperty('--mid', ((i % 2 === 0 ? -1 : 1) * (10 + (i % 4) * 8)) + 'px');
         el.style.setProperty('--op', (0.62 + (i % 4) * 0.08).toFixed(2));
@@ -668,10 +683,10 @@ html.light .usdc-float { opacity: 0.92; }
       <!-- decorative orbs + floating USDC coins (hero accent) -->
       <div class="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none"></div>
       <div class="absolute -right-8 bottom-0 w-48 h-48 rounded-full bg-rose-500/10 blur-3xl pointer-events-none"></div>
-      <span class="usdc-float sm:hidden" style="--sz:40px; --d:6s; --delay:0s; right: 14px; top: 14px;" aria-hidden="true"><svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="16" fill="#2775CA"/><circle cx="16" cy="16" r="15.15" fill="none" stroke="#1B5AA8" stroke-width="1.1"/><circle cx="16" cy="16" r="12.2" fill="none" stroke="#fff" stroke-width="1.55"/><path fill="#fff" d="M17.85 17.55c0-1.18-.72-1.58-2.28-1.96-1.08-.28-1.32-.5-1.32-.96 0-.5.4-.84 1.14-.84.7 0 1.08.28 1.22.78h1.78c-.18-1.16-1.08-1.92-2.4-2.12V11.1h-1.52v1.32c-1.42.2-2.38 1.14-2.38 2.4 0 1.16.7 1.82 2.28 2.2 1.04.28 1.32.52 1.32 1.04 0 .58-.48.92-1.24.92-.86 0-1.32-.36-1.5-.96h-1.86c.22 1.28 1.18 2.14 2.68 2.32v1.42h1.52v-1.36c1.5-.18 2.5-1.22 2.5-2.55z"/></svg></span>
-      <span class="usdc-float hidden sm:block" style="--sz:80px; --d:7s; --delay:0s; right: 8%; top: 16%;" aria-hidden="true"><svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="16" fill="#2775CA"/><circle cx="16" cy="16" r="15.15" fill="none" stroke="#1B5AA8" stroke-width="1.1"/><circle cx="16" cy="16" r="12.2" fill="none" stroke="#fff" stroke-width="1.55"/><path fill="#fff" d="M17.85 17.55c0-1.18-.72-1.58-2.28-1.96-1.08-.28-1.32-.5-1.32-.96 0-.5.4-.84 1.14-.84.7 0 1.08.28 1.22.78h1.78c-.18-1.16-1.08-1.92-2.4-2.12V11.1h-1.52v1.32c-1.42.2-2.38 1.14-2.38 2.4 0 1.16.7 1.82 2.28 2.2 1.04.28 1.32.52 1.32 1.04 0 .58-.48.92-1.24.92-.86 0-1.32-.36-1.5-.96h-1.86c.22 1.28 1.18 2.14 2.68 2.32v1.42h1.52v-1.36c1.5-.18 2.5-1.22 2.5-2.55z"/></svg></span>
-      <span class="usdc-float hidden sm:block" style="--sz:48px; --d:5.5s; --delay:-1.6s; right: 24%; bottom: 14%;" aria-hidden="true"><svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="16" fill="#2775CA"/><circle cx="16" cy="16" r="15.15" fill="none" stroke="#1B5AA8" stroke-width="1.1"/><circle cx="16" cy="16" r="12.2" fill="none" stroke="#fff" stroke-width="1.55"/><path fill="#fff" d="M17.85 17.55c0-1.18-.72-1.58-2.28-1.96-1.08-.28-1.32-.5-1.32-.96 0-.5.4-.84 1.14-.84.7 0 1.08.28 1.22.78h1.78c-.18-1.16-1.08-1.92-2.4-2.12V11.1h-1.52v1.32c-1.42.2-2.38 1.14-2.38 2.4 0 1.16.7 1.82 2.28 2.2 1.04.28 1.32.52 1.32 1.04 0 .58-.48.92-1.24.92-.86 0-1.32-.36-1.5-.96h-1.86c.22 1.28 1.18 2.14 2.68 2.32v1.42h1.52v-1.36c1.5-.18 2.5-1.22 2.5-2.55z"/></svg></span>
-      <span class="usdc-float hidden md:block" style="--sz:34px; --d:6.2s; --delay:-3.2s; right: 5%; bottom: 30%;" aria-hidden="true"><svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="16" fill="#2775CA"/><circle cx="16" cy="16" r="15.15" fill="none" stroke="#1B5AA8" stroke-width="1.1"/><circle cx="16" cy="16" r="12.2" fill="none" stroke="#fff" stroke-width="1.55"/><path fill="#fff" d="M17.85 17.55c0-1.18-.72-1.58-2.28-1.96-1.08-.28-1.32-.5-1.32-.96 0-.5.4-.84 1.14-.84.7 0 1.08.28 1.22.78h1.78c-.18-1.16-1.08-1.92-2.4-2.12V11.1h-1.52v1.32c-1.42.2-2.38 1.14-2.38 2.4 0 1.16.7 1.82 2.28 2.2 1.04.28 1.32.52 1.32 1.04 0 .58-.48.92-1.24.92-.86 0-1.32-.36-1.5-.96h-1.86c.22 1.28 1.18 2.14 2.68 2.32v1.42h1.52v-1.36c1.5-.18 2.5-1.22 2.5-2.55z"/></svg></span>
+      <span class="usdc-float sm:hidden" style="--sz:68px; --d:11s; --delay:0s; right: 14px; top: 14px;" aria-hidden="true"><svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="16" fill="#2775CA"/><circle cx="16" cy="16" r="15.15" fill="none" stroke="#1B5AA8" stroke-width="1.1"/><circle cx="16" cy="16" r="12.2" fill="none" stroke="#fff" stroke-width="1.55"/><path fill="#fff" d="M17.85 17.55c0-1.18-.72-1.58-2.28-1.96-1.08-.28-1.32-.5-1.32-.96 0-.5.4-.84 1.14-.84.7 0 1.08.28 1.22.78h1.78c-.18-1.16-1.08-1.92-2.4-2.12V11.1h-1.52v1.32c-1.42.2-2.38 1.14-2.38 2.4 0 1.16.7 1.82 2.28 2.2 1.04.28 1.32.52 1.32 1.04 0 .58-.48.92-1.24.92-.86 0-1.32-.36-1.5-.96h-1.86c.22 1.28 1.18 2.14 2.68 2.32v1.42h1.52v-1.36c1.5-.18 2.5-1.22 2.5-2.55z"/></svg></span>
+      <span class="usdc-float hidden sm:block" style="--sz:128px; --d:13s; --delay:0s; right: 8%; top: 16%;" aria-hidden="true"><svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="16" fill="#2775CA"/><circle cx="16" cy="16" r="15.15" fill="none" stroke="#1B5AA8" stroke-width="1.1"/><circle cx="16" cy="16" r="12.2" fill="none" stroke="#fff" stroke-width="1.55"/><path fill="#fff" d="M17.85 17.55c0-1.18-.72-1.58-2.28-1.96-1.08-.28-1.32-.5-1.32-.96 0-.5.4-.84 1.14-.84.7 0 1.08.28 1.22.78h1.78c-.18-1.16-1.08-1.92-2.4-2.12V11.1h-1.52v1.32c-1.42.2-2.38 1.14-2.38 2.4 0 1.16.7 1.82 2.28 2.2 1.04.28 1.32.52 1.32 1.04 0 .58-.48.92-1.24.92-.86 0-1.32-.36-1.5-.96h-1.86c.22 1.28 1.18 2.14 2.68 2.32v1.42h1.52v-1.36c1.5-.18 2.5-1.22 2.5-2.55z"/></svg></span>
+      <span class="usdc-float hidden sm:block" style="--sz:84px; --d:11s; --delay:-2.4s; right: 24%; bottom: 14%;" aria-hidden="true"><svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="16" fill="#2775CA"/><circle cx="16" cy="16" r="15.15" fill="none" stroke="#1B5AA8" stroke-width="1.1"/><circle cx="16" cy="16" r="12.2" fill="none" stroke="#fff" stroke-width="1.55"/><path fill="#fff" d="M17.85 17.55c0-1.18-.72-1.58-2.28-1.96-1.08-.28-1.32-.5-1.32-.96 0-.5.4-.84 1.14-.84.7 0 1.08.28 1.22.78h1.78c-.18-1.16-1.08-1.92-2.4-2.12V11.1h-1.52v1.32c-1.42.2-2.38 1.14-2.38 2.4 0 1.16.7 1.82 2.28 2.2 1.04.28 1.32.52 1.32 1.04 0 .58-.48.92-1.24.92-.86 0-1.32-.36-1.5-.96h-1.86c.22 1.28 1.18 2.14 2.68 2.32v1.42h1.52v-1.36c1.5-.18 2.5-1.22 2.5-2.55z"/></svg></span>
+      <span class="usdc-float hidden md:block" style="--sz:62px; --d:12s; --delay:-4.8s; right: 5%; bottom: 30%;" aria-hidden="true"><svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg"><circle cx="16" cy="16" r="16" fill="#2775CA"/><circle cx="16" cy="16" r="15.15" fill="none" stroke="#1B5AA8" stroke-width="1.1"/><circle cx="16" cy="16" r="12.2" fill="none" stroke="#fff" stroke-width="1.55"/><path fill="#fff" d="M17.85 17.55c0-1.18-.72-1.58-2.28-1.96-1.08-.28-1.32-.5-1.32-.96 0-.5.4-.84 1.14-.84.7 0 1.08.28 1.22.78h1.78c-.18-1.16-1.08-1.92-2.4-2.12V11.1h-1.52v1.32c-1.42.2-2.38 1.14-2.38 2.4 0 1.16.7 1.82 2.28 2.2 1.04.28 1.32.52 1.32 1.04 0 .58-.48.92-1.24.92-.86 0-1.32-.36-1.5-.96h-1.86c.22 1.28 1.18 2.14 2.68 2.32v1.42h1.52v-1.36c1.5-.18 2.5-1.22 2.5-2.55z"/></svg></span>
     </section>
 
     <!-- ================= STATUS STRIP ================= -->
@@ -1771,9 +1786,9 @@ html.light .usdc-float { opacity: 0.92; }
         const bubble = (i % 3 === 2);
         el.className = bubble ? 'usdc-coin is-bubble' : 'usdc-coin';
         el.style.setProperty('--x', (3 + ((i * 17 + i * 9) % 94)) + '%');
-        el.style.setProperty('--d', (11 + (i % 7) * 1.5) + 's');
-        el.style.setProperty('--delay', (-(i * 0.85)) + 's');
-        el.style.setProperty('--sz', (22 + (i % 6) * 5) + 'px');
+        el.style.setProperty('--d', (24 + (i % 7) * 3.2) + 's');
+        el.style.setProperty('--delay', (-(i * 1.7)) + 's');
+        el.style.setProperty('--sz', (52 + (i % 6) * 12) + 'px');
         el.style.setProperty('--drift', ((i % 2 === 0 ? 1 : -1) * (14 + (i % 5) * 8)) + 'px');
         el.style.setProperty('--mid', ((i % 2 === 0 ? -1 : 1) * (10 + (i % 4) * 8)) + 'px');
         el.style.setProperty('--op', (0.62 + (i % 4) * 0.08).toFixed(2));
@@ -1786,6 +1801,37 @@ html.light .usdc-float { opacity: 0.92; }
     });
   }
 
+  function veilUsdcBehindContent() {
+    const skyCoins = document.querySelectorAll('.usdc-coin');
+    const floatCoins = document.querySelectorAll('.usdc-float');
+    const cardSel = '.glass, .mod-card';
+    const textSel = '.hub-wrap h1, .hub-wrap h2, .hub-wrap h3, .hub-wrap p, .hero-cta, .hdr-btn, #themeBtn, button, a.hero-cta';
+    const overlap = (a, b) => a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+    const rects = (sel) => Array.from(document.querySelectorAll(sel)).map(el => el.getBoundingClientRect());
+    const hits = (r, list) => {
+      for (let i = 0; i < list.length; i++) if (overlap(r, list[i])) return true;
+      return false;
+    };
+    let last = 0;
+    function tick(t) {
+      if (t - last >= 90) {
+        last = t;
+        const cards = rects(cardSel);
+        const text = rects(textSel);
+        skyCoins.forEach(el => {
+          const r = el.getBoundingClientRect();
+          el.classList.toggle('is-behind', hits(r, cards) || hits(r, text));
+        });
+        floatCoins.forEach(el => {
+          const r = el.getBoundingClientRect();
+          el.classList.toggle('is-behind', hits(r, text));
+        });
+      }
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  }
+
   // boot
   (async () => {
     if (localStorage.getItem('theme') === 'light') {
@@ -1794,6 +1840,7 @@ html.light .usdc-float { opacity: 0.92; }
     }
 
     spawnUsdcCoins();
+    veilUsdcBehindContent();
     initTelegramFromURL();
 
     workspaceId = getWsParam();
