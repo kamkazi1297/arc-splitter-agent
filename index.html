@@ -4,314 +4,511 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>ArcSplit · Hub</title>
-  <meta name="description" content="On-chain token distribution for teams. Split, vest, invoice, and automate releases on Arc Testnet.">
   <script src="db.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.0/dist/ethers.umd.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="icon" type="image/svg+xml" href="logo-white.svg">
   <style>
-    :root {
-      --bg: #07070e;
-      --bg-elevated: #0e0e18;
-      --surface: #12121c;
-      --fg: #f4f5f8;
-      --fg-muted: #9aa0b4;
-      --fg-subtle: #6d7388;
-      --accent: #22d3ee;
-      --accent-fg: #042f36;
-      --accent-soft: rgba(34, 211, 238, 0.12);
-      --border: rgba(255, 255, 255, 0.08);
-      --border-strong: rgba(255, 255, 255, 0.14);
-      --shadow: 0 18px 50px rgba(0, 0, 0, 0.38);
-      --ok: #34d399;
-      --warn: #f59e0b;
-      --danger: #fb7185;
-      --tg: #229ed9;
-      --grid: rgba(255, 255, 255, 0.035);
-      --ease: cubic-bezier(0.22, 1, 0.36, 1);
-    }
-    html.light {
-      --bg: #f3f4f8;
-      --bg-elevated: #ffffff;
-      --surface: #ffffff;
-      --fg: #0f1219;
-      --fg-muted: #4b5163;
-      --fg-subtle: #6b7280;
-      --accent: #0891b2;
-      --accent-fg: #f0fdff;
-      --accent-soft: rgba(8, 145, 178, 0.1);
-      --border: rgba(15, 18, 25, 0.08);
-      --border-strong: rgba(15, 18, 25, 0.14);
-      --shadow: 0 16px 40px rgba(15, 18, 25, 0.08);
-      --grid: rgba(15, 18, 25, 0.045);
-    }
-    html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
-    *, *::before, *::after { box-sizing: border-box; }
-    html, body { min-height: 100%; }
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
     body {
-      margin: 0;
-      font-family: "Plus Jakarta Sans", system-ui, sans-serif;
-      background: var(--bg);
-      color: var(--fg);
-      overflow-x: hidden;
-      -webkit-font-smoothing: antialiased;
-    }
-    h1, h2, h3, h4 { text-wrap: balance; }
-    p { text-wrap: pretty; }
-    button:not(:disabled), [role="button"]:not(:disabled) { cursor: pointer; }
-    :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
-
-    .hub-shell {
-      position: relative;
-      min-height: 100vh;
-      background:
-        radial-gradient(900px 480px at 8% -10%, rgba(34, 211, 238, 0.09), transparent 55%),
-        radial-gradient(700px 420px at 100% 0%, rgba(34, 211, 238, 0.04), transparent 50%),
-        var(--bg);
-    }
-    html.light .hub-shell {
-      background: radial-gradient(900px 480px at 8% -10%, rgba(8, 145, 178, 0.08), transparent 55%), var(--bg);
-    }
-    .hub-shell::before {
-      content: "";
-      pointer-events: none;
-      position: absolute;
-      inset: 0;
+      font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+      background: #070711;
       background-image:
-        linear-gradient(to right, var(--grid) 1px, transparent 1px),
-        linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
-      background-size: 56px 56px;
-      mask-image: radial-gradient(ellipse at 50% 0%, black 20%, transparent 75%);
-      opacity: 0.7;
+        radial-gradient(circle at 12% 18%, rgba(6, 182, 212, 0.12) 0%, transparent 42%),
+        radial-gradient(circle at 88% 78%, rgba(244, 63, 94, 0.10) 0%, transparent 42%),
+        radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.06) 0%, transparent 55%);
+      color: #f8fafc;
+      min-height: 100vh;
+      overflow-x: hidden;
     }
 
-    .panel {
-      background: color-mix(in oklab, var(--surface) 88%, transparent);
-      border: 1px solid var(--border);
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
+    .glass {
+      background: rgba(18, 18, 38, 0.65);
+      backdrop-filter: blur(24px);
+      -webkit-backdrop-filter: blur(24px);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.08);
     }
-    html.light .panel { background: color-mix(in oklab, var(--surface) 94%, white); }
 
-    .hdr-btn {
-      height: 2.75rem; min-height: 2.75rem;
-      display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem;
-      padding: 0 1rem; border-radius: 12px;
-      font-size: 0.75rem; font-weight: 700; letter-spacing: 0.01em; line-height: 1;
-      white-space: nowrap; border: 1px solid transparent;
-      transition: background 150ms var(--ease), border-color 150ms var(--ease), transform 150ms var(--ease), filter 150ms var(--ease), box-shadow 150ms var(--ease);
+    .light {
+      background: #f8fafc !important;
+      background-image:
+        radial-gradient(circle at 12% 18%, rgba(6, 182, 212, 0.12) 0%, transparent 42%),
+        radial-gradient(circle at 88% 78%, rgba(244, 63, 94, 0.10) 0%, transparent 42%),
+        radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.08) 0%, transparent 55%) !important;
+      color: #0f172a !important;
     }
-    .hdr-btn:active:not(:disabled) { transform: scale(0.96); }
-    .hdr-btn:disabled { opacity: 0.7; pointer-events: none; cursor: wait; }
 
-    #connectBtn.hdr-btn {
-      background: var(--accent); color: var(--accent-fg);
-      box-shadow: 0 8px 22px color-mix(in oklab, var(--accent) 35%, transparent);
+    .light .glass {
+      background: rgba(255, 255, 255, 0.55) !important;
+      border: 1px solid rgba(0, 0, 0, 0.08) !important;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 1) !important;
     }
-    #connectBtn.hdr-btn:hover { filter: brightness(1.06); }
-    #connectBtn.hdr-btn.connected {
-      background: var(--accent-soft); color: var(--accent);
-      border-color: color-mix(in oklab, var(--accent) 40%, transparent); box-shadow: none;
-    }
-    #connectBtn.hdr-btn.connected .fa-power-off { color: #fb7185 !important; }
-    #connectBtn.hdr-btn.wrong-net {
-      background: linear-gradient(135deg, #f59e0b, #f97316); color: #0f172a;
-      box-shadow: 0 8px 22px rgba(245, 158, 11, 0.32);
-    }
-    #connectBtn.hdr-btn.wrong-net i { color: #0f172a !important; }
-    #connectBtn.hdr-btn i { color: inherit; }
 
-    #tgLinkBtn.hdr-btn {
-      background: var(--tg); color: #fff;
-      box-shadow: 0 8px 22px rgba(34, 158, 217, 0.28); max-width: 220px;
-    }
-    #tgLinkBtn.hdr-btn:hover { filter: brightness(1.07); }
-    #tgLinkBtn.hdr-btn i { color: #fff; }
-    #tgLinkBtn.hdr-btn.connected {
-      background: color-mix(in oklab, var(--tg) 12%, transparent); color: #7dd3fc;
-      border-color: color-mix(in oklab, var(--tg) 45%, transparent); box-shadow: none;
-    }
-    #tgLinkBtn.hdr-btn.connected i { color: #7dd3fc; }
-    #tgLinkBtn.hdr-btn.connected .fa-power-off { color: #fb7185 !important; }
-    html.light #tgLinkBtn.hdr-btn.connected { background: #fff; color: #0284c7; }
-    html.light #tgLinkBtn.hdr-btn.connected i { color: #0284c7; }
-    html.light #connectBtn.hdr-btn.connected { background: #fff; color: #0e7490; }
+    .light h1, .light h2, .light h3, .light h4, .light .text-white { color: #0f172a !important; }
+    .light .text-gray-400 { color: #334155 !important; }
+    .light .text-gray-300 { color: #1e293b !important; }
+    .light .text-gray-500 { color: #475569 !important; }
+    .light .text-gray-600 { color: #64748b !important; }
 
-    .hero-cta {
-      display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
-      height: 2.85rem; padding: 0 1.2rem; border-radius: 12px;
-      font-size: 0.875rem; font-weight: 700; text-decoration: none;
-      border: 1px solid transparent;
-      transition: filter 150ms var(--ease), transform 150ms var(--ease), background 150ms var(--ease), border-color 150ms var(--ease);
-    }
-    .hero-cta:active { transform: scale(0.96); }
-    .hero-cta-cyan {
-      background: var(--accent); color: var(--accent-fg);
-      box-shadow: 0 10px 24px color-mix(in oklab, var(--accent) 32%, transparent);
-    }
-    .hero-cta-cyan:hover { filter: brightness(1.06); }
-    .hero-cta-cyan i { color: var(--accent-fg); }
-    .hero-cta-ghost {
-      background: transparent; color: var(--fg); border-color: var(--border-strong);
-    }
-    .hero-cta-ghost:hover { border-color: color-mix(in oklab, var(--accent) 45%, var(--border)); background: var(--accent-soft); }
-    .hero-cta-tg {
-      background: var(--tg); color: #fff;
-      box-shadow: 0 8px 20px rgba(34, 158, 217, 0.28);
-    }
-    .hero-cta-tg:hover { filter: brightness(1.06); }
-    .hero-cta-tg i { color: #fff; }
+    /* Modules heading + subtitle — keep WHITE even in light mode */
+    .section-title { color: #f8fafc; }
+    .section-sub { color: #94a3b8; }
+    html.light .section-title,
+    html.light h3.section-title { color: #ffffff !important; }
+    html.light .section-sub,
+    html.light p.section-sub { color: #ffffff !important; }
 
-    .status-chip {
-      cursor: pointer; text-align: left; text-decoration: none; color: inherit;
-      transition: border-color 150ms var(--ease), transform 220ms var(--ease), background 150ms var(--ease);
-    }
-    .status-chip:hover { transform: translateY(-2px); border-color: var(--border-strong) !important; }
-    .status-chip:active { transform: translateY(0); }
-    .chip-hint { font-size: 10px; font-weight: 600; color: var(--fg-subtle); margin-top: 2px; }
-    .status-chip.chip-ok .status-dot-live { background: #34d399; box-shadow: 0 0 0 3px rgba(52,211,153,0.15); }
-    .status-chip.chip-warn { border-color: rgba(245,158,11,0.35) !important; }
+
+
 
     .module-card {
-      position: relative; overflow: hidden; text-decoration: none; color: inherit;
-      transition: transform 220ms var(--ease), border-color 220ms var(--ease), box-shadow 220ms var(--ease);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
     }
-    .module-card::after {
-      content: ""; position: absolute; inset: auto -20% -40% auto;
-      width: 160px; height: 160px; border-radius: 999px;
-      background: radial-gradient(circle, var(--glow, rgba(34,211,238,0.16)), transparent 70%);
-      opacity: 0; transition: opacity 220ms var(--ease); pointer-events: none;
+    .module-card::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      background: radial-gradient(circle at 30% 20%, var(--glow, rgba(6,182,212,0.15)), transparent 60%);
+      pointer-events: none;
     }
     .module-card:hover {
-      transform: translateY(-4px);
-      border-color: color-mix(in oklab, var(--card-accent, var(--accent)) 42%, var(--border));
-      box-shadow: 0 18px 40px rgba(0,0,0,0.28), 0 0 0 1px color-mix(in oklab, var(--card-accent, var(--accent)) 18%, transparent);
+      transform: translateY(-6px);
+      border-color: rgba(255, 255, 255, 0.18);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
     }
-    .module-card:hover::after { opacity: 1; }
-    html.light .module-card:hover { box-shadow: 0 16px 36px rgba(15,18,25,0.08); }
-    .module-card .card-arrow { transition: transform 220ms var(--ease); }
-    .module-card:hover .card-arrow { transform: translateX(4px); }
-    .module-card .icon-wrap { transition: transform 220ms var(--ease); }
-    .module-card:hover .icon-wrap { transform: scale(1.05); }
-
-    .quick-link {
-      text-decoration: none; color: inherit;
-      transition: background 150ms var(--ease), border-color 150ms var(--ease), transform 150ms var(--ease);
-    }
-    .quick-link:hover {
-      transform: translateX(2px);
-      border-color: color-mix(in oklab, var(--accent) 35%, var(--border));
-      background: var(--accent-soft);
+    .module-card:hover::before { opacity: 1; }
+    .light .module-card:hover {
+      border-color: rgba(0, 0, 0, 0.12);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08);
     }
 
-    .activity-row { transition: background 150ms var(--ease); }
-    .activity-row:hover { background: color-mix(in oklab, var(--fg) 4%, transparent); }
-    .activity-amt { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 0.75rem; white-space: nowrap; }
-    .activity-tx {
-      display: inline-flex; align-items: center; gap: 0.25rem;
-      padding: 0.25rem 0.55rem; border-radius: 999px; font-size: 10px; font-weight: 700;
-      background: var(--accent-soft); border: 1px solid color-mix(in oklab, var(--accent) 28%, transparent);
-      color: var(--accent); text-decoration: none;
+    .app-button {
+      position: relative;
+      overflow: hidden;
+      transition: all 0.25s ease;
     }
-    .activity-tx:hover { filter: brightness(1.12); }
+    .app-button:active { transform: scale(0.98); }
 
-    .skel {
-      background: linear-gradient(90deg, color-mix(in oklab, var(--fg) 4%, transparent) 25%, color-mix(in oklab, var(--fg) 9%, transparent) 50%, color-mix(in oklab, var(--fg) 4%, transparent) 75%);
-      background-size: 200% 100%; animation: skel-shine 1.2s ease-in-out infinite; border-radius: 10px;
+    .fade-up {
+      animation: fadeUp 0.55s ease forwards;
+      opacity: 0;
     }
-    @keyframes skel-shine { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-    .arc-spin { animation: arc-spin 0.8s linear infinite; }
-    @keyframes arc-spin { to { transform: rotate(360deg); } }
-    .fade-up { animation: fadeUp 0.55s var(--ease) both; }
     @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(14px); filter: blur(4px); }
-      to { opacity: 1; transform: translateY(0); filter: blur(0); }
+      from { opacity: 0; transform: translateY(18px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
-    .logo-mark { display: block; color: var(--fg); }
-    .scroll-thin { scrollbar-width: thin; scrollbar-color: color-mix(in oklab, var(--fg) 18%, transparent) transparent; }
-
-    #themeBtn {
-      position: fixed !important; right: 1.25rem !important; bottom: 1.25rem !important; z-index: 90 !important;
-      width: 2.75rem !important; height: 2.75rem !important; min-width: 2.75rem; min-height: 2.75rem; padding: 0 !important;
-      border-radius: 999px !important; display: inline-flex !important; align-items: center; justify-content: center;
-      background: color-mix(in oklab, var(--surface) 92%, transparent) !important;
-      border: 1px solid var(--border-strong) !important; color: var(--accent) !important;
-      box-shadow: var(--shadow) !important; backdrop-filter: blur(12px);
-      cursor: pointer; transition: transform 150ms var(--ease), filter 150ms var(--ease), border-color 150ms var(--ease);
-    }
-    #themeBtn:hover { filter: brightness(1.08); border-color: color-mix(in oklab, var(--accent) 40%, var(--border)) !important; }
-    #themeBtn:active { transform: scale(0.96); }
-
-    #toast {
-      position: fixed !important; bottom: 1.5rem !important; left: 50% !important;
-      transform: translateX(-50%) !important; z-index: 9999 !important;
-      max-width: min(92vw, 28rem); padding: 0.85rem 1.25rem !important;
-      border-radius: 14px !important; background: rgba(15,23,42,0.94) !important;
-      border: 1px solid rgba(255,255,255,0.1) !important; color: #fff !important;
-      font-size: 0.8rem !important; font-weight: 600 !important;
-      box-shadow: 0 16px 40px rgba(0,0,0,0.35) !important;
-      backdrop-filter: blur(16px);
+    .hero-glow {
+      background: linear-gradient(135deg, rgba(6,182,212,0.18), rgba(244,63,94,0.12), rgba(99,102,241,0.14));
+      filter: blur(60px);
     }
 
-    .arc-empty {
-      text-align: center; padding: 2.5rem 1.25rem;
-      border: 1px dashed var(--border); border-radius: 14px;
-      color: var(--fg-muted); font-size: 0.85rem; line-height: 1.5;
+    .status-dot {
+      width: 8px; height: 8px; border-radius: 999px;
     }
-    .arc-empty i { display: block; font-size: 1.75rem; margin-bottom: 0.75rem; opacity: 0.45; }
 
-    .step-card {
-      border: 1px solid var(--border); background: color-mix(in oklab, var(--bg) 40%, transparent);
-      border-radius: 16px; padding: 14px 16px;
+    .activity-row:hover {
+      background: rgba(255, 255, 255, 0.04);
     }
-    .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; }
-
-    .flow-line { stroke-dasharray: 6 8; animation: dash-flow 2.4s linear infinite; }
-    @keyframes dash-flow { to { stroke-dashoffset: -56; } }
-
-    .muted { color: var(--fg-muted); }
-    .subtle { color: var(--fg-subtle); }
-    .accent { color: var(--accent); }
-
-    @media (max-width: 640px) {
-      .hdr-btn { height: 2.5rem !important; min-height: 2.5rem !important; padding: 0 0.75rem; font-size: 0.7rem !important; }
-      #themeBtn { right: 1rem !important; bottom: 1rem !important; width: 2.5rem !important; height: 2.5rem !important; }
+    .light .activity-row:hover {
+      background: rgba(0, 0, 0, 0.03);
     }
-    @media (prefers-reduced-motion: reduce) {
-      .fade-up, .skel, .arc-spin, .flow-line { animation: none !important; }
-      .module-card, .status-chip, .quick-link, .hdr-btn, .hero-cta { transition: none !important; }
+
+    .light #toast, .light #toast span, .light #toast i { color: #ffffff !important; }
+
+    .scroll-thin {
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.15) transparent;
     }
-  </style>
+    .light .scroll-thin { scrollbar-color: rgba(0,0,0,0.15) transparent; }
+  
+
+/* ===== ArcSplit page chrome (inline — no shared CSS vars) ===== */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; box-sizing: border-box; }
+*, *::before, *::after { box-sizing: inherit; }
+body { overflow-x: hidden; max-width: 100vw; -webkit-font-smoothing: antialiased; }
+img, video, canvas, svg { max-width: 100%; height: auto; }
+button, a, input, select, textarea { max-width: 100%; }
+.max-w-6xl, .max-w-7xl, .max-w-5xl { width: 100%; max-width: min(72rem, 100%); }
+
+/* ===== Header buttons: solid, equal height, NO glass ===== */
+.hdr-btn {
+  height: 2.75rem !important;
+  min-height: 2.75rem !important;
+  box-sizing: border-box;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0 1rem;
+  border-radius: 0.75rem !important;
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+  line-height: 1;
+  white-space: nowrap;
+  transition: background 0.15s ease, border-color 0.15s ease, filter 0.15s ease, transform 0.12s ease;
+  cursor: pointer;
+  text-decoration: none;
+  border: 1px solid transparent;
+}
+.hdr-btn:active { transform: scale(0.98); }
+.hdr-btn:disabled {
+  opacity: 0.7 !important;
+  cursor: wait !important;
+  transform: none !important;
+  pointer-events: none;
+}
+.hdr-btn-icon {
+  width: 2.75rem !important;
+  min-width: 2.75rem !important;
+  padding: 0 !important;
+}
+
+/* Wrong network — amber solid */
+#connectBtn.hdr-btn.wrong-net {
+  background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%) !important;
+  border: 1px solid rgba(255,255,255,0.2) !important;
+  color: #0f172a !important;
+  box-shadow: 0 6px 18px rgba(245,158,11,0.35) !important;
+}
+#connectBtn.hdr-btn.wrong-net i { color: #0f172a !important; }
+
+/* Status strip interactive chips */
+.status-chip {
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.12s ease, background 0.15s ease;
+  user-select: none;
+}
+.status-chip:hover {
+  border-color: rgba(255,255,255,0.16) !important;
+  transform: translateY(-2px);
+}
+.status-chip:active { transform: translateY(0); }
+.status-chip .chip-hint {
+  font-size: 10px;
+  font-weight: 600;
+  color: #64748b;
+  margin-top: 2px;
+}
+html.light .status-chip:hover {
+  border-color: rgba(15,23,42,0.12) !important;
+}
+.status-chip.chip-warn {
+  border-color: rgba(245,158,11,0.35) !important;
+}
+.status-chip.chip-ok .status-dot-live {
+  background: #34d399;
+  box-shadow: 0 0 0 3px rgba(52,211,153,0.15);
+}
+
+/* Skeleton loading */
+.skel {
+  background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.09) 50%, rgba(255,255,255,0.04) 75%);
+  background-size: 200% 100%;
+  animation: skel-shine 1.2s ease-in-out infinite;
+  border-radius: 10px;
+}
+html.light .skel {
+  background: linear-gradient(90deg, rgba(15,23,42,0.04) 25%, rgba(15,23,42,0.09) 50%, rgba(15,23,42,0.04) 75%);
+  background-size: 200% 100%;
+}
+@keyframes skel-shine {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* Activity row polish */
+.activity-row {
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.activity-amt {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+.activity-tx {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  background: rgba(6,182,212,0.1);
+  border: 1px solid rgba(6,182,212,0.25);
+  color: #22d3ee;
+  text-decoration: none;
+  transition: filter 0.15s ease;
+}
+.activity-tx:hover { filter: brightness(1.15); }
+
+@media (max-width: 640px) {
+  .hdr-btn { padding: 0 0.7rem !important; font-size: 0.68rem !important; }
+  header.glass { padding: 1rem !important; }
+}
+
+/* Floating theme toggle — bottom right */
+#themeBtn {
+  position: fixed !important;
+  right: 1.25rem !important;
+  bottom: 1.25rem !important;
+  z-index: 90 !important;
+  width: 2.75rem !important;
+  height: 2.75rem !important;
+  min-width: 2.75rem !important;
+  min-height: 2.75rem !important;
+  padding: 0 !important;
+  border-radius: 999px !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  background: rgba(18, 18, 38, 0.88) !important;
+  border: 1px solid rgba(255,255,255,0.12) !important;
+  color: #22d3ee !important;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.35) !important;
+  backdrop-filter: blur(12px) !important;
+  -webkit-backdrop-filter: blur(12px) !important;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.12s ease, filter 0.15s ease;
+}
+#themeBtn:hover { filter: brightness(1.12); border-color: rgba(255,255,255,0.22) !important; }
+#themeBtn:active { transform: scale(0.96); }
+@media (max-width: 640px) {
+  #themeBtn {
+    right: 1rem !important;
+    bottom: 1rem !important;
+    width: 2.5rem !important;
+    height: 2.5rem !important;
+    min-width: 2.5rem !important;
+    min-height: 2.5rem !important;
+  }
+}
+
+/* Telegram — solid blue; connected = outline + red power */
+#tgLinkBtn.hdr-btn {
+  background: #229ED9 !important;
+  border: 1px solid #1a8bc0 !important;
+  color: #fff !important;
+  box-shadow: 0 4px 14px rgba(34,158,217,0.28) !important;
+  backdrop-filter: none !important;
+  max-width: 200px;
+}
+#tgLinkBtn.hdr-btn:hover { filter: brightness(1.08); }
+#tgLinkBtn.hdr-btn i { color: #fff !important; }
+#tgLinkBtn.hdr-btn.connected {
+  background: rgba(34,158,217,0.12) !important;
+  border: 1px solid rgba(34,158,217,0.45) !important;
+  color: #5ac8fa !important;
+  box-shadow: none !important;
+}
+#tgLinkBtn.hdr-btn.connected i { color: #5ac8fa !important; }
+#tgLinkBtn.hdr-btn.connected .fa-power-off { color: #fb7185 !important; }
+
+/* Connect Wallet — solid cyan gradient; connected = outline + red power */
+#connectBtn.hdr-btn {
+  background: linear-gradient(135deg, #06b6d4 0%, #0ea5e9 100%) !important;
+  border: 1px solid rgba(255,255,255,0.2) !important;
+  color: #0f172a !important;
+  box-shadow: 0 6px 18px rgba(6,182,212,0.35) !important;
+  backdrop-filter: none !important;
+}
+#connectBtn.hdr-btn:hover { filter: brightness(1.06); }
+#connectBtn.hdr-btn i { color: #0f172a !important; }
+#connectBtn.hdr-btn.connected {
+  background: rgba(6,182,212,0.12) !important;
+  border: 1px solid rgba(6,182,212,0.4) !important;
+  color: #22d3ee !important;
+  box-shadow: none !important;
+}
+#connectBtn.hdr-btn.connected i { color: #22d3ee !important; }
+#connectBtn.hdr-btn.connected .fa-power-off { color: #fb7185 !important; }
+
+/* Hero CTAs — solid like Connect Wallet, different colors */
+.hero-cta {
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 2.85rem;
+  padding: 0 1.35rem;
+  border-radius: 0.85rem !important;
+  font-size: 0.875rem !important;
+  font-weight: 700 !important;
+  text-decoration: none !important;
+  border: 1px solid rgba(255,255,255,0.18) !important;
+  transition: filter 0.15s ease, transform 0.12s ease;
+  white-space: nowrap;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.22) !important;
+  backdrop-filter: none !important;
+}
+.hero-cta:hover { filter: brightness(1.07); }
+.hero-cta:active { transform: scale(0.98); }
+.hero-cta-cyan {
+  background: linear-gradient(135deg, #06b6d4 0%, #0ea5e9 100%) !important;
+  color: #0f172a !important;
+  box-shadow: 0 6px 18px rgba(6,182,212,0.35) !important;
+}
+.hero-cta-cyan i { color: #0f172a !important; }
+.hero-cta-indigo {
+  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 6px 18px rgba(99,102,241,0.35) !important;
+}
+.hero-cta-indigo i { color: #fff !important; }
+.hero-cta-tg {
+  background: linear-gradient(135deg, #229ED9 0%, #1a8bc0 100%) !important;
+  color: #fff !important;
+  box-shadow: 0 6px 18px rgba(34,158,217,0.32) !important;
+}
+.hero-cta-tg i { color: #fff !important; }
+
+/* body/module glass buttons still allowed outside header */
+.arc-btn-glass, button.arc-btn-glass, a.arc-btn-glass,
+.app-button:not([class*="bg-gradient"]):not(.hdr-btn),
+button[class*="bg-white/5"]:not(.hdr-btn),
+button[class*="bg-rose-500/10"]:not(.hdr-btn),
+button[class*="bg-sky-500/10"]:not(.hdr-btn),
+button[class*="bg-violet-500/10"]:not(.hdr-btn),
+button[class*="bg-emerald-500/10"]:not(.hdr-btn),
+button[class*="bg-cyan-500/10"]:not(.hdr-btn),
+button[class*="bg-orange-500/10"]:not(.hdr-btn),
+button[class*="bg-lime-500/10"]:not(.hdr-btn),
+button[class*="bg-blue-500/10"]:not(.hdr-btn),
+button[class*="bg-amber-500/10"]:not(.hdr-btn),
+button[class*="bg-indigo-500/10"]:not(.hdr-btn),
+button[class*="bg-yellow-500/10"]:not(.hdr-btn) {
+  position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 0.45rem;
+  font-weight: 600; font-size: 0.75rem; line-height: 1.2; letter-spacing: 0.01em;
+  border-radius: 11px !important;
+  border: 1px solid rgba(255,255,255,0.16) !important;
+  background: linear-gradient(165deg, rgba(255,255,255,0.16) 0%, rgba(42,48,82,0.82) 48%, rgba(16,18,36,0.92) 100%) !important;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.18), inset 0 -2px 0 rgba(0,0,0,0.2) !important;
+  backdrop-filter: blur(16px) saturate(140%) !important; -webkit-backdrop-filter: blur(16px) saturate(140%) !important;
+  transition: filter 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, transform 0.12s ease !important;
+  cursor: pointer; text-decoration: none; white-space: nowrap;
+}
+.arc-btn-glass:hover, .app-button:not([class*="bg-gradient"]):not(.hdr-btn):hover {
+  filter: brightness(1.1); border-color: rgba(255,255,255,0.3) !important;
+}
+.arc-btn-glass:active, .app-button:not([class*="bg-gradient"]):not(.hdr-btn):active { transform: scale(0.985); }
+
+.app-button[class*="bg-gradient"], button[class*="bg-gradient-to-r"] {
+  border: 1px solid rgba(255,255,255,0.16) !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.28), inset 0 1px 0 rgba(255,255,255,0.28) !important;
+  font-weight: 700 !important; border-radius: 11px !important;
+}
+.app-button[class*="bg-gradient"]:hover { filter: brightness(1.06); }
+button:disabled, .app-button:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; }
+
+/* toast */
+#toast {
+  position: fixed !important; bottom: 1.5rem !important; left: 50% !important;
+  transform: translateX(-50%) !important; z-index: 9999 !important;
+  max-width: min(92vw, 28rem); padding: 0.85rem 1.25rem !important;
+  border-radius: 14px !important; background: rgba(15,23,42,0.94) !important;
+  border: 1px solid rgba(255,255,255,0.1) !important; color: #fff !important;
+  font-size: 0.8rem !important; font-weight: 600 !important;
+  box-shadow: 0 16px 40px rgba(0,0,0,0.35) !important;
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+}
+
+/* empty state */
+.arc-empty {
+  text-align: center; padding: 2.5rem 1.25rem;
+  border: 1px dashed rgba(255,255,255,0.12); border-radius: 14px;
+  color: #94a3b8; font-size: 0.85rem; line-height: 1.5;
+}
+.arc-empty i { display: block; font-size: 1.75rem; margin-bottom: 0.75rem; opacity: 0.45; }
+.arc-spin { animation: arc-spin 0.8s linear infinite; }
+@keyframes arc-spin { to { transform: rotate(360deg); } }
+
+/* light mode — header solid buttons */
+html.light #themeBtn {
+  background: rgba(255,255,255,0.92) !important;
+  border: 1px solid rgba(15,23,42,0.12) !important;
+  color: #0f172a !important;
+  box-shadow: 0 8px 24px rgba(15,23,42,0.12) !important;
+}
+html.light #tgLinkBtn.hdr-btn {
+  background: #229ED9 !important;
+  border-color: #1a8bc0 !important;
+  color: #fff !important;
+}
+html.light #tgLinkBtn.hdr-btn.connected {
+  background: #ffffff !important;
+  border: 1.5px solid rgba(34,158,217,0.45) !important;
+  color: #0284c7 !important;
+  box-shadow: 0 2px 10px rgba(15,23,42,0.06) !important;
+}
+html.light #tgLinkBtn.hdr-btn.connected i { color: #0284c7 !important; }
+html.light #tgLinkBtn.hdr-btn.connected .fa-power-off { color: #e11d48 !important; }
+html.light #connectBtn.hdr-btn {
+  background: linear-gradient(135deg, #06b6d4 0%, #0ea5e9 100%) !important;
+  border: 1px solid transparent !important;
+  color: #0f172a !important;
+  box-shadow: 0 6px 18px rgba(6,182,212,0.3) !important;
+}
+html.light #connectBtn.hdr-btn.connected {
+  background: #ffffff !important;
+  border: 1.5px solid rgba(6,182,212,0.45) !important;
+  color: #0891b2 !important;
+  box-shadow: 0 2px 10px rgba(15,23,42,0.06) !important;
+}
+html.light #connectBtn.hdr-btn.connected i { color: #0891b2 !important; }
+html.light #connectBtn.hdr-btn.connected .fa-power-off { color: #e11d48 !important; }
+html.light #connectBtn.hdr-btn.wrong-net {
+  background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%) !important;
+  border: 1px solid transparent !important;
+  color: #0f172a !important;
+  box-shadow: 0 6px 18px rgba(245,158,11,0.3) !important;
+}
+html.light #connectBtn.hdr-btn.wrong-net i { color: #0f172a !important; }
+html.light .arc-empty { border-color: rgba(15,23,42,0.12); color: #64748b; }
+
+@media (max-width: 640px) {
+  .hdr-btn { height: 2.5rem !important; min-height: 2.5rem !important; padding: 0 0.75rem; font-size: 0.7rem !important; }
+  .hdr-btn-icon { width: 2.5rem !important; min-width: 2.5rem !important; }
+}
+
+
+</style>
+  <link rel="stylesheet" href="arc-shared.css" data-arc-shared="1">
+  <link rel="icon" type="image/svg+xml" href="logo-white.svg">
 </head>
-<body class="hub-shell" data-arc-accent="cyan">
+<body class="text-white min-h-screen selection:bg-cyan-500 selection:text-black" data-arc-accent="cyan">
 
-  <div class="relative z-[1] max-w-[1200px] mx-auto px-4 py-5 sm:px-6 sm:py-8 space-y-7 sm:space-y-9">
+  <div class="max-w-[1280px] mx-auto px-4 py-6 sm:py-8 space-y-8 relative">
 
-    <header class="panel fade-up rounded-[28px] p-3.5 sm:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-      <div class="flex items-center gap-3 min-w-0">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="2 18 632 588" fill="none" role="img" aria-label="ArcSplit" class="logo-mark w-11 h-11 sm:w-12 sm:h-12 shrink-0">
-          <path fill="currentColor" fill-rule="evenodd" d="M323.0 26.0 L355.0 30.0 L383.0 39.0 L410.0 53.0 L435.0 71.0 L482.0 120.0 L528.0 192.0 L550.0 238.0 L570.0 290.0 L602.0 405.0 L616.0 481.0 L625.0 566.0 L626.0 592.0 L622.0 597.0 L615.0 598.0 L533.0 598.0 L519.0 595.0 L518.0 574.0 L521.0 564.0 L548.0 526.0 L556.0 509.0 L564.0 480.0 L565.0 427.0 L553.0 381.0 L537.0 353.0 L509.0 322.0 L486.0 304.0 L455.0 285.0 L423.0 219.0 L390.0 171.0 L359.0 143.0 L344.0 135.0 L324.0 130.0 L303.0 132.0 L282.0 141.0 L263.0 155.0 L243.0 176.0 L216.0 216.0 L192.0 262.0 L173.0 308.0 L166.0 333.0 L169.0 335.0 L219.0 336.0 L264.0 364.0 L383.0 414.0 L147.0 415.0 L141.0 420.0 L134.0 452.0 L123.0 526.0 L117.0 593.0 L106.0 597.0 L12.0 596.0 L10.0 577.0 L20.0 484.0 L44.0 367.0 L73.0 274.0 L113.0 185.0 L132.0 152.0 L158.0 115.0 L206.0 67.0 L231.0 50.0 L261.0 36.0 L293.0 28.0 L322.0 26.0 L323.0 26.0 Z"/>
-          <path fill="currentColor" fill-rule="evenodd" d="M291.0 163.0 L280.0 183.0 L277.0 204.0 L283.0 225.0 L300.0 245.0 L326.0 261.0 L421.0 298.0 L463.0 318.0 L494.0 340.0 L509.0 355.0 L524.0 376.0 L533.0 395.0 L540.0 419.0 L542.0 466.0 L532.0 505.0 L520.0 528.0 L506.0 546.0 L474.0 571.0 L431.0 589.0 L391.0 597.0 L346.0 598.0 L306.0 592.0 L253.0 575.0 L212.0 553.0 L176.0 525.0 L176.0 518.0 L210.0 450.0 L216.0 443.0 L248.0 469.0 L285.0 490.0 L312.0 500.0 L351.0 507.0 L380.0 507.0 L408.0 501.0 L430.0 486.0 L442.0 465.0 L443.0 443.0 L440.0 433.0 L432.0 419.0 L417.0 405.0 L383.0 386.0 L305.0 356.0 L261.0 335.0 L233.0 316.0 L211.0 292.0 L211.0 277.0 L241.0 220.0 L264.0 188.0 L290.0 164.0 L291.0 163.0 Z"/>
-        </svg>
+    <!-- soft glow behind hero -->
+    <div class="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[90%] h-64 hero-glow opacity-60 -z-10"></div>
+
+    <!-- ================= HEADER ================= -->
+    <header class="glass rounded-3xl p-4 sm:p-5 md:p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 fade-up" style="animation-delay:0.05s">
+      <div class="flex items-center gap-2.5 sm:gap-3 min-w-0 w-full sm:w-auto sm:flex-1">
+        <img src="logo-white.svg" alt="ArcSplit" class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 object-contain block light:hidden shrink-0">
+        <img src="trace-raw.svg" alt="ArcSplit" class="w-10 h-10 sm:w-11 sm:h-11 md:w-12 md:h-12 object-contain hidden light:block shrink-0" onerror="this.src='logo-white.svg'">
         <div class="min-w-0">
-          <div class="flex items-center gap-2">
-            <h1 class="text-xl sm:text-2xl font-extrabold tracking-tight truncate">ArcSplit</h1>
-            <span class="hidden sm:inline text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border subtle" style="border-color: var(--border)">Hub</span>
-          </div>
-          <p class="text-xs font-medium muted mt-0.5 truncate">On-chain distribution for teams</p>
+          <h1 class="text-xl sm:text-2xl md:text-3xl font-extrabold tracking-tight truncate">
+            ArcSplit
+            <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-sky-400 to-rose-400">Hub</span>
+          </h1>
+          <p class="text-[11px] sm:text-xs md:text-sm text-gray-400 font-medium mt-0.5 truncate">On-chain distribution for teams</p>
         </div>
       </div>
-      <div class="flex items-center gap-2 w-full sm:w-auto">
+
+      <div class="flex items-center gap-2 w-full sm:w-auto sm:shrink-0">
         <button onclick="handleTelegramClick()" id="tgLinkBtn" class="hdr-btn flex-1 sm:flex-none" title="Link Telegram">
           <i class="fab fa-telegram-plane"></i>
           <span id="tgLinkText">Link Telegram</span>
         </button>
+
         <button onclick="handleWalletClick()" id="connectBtn" class="hdr-btn flex-1 sm:flex-none">
           <i class="fas fa-wallet"></i>
           <span id="connectText">Connect Wallet</span>
@@ -319,173 +516,151 @@
       </div>
     </header>
 
-    <section class="panel fade-up relative overflow-hidden rounded-[28px] p-6 sm:p-9" style="animation-delay:0.06s">
-      <div class="grid lg:grid-cols-[1.15fr_0.85fr] items-center gap-8">
-        <div class="relative z-10 max-w-xl">
-          <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-bold mb-4" style="background: var(--accent-soft); border: 1px solid color-mix(in oklab, var(--accent) 28%, transparent); color: var(--accent)">
-            <span class="w-1.5 h-1.5 rounded-full" style="background: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft)"></span>
-            Arc Testnet · USDC gas · Live
-          </div>
-          <h2 class="text-[2rem] sm:text-5xl font-extrabold tracking-tight leading-[1.12]" style="letter-spacing:-0.03em">
-            Split tokens.<br>Pay teams.<br><span class="accent">Automate on-chain.</span>
-          </h2>
-          <p class="text-sm sm:text-[15px] muted leading-relaxed mt-4 max-w-lg">
-            ArcSplit is a hub for professional token distribution. Connect a wallet, pick a tool, and send — splits, payroll, vesting, invoices, and alerts all live on Arc Testnet.
-          </p>
-          <div class="flex flex-wrap gap-2.5 mt-6">
-            <a href="split.html" class="hero-cta hero-cta-cyan"><i class="fas fa-bolt"></i> Start a split</a>
-            <a href="Workspace.html" class="hero-cta hero-cta-ghost"><i class="fas fa-building"></i> Open workspace</a>
-            <a href="https://t.me/ArcSplitPro_bot" target="_blank" rel="noopener" class="hero-cta hero-cta-tg"><i class="fab fa-telegram-plane"></i> Telegram bot</a>
-          </div>
+    <!-- ================= HERO ================= -->
+    <section class="glass rounded-3xl p-7 sm:p-10 relative overflow-hidden fade-up" style="animation-delay:0.1s">
+      <div class="relative z-10 max-w-2xl">
+        <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/25 text-cyan-300 text-[11px] font-bold mb-4">
+          <span class="status-dot bg-cyan-400 animate-pulse"></span>
+          Arc Testnet · Live
         </div>
-        <div class="hidden lg:block" aria-hidden="true">
-          <svg viewBox="0 0 420 280" fill="none" class="w-full h-auto">
-            <circle cx="70" cy="140" r="28" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.5"/>
-            <circle cx="70" cy="140" r="10" fill="var(--accent)"/>
-            <text x="70" y="186" text-anchor="middle" fill="var(--fg-muted)" font-size="11" font-family="IBM Plex Mono, monospace">Source</text>
-            <path class="flow-line" d="M100 140 C 180 140, 220 48, 310 48" stroke="var(--accent)" stroke-opacity="0.55" stroke-width="1.5" fill="none"/>
-            <path class="flow-line" d="M100 140 C 180 140, 220 140, 310 140" stroke="var(--accent)" stroke-opacity="0.4" stroke-width="1.5" fill="none"/>
-            <path class="flow-line" d="M100 140 C 180 140, 220 232, 310 232" stroke="var(--accent)" stroke-opacity="0.55" stroke-width="1.5" fill="none"/>
-            <g>
-              <rect x="310" y="30" width="88" height="36" rx="10" fill="var(--surface)" stroke="var(--border-strong)"/>
-              <circle cx="328" cy="48" r="6" fill="var(--accent)"/>
-              <text x="342" y="52" fill="var(--fg)" font-size="11" font-family="Plus Jakarta Sans, sans-serif" font-weight="600">Wallet A</text>
-            </g>
-            <g>
-              <rect x="310" y="122" width="88" height="36" rx="10" fill="var(--surface)" stroke="var(--border-strong)"/>
-              <circle cx="328" cy="140" r="6" fill="var(--accent)"/>
-              <text x="342" y="144" fill="var(--fg)" font-size="11" font-family="Plus Jakarta Sans, sans-serif" font-weight="600">Wallet B</text>
-            </g>
-            <g>
-              <rect x="310" y="214" width="88" height="36" rx="10" fill="var(--surface)" stroke="var(--border-strong)"/>
-              <circle cx="328" cy="232" r="6" fill="var(--accent)"/>
-              <text x="342" y="236" fill="var(--fg)" font-size="11" font-family="Plus Jakarta Sans, sans-serif" font-weight="600">Wallet C</text>
-            </g>
-          </svg>
+        <h2 class="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-tight mb-3">
+          Split. Schedule.<br>
+          <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-rose-400">Automate on-chain.</span>
+        </h2>
+        <p class="text-sm sm:text-base text-gray-400 leading-relaxed mb-6 max-w-xl">
+          Split tokens, run payroll, schedule vesting, and automate releases — all on Arc Testnet.
+        </p>
+        <div class="flex flex-wrap gap-3">
+          <a href="split.html" class="hero-cta hero-cta-cyan">
+            <i class="fas fa-bolt"></i> Start Splitting
+          </a>
+          <a href="Workspace.html" class="hero-cta hero-cta-indigo">
+            <i class="fas fa-users"></i> Open Workspace
+          </a>
+          <a href="https://t.me/ArcSplitPro_bot" target="_blank" rel="noopener" class="hero-cta hero-cta-tg">
+            <i class="fab fa-telegram-plane"></i> Telegram Bot
+          </a>
         </div>
       </div>
-      <ol class="relative z-10 mt-8 grid sm:grid-cols-3 gap-3">
-        <li class="step-card">
-          <div class="mono text-[11px] font-medium accent">01</div>
-          <div class="text-sm font-bold mt-1">Connect wallet</div>
-          <p class="text-xs muted leading-relaxed mt-0.5">MetaMask switches to Arc Testnet for you.</p>
-        </li>
-        <li class="step-card">
-          <div class="mono text-[11px] font-medium accent">02</div>
-          <div class="text-sm font-bold mt-1">Choose a tool</div>
-          <p class="text-xs muted leading-relaxed mt-0.5">Split, vest, invoice, or automate — grouped below.</p>
-        </li>
-        <li class="step-card">
-          <div class="mono text-[11px] font-medium accent">03</div>
-          <div class="text-sm font-bold mt-1">Send on-chain</div>
-          <p class="text-xs muted leading-relaxed mt-0.5">History syncs to your workspace and Telegram.</p>
-        </li>
-      </ol>
+      <!-- decorative orbs -->
+      <div class="absolute -right-16 -top-16 w-64 h-64 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none"></div>
+      <div class="absolute -right-8 bottom-0 w-48 h-48 rounded-full bg-rose-500/10 blur-3xl pointer-events-none"></div>
     </section>
 
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 fade-up" style="animation-delay:0.1s">
-      <button type="button" id="netChip" onclick="handleNetworkClick()" class="status-chip panel rounded-2xl px-5 py-4 flex items-center gap-3 w-full">
+    <!-- ================= STATUS STRIP ================= -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 fade-up" style="animation-delay:0.15s">
+      <button type="button" id="netChip" onclick="handleNetworkClick()" class="status-chip glass rounded-2xl px-5 py-4 flex items-center gap-3 text-left w-full border border-transparent">
         <div id="netIconWrap" class="w-10 h-10 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0">
           <i id="netIcon" class="fas fa-network-wired text-emerald-400"></i>
         </div>
         <div class="min-w-0">
-          <div class="text-[10px] uppercase font-bold tracking-wider subtle">Network</div>
+          <div class="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Network</div>
           <div id="netLabel" class="text-sm font-bold truncate">Checking…</div>
           <div id="netHint" class="chip-hint">Tap to switch</div>
         </div>
       </button>
-      <button type="button" id="walletChip" onclick="handleWalletClick()" class="status-chip panel rounded-2xl px-5 py-4 flex items-center gap-3 w-full">
+      <button type="button" id="walletChip" onclick="handleWalletClick()" class="status-chip glass rounded-2xl px-5 py-4 flex items-center gap-3 text-left w-full border border-transparent">
         <div class="w-10 h-10 rounded-xl bg-cyan-500/15 flex items-center justify-center shrink-0">
           <i class="fas fa-wallet text-cyan-400"></i>
         </div>
         <div class="min-w-0">
-          <div class="text-[10px] uppercase font-bold tracking-wider subtle">Wallet</div>
+          <div class="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Wallet</div>
           <div id="walletLabel" class="text-sm font-bold truncate max-w-[180px]">Not connected</div>
           <div id="walletHint" class="chip-hint">Tap to connect</div>
         </div>
       </button>
-      <a id="wsChip" href="Workspace.html" class="status-chip panel rounded-2xl px-5 py-4 flex items-center gap-3 w-full">
-        <div class="w-10 h-10 rounded-xl bg-slate-400/15 flex items-center justify-center shrink-0">
-          <i class="fas fa-building text-slate-300"></i>
+      <a id="wsChip" href="Workspace.html" class="status-chip glass rounded-2xl px-5 py-4 flex items-center gap-3 text-left w-full border border-transparent no-underline text-inherit">
+        <div class="w-10 h-10 rounded-xl bg-indigo-500/15 flex items-center justify-center shrink-0">
+          <i class="fas fa-building text-indigo-400"></i>
         </div>
         <div class="min-w-0 flex-1">
-          <div class="text-[10px] uppercase font-bold tracking-wider subtle">Workspace</div>
+          <div class="text-[10px] uppercase font-bold text-gray-500 tracking-wider">Workspace</div>
           <div id="wsLabel" class="text-sm font-bold truncate">Personal</div>
-          <div class="chip-hint">Shared team history & roles</div>
+          <div class="chip-hint">Open workspace</div>
         </div>
-        <i class="fas fa-chevron-right text-xs subtle shrink-0"></i>
+        <i class="fas fa-chevron-right text-gray-600 text-xs shrink-0"></i>
       </a>
     </div>
 
-    <section class="space-y-8 fade-up" style="animation-delay:0.14s">
+    <!-- ================= INSIGHTS ================= -->
+    <section class="space-y-4 fade-up" style="animation-delay:0.18s">
       <div class="flex items-end justify-between gap-3 px-1">
         <div>
-          <h3 class="text-lg font-extrabold">Tools</h3>
-          <p class="text-xs muted mt-0.5">Eight modules. Same wallet. Same workspace.</p>
+          <h3 class="text-lg font-extrabold section-title">Insights</h3>
+          <p class="text-xs mt-0.5 section-sub">Team tools, analytics, and bot alerts</p>
         </div>
-        <span class="text-[11px] font-bold uppercase tracking-wider subtle">8 tools</span>
       </div>
-      <div id="modulesGrid" class="space-y-8"></div>
-    </section>
-
-    <section class="space-y-3 fade-up" style="animation-delay:0.18s">
-      <div class="px-1">
-        <h3 class="text-lg font-extrabold">Team layer</h3>
-        <p class="text-xs muted mt-0.5">Shared context across every module</p>
-      </div>
-      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <a href="Workspace.html" class="module-card panel rounded-[24px] p-5 block group" style="--glow: rgba(148,163,184,0.18); --card-accent:#94a3b8">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <a href="Workspace.html" class="module-card glass rounded-3xl p-5 sm:p-6 block group" style="--glow: rgba(99,102,241,0.18)">
           <div class="flex items-start gap-4">
-            <div class="icon-wrap w-12 h-12 rounded-2xl bg-slate-400/15 border border-slate-400/25 flex items-center justify-center shrink-0">
-              <i class="fas fa-building text-slate-300 text-lg"></i>
+            <div class="w-12 h-12 rounded-2xl bg-indigo-500/15 border border-indigo-500/25 flex items-center justify-center shrink-0">
+              <i class="fas fa-building text-indigo-400 text-lg"></i>
             </div>
             <div class="min-w-0 flex-1">
               <div class="flex items-center justify-between gap-2">
-                <h4 class="font-extrabold">Workspace</h4>
-                <i class="fas fa-arrow-right card-arrow text-xs subtle"></i>
+                <h4 class="font-extrabold text-base">Workspace</h4>
+                <i class="fas fa-arrow-right text-gray-500 text-xs group-hover:text-indigo-400 transition"></i>
               </div>
-              <p class="text-xs muted mt-1.5 leading-relaxed">Create a team, assign roles, and share history across tools.</p>
+              <p class="text-xs text-gray-400 mt-1.5 leading-relaxed">Create teams, manage roles, and share history across modules.</p>
             </div>
           </div>
         </a>
-        <a href="ArcAnalytics.html" class="module-card panel rounded-[24px] p-5 block group" style="--glow: rgba(6,182,212,0.18); --card-accent:#22d3ee">
+        <a href="ArcAnalytics.html" class="module-card glass rounded-3xl p-5 sm:p-6 block group" style="--glow: rgba(6,182,212,0.18)">
           <div class="flex items-start gap-4">
-            <div class="icon-wrap w-12 h-12 rounded-2xl bg-cyan-500/15 border border-cyan-500/25 flex items-center justify-center shrink-0">
+            <div class="w-12 h-12 rounded-2xl bg-cyan-500/15 border border-cyan-500/25 flex items-center justify-center shrink-0">
               <i class="fas fa-chart-line text-cyan-400 text-lg"></i>
             </div>
             <div class="min-w-0 flex-1">
               <div class="flex items-center justify-between gap-2">
-                <h4 class="font-extrabold">Analytics</h4>
-                <i class="fas fa-arrow-right card-arrow text-xs subtle"></i>
+                <h4 class="font-extrabold text-base">Dashboard Analytics</h4>
+                <i class="fas fa-arrow-right text-gray-500 text-xs group-hover:text-cyan-400 transition"></i>
               </div>
-              <p class="text-xs muted mt-1.5 leading-relaxed">Volumes, splits, and activity for this wallet and workspace.</p>
+              <p class="text-xs text-gray-400 mt-1.5 leading-relaxed">Track volumes, splits, and activity across your wallet and workspace.</p>
             </div>
           </div>
         </a>
-        <a href="https://t.me/ArcSplitPro_bot" target="_blank" rel="noopener" class="module-card panel rounded-[24px] p-5 block group" style="--glow: rgba(34,158,217,0.18); --card-accent:#229ED9">
+        <a href="https://t.me/ArcSplitPro_bot" target="_blank" rel="noopener" class="module-card glass rounded-3xl p-5 sm:p-6 block group" style="--glow: rgba(34,158,217,0.18)">
           <div class="flex items-start gap-4">
-            <div class="icon-wrap w-12 h-12 rounded-2xl bg-[#229ED9]/15 border border-[#229ED9]/30 flex items-center justify-center shrink-0">
+            <div class="w-12 h-12 rounded-2xl bg-[#229ED9]/15 border border-[#229ED9]/30 flex items-center justify-center shrink-0">
               <i class="fab fa-telegram-plane text-[#5ac8fa] text-lg"></i>
             </div>
             <div class="min-w-0 flex-1">
               <div class="flex items-center justify-between gap-2">
-                <h4 class="font-extrabold">Telegram bot</h4>
-                <i class="fas fa-arrow-right card-arrow text-xs subtle"></i>
+                <h4 class="font-extrabold text-base">Telegram Bot</h4>
+                <i class="fas fa-arrow-right text-gray-500 text-xs group-hover:text-[#5ac8fa] transition"></i>
               </div>
-              <p class="text-xs muted mt-1.5 leading-relaxed">TX alerts, balances, and split commands inside Telegram.</p>
+              <p class="text-xs text-gray-400 mt-1.5 leading-relaxed">Get TX notifications and manage wallet links inside Telegram.</p>
             </div>
           </div>
         </a>
       </div>
     </section>
 
-    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 fade-up" style="animation-delay:0.22s">
-      <section class="lg:col-span-7 panel rounded-[28px] p-5 sm:p-6">
+    <!-- ================= MODULES ================= -->
+    <section class="space-y-4 fade-up" style="animation-delay:0.2s">
+      <div class="flex items-end justify-between gap-3 px-1">
+        <div>
+          <h3 class="text-lg font-extrabold section-title">Modules</h3>
+          <p class="text-xs mt-0.5 section-sub">Open a tool in your current workspace</p>
+        </div>
+        <span class="text-[11px] font-bold text-gray-500 uppercase tracking-wider">8 tools</span>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4" id="modulesGrid">
+        <!-- cards injected by JS for workspace-aware links -->
+      </div>
+    </section>
+
+    <!-- ================= ACTIVITY + QUICK ================= -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 fade-up" style="animation-delay:0.28s">
+
+      <!-- Recent Activity -->
+      <section class="lg:col-span-7 glass rounded-3xl p-5 sm:p-6">
         <div class="flex items-center justify-between mb-4">
           <h3 class="font-bold text-base flex items-center gap-2">
-            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Recent activity
+            <i class="fas fa-stream text-emerald-400"></i> Recent Activity
           </h3>
-          <button onclick="loadActivity()" class="text-xs font-bold accent hover:underline">
+          <button onclick="loadActivity()" class="text-xs font-bold text-cyan-400 hover:underline">
             <i class="fas fa-sync-alt mr-1"></i> Refresh
           </button>
         </div>
@@ -497,77 +672,83 @@
         </div>
       </section>
 
+      <!-- Quick actions -->
       <section class="lg:col-span-5 space-y-4">
-        <div class="panel rounded-[28px] p-5 sm:p-6">
-          <h3 class="font-bold text-base mb-4">Quick start</h3>
-          <div class="space-y-2">
-            <a data-mod="split" href="split.html" class="quick-link flex items-center gap-3 p-3.5 rounded-2xl border" style="border-color: var(--border); background: color-mix(in oklab, var(--fg) 3%, transparent)">
+        <div class="glass rounded-3xl p-5 sm:p-6">
+          <h3 class="font-bold text-base mb-4 flex items-center gap-2">
+            <i class="fas fa-rocket text-amber-400"></i> Quick Start
+          </h3>
+          <div class="space-y-2.5">
+            <a data-mod="split" href="split.html" class="quick-link flex items-center gap-3 p-3.5 rounded-2xl bg-white/5 border border-white/5 hover:border-cyan-500/40 hover:bg-white/[0.07] transition">
               <div class="w-9 h-9 rounded-xl bg-emerald-500/15 flex items-center justify-center text-emerald-400"><i class="fas fa-scissors"></i></div>
               <div class="flex-1 min-w-0">
                 <div class="text-sm font-bold">Token Split</div>
-                <div class="text-[11px] subtle">Paying a list of wallets in one go</div>
+                <div class="text-[11px] text-gray-500">Send to many wallets at once</div>
               </div>
-              <i class="fas fa-chevron-right text-xs subtle"></i>
+              <i class="fas fa-chevron-right text-gray-600 text-xs"></i>
             </a>
-            <a data-mod="roles" href="ArcRoleSplitter.html" class="quick-link flex items-center gap-3 p-3.5 rounded-2xl border" style="border-color: var(--border); background: color-mix(in oklab, var(--fg) 3%, transparent)">
+            <a data-mod="roles" href="ArcRoleSplitter.html" class="quick-link flex items-center gap-3 p-3.5 rounded-2xl bg-white/5 border border-white/5 hover:border-cyan-500/40 hover:bg-white/[0.07] transition">
               <div class="w-9 h-9 rounded-xl bg-cyan-500/15 flex items-center justify-center text-cyan-400"><i class="fas fa-users-gear"></i></div>
               <div class="flex-1 min-w-0">
-                <div class="text-sm font-bold">Role Engine</div>
-                <div class="text-[11px] subtle">Payroll follows titles, not a raw list</div>
+                <div class="text-sm font-bold">Role Split</div>
+                <div class="text-[11px] text-gray-500">Payroll by team roles</div>
               </div>
-              <i class="fas fa-chevron-right text-xs subtle"></i>
+              <i class="fas fa-chevron-right text-gray-600 text-xs"></i>
             </a>
-            <a data-mod="pay" href="ArcPayLink.html" class="quick-link flex items-center gap-3 p-3.5 rounded-2xl border" style="border-color: var(--border); background: color-mix(in oklab, var(--fg) 3%, transparent)">
+            <a data-mod="pay" href="ArcPayLink.html" class="quick-link flex items-center gap-3 p-3.5 rounded-2xl bg-white/5 border border-white/5 hover:border-yellow-500/40 hover:bg-white/[0.07] transition">
               <div class="w-9 h-9 rounded-xl bg-yellow-500/15 flex items-center justify-center text-yellow-400"><i class="fas fa-link"></i></div>
               <div class="flex-1 min-w-0">
-                <div class="text-sm font-bold">Arc Pay</div>
-                <div class="text-[11px] subtle">Someone needs to pay you</div>
+                <div class="text-sm font-bold">Payment Link</div>
+                <div class="text-[11px] text-gray-500">Create claimable links & invoices</div>
               </div>
-              <i class="fas fa-chevron-right text-xs subtle"></i>
+              <i class="fas fa-chevron-right text-gray-600 text-xs"></i>
             </a>
-            <a data-mod="vesting" href="ArcsplitVesting.html" class="quick-link flex items-center gap-3 p-3.5 rounded-2xl border" style="border-color: var(--border); background: color-mix(in oklab, var(--fg) 3%, transparent)">
+            <a data-mod="vesting" href="ArcsplitVesting.html" class="quick-link flex items-center gap-3 p-3.5 rounded-2xl bg-white/5 border border-white/5 hover:border-lime-500/40 hover:bg-white/[0.07] transition">
               <div class="w-9 h-9 rounded-xl bg-lime-500/15 flex items-center justify-center text-lime-400"><i class="fas fa-calendar-check"></i></div>
               <div class="flex-1 min-w-0">
                 <div class="text-sm font-bold">Vesting</div>
-                <div class="text-[11px] subtle">Team tokens that unlock over time</div>
+
+                <div class="text-[11px] text-gray-500">Cliff & schedule releases</div>
               </div>
-              <i class="fas fa-chevron-right text-xs subtle"></i>
+              <i class="fas fa-chevron-right text-gray-600 text-xs"></i>
             </a>
           </div>
         </div>
-        <div class="panel rounded-[28px] p-5 sm:p-6">
-          <h3 class="font-bold text-sm mb-2">About ArcSplit</h3>
-          <p class="text-xs muted leading-relaxed">
-            Built for teams on Arc Testnet. Native gas is USDC. Demo tokens include USDC, EURC, and cirBTC. Connect a wallet, pick a workspace, run a distribution — history and Telegram alerts follow you across modules.
+
+        <div class="glass rounded-3xl p-5 sm:p-6">
+          <h3 class="font-bold text-sm mb-3 flex items-center gap-2">
+            <i class="fas fa-info-circle text-sky-400"></i> About ArcSplit
+          </h3>
+          <p class="text-xs text-gray-400 leading-relaxed">
+            Connect a wallet, pick a workspace, and run distribution tools with shared history and team roles — all on Arc.
           </p>
-          <div class="flex flex-wrap gap-1.5 mt-3">
-            <span class="mono text-[10px] font-medium px-2.5 py-1 rounded-full border muted" style="border-color: var(--border)">USDC</span>
-            <span class="mono text-[10px] font-medium px-2.5 py-1 rounded-full border muted" style="border-color: var(--border)">EURC</span>
-            <span class="mono text-[10px] font-medium px-2.5 py-1 rounded-full border muted" style="border-color: var(--border)">cirBTC</span>
-          </div>
         </div>
       </section>
     </div>
 
-    <footer class="text-center text-xs subtle py-4 fade-up" style="animation-delay:0.28s">
+    <!-- ================= FOOTER ================= -->
+    <footer class="text-center text-xs text-gray-500 py-4 fade-up" style="animation-delay:0.35s">
       <div class="flex flex-wrap items-center justify-center gap-3 mb-2">
         <a href="Workspace.html" class="hover:text-cyan-400 transition">Workspace</a>
         <span class="opacity-30">·</span>
-        <a href="ArcAnalytics.html" class="hover:text-cyan-400 transition">Analytics</a>
+        <a href="ArcAnalytics.html" class="hover:text-cyan-400 transition">Dashboard Analytics</a>
         <span class="opacity-30">·</span>
-        <a href="https://t.me/ArcSplitPro_bot" target="_blank" rel="noopener" class="hover:text-cyan-400 transition">Telegram bot</a>
+        <a href="https://t.me/ArcSplitPro_bot" target="_blank" rel="noopener" class="hover:text-sky-400 transition">Telegram Bot</a>
         <span class="opacity-30">·</span>
-        <a href="https://testnet.arcscan.app" target="_blank" rel="noopener" class="hover:text-cyan-400 transition">Arc explorer</a>
+        <span>Arc Testnet</span>
+
       </div>
       <div>© ArcSplit · Built for professional on-chain teams</div>
     </footer>
   </div>
 
+  <!-- Floating theme toggle -->
   <button onclick="toggleTheme()" id="themeBtn" aria-label="Toggle theme" title="Toggle light / dark">
     <i class="fas fa-moon text-sm"></i>
   </button>
 
-  <div id="toast" class="hidden">
+  <!-- Toast -->
+  <div id="toast" class="hidden fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#121228] border border-white/15 text-white px-5 py-3 rounded-2xl shadow-2xl z-50 text-xs backdrop-blur-xl">
     <span id="toastText"></span>
   </div>
 
@@ -575,12 +756,15 @@
   const BOT_URL = 'https://arcsplit-bot.kamkazi-1297.workers.dev';
   const BOT_TELEGRAM = 'https://t.me/ArcSplitPro_bot';
 
+  // Telegram ↔ Wallet link
   function getTelegramChatId() {
     return window.telegramChatId || localStorage.getItem('telegramChatId') || null;
   }
+
   function getTelegramUsername() {
     return window.telegramUsername || localStorage.getItem('telegramUsername') || '';
   }
+
   function setTelegramChatId(id, username) {
     if (!id) return;
     window.telegramChatId = String(id);
@@ -592,6 +776,7 @@
     }
     updateTelegramUI();
   }
+
   function clearTelegramChatId() {
     window.telegramChatId = null;
     window.telegramUsername = null;
@@ -599,10 +784,12 @@
     localStorage.removeItem('telegramUsername');
     updateTelegramUI();
   }
+
   function updateTelegramUI() {
     const linked = !!getTelegramChatId();
     const linkBtn = document.getElementById('tgLinkBtn');
     if (!linkBtn) return;
+
     if (linked) {
       const uname = getTelegramUsername();
       const clean = uname ? String(uname).replace(/^@/, '') : 'Telegram';
@@ -615,12 +802,14 @@
       linkBtn.innerHTML = `<i class="fab fa-telegram-plane"></i> <span id="tgLinkText">Link Telegram</span>`;
     }
   }
+
   function handleTelegramClick() {
     const btn = document.getElementById('tgLinkBtn');
     if (btn && btn.disabled) return;
     if (getTelegramChatId()) unlinkTelegram();
     else linkTelegram();
   }
+
   async function linkTelegram() {
     if (!userAddress) {
       showToast('Connect your wallet first, then Link Telegram');
@@ -634,6 +823,7 @@
         const el = document.getElementById('wsLabel');
         if (el && el.textContent && el.textContent !== 'Personal') wsName = el.textContent;
       } catch {}
+
       const res = await fetch(`${BOT_URL}/prepare-link`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -650,12 +840,14 @@
       }
       window.open(`${BOT_TELEGRAM}?start=link_${data.token}`, '_blank', 'noopener');
       showToast('In Telegram: tap Confirm Link');
+      // Poll until user confirms in bot — then store chatId locally (no @ on username)
       startLinkStatusPoll(data.token);
     } catch (e) {
       console.warn('linkTelegram failed', e);
       showToast('Could not open Telegram link');
     }
   }
+
   let _linkPollTimer = null;
   function setTelegramWaiting(waiting) {
     const btn = document.getElementById('tgLinkBtn');
@@ -673,11 +865,13 @@
       updateTelegramUI();
     }
   }
+
   function startLinkStatusPoll(token) {
     if (_linkPollTimer) clearInterval(_linkPollTimer);
     setTelegramWaiting(true);
     let tries = 0;
-    const maxTries = 90;
+    const maxTries = 90; // ~90s with 1s interval
+
     const tick = async () => {
       tries++;
       if (tries > maxTries) {
@@ -708,11 +902,16 @@
         } else {
           setTelegramWaiting(false);
         }
-      } catch {}
+      } catch {
+        // keep polling on network blips
+      }
     };
+
+    // first check quickly, then every 1s
     setTimeout(tick, 400);
     _linkPollTimer = setInterval(tick, 1000);
   }
+
   async function unlinkTelegram() {
     if (!confirm('Unlink Telegram? You will stop receiving TX notifications.')) return;
     const chatId = getTelegramChatId();
@@ -731,6 +930,7 @@
     }
     showToast('Telegram unlinked');
   }
+
   function buildBotPayload() {
     let wsId = null;
     let wsName = null;
@@ -747,6 +947,8 @@
       workspaceName: wsName || undefined
     };
   }
+
+  // Ask Telegram bot to show Confirm/Reject — does NOT auto-link
   async function requestWalletLinkConfirm() {
     const chatId = getTelegramChatId();
     if (!chatId || !userAddress) return;
@@ -757,7 +959,10 @@
         body: JSON.stringify(buildBotPayload())
       });
       const data = await res.json().catch(() => ({}));
-      if (data.status === 'already_linked') return;
+      if (data.status === 'already_linked') {
+        // same wallet already linked — quiet
+        return;
+      }
       if (data.status === 'pending_confirm') {
         showToast('Check Telegram bot and Confirm the wallet link');
       }
@@ -765,6 +970,8 @@
       console.warn('request-link failed', e);
     }
   }
+
+  // Silent sync only (workspace / no notification) — used rarely
   async function saveWalletToBotSilent() {
     const chatId = getTelegramChatId();
     if (!chatId || !userAddress) return;
@@ -778,7 +985,10 @@
       console.warn('save-connection silent failed', e);
     }
   }
+
+  // Set when landing from bot connect deep-link — used once after wallet is ready
   let pendingBotLinkConfirm = false;
+
   function initTelegramFromURL() {
     try {
       const params = new URLSearchParams(window.location.search);
@@ -808,20 +1018,89 @@
   }
 
   const MODULES = [
-    { id: 'split', href: 'split.html', title: 'Token Split', desc: 'Send any token to many wallets by percentage or exact amount.', useWhen: 'Paying a list of wallets in one go', icon: 'fa-scissors', accent: 'emerald', glow: 'rgba(16,185,129,0.18)', color: '#34d399', tag: 'Core' },
-    { id: 'batch', href: 'BatchSplit.html', title: 'Batch Split', desc: 'Distribute several tokens in sequential on-chain batches.', useWhen: 'Multi-token payroll in one session', icon: 'fa-layer-group', accent: 'rose', glow: 'rgba(244,63,94,0.18)', color: '#fb7185', tag: 'Pro' },
-    { id: 'roles', href: 'ArcRoleSplitter.html', title: 'Role Engine', desc: 'Define team roles and split by role allocations.', useWhen: 'Payroll follows titles, not a raw list', icon: 'fa-users-gear', accent: 'cyan', glow: 'rgba(6,182,212,0.18)', color: '#22d3ee', tag: 'Team' },
-    { id: 'giveaway', href: 'giveaway.html', title: 'Giveaway', desc: 'Pick random winners and send equal shares on-chain.', useWhen: 'Contests, raffles, community drops', icon: 'fa-gift', accent: 'amber', glow: 'rgba(245,158,11,0.18)', color: '#f59e0b', tag: 'Fun' },
-    { id: 'vesting', href: 'ArcsplitVesting.html', title: 'Vesting', desc: 'Cliff plus linear unlocks, with a calendar view.', useWhen: 'Team tokens that unlock over time', icon: 'fa-calendar-check', accent: 'lime', glow: 'rgba(163,230,53,0.16)', color: '#a3e635', tag: 'Schedule' },
-    { id: 'conditional', href: 'smartConditionalsplit.html', title: 'Conditional', desc: 'No-code gates: time, balance, price, or NFT ownership.', useWhen: 'A split should wait for a rule', icon: 'fa-microchip', accent: 'blue', glow: 'rgba(59,130,246,0.18)', color: '#60a5fa', tag: 'Smart' },
-    { id: 'agentic', href: 'AgenticSplit.html', title: 'Agentic', desc: 'Push-based rules with relayer-ready execution.', useWhen: 'You want a bot to fire the split', icon: 'fa-robot', accent: 'sky', glow: 'rgba(14,165,233,0.18)', color: '#38bdf8', tag: 'Auto' },
-    { id: 'pay', href: 'ArcPayLink.html', title: 'Arc Pay', desc: 'Create payment links and smart invoices others can claim.', useWhen: 'Someone needs to pay you', icon: 'fa-link', accent: 'yellow', glow: 'rgba(234,179,8,0.16)', color: '#facc15', tag: 'Pay' }
+    {
+      id: 'split',
+      href: 'split.html',
+      title: 'Token Split',
+      desc: 'Split any token to many wallets with percentage or amount.',
+      icon: 'fa-scissors',
+      accent: 'emerald',
+      glow: 'rgba(16,185,129,0.18)',
+      tag: 'Core'
+    },
+    {
+      id: 'batch',
+      href: 'BatchSplit.html',
+      title: 'Batch Split',
+      desc: 'Multi-token distributions in sequential batches.',
+      icon: 'fa-layer-group',
+      accent: 'rose',
+      glow: 'rgba(244,63,94,0.18)',
+      tag: 'Pro'
+    },
+    {
+      id: 'roles',
+      href: 'ArcRoleSplitter.html',
+      title: 'Role Engine',
+      desc: 'Define team roles and split by role allocations.',
+      icon: 'fa-users-gear',
+      accent: 'cyan',
+      glow: 'rgba(6,182,212,0.18)',
+      tag: 'Team'
+    },
+    {
+      id: 'giveaway',
+      href: 'giveaway.html',
+      title: 'Giveaway',
+      desc: 'Pick winners and send equal shares on-chain.',
+      icon: 'fa-gift',
+      accent: 'amber',
+      glow: 'rgba(245,158,11,0.18)',
+      tag: 'Fun'
+    },
+    {
+      id: 'vesting',
+      href: 'ArcsplitVesting.html',
+      title: 'Vesting',
+      desc: 'Cliff + vesting schedules with calendar view.',
+      icon: 'fa-calendar-check',
+      accent: 'lime',
+      glow: 'rgba(163,230,53,0.16)',
+      tag: 'Schedule'
+    },
+    {
+      id: 'pay',
+      href: 'ArcPayLink.html',
+      title: 'Arc Pay',
+      desc: 'Payment links and smart invoices.',
+      icon: 'fa-link',
+      accent: 'yellow',
+      glow: 'rgba(234,179,8,0.16)',
+      tag: 'Pay'
+    },
+    {
+      id: 'conditional',
+      href: 'smartConditionalsplit.html',
+      title: 'Conditional',
+      desc: 'No-code rules: time, balance, price, NFT gates.',
+      icon: 'fa-microchip',
+      accent: 'blue',
+      glow: 'rgba(59,130,246,0.18)',
+      tag: 'Smart'
+    },
+    {
+      id: 'agentic',
+      href: 'AgenticSplit.html',
+      title: 'Agentic',
+      desc: 'Push-based rules with relayer-ready execution.',
+      icon: 'fa-robot',
+      accent: 'sky',
+      glow: 'rgba(14,165,233,0.18)',
+      tag: 'Auto'
+    }
   ];
-  const GROUPS = [
-    { title: 'Pay your team', sub: 'One transaction, many wallets', ids: ['split', 'batch', 'roles', 'giveaway'], cols: 'xl:grid-cols-4' },
-    { title: 'Schedule & automate', sub: 'Release later, or only when a rule is met', ids: ['vesting', 'conditional', 'agentic'], cols: 'xl:grid-cols-3' },
-    { title: 'Collect payment', sub: 'Links and invoices others can settle', ids: ['pay'], cols: 'xl:grid-cols-2' }
-  ];
+
+
   const ACCENT = {
     emerald: { bg: 'bg-emerald-500/15', text: 'text-emerald-400', border: 'border-emerald-500/25' },
     rose:    { bg: 'bg-rose-500/15',    text: 'text-rose-400',    border: 'border-rose-500/25' },
@@ -845,10 +1124,12 @@
     clearTimeout(window.__toastTimer);
     window.__toastTimer = setTimeout(() => t.classList.add('hidden'), ms);
   }
+
   function shortAddr(a) {
     if (!a) return '—';
     return a.slice(0, 6) + '…' + a.slice(-4);
   }
+
   function getWsParam() {
     try {
       return new URLSearchParams(location.search).get('workspace')
@@ -857,46 +1138,37 @@
         || null;
     } catch { return null; }
   }
+
   function withWorkspace(href) {
     if (!workspaceId) return href;
     const u = new URL(href, location.href);
     u.searchParams.set('workspace', workspaceId);
     return u.pathname.split('/').pop() + u.search;
   }
+
   function renderModules() {
     const grid = document.getElementById('modulesGrid');
-    grid.innerHTML = GROUPS.map(g => {
-      const cards = g.ids.map((id, i) => {
-        const m = MODULES.find(x => x.id === id);
-        if (!m) return '';
-        const a = ACCENT[m.accent] || ACCENT.cyan;
-        const href = withWorkspace(m.href);
-        return `
-          <a href="${href}" class="module-card panel rounded-[24px] p-5 block group"
-             style="--glow:${m.glow}; --card-accent:${m.color}; animation: fadeUp 0.5s ease forwards; animation-delay:${0.04 + i * 0.04}s; opacity:0">
-            <div class="flex items-start justify-between mb-4">
-              <div class="icon-wrap w-12 h-12 rounded-2xl ${a.bg} ${a.text} flex items-center justify-center text-lg border ${a.border}">
-                <i class="fas ${m.icon}"></i>
-              </div>
-              <span class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full subtle" style="background: color-mix(in oklab, var(--fg) 5%, transparent); border: 1px solid var(--border)">${m.tag}</span>
-            </div>
-            <h4 class="font-extrabold text-base mb-1">${m.title}</h4>
-            <p class="text-xs muted leading-relaxed mb-3">${m.desc}</p>
-            <p class="text-[11px] subtle font-medium mb-4">Use when: ${m.useWhen}</p>
-            <div class="flex items-center gap-1.5 text-[11px] font-bold ${a.text}">
-              Open <i class="fas fa-arrow-right card-arrow text-[9px]"></i>
-            </div>
-          </a>`;
-      }).join('');
+    grid.innerHTML = MODULES.map((m, i) => {
+      const a = ACCENT[m.accent] || ACCENT.cyan;
+      const href = withWorkspace(m.href);
       return `
-        <div class="space-y-3">
-          <div class="px-1">
-            <h4 class="text-sm font-bold">${g.title}</h4>
-            <p class="text-xs muted">${g.sub}</p>
+        <a href="${href}" class="module-card glass rounded-3xl p-5 block group"
+           style="--glow:${m.glow}; animation: fadeUp 0.5s ease forwards; animation-delay:${0.05 + i * 0.04}s; opacity:0">
+          <div class="flex items-start justify-between mb-4">
+            <div class="w-12 h-12 rounded-2xl ${a.bg} ${a.text} flex items-center justify-center text-lg border ${a.border}">
+              <i class="fas ${m.icon}"></i>
+            </div>
+            <span class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-white/5 text-gray-400 border border-white/10">${m.tag}</span>
           </div>
-          <div class="grid grid-cols-1 sm:grid-cols-2 ${g.cols} gap-3">${cards}</div>
-        </div>`;
+          <h4 class="font-extrabold text-base mb-1.5 group-hover:text-cyan-300 transition-colors">${m.title}</h4>
+          <p class="text-xs text-gray-400 leading-relaxed mb-4">${m.desc}</p>
+          <div class="flex items-center gap-1.5 text-[11px] font-bold ${a.text}">
+            Open <i class="fas fa-arrow-right text-[9px] group-hover:translate-x-1 transition-transform"></i>
+          </div>
+        </a>`;
     }).join('');
+
+    // update quick links with workspace
     document.querySelectorAll('.quick-link').forEach(el => {
       const mod = el.getAttribute('data-mod');
       const found = MODULES.find(m => m.id === mod);
@@ -905,6 +1177,7 @@
   }
 
   let onCorrectNetwork = false;
+
   function setNetworkUI(ok, opts = {}) {
     onCorrectNetwork = !!ok;
     const label = document.getElementById('netLabel');
@@ -913,6 +1186,7 @@
     const icon = document.getElementById('netIcon');
     const iconWrap = document.getElementById('netIconWrap');
     const btn = document.getElementById('connectBtn');
+
     if (label) label.textContent = ok ? 'Arc Testnet' : (opts.label || 'Wrong network');
     if (hint) hint.textContent = ok ? 'Connected network' : 'Tap to switch to Arc';
     if (chip) {
@@ -928,6 +1202,7 @@
         iconWrap.className = 'w-10 h-10 rounded-xl bg-amber-500/15 flex items-center justify-center shrink-0';
       }
     }
+    // Header connect button: if connected wallet but wrong net → Switch to Arc
     if (btn && userAddress && !ok) {
       btn.classList.remove('connected');
       btn.classList.add('wrong-net');
@@ -938,15 +1213,18 @@
       btn.classList.remove('wrong-net');
     }
   }
+
   function setWalletUI(connected) {
     const btn = document.getElementById('connectBtn');
     const label = document.getElementById('walletLabel');
     const hint = document.getElementById('walletHint');
     if (!btn) return;
+
     if (connected && userAddress) {
       const short = shortAddr(userAddress);
       if (label) label.textContent = short;
       if (hint) hint.textContent = onCorrectNetwork ? 'Tap to disconnect' : 'Wrong network — switch first';
+
       if (!onCorrectNetwork) {
         btn.classList.remove('connected');
         btn.classList.add('wrong-net');
@@ -970,8 +1248,9 @@
     }
   }
 
+  // Arc Network Testnet (from MetaMask config)
   const ARC_CHAIN_ID = 5042002;
-  const ARC_CHAIN_ID_HEX = '0x' + ARC_CHAIN_ID.toString(16);
+  const ARC_CHAIN_ID_HEX = '0x' + ARC_CHAIN_ID.toString(16); // 0x4cf1d2
   const ARC_NETWORK = {
     chainId: ARC_CHAIN_ID_HEX,
     chainName: 'Arc Network Testnet',
@@ -996,6 +1275,7 @@
       return false;
     }
   }
+
   async function ensureArcNetwork() {
     if (!window.ethereum) return false;
     try {
@@ -1029,6 +1309,7 @@
       return false;
     }
   }
+
   async function handleNetworkClick() {
     if (!window.ethereum) {
       showToast('Install MetaMask or a Web3 wallet first');
@@ -1044,6 +1325,9 @@
       }
     }
   }
+
+  
+  // Wallet connect loading UI (page-local)
   function arcSetConnectLoading(loading) {
     const btn = document.getElementById("connectBtn") || document.getElementById("connectHeaderBtn") || document.getElementById("connectWalletBtn");
     if (!btn) return;
@@ -1052,11 +1336,14 @@
       btn.innerHTML = '<i class="fas fa-circle-notch arc-spin"></i> <span>Connecting…</span>';
     } else {
       btn.disabled = false;
+      // Do NOT restore old HTML — setWalletUI owns the final label
     }
   }
+
   function handleWalletClick() {
     const btn = document.getElementById('connectBtn');
     if (btn && btn.disabled) return;
+    // Connected but wrong network → switch, don't disconnect
     if (userAddress && !onCorrectNetwork) {
       handleNetworkClick();
       return;
@@ -1064,6 +1351,7 @@
     if (userAddress) disconnectWallet();
     else connectWallet();
   }
+
   async function connectWallet() {
     if (!window.ethereum) {
       showToast('MetaMask / Web3 wallet not found');
@@ -1096,6 +1384,7 @@
       setWalletUI(!!userAddress);
     }
   }
+
   function disconnectWallet() {
     userAddress = null;
     window.userAddress = null;
@@ -1108,6 +1397,7 @@
       `<div class="arc-empty"><i class="fas fa-wallet"></i>Connect a wallet to load activity</div>`;
     showToast('Wallet disconnected');
   }
+
   async function loadWorkspaceLabel() {
     const el = document.getElementById('wsLabel');
     workspaceId = getWsParam();
@@ -1124,6 +1414,7 @@
     }
     el.textContent = shortAddr(workspaceId);
   }
+
   function moduleMeta(app) {
     const s = String(app || '').toLowerCase();
     if (s.includes('role')) return { icon: 'fa-users-gear', color: 'text-cyan-400', bg: 'bg-cyan-500/15', border: 'border-cyan-500/25' };
@@ -1135,10 +1426,14 @@
     if (s.includes('agent')) return { icon: 'fa-robot', color: 'text-sky-400', bg: 'bg-sky-500/15', border: 'border-sky-500/25' };
     return { icon: 'fa-scissors', color: 'text-emerald-400', bg: 'bg-emerald-500/15', border: 'border-emerald-500/25' };
   }
-  function moduleIcon(app) { return moduleMeta(app).icon; }
+
+  function moduleIcon(app) {
+    return moduleMeta(app).icon;
+  }
+
   function activitySkeleton() {
     return Array.from({ length: 4 }).map(() => `
-      <div class="flex items-center gap-3 p-3 rounded-2xl border" style="border-color: var(--border)">
+      <div class="flex items-center gap-3 p-3 rounded-2xl border border-white/5">
         <div class="skel w-9 h-9 rounded-xl shrink-0"></div>
         <div class="flex-1 space-y-2 min-w-0">
           <div class="skel h-3 w-2/3 max-w-[160px]"></div>
@@ -1147,31 +1442,43 @@
         <div class="skel h-6 w-12 rounded-full shrink-0"></div>
       </div>`).join('');
   }
+
   function prettyType(t) {
     const s = String(t || 'Activity');
     return s.replace(/[_-]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
   }
+
   const KNOWN_TOKENS = {
+    // EURC / cirBTC on Arc Testnet
     '0x89b50855aa3be2f677cd6303cec089b5f319d72a': 'EURC',
     '0xf0c4a4ce82a5746abaad9425360ab04fbba432bf': 'cirBTC',
+    // Arc Batch native USDC system token
     '0x3600000000000000000000000000000000000000': 'USDC',
     '0x0000000000000000000000000000000000000000': 'USDC',
     '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee': 'USDC',
-    'usdc': 'USDC', 'eurc': 'EURC', 'cirbtc': 'cirBTC'
+    'usdc': 'USDC',
+    'eurc': 'EURC',
+    'cirbtc': 'cirBTC'
   };
+
   function resolveTokenLabel(raw) {
     if (raw == null || raw === '') return '';
     const s = String(raw).trim();
     if (!s) return '';
     const lower = s.toLowerCase();
     if (KNOWN_TOKENS[lower]) return KNOWN_TOKENS[lower];
-    if (/^0x[a-f0-9]{40}$/i.test(s)) return KNOWN_TOKENS[lower] || (s.slice(0, 6) + '…' + s.slice(-4));
+    if (/^0x[a-f0-9]{40}$/i.test(s)) {
+      return KNOWN_TOKENS[lower] || (s.slice(0, 6) + '…' + s.slice(-4));
+    }
     return s;
   }
+
   function tokenFromMemo(memo) {
+    // Batch memo: "AdHoc Batch Split [cirBTC]"
     const m = String(memo || '').match(/\[([A-Za-z][A-Za-z0-9]{1,12})\]/);
     return m ? m[1] : '';
   }
+
   function formatAmount(r) {
     if (r.amount == null && r.value == null) return '';
     const n = r.amount != null ? r.amount : r.value;
@@ -1180,6 +1487,7 @@
       const t0 = r.tokens[0];
       tok = t0.tokenSymbol || t0.symbol || t0.token || tok;
     }
+    // Old Batch rows: fall back to [SYMBOL] inside memo
     if (!tok || /^0x[a-f0-9]{40}$/i.test(String(tok))) {
       const fromMemo = tokenFromMemo(r.memo || r.intent || r.note);
       if (fromMemo) tok = fromMemo;
@@ -1187,6 +1495,7 @@
     tok = resolveTokenLabel(tok);
     return `${n} ${tok}`.trim();
   }
+
   async function loadActivity() {
     const box = document.getElementById('activityList');
     if (!userAddress) {
@@ -1196,7 +1505,7 @@
     box.innerHTML = activitySkeleton();
     try {
       if (typeof fetchHistoryFromCloud !== 'function') {
-        box.innerHTML = `<div class="arc-empty"><i class="fas fa-stream"></i>No activity yet — run your first split</div>`;
+        box.innerHTML = `<div class="arc-empty"><i class="fas fa-cloud"></i>Cloud history unavailable</div>`;
         return;
       }
       let rows = await fetchHistoryFromCloud(userAddress);
@@ -1204,10 +1513,12 @@
         const t = String(r.type || '').toLowerCase();
         return t !== 'roles_config' && t !== 'module_data' && t !== 'config';
       }).slice(0, 12);
+
       if (!rows.length) {
         box.innerHTML = `<div class="arc-empty"><i class="fas fa-stream"></i>No activity yet — run your first split</div>`;
         return;
       }
+
       box.innerHTML = rows.map(r => {
         const typ = prettyType(r.type || r.appName || 'Activity');
         const amt = formatAmount(r);
@@ -1223,7 +1534,7 @@
             ? '<span class="w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0" title="Pending"></span>'
             : '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" title="Success"></span>';
         return `
-          <div class="activity-row flex items-center gap-3 p-3 rounded-2xl border" style="border-color: var(--border)">
+          <div class="activity-row flex items-center gap-3 p-3 rounded-2xl border border-white/5">
             <div class="w-9 h-9 rounded-xl ${meta.bg} border ${meta.border} flex items-center justify-center shrink-0">
               <i class="fas ${meta.icon} ${meta.color} text-sm"></i>
             </div>
@@ -1232,7 +1543,7 @@
                 ${statusDot}
                 <div class="text-sm font-bold truncate">${typ}</div>
               </div>
-              <div class="text-[11px] subtle truncate mt-0.5">${ts || '—'}</div>
+              <div class="text-[11px] text-gray-500 truncate mt-0.5">${ts || '—'}</div>
             </div>
             ${amt ? `<div class="activity-amt ${meta.color} hidden sm:block">${amt}</div>` : ''}
             ${hash && String(hash).startsWith('0x')
@@ -1245,6 +1556,7 @@
       box.innerHTML = `<div class="arc-empty" style="color:#fb7185"><i class="fas fa-exclamation-circle"></i>Failed to load activity</div>`;
     }
   }
+
   function toggleTheme() {
     document.documentElement.classList.toggle('light');
     const icon = document.querySelector('#themeBtn i');
@@ -1252,24 +1564,29 @@
       icon.className = 'fas fa-sun text-sm text-amber-500';
       localStorage.setItem('theme', 'light');
     } else {
-      icon.className = 'fas fa-moon text-sm';
+      icon.className = 'fas fa-moon text-sm text-cyan-400';
       localStorage.setItem('theme', 'dark');
     }
   }
 
+  // boot
   (async () => {
     if (localStorage.getItem('theme') === 'light') {
       document.documentElement.classList.add('light');
       document.querySelector('#themeBtn i').className = 'fas fa-sun text-sm text-amber-500';
     }
+
     initTelegramFromURL();
+
     workspaceId = getWsParam();
     renderModules();
     await loadWorkspaceLabel();
+
     if (window.ethereum) {
       try {
         provider = new ethers.BrowserProvider(window.ethereum);
         await refreshNetworkState();
+        // Skip auto-reconnect if user explicitly disconnected
         if (localStorage.getItem('arcWalletDisconnected') !== '1') {
           const accs = await provider.send('eth_accounts', []);
           if (accs?.length) {
@@ -1288,6 +1605,7 @@
           }
         }
       } catch {}
+
       window.ethereum.on?.('chainChanged', (chainId) => {
         const ok = chainId && chainId.toLowerCase() === ARC_CHAIN_ID_HEX.toLowerCase();
         setNetworkUI(ok);
@@ -1299,6 +1617,7 @@
           }
         }
       });
+
       window.ethereum.on?.('accountsChanged', (accs) => {
         if (localStorage.getItem('arcWalletDisconnected') === '1') return;
         if (accs?.length) {
